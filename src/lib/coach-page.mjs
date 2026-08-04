@@ -3,6 +3,16 @@ import { founderPerson, breadcrumbList, jsonLdScript } from './structured-data.m
 
 const RESUME_KEYS = ['rcp.trophy', 'rcp.team', 'rcp.juco', 'rcp.work'];
 
+// Same card body copy the homepage receipts section ships, verbatim from
+// src/templates/sections/receipts.html. Cards without an entry (resumeExtra)
+// render caption-only, exactly as they do on the homepage.
+const RESUME_BODY = {
+  'rcp.trophy': "Robert Morris beat Youngstown State 89 to 78 for the program's first Horizon League title.",
+  'rcp.team': 'Development is the point. RMU placed multiple players on the All-Tournament Team.',
+  'rcp.juco': 'Moberly Area went 25 and 7 and won the region, sending players on to four year programs.',
+  'rcp.work': 'The standard he asks for is the one he holds himself to. That is why players buy in.'
+};
+
 export function renderCoachPage({ content, responsiveManifest, prelude }) {
   const title = 'Coach Blake Kingsley | Founder, Fast Basketball Miami';
   const description = 'Coach Blake Kingsley was on staff for the 2025 Horizon League champion Robert Morris Colonials and the 2024 NJCAA Region 16 champion Moberly Area. Now training players in Miami.';
@@ -37,7 +47,9 @@ export function renderCoachPage({ content, responsiveManifest, prelude }) {
     body += '<article class="rcp-c" style="--i:' + i + '">\n<div class="rcp-shot">' + renderImage(key, cardSource, responsiveManifest) + '</div>\n';
     body += '<div class="rcp-txt">';
     if (image.source) body += '<span class="rcp-yr">' + escapeHtml(image.source) + '</span>';
-    body += '<h3>' + escapeHtml(title) + '</h3></div>\n</article>\n';
+    body += '<h3>' + escapeHtml(title) + '</h3>';
+    if (RESUME_BODY[key]) body += '<p>' + escapeHtml(RESUME_BODY[key]) + '</p>';
+    body += '</div>\n</article>\n';
   });
   body += '</div>\n';
   body += '<p class="rcp-note">Verify the Robert Morris title at <a href="https://rmucolonials.com/news/2025/3/12/mens-basketball-horizon-league-champions.aspx" target="_blank" rel="noopener">rmucolonials.com</a> and the Moberly Area title at <a href="https://moberlygreyhounds.com/" target="_blank" rel="noopener">moberlygreyhounds.com</a>.</p>\n';

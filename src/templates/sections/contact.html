@@ -2,11 +2,13 @@
   <div class="shell ct">
     <div class="ct-side">
       <div class="eyebrow rise">Book a Session</div>
-      <h2 class="zr">Start with a<br><span class="hollow">First Look.</span></h2>
-      <p class="lede rise" data-edit="ct.lede">Send the form or text directly. You will hear back within one business day with open slots for your area.</p>
+      <h2 class="zr">Start with a <br><span class="hollow">First Look.</span></h2>
+      <p class="lede rise" data-edit="ct.lede">Send the form or email directly. You will hear back within one business day with open slots for your area.</p>
       <div class="ct-rows rise">
-        <div class="ct-r"><b>Phone</b><span data-edit="ct.phone">[305] 000-0000</span></div>
-        <div class="ct-r"><b>Email</b><span data-edit="ct.email">coach@fastbasketball.com</span></div>
+        <!-- PHONE ROW REMOVED: there is no published number yet, and a fake one is worse than none.
+             To restore, paste the line below with the real number and set "ct.phone" in src/data/content.json to match:
+             <div class="ct-r"><b>Phone</b><a href="tel:+13055550100" data-edit="ct.phone">(305) 555-0100</a></div> -->
+        <div class="ct-r"><b>Email</b><a href="mailto:coach@fastbasketball.com" data-edit="ct.email">coach@fastbasketball.com</a></div>
         <div class="ct-r"><b>Instagram</b><span data-edit="ct.ig">@blakekingsleyjr</span></div>
         <div class="ct-r"><b>Service Area</b><span data-edit="ct.area">Miami Dade &amp; Broward County</span></div>
       </div>
@@ -43,7 +45,7 @@
       <div class="pb-out" id="ctDone" tabindex="-1">
         <h4>Got it. Message received.</h4>
         <p>Coach Blake reads these himself. You will hear back within one business day with open slots for your area, and nothing happens until you say yes to a time.</p>
-        <p>If it has not landed by then, check your spam folder for coach@fastbasketball.com, then text us and we will sort it out.</p>
+        <p>If it has not landed by then, check your spam folder for <a href="mailto:coach@fastbasketball.com">coach@fastbasketball.com</a>, then email us directly and we will sort it out.</p>
       </div>
     </div>
   </div>

@@ -4,31 +4,72 @@ function joinList(items) {
   return items.slice(0, -1).join(', ') + ', and ' + items[items.length - 1];
 }
 
+// The notes in suburbs.json are unpunctuated fragments. Everything that goes
+// into parts[] runs through here so parts.join(' ') can never fuse two records
+// into one run-on sentence.
+function endSentence(text) {
+  const t = String(text).trim();
+  if (!t) return '';
+  return /[.!?]$/.test(t) ? t : t + '.';
+}
+
+// Notes are attached as appositives after an em dash, so the leading capital
+// goes unless the note opens with a proper name ("City of Coral Gables ...").
+function appositive(note) {
+  const t = String(note).trim();
+  const second = t.split(/\s+/)[1] || '';
+  if (second === 'of' || /^[A-Z]/.test(second)) return t;
+  return t.charAt(0).toLowerCase() + t.slice(1);
+}
+
+const COURTS = { outdoor: 'outdoor courts', indoor: 'indoor courts', both: 'indoor and outdoor courts' };
+
+// The note, when present, already describes the place better than the generic
+// type/courts filler, so it replaces that filler instead of repeating it.
+function venueDetail(v) {
+  if (v.note) return appositive(v.note);
+  const courts = v.courts ? COURTS[v.courts] || v.courts + ' courts' : '';
+  return [v.type ? 'a ' + v.type : '', courts].filter(Boolean).join(' with ');
+}
+
 export function schoolsProse(suburb) {
   const parts = [];
-  if (suburb.high_schools && suburb.high_schools.length > 0) {
-    const names = suburb.high_schools.map((h) => h.name);
-    parts.push('The high school game in ' + suburb.name + ' runs through ' + joinList(names) + '.');
-    for (const h of suburb.high_schools) {
-      if (h.note) parts.push(h.name + ': ' + h.note);
+  const highs = (suburb.high_schools || []).filter((h) => h && h.name);
+  if (highs.length === 1 && highs[0].note) {
+    parts.push(endSentence('The high school game in ' + suburb.name + ' runs through ' + highs[0].name + ' — ' + appositive(highs[0].note)));
+  } else if (highs.length > 0) {
+    parts.push(endSentence('The high school game in ' + suburb.name + ' runs through ' + joinList(highs.map((h) => h.name))));
+    for (const h of highs) {
+      if (h.note) parts.push(endSentence(h.name + ' — ' + appositive(h.note)));
     }
   }
-  if (suburb.middle_schools && suburb.middle_schools.length > 0) {
-    const names = suburb.middle_schools.map((m) => m.name);
-    parts.push('Middle schoolers mostly come up through ' + joinList(names) + '. That is the age to fix a habit, before a varsity tryout finds it first.');
+  const mids = (suburb.middle_schools || []).filter((m) => m && m.name);
+  if (mids.length > 0) {
+    parts.push('Middle schoolers mostly come up through ' + joinList(mids.map((m) => m.name)) + '. That is the age to fix a habit, before a varsity tryout finds it first.');
   }
   return parts.join(' ');
 }
 
 export function venuesProse(suburb) {
-  if (!suburb.training_venues || suburb.training_venues.length === 0) return '';
-  const parts = ['In ' + suburb.name + ', sessions run at ' + joinList(suburb.training_venues.map((v) => v.name)) + '.'];
-  for (const v of suburb.training_venues) {
-    let sentence = v.name + ' is a ' + v.type + ' with ' + v.courts + ' courts';
-    if (v.address) sentence += ' at ' + v.address;
-    sentence += '.';
-    if (v.note) sentence += ' ' + v.note;
-    parts.push(sentence);
+  const venues = (suburb.training_venues || []).filter((v) => v && v.name);
+  if (venues.length === 0) return '';
+  const opener = 'In ' + suburb.name + ', sessions run at ';
+
+  // A single venue reads better folded into the opener than repeated in a
+  // second sentence, and that is how 11 of the 12 records are shaped.
+  if (venues.length === 1) {
+    const v = venues[0];
+    const tail = [v.address, venueDetail(v)].filter(Boolean).join(' — ');
+    return endSentence(opener + v.name + (tail ? ', ' + tail : ''));
+  }
+
+  const parts = [endSentence(opener + joinList(venues.map((v) => v.name)))];
+  for (const v of venues) {
+    const detail = venueDetail(v);
+    if (v.address && detail) parts.push(endSentence(v.name + ' is at ' + v.address + ' — ' + detail));
+    else if (v.address) parts.push(endSentence(v.name + ' is at ' + v.address));
+    else if (v.note) parts.push(endSentence(v.name + ' — ' + detail));
+    else if (detail) parts.push(endSentence(v.name + ' is ' + detail));
   }
   return parts.join(' ');
 }

@@ -7,7 +7,7 @@ picture img{width:100%;height:auto;display:block;}
 .band-light .suburb-programs li a{background:var(--bone);border-color:var(--line-light);}
 .credential-block{max-width:70ch;}
 .credential-block .credential-lede{font-size:1.05rem;margin-bottom:12px;}
-.credential-block .credential-links{color:var(--slate);font-size:.9rem;}
-.credential-block .credential-links a{text-decoration:underline;}
+.credential-block .credential-links{color:var(--text-dim-dark);font-size:.9rem;}
+.credential-block .credential-links a{text-decoration:underline;display:inline-block;padding:14px 0;}
 .coach.suburb-hero{padding-top:calc(var(--nav-h) + 48px);}
 .pb-hp-wrap{display:none;}

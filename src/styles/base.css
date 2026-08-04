@@ -56,6 +56,12 @@ p{text-wrap:pretty;}
 .band-light .hollow{filter:none;}
 .lede{font-size:clamp(1.02rem,1.5vw,1.22rem);color:#C9C9D2;max-width:60ch;}
 .band-light .lede{color:#43434E;}
+/* The .rcp-* receipt cards are reused inside a light band on the coach page.
+   The card surface stays dark (--ink-lift), so copy inside it must stay light;
+   the note below sits on chalk, so it and its links must go dark. */
+.band-light .rcp-txt h3{color:var(--bone);}
+.band-light .rcp-note{color:var(--text-body-light);}
+.band-light .rcp-note a{color:var(--red-deep);}
 
 /* Suburb pages have no .head wrapper — their copy is a bare <p> straight under
    .shell and was running the full 1240px shell width (~149ch). Homepage prose
@@ -309,7 +315,9 @@ p{text-wrap:pretty;}
   margin-top:26px;padding-top:20px;border-top:1px solid var(--line-dark);
   font-size:.85rem;color:#8F8F9C;max-width:72ch;
 }
-.rcp-note a{color:#A6A6B3;text-decoration:underline;text-underline-offset:3px;}
+/* inline-block + padding, not a bigger font: lifts the hit area to 44px without
+   changing the type size (WCAG 2.5.5). */
+.rcp-note a{color:#A6A6B3;text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;}
 .rcp-note a:hover{color:var(--red-hot);}
 .rcp-next{
   margin-top:34px;display:flex;align-items:center;justify-content:space-between;
@@ -515,9 +523,10 @@ p{text-wrap:pretty;}
 .ft-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-bottom:40px;}
 .ft-nav{display:flex;gap:56px;flex-wrap:wrap;}
 .ft-col h5{font-family:var(--font-eyebrow);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint-dark);margin-bottom:14px;}
-.ft-col a{display:block;padding:10px 0;color:#AFAFBB;font-size:.93rem;transition:color .22s,transform .25s;}
+.ft-col a{display:block;min-height:44px;padding:10px 0;color:#AFAFBB;font-size:.93rem;transition:color .22s,transform .25s;}
 .ft-col a:hover{color:var(--red-hot);transform:translateX(3px);}
 .ft-bot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--line-dark);font-size:.83rem;color:#8F8F9C;}
+.ft-bot a{display:inline-block;min-width:44px;padding:14px 0;text-align:center;}
 
 /* ---------- ADMIN ---------- */
 .adm-fab{
@@ -601,9 +610,13 @@ body.adm-live [data-img]{outline:2px dashed rgba(230,12,32,.6);outline-offset:2p
     position:fixed;top:var(--nav-h);left:0;right:0;background:rgba(10,10,12,.97);
     backdrop-filter:blur(16px);flex-direction:column;gap:0;padding:14px 24px 26px;
     border-bottom:1px solid var(--line-dark);
-    transform:translateY(-120%);transition:transform .45s var(--ease-rush);
+    /* visibility, not transform alone: a transformed-off-screen drawer keeps its
+       7 links in the tab order (WCAG 2.4.3/2.4.7). Transitioned so it still
+       animates — visibility flips to visible instantly on open and only after
+       the slide-out finishes on close. */
+    transform:translateY(-120%);visibility:hidden;transition:transform .45s var(--ease-rush),visibility .45s;
   }
-  .nav-links.open{transform:none;}
+  .nav-links.open{transform:none;visibility:visible;}
   .nav-links a{width:100%;padding:14px 0;border-bottom:1px solid var(--line-dark);}
   .nav-toggle{display:grid;}
   .nav .btn-primary{display:none;}

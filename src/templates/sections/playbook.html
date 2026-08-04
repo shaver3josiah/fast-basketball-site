@@ -2,10 +2,15 @@
   <div class="shell pb">
     <div>
       <div class="eyebrow rise">Free Resource</div>
-      <h2 class="zr" style="margin:18px 0 20px;">Your playbook,<br><span class="hollow">built for you.</span></h2>
+      <h2 class="zr" style="margin:18px 0 20px;">Your playbook, <br><span class="hollow">built for you.</span></h2>
       <p class="lede rise" data-edit="pb.lede">Tell us the player, the position, and the one thing standing in their way. We build a custom four week workout block, send it to your inbox, and hand you the download right here.</p>
       <div class="pb-form rise" style="margin-top:28px;">
-        <form id="pbForm" novalidate>
+        <!-- Netlify wiring mirrors #ctForm (see fixContactForm in src/render.mjs): method=POST +
+             data-netlify + matching hidden form-name + honeypot, so a no-JS submit still posts.
+             With JS on, src/js/playbook-form.js preventDefault()s and posts to /playbook/generate. -->
+        <form id="pbForm" name="playbook" method="POST" data-netlify="true" netlify-honeypot="pb-hp" novalidate>
+          <input type="hidden" name="form-name" value="playbook">
+          <p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="pb-hp" id="pbHp" tabindex="-1" autocomplete="off"></label></p>
           <div class="fld-row">
             <div class="fld">
               <label for="pbName">Player First Name</label>
