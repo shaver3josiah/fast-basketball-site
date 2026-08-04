@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, follow">
+<title>Off the court | Fast Basketball</title>
+<meta name="description" content="That page is not here. Head back to Fast Basketball private basketball training in Miami.">
+<style>
+:root{
+  --fb-red-primary:#D6202B;
+  --fb-red-hover:#B0161F;
+  --fb-red-depth:#7A0E14;
+  --fb-ink:#111111;
+  --fb-paper:#FFFFFF;
+  --fb-line:rgba(255,255,255,0.16);
+  --ease-decel:cubic-bezier(0.14,0.86,0.28,1);
+  --ease-accel:cubic-bezier(0.72,0,0.94,0.24);
+  --step--1:clamp(0.83rem,0.8rem + 0.2vw,0.94rem);
+  --step-0:clamp(1rem,0.95rem + 0.3vw,1.13rem);
+  --step-2:clamp(1.44rem,1.3rem + 0.8vw,1.9rem);
+  --step-5:clamp(3.5rem,2.4rem + 5.4vw,7.5rem);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100svh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:clamp(1.5rem,5vw,4rem);
+  background:var(--fb-ink);
+  background-image:
+    linear-gradient(180deg,rgba(214,32,43,0.20) 0%,rgba(17,17,17,0) 55%),
+    repeating-linear-gradient(90deg,transparent 0 119px,var(--fb-line) 119px 120px);
+  color:var(--fb-paper);
+  font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:var(--step-0);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+main{
+  width:100%;
+  max-width:44rem;
+  text-align:center;
+  animation:fb-arrive 900ms var(--ease-decel) both;
+}
+.fb-lockup{
+  display:inline-flex;
+  align-items:center;
+  gap:0.55rem;
+  margin-bottom:clamp(2rem,6vw,3.5rem);
+  text-decoration:none;
+}
+.fb-lockup svg{display:block;height:clamp(30px,7vw,42px);width:auto}
+.fb-lockup-text{text-align:left;line-height:1}
+.fb-lockup-fast{
+  display:block;
+  font-size:clamp(1.5rem,4.4vw,2.1rem);
+  font-weight:900;
+  letter-spacing:-0.02em;
+  color:var(--fb-red-primary);
+}
+.fb-lockup-basketball{
+  display:block;
+  margin-top:0.22em;
+  font-size:clamp(0.5rem,1.5vw,0.66rem);
+  font-weight:500;
+  letter-spacing:0.42em;
+  color:var(--fb-paper);
+}
+.fb-code{
+  font-size:var(--step-5);
+  font-weight:900;
+  letter-spacing:-0.05em;
+  line-height:0.82;
+  margin:0;
+  color:var(--fb-red-primary);
+  text-shadow:0 0 clamp(24px,6vw,60px) rgba(214,32,43,0.42);
+}
+h1{
+  font-size:var(--step-2);
+  font-weight:800;
+  letter-spacing:-0.02em;
+  line-height:1.15;
+  margin:clamp(1rem,3vw,1.5rem) 0 0.6rem;
+}
+p.fb-lede{
+  margin:0 auto clamp(2rem,5vw,2.75rem);
+  max-width:34rem;
+  color:rgba(255,255,255,0.76);
+}
+.fb-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.75rem;
+  justify-content:center;
+  margin-bottom:clamp(2.5rem,6vw,3.5rem);
+}
+.fb-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:48px;
+  min-width:48px;
+  padding:0.85rem 1.6rem;
+  border-radius:2px;
+  font-size:var(--step-0);
+  font-weight:700;
+  letter-spacing:0.01em;
+  text-decoration:none;
+  border:2px solid transparent;
+  transition:background-color 220ms var(--ease-decel),border-color 220ms var(--ease-decel),transform 220ms var(--ease-decel);
+}
+.fb-btn-primary{background:var(--fb-red-primary);color:var(--fb-paper);border-color:var(--fb-red-primary)}
+.fb-btn-primary:hover{background:var(--fb-red-hover);border-color:var(--fb-red-hover)}
+.fb-btn-secondary{background:transparent;color:var(--fb-paper);border-color:rgba(255,255,255,0.42)}
+.fb-btn-secondary:hover{border-color:var(--fb-paper);background:rgba(255,255,255,0.07)}
+.fb-btn:active{transform:translateY(1px)}
+.fb-btn:focus-visible{outline:3px solid var(--fb-paper);outline-offset:3px}
+nav.fb-elsewhere{
+  border-top:1px solid rgba(255,255,255,0.14);
+  padding-top:clamp(1.25rem,3vw,1.75rem);
+}
+nav.fb-elsewhere h2{
+  margin:0 0 0.9rem;
+  font-size:var(--step--1);
+  font-weight:600;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,0.5);
+}
+nav.fb-elsewhere ul{
+  list-style:none;
+  margin:0;
+  padding:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.4rem 0.5rem;
+  justify-content:center;
+}
+nav.fb-elsewhere a{
+  display:inline-flex;
+  align-items:center;
+  min-height:44px;
+  padding:0.4rem 0.85rem;
+  border-radius:2px;
+  color:rgba(255,255,255,0.82);
+  font-size:var(--step--1);
+  text-decoration:none;
+  border:1px solid rgba(255,255,255,0.16);
+  transition:color 180ms var(--ease-decel),border-color 180ms var(--ease-decel);
+}
+nav.fb-elsewhere a:hover{color:var(--fb-paper);border-color:rgba(255,255,255,0.5)}
+nav.fb-elsewhere a:focus-visible{outline:3px solid var(--fb-paper);outline-offset:2px}
+@keyframes fb-arrive{
+  from{opacity:0;transform:scale(1.06) translateY(14px)}
+  to{opacity:1;transform:none}
+}
+@media (prefers-reduced-motion:reduce){
+  main{animation:none}
+  .fb-btn{transition:none}
+  nav.fb-elsewhere a{transition:none}
+}
+</style>
+</head>
+<body>
+<main>
+  <a class="fb-lockup" href="/" aria-label="Fast Basketball home">
+    <svg viewBox="0 0 32 48" aria-hidden="true" focusable="false">
+      <path d="M19.5 0 3 27h9.5L10 48 29 19h-10.2z" fill="#D6202B"/>
+    </svg>
+    <span class="fb-lockup-text">
+      <span class="fb-lockup-fast">FAST</span>
+      <span class="fb-lockup-basketball">BASKETBALL</span>
+    </span>
+  </a>
+
+  <p class="fb-code">404</p>
+  <h1>This one rimmed out.</h1>
+  <p class="fb-lede">The page you were after is not here. It may have moved, or the link may have a typo in it. Everything below still works.</p>
+
+  <div class="fb-actions">
+    <a class="fb-btn fb-btn-primary" href="/training/first-look">Book a free First Look</a>
+    <a class="fb-btn fb-btn-secondary" href="/">Back to the homepage</a>
+  </div>
+
+  <nav class="fb-elsewhere" aria-label="Other pages">
+    <h2>Or try one of these</h2>
+    <ul>
+      <li><a href="/coach-blake-kingsley">Coach Blake Kingsley</a></li>
+      <li><a href="/training/private">Private training</a></li>
+      <li><a href="/training/small-group">Small group</a></li>
+      <li><a href="/training/college-track">College track</a></li>
+      <li><a href="/playbook">Free custom playbook</a></li>
+      <li><a href="/contact">Contact</a></li>
+    </ul>
+  </nav>
+</main>
+</body>
+</html>

@@ -1,0 +1,457 @@
+<section class="band band-dark" id="contact">
+  <div class="shell ct">
+    <div class="ct-side">
+      <div class="eyebrow rise">Book a Session</div>
+      <h2 class="zr">Start with a<br><span class="hollow">First Look.</span></h2>
+      <p class="lede rise" data-edit="ct.lede">Send the form or text directly. You will hear back within one business day with open slots for your area.</p>
+      <div class="ct-rows rise">
+        <div class="ct-r"><b>Phone</b><span data-edit="ct.phone">[305] 000-0000</span></div>
+        <div class="ct-r"><b>Email</b><span data-edit="ct.email">coach@fastbasketball.com</span></div>
+        <div class="ct-r"><b>Instagram</b><span data-edit="ct.ig">@blakekingsleyjr</span></div>
+        <div class="ct-r"><b>Service Area</b><span data-edit="ct.area">Miami Dade &amp; Broward County</span></div>
+      </div>
+      <div class="gbp rise">
+        <b>Google Business Profile</b>
+        <p>Profile is being set up. Once verified, embed the review widget and the map here, and add a "Leave a Review" link. Reviews carry roughly 20 percent of local pack ranking weight, so this block matters more than it looks.</p>
+      </div>
+    </div>
+    <div class="pb-form rise">
+      <form id="ctForm" novalidate>
+        <div class="fld-row">
+          <div class="fld"><label for="cName">Your Name</label><input type="text" id="cName" placeholder="Parent or player" required></div>
+          <div class="fld"><label for="cPhone">Phone</label><input type="tel" id="cPhone" placeholder="(305) 555 0100"></div>
+        </div>
+        <div class="fld"><label for="cEmail">Email</label><input type="email" id="cEmail" placeholder="you@email.com" required></div>
+        <div class="fld">
+          <label for="cArea">Area</label>
+          <select id="cArea">
+            <option>Kendall</option><option>Pinecrest</option><option>Coral Gables</option>
+            <option>Westchester</option><option>Doral</option><option>Miami Lakes</option>
+            <option>Palmetto Bay</option><option>Aventura</option><option>Weston</option>
+            <option>Pembroke Pines</option><option>Miramar</option><option>Cooper City</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="fld"><label for="cMsg">Tell us about the player</label><textarea id="cMsg" placeholder="Grade, position, current team, and where they want to be playing in two years."></textarea></div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Send and Get Slots</button>
+        <p class="trust-line">You hear back within one business day with open slots. No obligation, and the first session is free.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="ft">
+  <div class="shell">
+    <div class="ft-top">
+      <div>
+        <a href="#home" class="brand" aria-label="Fast Basketball home">
+          <svg class="logo-stack" viewBox="0 0 168 62" aria-hidden="true" focusable="false"><use href="#lockup-stack"/></svg>
+        </a>
+        <p style="color:#7E7E8A;font-size:.9rem;max-width:32ch;">Private basketball training in Miami. Built by a college coach for players chasing the next level.</p>
+      </div>
+      <div class="ft-nav">
+        <div class="ft-col">
+          <h5>Training</h5>
+          <a href="#programs">First Look Session</a>
+          <a href="#programs">Private One on One</a>
+          <a href="#programs">Small Group</a>
+          <a href="#programs">College Track</a>
+        </div>
+        <div class="ft-col">
+          <h5>Areas</h5>
+          <a href="#areas">Kendall</a><a href="#areas">Pinecrest</a>
+          <a href="#areas">Coral Gables</a><a href="#areas">Doral</a>
+        </div>
+        <div class="ft-col">
+          <h5>More</h5>
+          <a href="#receipts">The Résumé</a>
+          <a href="#coach">About Coach Blake</a>
+          <a href="#playbook">Free Playbook</a>
+        </div>
+      </div>
+    </div>
+    <div class="ft-bot">
+      <span>&copy; 2026 Fast Basketball. All rights reserved.</span>
+      <span>Miami, Florida &nbsp;/&nbsp; Preview build for Claude Design handoff</span>
+    </div>
+  </div>
+</footer>
+
+<div class="mob-bar" id="mobBar">
+  <a href="#contact" class="btn btn-primary">Free First Look</a>
+  <a href="tel:+13050000000" class="btn btn-ghost">Call or Text</a>
+</div>
+
+<!-- ADMIN -->
+<button class="adm-fab" id="admFab">Admin</button>
+<div class="adm-ovl" id="admOvl"></div>
+<aside class="adm" id="adm" aria-label="Content admin panel">
+  <div class="adm-h">
+    <div><b>Content Admin</b><span>Preview Mode</span></div>
+    <button class="adm-x" id="admX" aria-label="Close admin">&times;</button>
+  </div>
+  <div class="adm-b" id="admBody"></div>
+  <div class="adm-ft">
+    <button class="btn btn-ghost" id="admReset">Reset</button>
+    <button class="btn btn-primary" id="admExport">Export JSON</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite">Saved</div>
+
+<script>
+(function(){
+  'use strict';
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var intro = document.getElementById('intro');
+  function endIntro(){
+    if(!intro || intro.dataset.done) return;
+    intro.dataset.done = '1';
+    intro.classList.add('done');
+    document.body.classList.remove('intro-locked');
+    setTimeout(function(){ if(intro.parentNode) intro.parentNode.removeChild(intro); }, 700);
+  }
+  if(reduced){ endIntro(); } else { setTimeout(endIntro, 3150); }
+  document.getElementById('skipIntro').addEventListener('click', endIntro);
+
+  var nav = document.getElementById('nav');
+  var navLinks = document.getElementById('navLinks');
+  var navToggle = document.getElementById('navToggle');
+  window.addEventListener('scroll', function(){
+    nav.classList.toggle('stuck', window.scrollY > 40);
+  }, {passive:true});
+  navToggle.addEventListener('click', function(){
+    var open = navLinks.classList.toggle('open');
+    navToggle.setAttribute('aria-expanded', String(open));
+  });
+  navLinks.addEventListener('click', function(e){
+    if(e.target.tagName === 'A'){ navLinks.classList.remove('open'); navToggle.setAttribute('aria-expanded','false'); }
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Escape') return;
+    endIntro();
+    if(navLinks.classList.contains('open')){ navLinks.classList.remove('open'); navToggle.setAttribute('aria-expanded','false'); }
+    if(document.getElementById('adm').classList.contains('open')){ closeAdm(); }
+  });
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  }, {threshold:0.14, rootMargin:'0px 0px -60px 0px'});
+  document.querySelectorAll('.zr, .rise').forEach(function(el){ io.observe(el); });
+
+  var counters = Array.prototype.slice.call(document.querySelectorAll('[data-count]'));
+  var cio = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(!en.isIntersecting) return;
+      var el = en.target, target = parseInt(el.dataset.count, 10);
+      cio.unobserve(el);
+      if(reduced){ el.textContent = target; return; }
+      var delay = counters.indexOf(el) * 160, start = null, dur = 1400;
+      function step(ts){
+        if(!start) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.floor(eased * target);
+        if(p < 1){ requestAnimationFrame(step); }
+        else { el.classList.add('stamp'); }
+      }
+      setTimeout(function(){ requestAnimationFrame(step); }, delay);
+    });
+  }, {threshold:0.4});
+  counters.forEach(function(el){ cio.observe(el); });
+
+  document.querySelectorAll('.faq-q').forEach(function(btn, idx){
+    var ans = btn.nextElementSibling;
+    ans.id = 'faqA' + idx;
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-controls', ans.id);
+    btn.addEventListener('click', function(){
+      var item = btn.parentElement;
+      var wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-i').forEach(function(i){
+        i.classList.remove('open');
+        i.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+      });
+      if(!wasOpen){
+        item.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+
+  var mobBar = document.getElementById('mobBar');
+  var barState = {hero:true, contact:false, foot:false};
+  function setBar(){ mobBar.classList.toggle('on', !barState.hero && !barState.contact && !barState.foot); }
+  function watch(el, key){
+    new IntersectionObserver(function(entries){
+      barState[key] = entries[0].isIntersecting;
+      setBar();
+    }, {threshold:0.05}).observe(el);
+  }
+  watch(document.getElementById('home'), 'hero');
+  watch(document.getElementById('contact'), 'contact');
+  watch(document.querySelector('.ft'), 'foot');
+
+  var toast = document.getElementById('toast');
+  function say(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(function(){ toast.classList.remove('show'); }, 2400);
+  }
+
+  function clearErr(input){
+    var fld = input.closest('.fld');
+    if(!fld) return;
+    fld.classList.remove('err');
+    input.removeAttribute('aria-invalid');
+    var m = fld.querySelector('.f-err');
+    if(m) m.parentNode.removeChild(m);
+  }
+  function setErr(input, msg){
+    clearErr(input);
+    var fld = input.closest('.fld');
+    if(!fld) return;
+    fld.classList.add('err');
+    input.setAttribute('aria-invalid', 'true');
+    var m = document.createElement('span');
+    m.className = 'f-err';
+    m.id = input.id + 'Err';
+    m.textContent = msg;
+    input.setAttribute('aria-describedby', m.id);
+    fld.appendChild(m);
+  }
+  function emailOk(v){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v); }
+  function focusFirstErr(form){
+    var bad = form.querySelector('.fld.err input, .fld.err textarea');
+    if(bad) bad.focus();
+  }
+  document.querySelectorAll('.fld input, .fld textarea').forEach(function(inp){
+    inp.addEventListener('input', function(){ clearErr(inp); });
+  });
+
+  var blocks = {
+    'Ball handling under pressure': ['Two ball pound series, 3x40s','Chair change of pace, 4x6 reps','Live pressure dribble, 3x45s','Weak hand only finishing, 20 makes'],
+    'Shooting consistency': ['Form shooting inside 8ft, 50 makes','One dribble pull up, 5 spots x 10','Off the catch to a target, 100 makes','Fatigue set, 25 makes after sprints'],
+    'Finishing through contact': ['Pad contact layups, 4x8 each side','Off foot finishes, 20 makes','Euro and hop counters, 3x6','Second jump finishes, 3x10'],
+    'Defensive footwork': ['Lateral slide ladder, 4x20s','Closeout to slide, 5x6 reps','Mirror drill live, 3x45s','Rebound and outlet, 3x10'],
+    'Conditioning and pace': ['17s court sprints, 4 sets','Suicide plus 10 makes, 5 rounds','Transition finish sprints, 4x6','Free throws at fatigue, 2x10']
+  };
+
+  document.getElementById('pbForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = document.getElementById('pbName').value.trim();
+    var email = document.getElementById('pbEmail').value.trim();
+    var grade = document.getElementById('pbGrade').value;
+    var pos = document.getElementById('pbPos').value;
+    var focus = document.getElementById('pbFocus').value;
+    var pbOk = true;
+    if(!name){ setErr(document.getElementById('pbName'), "Add the player's first name so the plan has a name on it."); pbOk = false; }
+    if(!emailOk(email)){ setErr(document.getElementById('pbEmail'), 'That email looks off. Check the spelling and try again.'); pbOk = false; }
+    if(!pbOk){ focusFirstErr(this); return; }
+    var drills = blocks[focus] || blocks['Shooting consistency'];
+    var html = buildPlaybook(name, grade, pos, focus, drills, email);
+    var blob = new Blob([html], {type:'text/html'});
+    var url = URL.createObjectURL(blob);
+
+    document.getElementById('pbTitle').textContent = name + "'s playbook is ready";
+    document.getElementById('pbMsg').textContent = 'Built for a ' + grade + ' grade ' + pos.toLowerCase() + ' working on ' + focus.toLowerCase() + '. A copy is queued for ' + email + '.';
+    var list = document.getElementById('pbList');
+    list.innerHTML = '';
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'fast-basketball-playbook-' + name.toLowerCase().replace(/[^a-z0-9]/g,'') + '.html';
+    a.innerHTML = '<span>Download the HTML playbook</span><span>&rarr;</span>';
+    var li = document.createElement('li');
+    li.appendChild(a);
+    list.appendChild(li);
+    document.getElementById('pbOut').classList.add('show');
+    say('Playbook generated');
+  });
+
+  function buildPlaybook(name, grade, pos, focus, drills, email){
+    var rows = drills.map(function(d, i){
+      return '<tr><td class="n">' + (i+1) + '</td><td>' + d + '</td><td class="c"></td></tr>';
+    }).join('');
+    return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">' +
+      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<title>' + name + ' | Fast Basketball Playbook</title>' +
+      '<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet">' +
+      '<style>' +
+      'body{font-family:Barlow,system-ui,sans-serif;background:#0A0A0C;color:#fff;margin:0;padding:40px 20px;}' +
+      '.w{max-width:760px;margin:0 auto;}' +
+      'h1{font-family:Anton,Impact,sans-serif;font-size:2.6rem;text-transform:uppercase;line-height:1;margin:0 0 6px;}' +
+      '.r{color:#E60C20;}' +
+      '.sub{color:#8C8C99;font-size:.82rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:30px;}' +
+      '.meta{display:flex;gap:26px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.1);padding:18px 0;margin-bottom:30px;}' +
+      '.meta div span{display:block;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:#75757F;}' +
+      '.meta div b{font-size:1.05rem;}' +
+      'h2{font-family:Anton,Impact,sans-serif;text-transform:uppercase;font-size:1.4rem;margin:34px 0 14px;}' +
+      'table{width:100%;border-collapse:collapse;}' +
+      'td{padding:14px 10px;border-bottom:1px solid rgba(255,255,255,.09);font-size:.98rem;}' +
+      '.n{color:#E60C20;font-weight:700;width:34px;}' +
+      '.c{width:70px;border-left:1px solid rgba(255,255,255,.09);}' +
+      '.note{background:rgba(230,12,32,.09);border:1px solid rgba(230,12,32,.35);border-radius:10px;padding:18px;margin-top:30px;font-size:.92rem;color:#C4C4CE;}' +
+      '.ft{margin-top:40px;padding-top:20px;border-top:1px solid rgba(255,255,255,.1);font-size:.78rem;color:#66666F;}' +
+      '@media print{body{background:#fff;color:#000;}td{border-color:#ccc;}}' +
+      '</style></head><body><div class="w">' +
+      '<h1>' + name + "'s <span class=\"r\">4 Week Block</span></h1>" +
+      '<div class="sub">Fast Basketball / Miami, FL</div>' +
+      '<div class="meta">' +
+      '<div><span>Grade</span><b>' + grade + '</b></div>' +
+      '<div><span>Position</span><b>' + pos + '</b></div>' +
+      '<div><span>Primary Focus</span><b>' + focus + '</b></div>' +
+      '</div>' +
+      '<h2>Daily Work</h2><table>' + rows + '</table>' +
+      '<h2>Every Session, No Exceptions</h2><table>' +
+      '<tr><td class="n">A</td><td>10 minutes of footwork before you shoot a single ball</td><td class="c"></td></tr>' +
+      '<tr><td class="n">B</td><td>150 logged makes, written down, not estimated</td><td class="c"></td></tr>' +
+      '<tr><td class="n">C</td><td>Both hands, every drill, every time</td><td class="c"></td></tr>' +
+      '<tr><td class="n">D</td><td>Finish with free throws while tired</td><td class="c"></td></tr>' +
+      '</table>' +
+      '<div class="note"><b>Coach Blake\'s note:</b> Run these at game speed only once they are automatic. The players who get recruited are the ones whose skill does not fall apart in the fourth quarter. Retest your week one numbers at the end of week four and bring them to your next session so we can see the jump.</div>' +
+      '<div class="ft">Generated for ' + email + ' / Fast Basketball, Miami FL / fastbasketball.com</div>' +
+      '</div></body></html>';
+  }
+
+  document.getElementById('ctForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var n = document.getElementById('cName').value.trim();
+    var em = document.getElementById('cEmail').value.trim();
+    var ctOk = true;
+    if(!n){ setErr(document.getElementById('cName'), 'Tell us who to reply to.'); ctOk = false; }
+    if(!emailOk(em)){ setErr(document.getElementById('cEmail'), 'That email looks off. Check the spelling and try again.'); ctOk = false; }
+    if(!ctOk){ focusFirstErr(this); return; }
+    say('Preview build. Booking goes live with the site.');
+  });
+
+  var adm = document.getElementById('adm');
+  var admOvl = document.getElementById('admOvl');
+  var admBody = document.getElementById('admBody');
+  var original = {};
+
+  document.querySelectorAll('[data-edit]').forEach(function(el){
+    original[el.dataset.edit] = el.innerHTML;
+  });
+
+  function buildAdmin(){
+    admBody.innerHTML = '';
+    var groups = {};
+    document.querySelectorAll('[data-edit]').forEach(function(el){
+      var g = el.dataset.edit.split('.')[0];
+      if(!groups[g]) groups[g] = [];
+      groups[g].push(el);
+    });
+
+    Object.keys(groups).forEach(function(g){
+      var sec = document.createElement('div');
+      sec.className = 'adm-sec';
+      var h = document.createElement('h6');
+      h.textContent = g;
+      sec.appendChild(h);
+      groups[g].forEach(function(el){
+        var wrap = document.createElement('div');
+        wrap.className = 'adm-f';
+        var lab = document.createElement('label');
+        lab.textContent = el.dataset.edit;
+        var isLong = el.textContent.length > 60;
+        var input = document.createElement(isLong ? 'textarea' : 'input');
+        input.value = el.textContent;
+        input.addEventListener('input', function(){ el.textContent = input.value; });
+        wrap.appendChild(lab);
+        wrap.appendChild(input);
+        sec.appendChild(wrap);
+      });
+      admBody.appendChild(sec);
+    });
+
+    var imgSec = document.createElement('div');
+    imgSec.className = 'adm-sec';
+    var ih = document.createElement('h6');
+    ih.textContent = 'photos';
+    imgSec.appendChild(ih);
+    document.querySelectorAll('[data-img]').forEach(function(el){
+      var wrap = document.createElement('div');
+      wrap.className = 'adm-f';
+      var lab = document.createElement('label');
+      lab.textContent = el.dataset.img;
+      var drop = document.createElement('div');
+      drop.className = 'adm-drop';
+      drop.textContent = 'Click to replace this photo';
+      var file = document.createElement('input');
+      file.type = 'file';
+      file.accept = 'image/*';
+      file.style.display = 'none';
+      drop.addEventListener('click', function(){ file.click(); });
+      file.addEventListener('change', function(){
+        var f = file.files[0];
+        if(!f) return;
+        var fr = new FileReader();
+        fr.onload = function(ev){
+          var target = el.querySelector('img');
+          if(target){ target.src = ev.target.result; }
+          else {
+            el.style.backgroundImage = 'url(' + ev.target.result + ')';
+            el.style.backgroundSize = 'cover';
+            el.style.backgroundPosition = 'center';
+          }
+          say('Photo swapped');
+        };
+        fr.readAsDataURL(f);
+      });
+      wrap.appendChild(lab);
+      wrap.appendChild(drop);
+      wrap.appendChild(file);
+      imgSec.appendChild(wrap);
+    });
+    admBody.appendChild(imgSec);
+  }
+
+  function openAdm(){
+    buildAdmin();
+    adm.classList.add('open');
+    admOvl.classList.add('open');
+    document.body.classList.add('adm-live');
+  }
+  function closeAdm(){
+    adm.classList.remove('open');
+    admOvl.classList.remove('open');
+    document.body.classList.remove('adm-live');
+  }
+  document.getElementById('admFab').addEventListener('click', openAdm);
+  document.getElementById('admX').addEventListener('click', closeAdm);
+  admOvl.addEventListener('click', closeAdm);
+  document.addEventListener('keydown', function(e){
+    if(e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')){ e.preventDefault(); openAdm(); }
+  });
+  if(new URLSearchParams(window.location.search).get('admin') === '1'){ setTimeout(openAdm, 3300); }
+
+  document.getElementById('admReset').addEventListener('click', function(){
+    document.querySelectorAll('[data-edit]').forEach(function(el){
+      el.innerHTML = original[el.dataset.edit];
+    });
+    buildAdmin();
+    say('Content reset');
+  });
+
+  document.getElementById('admExport').addEventListener('click', function(){
+    var out = {};
+    document.querySelectorAll('[data-edit]').forEach(function(el){
+      out[el.dataset.edit] = el.textContent.trim();
+    });
+    var blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fast-basketball-content.json';
+    a.click();
+    say('content.json exported');
+  });
+})();
+</script>
+</body>
+</html>

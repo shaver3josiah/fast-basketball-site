@@ -1,0 +1,236 @@
+{
+  "hero.nets": {
+    "originalWidth": 760,
+    "originalHeight": 1027,
+    "aspectRatio": 0.7400194741966893,
+    "variants": {
+      "webp": [
+        {
+          "width": 320,
+          "file": "hero-nets-320.webp"
+        },
+        {
+          "width": 480,
+          "file": "hero-nets-480.webp"
+        },
+        {
+          "width": 640,
+          "file": "hero-nets-640.webp"
+        },
+        {
+          "width": 760,
+          "file": "hero-nets-760.webp"
+        }
+      ],
+      "jpeg": [
+        {
+          "width": 320,
+          "file": "hero-nets-320.jpg"
+        },
+        {
+          "width": 480,
+          "file": "hero-nets-480.jpg"
+        },
+        {
+          "width": 640,
+          "file": "hero-nets-640.jpg"
+        },
+        {
+          "width": 760,
+          "file": "hero-nets-760.jpg"
+        }
+      ]
+    }
+  },
+  "rcp.trophy": {
+    "originalWidth": 640,
+    "originalHeight": 800,
+    "aspectRatio": 0.8,
+    "variants": {
+      "webp": [
+        {
+          "width": 320,
+          "file": "resume-trophy-320.webp"
+        },
+        {
+          "width": 480,
+          "file": "resume-trophy-480.webp"
+        },
+        {
+          "width": 640,
+          "file": "resume-trophy-640.webp"
+        }
+      ],
+      "jpeg": [
+        {
+          "width": 320,
+          "file": "resume-trophy-320.jpg"
+        },
+        {
+          "width": 480,
+          "file": "resume-trophy-480.jpg"
+        },
+        {
+          "width": 640,
+          "file": "resume-trophy-640.jpg"
+        }
+      ]
+    }
+  },
+  "rcp.team": {
+    "originalWidth": 640,
+    "originalHeight": 800,
+    "aspectRatio": 0.8,
+    "variants": {
+      "webp": [
+        {
+          "width": 320,
+          "file": "resume-team-320.webp"
+        },
+        {
+          "width": 480,
+          "file": "resume-team-480.webp"
+        },
+        {
+          "width": 640,
+          "file": "resume-team-640.webp"
+        }
+      ],
+      "jpeg": [
+        {
+          "width": 320,
+          "file": "resume-team-320.jpg"
+        },
+        {
+          "width": 480,
+          "file": "resume-team-480.jpg"
+        },
+        {
+          "width": 640,
+          "file": "resume-team-640.jpg"
+        }
+      ]
+    }
+  },
+  "rcp.juco": {
+    "originalWidth": 640,
+    "originalHeight": 800,
+    "aspectRatio": 0.8,
+    "variants": {
+      "webp": [
+        {
+          "width": 320,
+          "file": "resume-juco-320.webp"
+        },
+        {
+          "width": 480,
+          "file": "resume-juco-480.webp"
+        },
+        {
+          "width": 640,
+          "file": "resume-juco-640.webp"
+        }
+      ],
+      "jpeg": [
+        {
+          "width": 320,
+          "file": "resume-juco-320.jpg"
+        },
+        {
+          "width": 480,
+          "file": "resume-juco-480.jpg"
+        },
+        {
+          "width": 640,
+          "file": "resume-juco-640.jpg"
+        }
+      ]
+    }
+  },
+  "rcp.work": {
+    "originalWidth": 640,
+    "originalHeight": 800,
+    "aspectRatio": 0.8,
+    "variants": {
+      "webp": [
+        {
+          "width": 320,
+          "file": "resume-work-320.webp"
+        },
+        {
+          "width": 480,
+          "file": "resume-work-480.webp"
+        },
+        {
+          "width": 640,
+          "file": "resume-work-640.webp"
+        }
+      ],
+      "jpeg": [
+        {
+          "width": 320,
+          "file": "resume-work-320.jpg"
+        },
+        {
+          "width": 480,
+          "file": "resume-work-480.jpg"
+        },
+        {
+          "width": 640,
+          "file": "resume-work-640.jpg"
+        }
+      ]
+    }
+  },
+  "coach.portrait": {
+    "originalWidth": 880,
+    "originalHeight": 1100,
+    "aspectRatio": 0.8,
+    "variants": {
+      "webp": [
+        {
+          "width": 320,
+          "file": "coach-portrait-320.webp"
+        },
+        {
+          "width": 480,
+          "file": "coach-portrait-480.webp"
+        },
+        {
+          "width": 640,
+          "file": "coach-portrait-640.webp"
+        },
+        {
+          "width": 800,
+          "file": "coach-portrait-800.webp"
+        },
+        {
+          "width": 880,
+          "file": "coach-portrait-880.webp"
+        }
+      ],
+      "jpeg": [
+        {
+          "width": 320,
+          "file": "coach-portrait-320.jpg"
+        },
+        {
+          "width": 480,
+          "file": "coach-portrait-480.jpg"
+        },
+        {
+          "width": 640,
+          "file": "coach-portrait-640.jpg"
+        },
+        {
+          "width": 800,
+          "file": "coach-portrait-800.jpg"
+        },
+        {
+          "width": 880,
+          "file": "coach-portrait-880.jpg"
+        }
+      ]
+    }
+  }
+}

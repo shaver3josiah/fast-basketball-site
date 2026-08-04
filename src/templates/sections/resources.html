@@ -1,0 +1,109 @@
+<section class="band band-ink" id="resources">
+  <div class="shell">
+    <div class="head">
+      <div class="eyebrow rise">The Locker</div>
+      <h2 class="zr">The work does not<br>stop at the <span class="hollow">buzzer.</span></h2>
+      <p class="lede rise">Workout blocks, drill packs, and film guides Coach Blake actually assigns. The open ones are yours right now. The rest unlock with your email — one login, no passwords.</p>
+    </div>
+    <div class="res stg">
+      <article class="res-c rise openres" style="--i:0" data-resource-id="1" data-locked="false" data-position="point-guard" data-focus="ball-handling">
+        <div class="res-top">
+          <span class="res-meta">PDF · 4-Week Block</span>
+          <span class="res-open">Unlocked</span>
+        </div>
+        <h3>4-Week Guard Handle Block</h3>
+        <p>Daily handle ladders with rep counts and a week-four retest.</p>
+        <button type="button" class="res-get" data-action="download">Download</button>
+      </article>
+
+      <article class="res-c rise openres" style="--i:1" data-resource-id="2" data-locked="false" data-position="shooting-guard" data-focus="shooting-consistency">
+        <div class="res-top">
+          <span class="res-meta">PDF · 4-Week Block</span>
+          <span class="res-open">Unlocked</span>
+        </div>
+        <h3>Shooting Consistency Reset</h3>
+        <p>Daily shooting reps and cues to fix a flat or drifting shot, built into a four week block.</p>
+        <button type="button" class="res-get" data-action="download">Download</button>
+      </article>
+
+      <article class="res-c rise" style="--i:2" data-resource-id="3" data-locked="true" data-position="power-forward" data-focus="finishing-through-contact">
+        <div class="res-top">
+          <span class="res-meta">PDF · 4-Week Block</span>
+          <span class="res-lock"><i class="lk"></i>Locked</span>
+        </div>
+        <h3>Finishing Through Contact Pack</h3>
+        <p>Angles, off-foot finishes, and pad-pressure progressions.</p>
+        <button type="button" class="res-get" data-action="unlock">Unlock with email</button>
+      </article>
+
+      <article class="res-c rise" style="--i:3" data-resource-id="4" data-locked="true" data-position="wing" data-focus="defensive-footwork">
+        <div class="res-top">
+          <span class="res-meta">PDF · 4-Week Block</span>
+          <span class="res-lock"><i class="lk"></i>Locked</span>
+        </div>
+        <h3>Defensive Footwork Ladder</h3>
+        <p>Closeouts, slides, and hip turns, loaded week by week.</p>
+        <button type="button" class="res-get" data-action="unlock">Unlock with email</button>
+      </article>
+
+      <article class="res-c rise" style="--i:4" data-resource-id="5" data-locked="true" data-comingsoon="true">
+        <div class="res-top">
+          <span class="res-meta">5 Sessions</span>
+          <span class="res-lock">Coming Soon</span>
+        </div>
+        <h3>Game IQ Film Series</h3>
+        <p>Reads Coach Blake graded from the college side of the table.</p>
+        <button type="button" class="res-get" disabled aria-disabled="true">Coming Soon</button>
+      </article>
+
+      <article class="res-c rise" style="--i:5" data-resource-id="6" data-locked="true" data-comingsoon="true">
+        <div class="res-top">
+          <span class="res-meta">PDF · 6 Weeks</span>
+          <span class="res-lock">Coming Soon</span>
+        </div>
+        <h3>Off-Season Strength Primer</h3>
+        <p>Bodyweight-first strength for players without a weight room.</p>
+        <button type="button" class="res-get" disabled aria-disabled="true">Coming Soon</button>
+      </article>
+    </div>
+    <p class="rcp-note" id="lockerNote">Already unlocked before? <a href="#resources" id="lockerLoginLink">Log back in</a> with the same email. Everything stays on this device.</p>
+  </div>
+
+  <div class="modal-ovl" id="lockerOverlay" hidden>
+    <div class="modal" id="lockerModal" role="dialog" aria-modal="true" aria-label="Locker login">
+      <button type="button" class="modal-x" id="lockerModalClose" aria-label="Close"></button>
+
+      <div data-panel="form">
+        <div class="eyebrow">Unlock The Locker</div>
+        <h3 style="margin:14px 0 8px;">Email in. Plans out.</h3>
+        <p class="modal-p">No password, no account setup. Add your email and every locked plan on this page unlocks on this device.</p>
+        <form id="lockerLoginForm" novalidate>
+          <div class="fld">
+            <label for="lockerEmail">Email (parent or player)</label>
+            <input type="email" id="lockerEmail" name="email" placeholder="you@email.com" required>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">Unlock The Locker</button>
+        </form>
+        <p class="pb-note">Same list as the playbook. One short follow up, nothing else.</p>
+      </div>
+
+      <div data-panel="sent" hidden>
+        <div class="eyebrow">One Second</div>
+        <h3 style="margin:14px 0 8px;">Unlocking...</h3>
+        <p class="modal-p">Signing you in and queuing a copy to your inbox.</p>
+      </div>
+
+      <div data-panel="in" hidden>
+        <div class="eyebrow">My Locker</div>
+        <h3 style="margin:14px 0 8px;">You are in.</h3>
+        <p class="modal-p">Signed in as <b style="color:var(--bone);" id="lockerUserEmail"></b>. Every locked plan on this page is open, and downloads land in your inbox too.</p>
+        <div class="modal-row">
+          <button type="button" class="btn btn-ghost" id="lockerLogoutBtn">Log Out</button>
+          <a href="#resources" class="btn btn-primary" id="lockerGotoBtn">Go to the Locker</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->

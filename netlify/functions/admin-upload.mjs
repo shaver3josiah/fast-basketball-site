@@ -1,0 +1,112 @@
+import { verifyRequestSession } from './lib/auth.mjs';
+import { getFile, putFile } from './lib/github.mjs';
+import { readDimensions, sniffMime } from '../../src/lib/image-dimensions.mjs';
+import { IMAGE_KEYS, IMAGE_ASPECT_RULES, IMAGE_LABELS } from '../../src/lib/content-schema.mjs';
+
+const CONTENT_PATH = 'src/data/content.json';
+const MAX_BYTES = 15 * 1024 * 1024;
+
+function extFor(mime) {
+  if (mime === 'image/jpeg') return 'jpg';
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/webp') return 'webp';
+  return null;
+}
+
+export default async (request) => {
+  if (!verifyRequestSession(request)) {
+    return new Response(JSON.stringify({ error: 'not authenticated' }), { status: 401 });
+  }
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'method not allowed' }), { status: 405 });
+  }
+
+  let payload;
+  try {
+    payload = await request.json();
+  } catch (err) {
+    return new Response(JSON.stringify({ error: 'invalid request body' }), { status: 400 });
+  }
+
+  const { key, alt, caption, source, dataUrl, isNewResumeCard } = payload;
+
+  if (!key || (!IMAGE_KEYS.includes(key) && !isNewResumeCard)) {
+    return new Response(JSON.stringify({ error: 'unknown image key "' + key + '"' }), { status: 422 });
+  }
+  if (!alt || alt.trim() === '') {
+    return new Response(JSON.stringify({ error: 'alt text is required so every photo works for screen readers and search' }), { status: 422 });
+  }
+  if (!dataUrl || !dataUrl.startsWith('data:')) {
+    return new Response(JSON.stringify({ error: 'no photo data received' }), { status: 422 });
+  }
+
+  const match = /^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/.exec(dataUrl);
+  if (!match) {
+    return new Response(JSON.stringify({ error: 'that file is not a readable image' }), { status: 422 });
+  }
+  const buffer = Buffer.from(match[2], 'base64');
+  if (buffer.length > MAX_BYTES) {
+    return new Response(JSON.stringify({ error: 'that photo is too large. Keep uploads under 15MB.' }), { status: 422 });
+  }
+
+  const mime = sniffMime(buffer) || match[1];
+  const ext = extFor(mime);
+  if (!ext) {
+    return new Response(JSON.stringify({ error: 'use a JPEG, PNG, or WebP photo.' }), { status: 422 });
+  }
+
+  const dims = readDimensions(buffer, mime);
+  if (!dims) {
+    return new Response(JSON.stringify({ error: 'could not read that photo. Try a different file.' }), { status: 422 });
+  }
+
+  const rules = IMAGE_ASPECT_RULES[key] || { ratio: 0.8, tolerance: 0.35 };
+  const actualRatio = dims.width / dims.height;
+  const diff = Math.abs(actualRatio - rules.ratio) / rules.ratio;
+  if (diff > rules.tolerance) {
+    const shape = actualRatio > rules.ratio ? 'wider' : 'taller';
+    return new Response(JSON.stringify({
+      error: 'This photo is much ' + shape + ' than ' + (IMAGE_LABELS[key] || 'this spot') + ' needs and will look stretched or cropped oddly. Try a photo closer to a ' + (rules.ratio >= 1 ? 'landscape' : 'portrait') + ' crop, or crop it before uploading.'
+    }), { status: 422 });
+  }
+
+  const timestamp = Date.now();
+  const filename = key.replace('.', '-') + '-' + timestamp + '.' + ext;
+  const imagePath = 'src/images/uploads/' + filename;
+
+  await putFile(imagePath, buffer, 'admin: upload photo for ' + key, null);
+
+  const { content, sha } = await getFile(CONTENT_PATH);
+  const contentData = JSON.parse(content);
+
+  const imageRecord = {
+    src: '/images/' + filename,
+    alt: alt.trim(),
+    caption: caption && caption.trim() ? caption.trim() : null,
+    source: source && source.trim() ? source.trim() : null,
+    width: dims.width,
+    height: dims.height
+  };
+
+  if (IMAGE_KEYS.includes(key)) {
+    contentData.images[key] = imageRecord;
+  } else {
+    if (!Array.isArray(contentData.resumeExtra)) contentData.resumeExtra = [];
+    contentData.resumeExtra.push({ id: 'extra-' + timestamp, ...imageRecord });
+  }
+
+  contentData.version = 1;
+  contentData.updated = new Date().toISOString();
+
+  await putFile(CONTENT_PATH, JSON.stringify(contentData, null, 2) + '\n', 'admin: attach uploaded photo to content.json', sha);
+
+  const hook = process.env.NETLIFY_BUILD_HOOK_URL;
+  if (hook) {
+    try { await fetch(hook, { method: 'POST' }); } catch (err) { console.error('build hook trigger failed', err.message); }
+  }
+
+  return new Response(JSON.stringify({ ok: true, image: imageRecord }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  });
+};

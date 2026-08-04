@@ -1,0 +1,60 @@
+{
+  "generatedFrom": "C:\\Users\\shave\\Documents\\Claude\\Projects\\Fast Basketball\\build\\design\\fast-basketball-preview-v4.html",
+  "count": 6,
+  "images": [
+    {
+      "key": "hero.nets",
+      "file": "hero-nets.jpg",
+      "mime": "image/jpeg",
+      "width": 760,
+      "height": 1027,
+      "bytes": 106771,
+      "sha256": "5ba528f7af506824"
+    },
+    {
+      "key": "rcp.trophy",
+      "file": "resume-trophy.jpg",
+      "mime": "image/jpeg",
+      "width": 640,
+      "height": 800,
+      "bytes": 86091,
+      "sha256": "adfdc3ee01862517"
+    },
+    {
+      "key": "rcp.team",
+      "file": "resume-team.jpg",
+      "mime": "image/jpeg",
+      "width": 640,
+      "height": 800,
+      "bytes": 105006,
+      "sha256": "78aa40d9cac506bb"
+    },
+    {
+      "key": "rcp.juco",
+      "file": "resume-juco.jpg",
+      "mime": "image/jpeg",
+      "width": 640,
+      "height": 800,
+      "bytes": 88993,
+      "sha256": "e8a69a9b9adb4aa3"
+    },
+    {
+      "key": "rcp.work",
+      "file": "resume-work.jpg",
+      "mime": "image/jpeg",
+      "width": 640,
+      "height": 800,
+      "bytes": 58420,
+      "sha256": "3c0a7264083d0e5f"
+    },
+    {
+      "key": "coach.portrait",
+      "file": "coach-portrait.jpg",
+      "mime": "image/jpeg",
+      "width": 880,
+      "height": 1100,
+      "bytes": 115575,
+      "sha256": "121b4c4ef26e407c"
+    }
+  ]
+}

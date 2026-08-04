@@ -1,0 +1,13 @@
+picture{display:block;}
+picture img{width:100%;height:auto;display:block;}
+.suburb-hero{padding:calc(var(--nav-h) + 48px) 0 64px;}
+.suburb-hero h1{margin:14px 0 18px;}
+.suburb-programs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+.suburb-programs li a{display:block;padding:16px 18px;background:var(--ink-lift);border-radius:10px;border:1px solid var(--line-dark);}
+.band-light .suburb-programs li a{background:var(--bone);border-color:var(--line-light);}
+.credential-block{max-width:70ch;}
+.credential-block .credential-lede{font-size:1.05rem;margin-bottom:12px;}
+.credential-block .credential-links{color:var(--slate);font-size:.9rem;}
+.credential-block .credential-links a{text-decoration:underline;}
+.coach.suburb-hero{padding-top:calc(var(--nav-h) + 48px);}
+.pb-hp-wrap{display:none;}

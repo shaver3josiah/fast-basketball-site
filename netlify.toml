@@ -1,0 +1,99 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--include=dev"
+  TZ = "America/New_York"
+
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+  included_files = ["src/data/**", "src/templates/**"]
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Content-Security-Policy-Report-Only = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; upgrade-insecure-requests"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/styles/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[redirects]]
+  from = "/playbook/generate"
+  to = "/.netlify/functions/playbook"
+  status = 200
+
+[[redirects]]
+  from = "/coach"
+  to = "/coach-blake-kingsley"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/training"
+  to = "/training/first-look"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/free-session"
+  to = "/training/first-look"
+  status = 301
+  force = true
+
+[context.production.environment]
+  SITE_ENV = "production"
+  ROBOTS_ALLOW = "true"
+
+[context.deploy-preview.environment]
+  SITE_ENV = "preview"
+  ROBOTS_ALLOW = "false"
+
+[context.branch-deploy.environment]
+  SITE_ENV = "branch"
+  ROBOTS_ALLOW = "false"

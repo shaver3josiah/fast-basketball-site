@@ -1,0 +1,67 @@
+:root{
+/* base palette */
+--court-black:#0A0A0C;--ink:#131318;--ink-lift:#1B1B22;--ink-hover:#20202A;
+--fast-red:#E60C20;--red-hot:#FF3A41;--red-deep:#8E0F14;
+--bone:#FFFFFF;--chalk:#F5F3EF;--chalk-2:#E7E3DC;--slate:#6C6C78;
+--line-dark:rgba(255,255,255,0.10);--line-light:rgba(10,10,12,0.12);
+--glow-red:rgba(230,12,32,0.35);--red-tint:rgba(230,12,32,0.07);--red-line:rgba(230,12,32,0.36);--red-edge:rgba(230,12,32,0.55);
+/* single supporting hue — Miami night scenes + Locker unlock states ONLY */
+--miami-teal:#25E0D0;--teal-glow:rgba(37,224,208,0.35);--teal-line:rgba(37,224,208,0.5);
+/* text on dark surfaces (brightest -> faintest) */
+--text-lede-dark:#C9C9D2;--text-body-dark:#B4B4C0;--text-dim-dark:#9C9CA9;--text-faint-dark:#82828F;--text-mute-dark:#75757F;--text-label-dark:#6E6E7C;
+/* text on light surfaces */
+--text-deep-light:#3E3E48;--text-body-light:#43434E;--text-soft-light:#54545F;
+/* semantic aliases */
+--surface-page:var(--court-black);--surface-band:var(--ink);--surface-card:var(--ink-lift);--surface-light:var(--chalk);--surface-input:#0C0C11;
+--action:var(--fast-red);--action-hover:var(--red-hot);--focus-ring:var(--red-hot);
+
+/* families (self-hosted via fonts.css) */
+--font-display:'Anton',Impact,'Arial Narrow',sans-serif;
+--font-num:'Bebas Neue',Impact,sans-serif;
+--font-eyebrow:'Barlow Condensed','Arial Narrow',sans-serif;
+--font-body:'Barlow',system-ui,sans-serif;
+/* scale (fluid) */
+--text-h1:clamp(2.9rem,8.2vw,6.8rem);
+--text-h2:clamp(2.1rem,5vw,4rem);
+--text-h3:clamp(1.15rem,2vw,1.5rem);
+--text-lede:clamp(1.02rem,1.5vw,1.22rem);
+--text-body-size:.97rem;--text-small:.83rem;
+--text-eyebrow:.82rem;--text-label:.74rem;--text-btn:.86rem;
+--text-stat:1.9rem;--text-score:clamp(2.8rem,6vw,4.4rem);
+/* tracking */
+--track-display:.01em;--track-eyebrow:.24em;--track-wordmark:.36em;--track-label:.16em;--track-btn:.15em;--track-nav:.14em;--track-tag:.2em;
+/* leading */
+--leading-display:.94;--leading-h1:.9;--leading-body:1.6;
+
+/* curve family — "fast rush in, hard deceleration, hang, blast out" */
+--ease-rush:cubic-bezier(0.16,1,0.3,1);      /* deceleration: reveals, hovers */
+--ease-launch:cubic-bezier(0.7,0,0.84,0);    /* acceleration: exits */
+--ease-reveal:cubic-bezier(0.2,0.9,0.16,1);  /* zoom-reveal with overshoot */
+--ease-intro:cubic-bezier(0.33,0,0.12,1);    /* EA-cadence intro zoom */
+/* durations */
+--t-fast:.22s;--t-hover:.3s;--t-press:.28s;--t-lift:.4s;--t-accent:.5s;
+--t-reveal:.78s;--t-line:.95s;--t-zoom:1.15s;--t-photo:1.2s;--t-intro:3.1s;--t-ticker:38s;
+--stagger:90ms;
+
+/* layout */
+--shell:1240px;--shell-pad:24px;--nav-h:74px;
+--band-y:clamp(72px,9vw,132px);
+/* grid gaps */
+--gap-tight:12px;--gap-grid:16px;--gap-card:20px;--gap-prog:22px;--gap-col:56px;
+/* radii */
+--r-pill:100px;--r-card-lg:18px;--r-card-light:16px;--r-card:14px;--r-badge:11px;--r-chip:10px;--r-input:9px;--r-tile:8px;
+/* borders */
+--border-card:1px solid var(--line-dark);--border-light:1px solid var(--line-light);--border-ghost:1.5px solid var(--line-dark);
+/* shadows */
+--shadow-card:0 40px 90px -40px rgba(0,0,0,.9);--shadow-hover:0 30px 60px -30px rgba(0,0,0,.9);--shadow-light:0 26px 60px -26px rgba(10,10,12,.34);--shadow-sheet:0 34px 70px -30px rgba(0,0,0,.85);--shadow-btn:0 8px 30px -8px var(--glow-red);--shadow-btn-hover:0 16px 42px -10px var(--glow-red);
+/* logo rules (see design system readme) */
+--logo-min-lockup:250px;--logo-min-icon:16px;
+}
+
+/* v4 additions: modular type scale + semantic z-index */
+:root{
+--scale-ratio:1.333;
+--step--1:.82rem;--step-0:1rem;--step-1:1.333rem;--step-2:1.777rem;--step-3:2.369rem;--step-4:3.157rem;--step-5:4.209rem;--step-6:5.61rem;
+--meta-s:.72rem;--meta-m:.82rem;
+--z-nav:100;--z-sticky:200;--z-scrim:300;--z-drawer:310;--z-toast:400;--z-intro:500;
+}

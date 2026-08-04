@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "updated": "2026-08-04T00:00:00.000Z",
+  "text": {
+    "hero.eyebrow": "Miami, FL / College Track Skills Training",
+    "hero.lede": "Coach Blake Kingsley just spent two seasons on college staffs that won 51 games, two championships, and a trip to March Madness. Now he is in Miami, building the exact skills college coaches recruit, one player at a time.",
+    "hero.stat1n": "51",
+    "hero.stat1l": "Wins in Two Seasons",
+    "hero.stat2n": "2",
+    "hero.stat2l": "Championship Programs",
+    "hero.stat3n": "NCAA",
+    "hero.stat3l": "Division I Staff",
+    "aud.1": "Every college player was once a middle schooler with a habit nobody caught. We catch it now, while it is still easy to fix — feet, balance, both hands — so nothing is capping you at sixteen.",
+    "aud.2": "This is the level where players separate. We build the speed, the strength through contact, and the decisions that turn a rotation player into a starter coaches build around.",
+    "aud.3": "Time to get in front of the right staffs. Coach Blake sat on their side of the recruiting table. He knows what they need to see on your film, he will tell you the truth about the gap, and then he will train you to close it.",
+    "prog.1": "A full evaluation session. No pitch, no pressure. You leave knowing exactly where your player stands and what the ceiling looks like.",
+    "prog.2": "Full session, full attention. Built around the exact three things standing between you and the next level this season.",
+    "prog.3": "Two to four players at a similar level, going at each other. Competitive reps, real defense, nowhere to hide.",
+    "prog.4": "A twelve week block for juniors and seniors who are serious about hearing from college programs. Guided by a coach who was just recruiting at that level.",
+    "coach.name": "Blake Kingsley",
+    "coach.title": "Founder & Head Skills Coach",
+    "coach.p1": "Blake Kingsley spent the last two seasons on college coaching staffs, first with the Moberly Area Greyhounds, who went 25 and 7 and won the NJCAA Region 16 championship, then with Robert Morris, who won the first Horizon League title in program history and went to the NCAA Tournament. Fifty-one wins. Two championships. Two national tournaments.",
+    "coach.p2": "He is not the coach who yells to look intense. He is the one who catches that your left foot is landing early, fixes it, and then tells you exactly what you did right on the very next rep. Players go hard for him because they can tell he is actually watching them, not running a script.",
+    "coach.p3": "He has also been on the other side of the recruiting table, watching film and deciding which high school players were worth a scholarship. That is the perspective he brings to every Miami family who walks into a session: a straight read on where you are, and a real plan for closing the gap.",
+    "pb.lede": "Tell us the player, the position, and the one thing standing in their way. We build a custom four week workout block, send it to your inbox, and hand you the download right here.",
+    "tst.1": "[Placeholder quote from a parent. Focus on the change they saw in their player and how Coach Blake communicated with them.]",
+    "tst.2": "[Placeholder quote from a player. Focus on a specific skill that improved and how it showed up in a game.]",
+    "tst.3": "[Placeholder quote from a college or high school coach Blake has worked with. Focus on what he did for player development.]",
+    "ct.lede": "Send the form or text directly. You will hear back within one business day with open slots for your area.",
+    "ct.phone": "[305] 000-0000",
+    "ct.email": "coach@fastbasketball.com",
+    "ct.ig": "@blakekingsleyjr",
+    "ct.area": "Miami Dade & Broward County"
+  },
+  "images": {
+    "hero.nets": {
+      "src": "/images/hero-nets.jpg",
+      "alt": "Coach Blake Kingsley cutting down the net after Robert Morris won the 2025 Horizon League championship",
+      "caption": "Horizon League Champions. Robert Morris cuts the nets in Indianapolis.",
+      "source": "Indianapolis, March 11, 2025",
+      "width": 760,
+      "height": 1027
+    },
+    "rcp.trophy": {
+      "src": "/images/resume-trophy.jpg",
+      "alt": "Coach Blake Kingsley holding the 2025 Horizon League men's basketball championship trophy",
+      "caption": "Horizon League Champions",
+      "source": "March 2025, rmucolonials.com",
+      "width": 640,
+      "height": 800
+    },
+    "rcp.team": {
+      "src": "/images/resume-team.jpg",
+      "alt": "Coach Blake Kingsley celebrating with a Robert Morris All-Tournament Team selection on the court in Indianapolis",
+      "caption": "Players First",
+      "source": "Corteva Coliseum, Indianapolis",
+      "width": 640,
+      "height": 800
+    },
+    "rcp.juco": {
+      "src": "/images/resume-juco.jpg",
+      "alt": "Coach Blake Kingsley with a Moberly Area Community College player holding the NJCAA Region 16 championship plaque",
+      "caption": "NJCAA Region 16 Champions",
+      "source": "March 2024, moberlygreyhounds.com",
+      "width": 640,
+      "height": 800
+    },
+    "rcp.work": {
+      "src": "/images/resume-work.jpg",
+      "alt": "Coach Blake Kingsley training in the Robert Morris basketball weight room",
+      "caption": "He Still Puts In Work",
+      "source": null,
+      "width": 640,
+      "height": 800
+    },
+    "coach.portrait": {
+      "src": "/images/coach-portrait.jpg",
+      "alt": "Coach Blake Kingsley, founder of Fast Basketball, courtside in a Fast Basketball polo",
+      "caption": null,
+      "source": null,
+      "width": 880,
+      "height": 1100
+    }
+  },
+  "resumeExtra": []
+}

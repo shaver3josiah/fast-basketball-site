@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Fast Basketball Content Admin</title>
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<div id="loginScreen" class="screen">
+  <div class="login-card">
+    <h1>Fast Basketball</h1>
+    <p>Content Admin</p>
+    <form id="loginForm">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" autocomplete="current-password" required>
+      <button type="submit">Log In</button>
+      <p id="loginError" class="error"></p>
+    </form>
+  </div>
+</div>
+
+<div id="adminScreen" class="screen hidden">
+  <header class="admin-top">
+    <h1>Content Admin</h1>
+    <nav>
+      <button data-tab="content" class="tab active">Content</button>
+      <button data-tab="photos" class="tab">Photos</button>
+      <button data-tab="leads" class="tab">Leads</button>
+    </nav>
+    <div class="admin-top-actions">
+      <span id="saveStatus"></span>
+      <button id="backupBtn">Download Backup</button>
+      <button id="previewBtn">Preview</button>
+      <button id="saveBtn" class="primary">Publish Changes</button>
+    </div>
+  </header>
+
+  <main id="tabContent" class="tab-panel"></main>
+  <main id="tabPhotos" class="tab-panel hidden"></main>
+  <main id="tabLeads" class="tab-panel hidden"></main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="/admin/admin.js" defer></script>
+</body>
+</html>

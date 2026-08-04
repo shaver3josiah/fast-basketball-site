@@ -1,0 +1,96 @@
+{
+  "skill_gaps": [
+    {
+      "id": "ball-handling",
+      "label": "Ball handling under pressure",
+      "diagnosis": "The handle breaks down the moment a defender applies real ball pressure or the game speeds up, which shows up as live turnovers even when the same move looks clean in an empty gym.",
+      "drills": [
+        { "name": "Two ball pound series", "reps": "3x40s", "cue": "Keep the chest up and the eyes off the ball the entire set." },
+        { "name": "Chair change of pace", "reps": "4x6 reps", "cue": "Sell the hesitation with the shoulders before the burst." },
+        { "name": "Live pressure dribble", "reps": "3x45s", "cue": "Stay low enough that a slap at the ball hits your forearm, not the ball." },
+        { "name": "Weak hand only finishing", "reps": "20 makes", "cue": "Full speed approach, no slowing down to protect the weak hand." }
+      ],
+      "progression": "Add a second defender to the pressure dribble once the player can finish the set clean twice in a row, then move the same reps into a live scrimmage possession."
+    },
+    {
+      "id": "shooting-consistency",
+      "label": "Shooting consistency",
+      "diagnosis": "Mechanics look fine on a slow catch and shoot but fall apart off movement or late in a session, which reads as a conditioning and repetition gap more than a form problem.",
+      "drills": [
+        { "name": "Form shooting inside 8ft", "reps": "50 makes", "cue": "One motion release, hold the follow through until the ball hits the rim." },
+        { "name": "One dribble pull up", "reps": "5 spots x 10", "cue": "Same gather footwork on every spot, do not speed up on the catch." },
+        { "name": "Off the catch to a target", "reps": "100 makes", "cue": "Feet set before the pass arrives, not after." },
+        { "name": "Fatigue set", "reps": "25 makes after sprints", "cue": "Legs drive the shot even when tired, do not shoot arms only." }
+      ],
+      "progression": "Once makes-after-fatigue stays within ten percent of fresh makes, add a closeout before every rep to simulate game contests."
+    },
+    {
+      "id": "finishing-through-contact",
+      "label": "Finishing through contact",
+      "diagnosis": "Shots that go in clean at practice speed get altered or blocked once a body is attached, usually from finishing off the wrong foot or trying to avoid contact instead of absorbing it.",
+      "drills": [
+        { "name": "Pad contact layups", "reps": "4x8 each side", "cue": "Initiate the contact, do not wait for it to arrive." },
+        { "name": "Off foot finishes", "reps": "20 makes", "cue": "Practice the finish that feels wrong until it does not." },
+        { "name": "Euro and hop counters", "reps": "3x6", "cue": "Sell the first step before the counter move." },
+        { "name": "Second jump finishes", "reps": "3x10", "cue": "Land ready to go back up immediately, no dead landing." }
+      ],
+      "progression": "Move from a padded defender to a live, physical defender once the player finishes eight of ten pad reps without altering the shot."
+    },
+    {
+      "id": "defensive-footwork",
+      "label": "Defensive footwork",
+      "diagnosis": "The player reaches instead of sliding, which draws fouls and lets ball handlers blow by on the first live dribble.",
+      "drills": [
+        { "name": "Lateral slide ladder", "reps": "4x20s", "cue": "Stay in a low stance, feet never fully come together." },
+        { "name": "Closeout to slide", "reps": "5x6 reps", "cue": "Short, controlled last two steps into the closeout, hands active but not reaching." },
+        { "name": "Mirror drill live", "reps": "3x45s", "cue": "Match the offensive player's hip, not the ball." },
+        { "name": "Rebound and outlet", "reps": "3x10", "cue": "Find a body to box out before ball watching." }
+      ],
+      "progression": "Add a live ball handler with a live dribble once the mirror drill stays clean for a full 45 second set."
+    },
+    {
+      "id": "conditioning-and-pace",
+      "label": "Conditioning and pace",
+      "diagnosis": "Skill quality clearly drops in the second half or fourth quarter, which limits everything else this player already does well.",
+      "drills": [
+        { "name": "17s court sprints", "reps": "4 sets", "cue": "Full sprint both directions, walk the recovery, do not jog it." },
+        { "name": "Suicide plus 10 makes", "reps": "5 rounds", "cue": "Shooting form should not change between round one and round five." },
+        { "name": "Transition finish sprints", "reps": "4x6", "cue": "Full speed finish, not a jog-in layup." },
+        { "name": "Free throws at fatigue", "reps": "2x10", "cue": "Same pre-shot routine every single attempt, especially when tired." }
+      ],
+      "progression": "Track make percentage at fatigue across sessions and raise the sprint volume once it matches the fresh percentage."
+    }
+  ],
+  "positions": [
+    {
+      "id": "point-guard",
+      "label": "Point Guard",
+      "emphasis": "Pace control, ball security under pressure, and reading ball screens.",
+      "recruiting_note": "College staffs want to see a guard who can play fast without turning it over and who talks on defense. Live pressure reps matter more than empty gym form here."
+    },
+    {
+      "id": "shooting-guard",
+      "label": "Shooting Guard",
+      "emphasis": "Off ball movement, catch and shoot speed, and creating separation off one or two dribbles.",
+      "recruiting_note": "Film that shows quick decisions off the catch, not just standstill shooting, is what separates recruits at this position."
+    },
+    {
+      "id": "wing",
+      "label": "Wing",
+      "emphasis": "Two way versatility, transition finishing, and defending multiple positions.",
+      "recruiting_note": "Programs at every level are short on wings who can guard three positions and still shoot it. That versatility should be the headline of the recruiting film."
+    },
+    {
+      "id": "power-forward",
+      "label": "Power Forward",
+      "emphasis": "Finishing through contact, defensive rebounding, and face up shooting range.",
+      "recruiting_note": "Modern college offenses want forwards who can step outside the paint. Combine post work with perimeter shooting reps in the film sent to coaches."
+    },
+    {
+      "id": "center",
+      "label": "Center",
+      "emphasis": "Rim protection, screen setting, and finishing above the rim.",
+      "recruiting_note": "Recruiters weigh verified measurements and rebounding rate heavily at this position, so track and report both alongside the highlight film."
+    }
+  ]
+}
