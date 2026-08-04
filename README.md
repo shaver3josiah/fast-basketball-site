@@ -55,6 +55,7 @@ Set these in the Netlify dashboard under Site configuration, Environment variabl
 
 | Variable | Holds |
 |---|---|
+| `SITE_URL` | The site's public URL, for example `https://fastbasketballmiami.com`. Used in canonicals, the sitemap, and structured data. Until it is set, Netlify's automatic `URL` variable (the `.netlify.app` address) is used; a production build fails if neither is available. |
 | `ADMIN_PASSWORD` | The single password that unlocks /admin. |
 | `ADMIN_SESSION_SECRET` | A long random string used to sign the admin login cookie. Generate once, never reuse elsewhere. |
 | `GITHUB_TOKEN` | A fine-grained GitHub personal access token, write access to this one repository only. Lets the admin panel commit content and photo changes. |
