@@ -13,7 +13,7 @@ export function renderCoachPage({ content, responsiveManifest, prelude }) {
     breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Coach Blake Kingsley', path: canonicalPath }])
   ];
 
-  let body = '<main>\n';
+  let body = '<main id="main">\n';
   body += '<header class="band band-dark coach">\n<div class="shell coach">\n';
   body += '<div class="coach-img">' + renderImage('coach.portrait', content, responsiveManifest, { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 760px) 90vw, 420px' }) + '</div>\n';
   body += '<div class="coach-body">\n<div class="eyebrow">Meet Your Coach</div>\n';

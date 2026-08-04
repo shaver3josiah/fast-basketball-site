@@ -1,4 +1,12 @@
 <section class="band band-ink" id="resources">
+  <style>
+  /* Touch-target floor (WCAG 2.5.8): .res-get ships at ~26px tall in features.css.
+     features.css is owned by another agent — this scoped override wins the cascade
+     because it loads after features.css (link order in <head>) without editing it.
+     Report to features.css owner: fold `min-height:44px;min-width:44px;display:inline-flex;
+     align-items:center;` into the base .res-get rule and delete this block. */
+  #resources .res-get{min-height:44px;min-width:44px;display:inline-flex;align-items:center;padding:0 2px;}
+  </style>
   <div class="shell">
     <div class="head">
       <div class="eyebrow rise">The Locker</div>
@@ -8,27 +16,27 @@
     <div class="res stg">
       <article class="res-c rise openres" style="--i:0" data-resource-id="1" data-locked="false" data-position="point-guard" data-focus="ball-handling">
         <div class="res-top">
-          <span class="res-meta">PDF · 4-Week Block</span>
+          <span class="res-meta">4-Week Block · Web + Inbox</span>
           <span class="res-open">Unlocked</span>
         </div>
         <h3>4-Week Guard Handle Block</h3>
         <p>Daily handle ladders with rep counts and a week-four retest.</p>
-        <button type="button" class="res-get" data-action="download">Download</button>
+        <button type="button" class="res-get" data-action="download">Get it by email</button>
       </article>
 
       <article class="res-c rise openres" style="--i:1" data-resource-id="2" data-locked="false" data-position="shooting-guard" data-focus="shooting-consistency">
         <div class="res-top">
-          <span class="res-meta">PDF · 4-Week Block</span>
+          <span class="res-meta">4-Week Block · Web + Inbox</span>
           <span class="res-open">Unlocked</span>
         </div>
         <h3>Shooting Consistency Reset</h3>
         <p>Daily shooting reps and cues to fix a flat or drifting shot, built into a four week block.</p>
-        <button type="button" class="res-get" data-action="download">Download</button>
+        <button type="button" class="res-get" data-action="download">Get it by email</button>
       </article>
 
       <article class="res-c rise" style="--i:2" data-resource-id="3" data-locked="true" data-position="power-forward" data-focus="finishing-through-contact">
         <div class="res-top">
-          <span class="res-meta">PDF · 4-Week Block</span>
+          <span class="res-meta">4-Week Block · Web + Inbox</span>
           <span class="res-lock"><i class="lk"></i>Locked</span>
         </div>
         <h3>Finishing Through Contact Pack</h3>
@@ -38,7 +46,7 @@
 
       <article class="res-c rise" style="--i:3" data-resource-id="4" data-locked="true" data-position="wing" data-focus="defensive-footwork">
         <div class="res-top">
-          <span class="res-meta">PDF · 4-Week Block</span>
+          <span class="res-meta">4-Week Block · Web + Inbox</span>
           <span class="res-lock"><i class="lk"></i>Locked</span>
         </div>
         <h3>Defensive Footwork Ladder</h3>
@@ -58,7 +66,7 @@
 
       <article class="res-c rise" style="--i:5" data-resource-id="6" data-locked="true" data-comingsoon="true">
         <div class="res-top">
-          <span class="res-meta">PDF · 6 Weeks</span>
+          <span class="res-meta">6 Weeks · Web + Inbox</span>
           <span class="res-lock">Coming Soon</span>
         </div>
         <h3>Off-Season Strength Primer</h3>
@@ -80,7 +88,7 @@
         <form id="lockerLoginForm" novalidate>
           <div class="fld">
             <label for="lockerEmail">Email (parent or player)</label>
-            <input type="email" id="lockerEmail" name="email" placeholder="you@email.com" required>
+            <input type="email" id="lockerEmail" name="email" placeholder="you@email.com" autocomplete="email" required>
           </div>
           <button type="submit" class="btn btn-primary" style="width:100%;">Unlock The Locker</button>
         </form>

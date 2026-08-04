@@ -93,6 +93,30 @@
   var pendingDownloadCard = null;
   var lastFocused = null;
 
+  function clearFieldErr(input){
+    input.removeAttribute('aria-invalid');
+    input.removeAttribute('aria-describedby');
+    var fld = input.closest('.fld');
+    if(!fld) return;
+    fld.classList.remove('err');
+    var m = fld.querySelector('.f-err');
+    if(m) m.parentNode.removeChild(m);
+  }
+  function setFieldErr(input, msg){
+    clearFieldErr(input);
+    input.setAttribute('aria-invalid', 'true');
+    var fld = input.closest('.fld');
+    if(!fld) return;
+    fld.classList.add('err');
+    var m = document.createElement('span');
+    m.className = 'f-err';
+    m.id = input.id + 'Err';
+    m.textContent = msg;
+    input.setAttribute('aria-describedby', m.id);
+    fld.appendChild(m);
+  }
+  if(emailInput) emailInput.addEventListener('input', function(){ clearFieldErr(emailInput); });
+
   function getLockerEmail(){
     try { return localStorage.getItem('fb_locker_email') || ''; } catch(e){ return ''; }
   }
@@ -113,7 +137,9 @@
     var btn = card.querySelector('.res-get');
     if(open){
       chip.outerHTML = '<span class="res-open">Unlocked</span>';
-      btn.textContent = 'Download';
+      /* "Download" is only honest once an email is on file — these two open cards
+         still route through the modal on click otherwise. */
+      btn.textContent = unlocked ? 'Download' : 'Get it by email';
       btn.dataset.action = 'download';
     } else {
       chip.outerHTML = '<span class="res-lock"><i class="lk"></i>Locked</span>';
@@ -133,6 +159,11 @@
     });
   }
 
+  function focusableInModal(){
+    var all = modal.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    return Array.prototype.filter.call(all, function(el){ return el.offsetParent !== null; });
+  }
+
   function openModal(){
     lastFocused = document.activeElement;
     var email = getLockerEmail();
@@ -142,19 +173,33 @@
     } else {
       showPanel('form');
       if(loginForm) loginForm.reset();
+      if(emailInput) clearFieldErr(emailInput);
     }
     overlay.hidden = false;
-    if(closeBtn) closeBtn.focus();
+    document.body.style.overflow = 'hidden';
+    var focusTarget = (!email && emailInput) ? emailInput : closeBtn;
+    if(focusTarget) focusTarget.focus();
     document.addEventListener('keydown', onKeydown);
   }
   function closeModal(){
     overlay.hidden = true;
+    document.body.style.overflow = '';
     pendingDownloadCard = null;
     document.removeEventListener('keydown', onKeydown);
     if(lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
   }
   function onKeydown(e){
-    if(e.key === 'Escape') closeModal();
+    if(e.key === 'Escape'){ closeModal(); return; }
+    if(e.key !== 'Tab') return;
+    var focusable = focusableInModal();
+    if(!focusable.length) return;
+    var first = focusable[0], last = focusable[focusable.length - 1];
+    var active = document.activeElement;
+    if(e.shiftKey){
+      if(active === first || !modal.contains(active)){ e.preventDefault(); last.focus(); }
+    } else {
+      if(active === last || !modal.contains(active)){ e.preventDefault(); first.focus(); }
+    }
   }
 
   if(closeBtn) closeBtn.addEventListener('click', closeModal);
@@ -171,6 +216,7 @@
     clearLockerEmail();
     refreshAllCards(false);
     showPanel('form');
+    if(emailInput) clearFieldErr(emailInput);
     if(window.fbToast) window.fbToast('Logged out on this device');
   });
 
@@ -249,9 +295,11 @@
       e.preventDefault();
       var email = emailInput.value.trim();
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
-        if(window.fbToast) window.fbToast('Add a valid email');
+        setFieldErr(emailInput, 'That email looks off. Check the spelling and try again.');
+        emailInput.focus();
         return;
       }
+      clearFieldErr(emailInput);
       var submitBtn = loginForm.querySelector('button[type="submit"]');
       var prevText = submitBtn.textContent;
       submitBtn.disabled = true;

@@ -6,20 +6,14 @@
 <meta name="robots" content="noindex, follow">
 <title>Off the court | Fast Basketball</title>
 <meta name="description" content="That page is not here. Head back to Fast Basketball private basketball training in Miami.">
+<link rel="stylesheet" href="/styles/tokens.css">
+<link rel="stylesheet" href="/styles/fonts.css">
 <style>
 :root{
-  --fb-red-primary:#D6202B;
-  --fb-red-hover:#B0161F;
-  --fb-red-depth:#7A0E14;
-  --fb-ink:#111111;
-  --fb-paper:#FFFFFF;
-  --fb-line:rgba(255,255,255,0.16);
-  --ease-decel:cubic-bezier(0.14,0.86,0.28,1);
-  --ease-accel:cubic-bezier(0.72,0,0.94,0.24);
-  --step--1:clamp(0.83rem,0.8rem + 0.2vw,0.94rem);
-  --step-0:clamp(1rem,0.95rem + 0.3vw,1.13rem);
-  --step-2:clamp(1.44rem,1.3rem + 0.8vw,1.9rem);
-  --step-5:clamp(3.5rem,2.4rem + 5.4vw,7.5rem);
+  --fb-step--1:clamp(0.83rem,0.8rem + 0.2vw,0.94rem);
+  --fb-step-0:clamp(1rem,0.95rem + 0.3vw,1.13rem);
+  --fb-step-2:clamp(1.44rem,1.3rem + 0.8vw,1.9rem);
+  --fb-step-5:clamp(3.5rem,2.4rem + 5.4vw,7.5rem);
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -29,13 +23,13 @@ body{
   align-items:center;
   justify-content:center;
   padding:clamp(1.5rem,5vw,4rem);
-  background:var(--fb-ink);
+  background:var(--court-black);
   background-image:
-    linear-gradient(180deg,rgba(214,32,43,0.20) 0%,rgba(17,17,17,0) 55%),
-    repeating-linear-gradient(90deg,transparent 0 119px,var(--fb-line) 119px 120px);
-  color:var(--fb-paper);
-  font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  font-size:var(--step-0);
+    linear-gradient(180deg,var(--glow-red) 0%,rgba(10,10,12,0) 55%),
+    repeating-linear-gradient(90deg,transparent 0 119px,var(--line-dark) 119px 120px);
+  color:var(--bone);
+  font-family:var(--font-body),system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:var(--fb-step-0);
   line-height:1.55;
   -webkit-font-smoothing:antialiased;
 }
@@ -43,52 +37,47 @@ main{
   width:100%;
   max-width:44rem;
   text-align:center;
-  animation:fb-arrive 900ms var(--ease-decel) both;
+  animation:fb-arrive 900ms var(--ease-rush) both;
 }
 .fb-lockup{
   display:inline-flex;
   align-items:center;
-  gap:0.55rem;
+  gap:11px;
   margin-bottom:clamp(2rem,6vw,3.5rem);
   text-decoration:none;
 }
-.fb-lockup svg{display:block;height:clamp(30px,7vw,42px);width:auto}
-.fb-lockup-text{text-align:left;line-height:1}
-.fb-lockup-fast{
-  display:block;
-  font-size:clamp(1.5rem,4.4vw,2.1rem);
-  font-weight:900;
-  letter-spacing:-0.02em;
-  color:var(--fb-red-primary);
-}
-.fb-lockup-basketball{
-  display:block;
-  margin-top:0.22em;
-  font-size:clamp(0.5rem,1.5vw,0.66rem);
-  font-weight:500;
-  letter-spacing:0.42em;
-  color:var(--fb-paper);
+.fb-lockup-icon{width:40px;height:40px;flex-shrink:0}
+.fb-lockup-name{
+  font-family:var(--font-eyebrow);
+  font-weight:600;
+  font-size:.95rem;
+  letter-spacing:var(--track-nav);
+  text-transform:uppercase;
+  color:var(--bone);
 }
 .fb-code{
-  font-size:var(--step-5);
-  font-weight:900;
-  letter-spacing:-0.05em;
+  font-family:var(--font-display);
+  font-size:var(--fb-step-5);
+  font-weight:400;
+  letter-spacing:-0.02em;
   line-height:0.82;
   margin:0;
-  color:var(--fb-red-primary);
-  text-shadow:0 0 clamp(24px,6vw,60px) rgba(214,32,43,0.42);
+  color:var(--fast-red);
+  text-shadow:0 0 clamp(24px,6vw,60px) var(--glow-red);
 }
 h1{
-  font-size:var(--step-2);
-  font-weight:800;
-  letter-spacing:-0.02em;
-  line-height:1.15;
+  font-family:var(--font-display);
+  font-weight:400;
+  text-transform:uppercase;
+  font-size:var(--fb-step-2);
+  letter-spacing:.01em;
+  line-height:1;
   margin:clamp(1rem,3vw,1.5rem) 0 0.6rem;
 }
 p.fb-lede{
   margin:0 auto clamp(2rem,5vw,2.75rem);
   max-width:34rem;
-  color:rgba(255,255,255,0.76);
+  color:var(--text-lede-dark);
 }
 .fb-actions{
   display:flex;
@@ -104,31 +93,34 @@ p.fb-lede{
   min-height:48px;
   min-width:48px;
   padding:0.85rem 1.6rem;
-  border-radius:2px;
-  font-size:var(--step-0);
+  border-radius:var(--r-pill);
+  font-family:var(--font-eyebrow);
+  font-size:var(--fb-step-0);
   font-weight:700;
-  letter-spacing:0.01em;
+  letter-spacing:var(--track-btn);
+  text-transform:uppercase;
   text-decoration:none;
   border:2px solid transparent;
-  transition:background-color 220ms var(--ease-decel),border-color 220ms var(--ease-decel),transform 220ms var(--ease-decel);
+  transition:background-color 220ms var(--ease-rush),border-color 220ms var(--ease-rush),transform 220ms var(--ease-rush);
 }
-.fb-btn-primary{background:var(--fb-red-primary);color:var(--fb-paper);border-color:var(--fb-red-primary)}
-.fb-btn-primary:hover{background:var(--fb-red-hover);border-color:var(--fb-red-hover)}
-.fb-btn-secondary{background:transparent;color:var(--fb-paper);border-color:rgba(255,255,255,0.42)}
-.fb-btn-secondary:hover{border-color:var(--fb-paper);background:rgba(255,255,255,0.07)}
+.fb-btn-primary{background:var(--fast-red);color:var(--bone);border-color:var(--fast-red)}
+.fb-btn-primary:hover{background:var(--red-hot);border-color:var(--red-hot)}
+.fb-btn-secondary{background:transparent;color:var(--bone);border-color:var(--line-dark)}
+.fb-btn-secondary:hover{border-color:var(--bone);background:rgba(255,255,255,0.07)}
 .fb-btn:active{transform:translateY(1px)}
-.fb-btn:focus-visible{outline:3px solid var(--fb-paper);outline-offset:3px}
+.fb-btn:focus-visible{outline:3px solid var(--bone);outline-offset:3px}
 nav.fb-elsewhere{
-  border-top:1px solid rgba(255,255,255,0.14);
+  border-top:1px solid var(--line-dark);
   padding-top:clamp(1.25rem,3vw,1.75rem);
 }
 nav.fb-elsewhere h2{
   margin:0 0 0.9rem;
-  font-size:var(--step--1);
+  font-family:var(--font-eyebrow);
+  font-size:var(--fb-step--1);
   font-weight:600;
-  letter-spacing:0.18em;
+  letter-spacing:.18em;
   text-transform:uppercase;
-  color:rgba(255,255,255,0.5);
+  color:var(--text-faint-dark);
 }
 nav.fb-elsewhere ul{
   list-style:none;
@@ -144,15 +136,15 @@ nav.fb-elsewhere a{
   align-items:center;
   min-height:44px;
   padding:0.4rem 0.85rem;
-  border-radius:2px;
-  color:rgba(255,255,255,0.82);
-  font-size:var(--step--1);
+  border-radius:var(--r-tile);
+  color:var(--text-lede-dark);
+  font-size:var(--fb-step--1);
   text-decoration:none;
-  border:1px solid rgba(255,255,255,0.16);
-  transition:color 180ms var(--ease-decel),border-color 180ms var(--ease-decel);
+  border:1px solid var(--line-dark);
+  transition:color 180ms var(--ease-rush),border-color 180ms var(--ease-rush);
 }
-nav.fb-elsewhere a:hover{color:var(--fb-paper);border-color:rgba(255,255,255,0.5)}
-nav.fb-elsewhere a:focus-visible{outline:3px solid var(--fb-paper);outline-offset:2px}
+nav.fb-elsewhere a:hover{color:var(--bone);border-color:var(--text-faint-dark)}
+nav.fb-elsewhere a:focus-visible{outline:3px solid var(--bone);outline-offset:2px}
 @keyframes fb-arrive{
   from{opacity:0;transform:scale(1.06) translateY(14px)}
   to{opacity:1;transform:none}
@@ -167,13 +159,8 @@ nav.fb-elsewhere a:focus-visible{outline:3px solid var(--fb-paper);outline-offse
 <body>
 <main>
   <a class="fb-lockup" href="/" aria-label="Fast Basketball home">
-    <svg viewBox="0 0 32 48" aria-hidden="true" focusable="false">
-      <path d="M19.5 0 3 27h9.5L10 48 29 19h-10.2z" fill="#D6202B"/>
-    </svg>
-    <span class="fb-lockup-text">
-      <span class="fb-lockup-fast">FAST</span>
-      <span class="fb-lockup-basketball">BASKETBALL</span>
-    </span>
+    <img class="fb-lockup-icon" src="/brand/icon.svg" width="40" height="40" alt="">
+    <span class="fb-lockup-name">Fast Basketball</span>
   </a>
 
   <p class="fb-code">404</p>

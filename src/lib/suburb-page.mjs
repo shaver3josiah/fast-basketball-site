@@ -32,7 +32,7 @@ export function renderSuburbPage({ suburb, content, prelude }) {
     ])
   ];
 
-  let body = '<main>\n';
+  let body = '<main id="main">\n';
   body += '<header class="band band-dark suburb-hero">\n<div class="shell">\n';
   body += '<div class="eyebrow">' + escapeHtml(suburb.county) + ' Service Area</div>\n';
   body += '<h1>Basketball Training in <span class="hollow">' + escapeHtml(suburb.name) + '</span></h1>\n';

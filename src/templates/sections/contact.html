@@ -10,21 +10,22 @@
         <div class="ct-r"><b>Instagram</b><span data-edit="ct.ig">@blakekingsleyjr</span></div>
         <div class="ct-r"><b>Service Area</b><span data-edit="ct.area">Miami Dade &amp; Broward County</span></div>
       </div>
+      <!-- Once the Business Profile clears verification: embed the review widget and the map here, and add a Leave a Review link. -->
       <div class="gbp rise">
-        <b>Google Business Profile</b>
-        <p>Profile is being set up. Once verified, embed the review widget and the map here, and add a "Leave a Review" link. Reviews carry roughly 20 percent of local pack ranking weight, so this block matters more than it looks.</p>
+        <b>Google Reviews</b>
+        <p>The Google Business Profile is in verification right now. Once it clears, parent reviews land right here. Until then, ask at your First Look and we will put you in touch with families already training with us.</p>
       </div>
     </div>
     <div class="pb-form rise">
       <form id="ctForm" novalidate>
         <div class="fld-row">
-          <div class="fld"><label for="cName">Your Name</label><input type="text" id="cName" placeholder="Parent or player" required></div>
-          <div class="fld"><label for="cPhone">Phone</label><input type="tel" id="cPhone" placeholder="(305) 555 0100"></div>
+          <div class="fld"><label for="cName">Your Name</label><input type="text" id="cName" name="name" autocomplete="name" placeholder="Parent or player" required></div>
+          <div class="fld"><label for="cPhone">Phone</label><input type="tel" id="cPhone" name="phone" autocomplete="tel" placeholder="(305) 555 0100"></div>
         </div>
-        <div class="fld"><label for="cEmail">Email</label><input type="email" id="cEmail" placeholder="you@email.com" required></div>
+        <div class="fld"><label for="cEmail">Email</label><input type="email" id="cEmail" name="email" autocomplete="email" placeholder="you@email.com" required></div>
         <div class="fld">
           <label for="cArea">Area</label>
-          <select id="cArea">
+          <select id="cArea" name="area">
             <option>Kendall</option><option>Pinecrest</option><option>Coral Gables</option>
             <option>Westchester</option><option>Doral</option><option>Miami Lakes</option>
             <option>Palmetto Bay</option><option>Aventura</option><option>Weston</option>
@@ -32,10 +33,18 @@
             <option>Other</option>
           </select>
         </div>
-        <div class="fld"><label for="cMsg">Tell us about the player</label><textarea id="cMsg" placeholder="Grade, position, current team, and where they want to be playing in two years."></textarea></div>
+        <div class="fld"><label for="cMsg">Tell us about the player</label><textarea id="cMsg" name="message" placeholder="Grade, position, current team, and where they want to be playing in two years."></textarea></div>
+        <input type="hidden" name="program" id="cProgram" value="">
+        <p class="trust-line" id="ctProgramLine" style="display:none;"></p>
+        <p class="f-err" id="ctErr" role="alert" style="display:none;margin:0 0 12px;"></p>
         <button type="submit" class="btn btn-primary" style="width:100%;">Send and Get Slots</button>
         <p class="trust-line">You hear back within one business day with open slots. No obligation, and the first session is free.</p>
       </form>
+      <div class="pb-out" id="ctDone" tabindex="-1">
+        <h4>Got it. Message received.</h4>
+        <p>Coach Blake reads these himself. You will hear back within one business day with open slots for your area, and nothing happens until you say yes to a time.</p>
+        <p>If it has not landed by then, check your spam folder for coach@fastbasketball.com, then text us and we will sort it out.</p>
+      </div>
     </div>
   </div>
 </section>

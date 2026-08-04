@@ -212,6 +212,7 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   if (includeHeroPreload) head += heroPreload(content, responsiveManifest) + '\n';
   head += fontPreloadLinks() + '\n';
   head += stylesheetLinks() + '\n';
+  head += '<noscript><style>.zr,.rise{opacity:1 !important;transform:none !important;filter:none !important}</style></noscript>\n';
   for (const data of jsonLd) head += jsonLdScript(data) + '\n';
   head += '</head>\n';
   return head;
@@ -253,20 +254,19 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   body = fixContactForm(body);
   body = injectResumeExtras(body, content.resumeExtra, responsiveManifest);
   if (playbookTemplates) body = fixPlaybookForm(body, playbookTemplates);
-  body += buildFooter();
-  body += '<div class="mob-bar" id="mobBar">\n' +
-    '<a href="#contact" class="btn btn-primary">Free First Look</a>\n' +
-    '<a href="#playbook" class="btn btn-ghost">Free Playbook</a>\n' +
-    '</div>\n';
+  body += buildFooter({ anchors: true });
   body += scriptsBlock();
   body += '<script src="/js/playbook-form.js" defer></script>\n';
   body += '<script src="/js/locker.js" defer></script>\n';
+  body += '<script src="/js/contact-form.js" defer></script>\n';
   body += '</body>\n</html>\n';
 
   return page + body;
 }
 
-export function buildFooter() {
+export function buildFooter({ anchors = false } = {}) {
+  const contactHref = anchors ? '#contact' : '/contact';
+  const playbookHref = anchors ? '#playbook' : '/playbook';
   return '<footer class="ft">\n' +
     '<div class="shell">\n' +
     '<div class="ft-top">\n' +
@@ -277,9 +277,13 @@ export function buildFooter() {
     '<div class="ft-col"><h5>Areas</h5>' + AREA_SERVED.slice(0, 4).map((name) => '<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
     '<div class="ft-col"><h5>More</h5><a href="/#receipts">The Résumé</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
     '</div>\n</div>\n' +
-    '<div class="ft-bot"><span>&copy; 2026 Fast Basketball. All rights reserved.</span><span>Miami, Florida</span></div>\n' +
+    '<div class="ft-bot"><span>&copy; 2026 Fast Basketball. All rights reserved. <a href="/privacy">Privacy</a></span><span>Miami, Florida</span></div>\n' +
     '</div>\n</footer>\n' +
-    '<div class="toast" id="toast"></div>\n';
+    '<div class="mob-bar" id="mobBar">\n' +
+    '<a href="' + contactHref + '" class="btn btn-primary">Free First Look</a>\n' +
+    '<a href="' + playbookHref + '" class="btn btn-ghost">Free Playbook</a>\n' +
+    '</div>\n' +
+    '<div class="toast" id="toast" role="status" aria-live="polite"></div>\n';
 }
 
 export function buildNav(prelude) {
@@ -287,7 +291,7 @@ export function buildNav(prelude) {
   const navEnd = prelude.indexOf('</nav>');
   if (navStart === -1 || navEnd === -1) return '';
   const raw = prelude.slice(navStart, navEnd + '</nav>'.length) + '\n';
-  return raw.replace(/href="#/g, 'href="/#');
+  return '<a class="skip-link" href="#main">Skip to content</a>\n' + raw.replace(/href="#/g, 'href="/#');
 }
 
 export function buildSimplePage({ title, description, canonicalPath, bodyHtml, content, prelude, jsonLd = [], extraScripts = [] }) {

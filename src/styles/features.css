@@ -37,7 +37,10 @@
 .nball.idle{offset-path:none;left:118px;top:408px;animation:nIdleB 1.8s ease-in-out infinite;}
 .nball.idle i{animation:none;}
 @keyframes nIdleB{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-.swish-flash{position:absolute;left:730px;top:56px;font-family:var(--font-display);font-size:4.2rem;text-transform:uppercase;letter-spacing:.02em;color:transparent;-webkit-text-stroke:2px var(--miami-teal);filter:drop-shadow(0 0 22px rgba(37,224,208,.6));opacity:0;pointer-events:none;}
+/* Filled miami-teal, not the hollow text-stroke treatment .hollow uses elsewhere:
+   color:transparent falls back to invisible (not the stroke) wherever -webkit-text-stroke
+   isn't supported, which measured as ~1:1 contrast against the near-black nite background. */
+.swish-flash{position:absolute;left:730px;top:56px;font-family:var(--font-display);font-size:4.2rem;text-transform:uppercase;letter-spacing:.02em;color:var(--miami-teal);filter:drop-shadow(0 0 22px rgba(37,224,208,.6));opacity:0;pointer-events:none;}
 .swish-flash.on{animation:nSwishIn .9s var(--ease-reveal);}
 @keyframes nSwishIn{0%{opacity:0;transform:scale(.6)}20%{opacity:1;transform:scale(1.06)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.15)}}
 .nite-copy{position:relative;z-index:2;left:24px;top:84px;max-width:440px;cursor:auto;}
@@ -73,12 +76,19 @@
 .lk::before{content:"";position:absolute;top:-7px;left:.5px;width:6px;height:7px;border:2px solid currentColor;border-bottom:0;border-radius:5px 5px 0 0;}
 .res-c h3{font-size:1.02rem;margin-bottom:8px;}
 .res-c p{font-size:.88rem;color:var(--text-dim-dark);flex-grow:1;margin-bottom:18px;}
-.res-get{align-self:flex-start;font-family:var(--font-eyebrow);font-weight:700;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--red-hot);padding:4px 0 6px;position:relative;transition:transform .25s var(--ease-rush);}
-.res-get::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:22px;background:currentColor;transition:width var(--t-hover) var(--ease-rush);}
-.res-get:hover{transform:translateX(3px);}
-.res-get:hover::after{width:100%;}
+/* Proper button, not an underline-link: full-width ghost pill at >=44px so it's
+   a real touch target, matching .btn-ghost's border/radius language. */
+.res-get{
+  width:100%;min-height:44px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--font-eyebrow);font-weight:700;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--red-hot);border:1.5px solid var(--line-dark);border-radius:var(--r-pill);
+  padding:12px 18px;transition:transform .25s var(--ease-rush),border-color var(--t-hover);
+}
+.res-get:hover{transform:translateY(-3px);border-color:var(--red-hot);}
 .res-get:disabled{opacity:.5;cursor:not-allowed;pointer-events:none;}
 .openres .res-get{color:var(--miami-teal);}
+.openres .res-get:hover{border-color:var(--teal-line);}
 @media(max-width:1040px){.res{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:640px){.res{grid-template-columns:1fr;}}
 
@@ -88,8 +98,8 @@
 .modal h3{font-size:1.5rem;}
 .modal-p{font-size:.95rem;color:var(--text-body-dark);margin-bottom:20px;}
 .modal-row{display:flex;gap:12px;flex-wrap:wrap;}
-.modal-x{position:absolute;top:14px;right:14px;width:34px;height:34px;flex-shrink:0;}
-.modal-x::before,.modal-x::after{content:"";position:absolute;top:16px;left:8px;width:18px;height:2px;background:#8C8C99;transition:background .2s;}
+.modal-x{position:absolute;top:12px;right:12px;width:40px;height:40px;flex-shrink:0;}
+.modal-x::before,.modal-x::after{content:"";position:absolute;top:19px;left:11px;width:18px;height:2px;background:#8C8C99;transition:background .2s;}
 .modal-x::before{transform:rotate(45deg);}
 .modal-x::after{transform:rotate(-45deg);}
 .modal-x:hover::before,.modal-x:hover::after{background:var(--red-hot);}

@@ -3,19 +3,52 @@
   var form = document.getElementById('pbForm');
   if(!form) return;
 
+  var nameInput = document.getElementById('pbName');
+  var emailInput = document.getElementById('pbEmail');
+
+  function clearFieldErr(input){
+    input.removeAttribute('aria-invalid');
+    input.removeAttribute('aria-describedby');
+    var fld = input.closest('.fld');
+    if(!fld) return;
+    fld.classList.remove('err');
+    var m = fld.querySelector('.f-err');
+    if(m) m.parentNode.removeChild(m);
+  }
+  function setFieldErr(input, msg){
+    clearFieldErr(input);
+    input.setAttribute('aria-invalid', 'true');
+    var fld = input.closest('.fld');
+    if(!fld) return;
+    fld.classList.add('err');
+    var m = document.createElement('span');
+    m.className = 'f-err';
+    m.id = input.id + 'Err';
+    m.textContent = msg;
+    input.setAttribute('aria-describedby', m.id);
+    fld.appendChild(m);
+  }
+  [nameInput, emailInput].forEach(function(inp){
+    if(inp) inp.addEventListener('input', function(){ clearFieldErr(inp); });
+  });
+
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var honeypot = document.getElementById('pbHp');
     if(honeypot && honeypot.value){ return; }
 
-    var name = document.getElementById('pbName').value.trim();
-    var email = document.getElementById('pbEmail').value.trim();
+    var name = nameInput.value.trim();
+    var email = emailInput.value.trim();
     var grade = document.getElementById('pbGrade').value;
     var position = document.getElementById('pbPos').value;
     var focus = document.getElementById('pbFocus').value;
 
-    if(!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
-      if(window.fbToast) window.fbToast('Add a name and a valid email');
+    var ok = true;
+    if(!name){ setFieldErr(nameInput, "Add the player's first name so the plan has a name on it."); ok = false; } else { clearFieldErr(nameInput); }
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ setFieldErr(emailInput, 'That email looks off. Check the spelling and try again.'); ok = false; } else { clearFieldErr(emailInput); }
+    if(!ok){
+      var firstBad = form.querySelector('.fld.err input');
+      if(firstBad) firstBad.focus();
       return;
     }
 

@@ -57,6 +57,12 @@ p{text-wrap:pretty;}
 .lede{font-size:clamp(1.02rem,1.5vw,1.22rem);color:#C9C9D2;max-width:60ch;}
 .band-light .lede{color:#43434E;}
 
+/* Suburb pages have no .head wrapper — their copy is a bare <p> straight under
+   .shell and was running the full 1240px shell width (~149ch). Homepage prose
+   either carries its own cap (.lede) or lives inside a card/component, so it
+   sits deeper than a direct child and this scoped rule leaves it alone. */
+.band .shell>p{max-width:70ch;}
+
 /* ---------- BRAND MARK (square icon + UI text label — the wordmark is never rebuilt in type) ---------- */
 .brand{display:flex;align-items:center;gap:11px;padding:6px 0;}
 .brand-icon{width:40px;height:40px;flex-shrink:0;transition:filter var(--t-hover),transform var(--t-hover) var(--ease-rush);}
@@ -293,7 +299,7 @@ p{text-wrap:pretty;}
 }
 .rcp-txt{position:absolute;left:18px;right:18px;bottom:16px;z-index:2;}
 .rcp-yr{
-  font-family:var(--font-eyebrow);font-weight:700;font-size:.66rem;letter-spacing:.2em;
+  font-family:var(--font-eyebrow);font-weight:700;font-size:.7rem;letter-spacing:.2em;
   text-transform:uppercase;color:var(--red-hot);display:inline-block;margin-bottom:8px;
   background:var(--court-black);padding:4px 9px;border-radius:4px;
 }
@@ -422,7 +428,7 @@ p{text-wrap:pretty;}
   padding:14px 15px;color:var(--bone);font-family:var(--font-body);font-size:.97rem;
   transition:border-color .25s,box-shadow .25s;
 }
-.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--fast-red);box-shadow:0 0 0 3px rgba(230,12,32,.16);}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:3px solid transparent;outline-offset:2px;border-color:var(--fast-red);box-shadow:0 0 0 3px rgba(230,12,32,.16);}
 .fld input::placeholder,.fld textarea::placeholder{color:#8F8F9C;opacity:1;}
 .fld textarea{resize:vertical;min-height:110px;}
 .fld-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
@@ -485,9 +491,11 @@ p{text-wrap:pretty;}
 .faq-q::after{content:"";position:absolute;right:6px;top:50%;width:13px;height:2px;background:var(--fast-red);}
 .faq-q::before{content:"";position:absolute;right:11.5px;top:50%;width:2px;height:13px;background:var(--fast-red);transform:translateY(-50%);transition:transform .35s var(--ease-rush);}
 .faq-i.open .faq-q::before{transform:translateY(-50%) rotate(90deg) scaleX(0);}
-.faq-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s var(--ease-rush);}
-.faq-a p{margin:0 0 26px;color:#54545F;max-width:70ch;overflow:hidden;min-height:0;}
-.faq-i.open .faq-a{grid-template-rows:1fr;}
+/* max-height (not grid-template-rows:0fr->1fr) so the transition actually resolves:
+   an indefinite-height 1fr track never settles to a real pixel value to animate to. */
+.faq-a{max-height:0;overflow:hidden;transition:max-height .45s var(--ease-rush);}
+.faq-a p{margin:0 0 26px;color:#54545F;max-width:70ch;}
+.faq-i.open .faq-a{max-height:600px;}
 
 /* ---------- CONTACT ---------- */
 .ct{display:grid;grid-template-columns:1fr 1.15fr;gap:56px;align-items:start;}
@@ -506,7 +514,7 @@ p{text-wrap:pretty;}
 .ft{background:var(--court-black);border-top:1px solid var(--line-dark);padding:56px 0 34px;}
 .ft-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-bottom:40px;}
 .ft-nav{display:flex;gap:56px;flex-wrap:wrap;}
-.ft-col h5{font-family:var(--font-eyebrow);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:#6E6E7B;margin-bottom:14px;}
+.ft-col h5{font-family:var(--font-eyebrow);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint-dark);margin-bottom:14px;}
 .ft-col a{display:block;padding:10px 0;color:#AFAFBB;font-size:.93rem;transition:color .22s,transform .25s;}
 .ft-col a:hover{color:var(--red-hot);transform:translateX(3px);}
 .ft-bot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--line-dark);font-size:.83rem;color:#8F8F9C;}
@@ -613,9 +621,19 @@ body.adm-live [data-img]{outline:2px dashed rgba(230,12,32,.6);outline-offset:2p
 }
 @media(max-width:520px){
   .mth,.score,.rcp{grid-template-columns:1fr;}
-  .hero-trust{gap:18px;}
   .rcp-next{padding:20px;}
   .rcp-next .btn{width:100%;}
+  /* Hero was running ~1.9 screens tall here: trim the chrome around the copy
+     and the court-card, keep the photo (cropped, not hidden). */
+  .hero{padding-top:calc(var(--nav-h) + 20px);padding-bottom:28px;}
+  .hero-grid{gap:26px;}
+  .hero h1{margin-bottom:16px;}
+  .hero-cta{margin:20px 0 20px;}
+  .hero-trust{gap:18px;padding-top:16px;}
+  .cc-label{padding:10px 14px;}
+  .cc-shot{aspect-ratio:4/3;}
+  .cc-shot img{height:100%;object-fit:cover;}
+  .cc-stat{padding:10px 10px;}
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;transition-delay:0ms !important;animation-delay:0ms !important;}

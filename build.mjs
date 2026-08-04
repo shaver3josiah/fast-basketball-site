@@ -12,15 +12,41 @@ const ROOT = process.cwd();
 const DIST = resolve(ROOT, 'dist');
 
 const TRAINING_PAGES = [
-  { slug: 'first-look', textKey: 'prog.1', title: 'Free First Look Session | Fast Basketball Miami', label: 'First Look Session' },
-  { slug: 'private', textKey: 'prog.2', title: 'Private Basketball Training in Miami | Fast Basketball', label: 'Private One on One' },
-  { slug: 'small-group', textKey: 'prog.3', title: 'Small Group Basketball Training in Miami | Fast Basketball', label: 'Small Group' },
-  { slug: 'college-track', textKey: 'prog.4', title: 'College Track Basketball Program Miami | Fast Basketball', label: 'College Track Program' }
+  {
+    slug: 'first-look', textKey: 'prog.1', title: 'Free First Look Session | Fast Basketball Miami', label: 'First Look Session',
+    features: ['Full movement and shooting form screen', 'Live one on one reads against Coach Blake', 'Written strengths and gaps report, yours to keep', 'Open slots offered within one business day'],
+    next: 'Bring your player, their shoes, and sixty minutes. Coach Blake watches them move, puts them through live reads, and writes down exactly where they stand. You leave with the report whether or not you ever book again.'
+  },
+  {
+    slug: 'private', textKey: 'prog.2', title: 'Private Basketball Training in Miami | Fast Basketball', label: 'Private One on One',
+    features: ['Custom plan updated every four sessions', 'Footwork, handle, and finishing blocks', 'Shot chart and progress log', 'Packages of 5 and 10 available'],
+    next: 'Every session is built around the three things standing between your player and the next level. The plan updates every four sessions, and the shot chart shows the change before anyone has to take our word for it.'
+  },
+  {
+    slug: 'small-group', textKey: 'prog.3', title: 'Small Group Basketball Training in Miami | Fast Basketball', label: 'Small Group',
+    features: ['Level matched groups only', 'Live one on one and two on two', 'Great for teammates and siblings', 'Weekly recurring slots'],
+    next: 'Two to four players at the same level, going at each other every week. Skills get tested against a live defender the day they are taught, because that is the only version of a skill that shows up in a game.'
+  },
+  {
+    slug: 'college-track', textKey: 'prog.4', title: 'College Track Basketball Program Miami | Fast Basketball', label: 'College Track Program',
+    features: ['Two private sessions per week', 'Monthly film review session', 'Highlight reel guidance', 'Recruiting profile and outreach help'],
+    next: 'Twelve weeks for juniors and seniors who are serious about hearing from college programs. Coach Blake evaluated recruiting film from the college side of the table — the same eye now reviews your film, your reel, and your outreach.'
+  }
 ];
 
 function writeHtml(path, html) {
   mkdirSync(resolve(path, '..'), { recursive: true });
   writeFileSync(path, html);
+}
+
+// Standalone pages built from homepage section fragments start at <h2>;
+// promote the first one so every page has exactly one <h1>.
+function promoteFirstH2(html) {
+  const open = html.indexOf('<h2');
+  if (open === -1) return html;
+  const close = html.indexOf('</h2>', open);
+  if (close === -1) return html;
+  return html.slice(0, open) + '<h1' + html.slice(open + 3, close) + '</h1>' + html.slice(close + 5);
 }
 
 function copyDir(src, dest) {
@@ -99,12 +125,19 @@ function step8_trainingPages(content, prelude) {
   const paths = [];
   for (const page of TRAINING_PAGES) {
     const canonicalPath = '/training/' + page.slug;
-    let body = '<main>\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
+    let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
     body += '<div class="eyebrow">Fast Basketball Program</div>\n';
     body += '<h1>' + escapeHtml(page.label) + '</h1>\n';
     body += '<p class="lede">' + escapeHtml(content.text[page.textKey]) + '</p>\n';
-    body += '<a href="/contact" class="btn btn-primary">Book This Program</a>\n';
-    body += '</div>\n</header>\n</main>\n';
+    body += '<a href="/contact" class="btn btn-primary" data-program="' + escapeHtml(page.label) + '">Book This Program</a>\n';
+    body += '</div>\n</header>\n';
+    body += '<section class="band band-ink">\n<div class="shell">\n';
+    body += '<h2>What you get</h2>\n<ul class="prog-list">\n';
+    for (const f of page.features) body += '<li>' + escapeHtml(f) + '</li>\n';
+    body += '</ul>\n';
+    body += '<h2>How it works</h2>\n<p style="max-width:70ch;">' + escapeHtml(page.next) + '</p>\n';
+    body += '<p>Sessions run at partner gyms and courts across Miami Dade and Broward. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
+    body += '</div>\n</section>\n</main>\n';
     const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }])];
     const html = buildSimplePage({
       title: page.title,
@@ -126,6 +159,7 @@ function step9_playbookPage(sections, content, playbookTemplates, prelude) {
   let body = trimToFirstSectionClose(sections.playbook);
   body = applyTextEdits(body, { 'pb.lede': content.text['pb.lede'] });
   body = fixPlaybookForm(body, playbookTemplates);
+  body = '<main id="main">\n' + promoteFirstH2(body) + '</main>\n';
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Free Playbook', path: '/playbook' }])];
   const html = buildSimplePage({
     title: 'Free Custom Basketball Playbook | Fast Basketball Miami',
@@ -151,6 +185,7 @@ function step10_contactPage(sections, content, prelude) {
     'ct.area': content.text['ct.area']
   });
   body = fixContactForm(body);
+  body = '<main id="main">\n' + promoteFirstH2(body) + '</main>\n';
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact' }])];
   const html = buildSimplePage({
     title: 'Contact Fast Basketball | Book a Session in Miami',
@@ -159,14 +194,42 @@ function step10_contactPage(sections, content, prelude) {
     bodyHtml: body,
     content,
     prelude,
-    jsonLd
+    jsonLd,
+    extraScripts: ['/js/contact-form.js']
   });
   writeHtml(resolve(DIST, 'contact', 'index.html'), html);
   return ['/contact'];
 }
 
+function step11b_privacyPage(content, prelude) {
+  let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
+  body += '<div class="eyebrow">The Fine Print</div>\n<h1>Privacy</h1>\n';
+  body += '<p class="lede">Straight answers about what we collect and what we do with it. No legal maze.</p>\n';
+  body += '</div>\n</header>\n';
+  body += '<section class="band band-ink">\n<div class="shell">\n';
+  body += '<h2>What we collect</h2>\n';
+  body += '<p>What you type into our forms: a name, a phone number or email, your area, and whatever you tell us about the player. The playbook and Locker forms collect an email so we can send you the training material you asked for.</p>\n';
+  body += '<h2>What we do with it</h2>\n';
+  body += '<p>We use it to reply with open slots, send the playbook or resource you requested, and follow up once. That is the whole list. We do not sell it, rent it, or hand it to anyone else, and we do not add you to anything you did not ask for.</p>\n';
+  body += '<h2>Where it lives</h2>\n';
+  body += '<p>Form submissions are processed by Netlify, the service that hosts this site, and are visible only to Coach Blake. The Locker remembers your email on your own device so your unlocked resources stay unlocked.</p>\n';
+  body += '<h2>Want it gone?</h2>\n';
+  body += '<p>Email <a href="mailto:coach@fastbasketball.com">coach@fastbasketball.com</a> and we delete your information. One message, done.</p>\n';
+  body += '</div>\n</section>\n</main>\n';
+  const html = buildSimplePage({
+    title: 'Privacy | Fast Basketball',
+    description: 'What Fast Basketball collects, what we do with it, and how to have it removed. Straight answers, no legal maze.',
+    canonicalPath: '/privacy',
+    bodyHtml: body,
+    content,
+    prelude
+  });
+  writeHtml(resolve(DIST, 'privacy', 'index.html'), html);
+  return ['/privacy'];
+}
+
 function step11_blogIndex(content, prelude) {
-  const body = '<main>\n<header class="band band-dark suburb-hero">\n<div class="shell">\n' +
+  const body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n' +
     '<div class="eyebrow">Fast Basketball</div>\n<h1>Blog</h1>\n' +
     '<p class="lede">Training notes and recruiting guidance are on the way. Check back soon, or follow along on <a href="https://www.instagram.com/blakekingsleyjr/" target="_blank" rel="noopener">Instagram</a>.</p>\n' +
     '</div>\n</header>\n</main>\n';
@@ -224,9 +287,15 @@ async function main() {
   allPaths.push(...step9_playbookPage(sections, content, playbookTemplates, prelude));
   allPaths.push(...step10_contactPage(sections, content, prelude));
   allPaths.push(...step11_blogIndex(content, prelude));
+  allPaths.push(...step11b_privacyPage(content, prelude));
 
   writeSitemap(allPaths, SITE_URL);
   writeRobots(SITE_URL);
+
+  if (process.env.SITE_ENV === 'production' && SITE_URL.includes('SITE-DOMAIN-PENDING')) {
+    console.error('Build failed: SITE_URL still holds the placeholder domain. Set SITE_URL in the Netlify environment.');
+    process.exit(1);
+  }
 
   const totalBytes = dirSize(DIST);
   console.log('Build complete. ' + allPaths.length + ' page(s) written to dist/.');

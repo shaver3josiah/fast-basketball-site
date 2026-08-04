@@ -1,4 +1,7 @@
-export const SITE_URL = 'https://SITE-DOMAIN-PENDING.example';
+// SITE_URL (custom domain) wins; Netlify's automatic URL env var covers the
+// .netlify.app stage; the placeholder only survives local preview builds.
+// The build refuses to publish a production build while the placeholder remains.
+export const SITE_URL = process.env.SITE_URL || process.env.URL || 'https://SITE-DOMAIN-PENDING.example';
 
 export const BUSINESS_NAME = 'Fast Basketball';
 
