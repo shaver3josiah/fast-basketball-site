@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { renderCredentialBlock } from './credential.mjs';
 import { renderResumeCards } from './coach-page.mjs';
 import { schoolsProse, venuesProse, drivingProse, landmarksProse, neighborsProse, whyHereProse, slugToName } from './suburb-copy.mjs';
-import { suburbLocalBusiness, suburbService, breadcrumbList, jsonLdScript } from './structured-data.mjs';
+import { suburbService, breadcrumbList, jsonLdScript } from './structured-data.mjs';
 import { PROGRAM_PAGES } from './site-config.mjs';
 import { buildHead, buildNav, buildFooter, renderImage, escapeHtml } from '../render.mjs';
 
@@ -43,7 +43,8 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   const canonicalPath = '/basketball-training/' + suburb.slug;
 
   const jsonLd = [
-    suburbLocalBusiness(suburb),
+    // No per-city LocalBusiness: that declared one business per city, each with a
+    // fabricated PostalAddress. The Service now points at the single real entity.
     suburbService(suburb),
     breadcrumbList([
       { name: 'Home', path: '/' },

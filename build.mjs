@@ -123,8 +123,8 @@ async function step4_responsiveImages() {
   return result;
 }
 
-function step5_homepage(sections, prelude, content, responsiveManifest, playbookTemplates) {
-  const html = assembleHomepage({ sections, prelude, content, responsiveManifest, playbookTemplates });
+function step5_homepage(sections, prelude, content, responsiveManifest, playbookTemplates, suburbs) {
+  const html = assembleHomepage({ sections, prelude, content, responsiveManifest, playbookTemplates, suburbs });
   writeHtml(resolve(DIST, 'index.html'), html);
   return ['/'];
 }
@@ -327,7 +327,7 @@ async function main() {
   const { sections, prelude } = loadSections(ROOT);
 
   const allPaths = [];
-  allPaths.push(...step5_homepage(sections, prelude, content, responsiveManifest, playbookTemplates));
+  allPaths.push(...step5_homepage(sections, prelude, content, responsiveManifest, playbookTemplates, suburbs));
   allPaths.push(...step6_suburbPages(suburbs, content, prelude));
   allPaths.push(...step7_coachPage(content, responsiveManifest, prelude));
   allPaths.push(...step8_trainingPages(content, prelude));

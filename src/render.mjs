@@ -1,7 +1,7 @@
 ﻿import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { absoluteUrl, AREA_SERVED, PROGRAM_PAGES } from './lib/site-config.mjs';
-import { faqPage, jsonLdScript, breadcrumbList } from './lib/structured-data.mjs';
+import { faqPage, jsonLdScript, breadcrumbList, businessEntity } from './lib/structured-data.mjs';
 
 const SECTION_IDS = ['receipts', 'programs', 'method', 'coach', 'nights', 'playbook', 'resources', 'areas', 'contact'];
 
@@ -226,22 +226,29 @@ function scriptsBlock() {
   return '<script src="/js/main.js" defer></script>\n';
 }
 
-export function assembleHomepage({ sections, prelude, content, responsiveManifest, playbookTemplates }) {
+export function assembleHomepage({ sections, prelude, content, responsiveManifest, playbookTemplates, suburbs = [] }) {
   // Anchor past </head> first: the head carries comments that mention <body>/<nav>
   // literally, and a bare indexOf('<body') matches the comment instead of the tag,
   // which ships the comment tail as visible copy and wraps the page in a phantom <nav>.
   const bodyStart = prelude.indexOf('<body', prelude.indexOf('</head>'));
   const bodyMarkup = prelude.slice(bodyStart);
 
+  // One string for the meta description and the entity description, so the two
+  // cannot describe the business differently.
+  const HOMEPAGE_DESCRIPTION = 'Private basketball training in Miami with Coach Blake Kingsley, on staff for two championship programs in two years including the 2025 Horizon League champion Robert Morris Colonials. Serving Kendall, Pinecrest, Coral Gables, Doral, Westchester and Miami Lakes.';
+
   let page = '';
   page += buildHead({
     title: 'Fast Basketball | Private Basketball Training in Miami, FL | Coach Blake Kingsley',
-    description: 'Private basketball training in Miami with Coach Blake Kingsley, on staff for two championship programs in two years including the 2025 Horizon League champion Robert Morris Colonials. Serving Kendall, Pinecrest, Coral Gables, Doral, Westchester and Miami Lakes.',
+    description: HOMEPAGE_DESCRIPTION,
     canonicalPath: '/',
     includeHeroPreload: true,
     content,
     responsiveManifest,
     jsonLd: [
+      // The canonical business entity. It lived in _prelude.html's <head>, which the
+      // build never emits, so the homepage shipped no business identity at all.
+      businessEntity({ description: HOMEPAGE_DESCRIPTION, email: 'coach@fastbasketball.com', suburbs }),
       faqPage(FAQ_PAIRS),
       breadcrumbList([{ name: 'Home', path: '/' }])
     ]
