@@ -246,24 +246,85 @@ function step10_contactPage(sections, content, prelude) {
   return ['/contact'];
 }
 
+// NOT LEGAL ADVICE, AND WRITTEN BY SOMEONE WHO IS NOT A LAWYER. /privacy and /terms are an
+// honest description of what this site and this business actually do — every claim on both
+// pages was checked against the code that makes it true (netlify.toml, netlify/functions/,
+// src/js/) rather than copied from a template. That is not the same as being legally
+// sufficient. Both pages carry a visible owner note saying a Florida attorney should read
+// them before launch; do not delete that note, and do not let either page make a claim the
+// code does not back.
+// The children's section on /privacy is the point of the whole exercise: the site invites
+// players "roughly 11 through 18" and the forms take a name and an email, so a 12-year-old
+// can submit for themselves today. If the forms ever gain a real parent gate, this page is
+// the first thing that has to be rewritten to match.
+const LEGAL_EFFECTIVE = 'August 2026';
+
+const OWNER_NOTE_PRIVACY = '<p class="rcp-note"><b>Note for the site owner:</b> this page is a starting point, ' +
+  'written in good faith by someone who is not a lawyer. It is not legal advice and it is not a promise that ' +
+  'the site is compliant with anything. Have a Florida attorney read this page and the <a href="/terms">terms</a> ' +
+  'before launch — the section about players under 13 most of all.</p>\n';
+
+const OWNER_NOTE_TERMS = '<p class="rcp-note"><b>Note for the site owner:</b> this page is a starting point, ' +
+  'written in good faith by someone who is not a lawyer. It is not legal advice and it is not a waiver. ' +
+  'Have a Florida attorney read this page and the <a href="/privacy">privacy page</a> before launch, and have ' +
+  'them draw up the real waiver and medical form you hand parents in person.</p>\n';
+
 function step11b_privacyPage(content, prelude) {
   let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
   body += '<div class="eyebrow">The Fine Print</div>\n<h1>Privacy</h1>\n';
   body += '<p class="lede">Straight answers about what we collect and what we do with it. No legal maze.</p>\n';
+  body += '<p class="trust-line">In effect ' + LEGAL_EFFECTIVE + '</p>\n';
   body += '</div>\n</header>\n';
   body += '<section class="band band-ink">\n<div class="shell">\n';
+
+  body += '<h2>Who is asking</h2>\n';
+  body += '<p>Fast Basketball is Coach Blake Kingsley, training players one on one and in small groups across Coral Springs, Parkland, Coconut Creek, Margate and Tamarac. He is the person who reads what you send. Anything on this page, including a request to delete what we hold, goes to <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a>.</p>\n';
+
   body += '<h2>What we collect</h2>\n';
-  body += '<p>What you type into our forms: a name, a phone number or email, your area, and whatever you tell us about the player. The playbook and Locker forms collect an email so we can send you the training material you asked for.</p>\n';
+  body += '<p>Only what you type into a form. The contact form asks for a name, an email, a phone number, your area, which program you are asking about, and whatever you want to tell us about the player. The playbook form asks for a name, an email, and the player\'s grade, position and skill focus. The Locker asks for an email so we can send you the resource you unlocked.</p>\n';
+  body += '<p>One thing gets recorded that you did not type: a playbook request is saved along with the internet address it came from, which is how we stop the form being hammered by a bot. Netlify, which hosts the site, also keeps its own standard server logs, the way every web host does.</p>\n';
+
   body += '<h2>What we do with it</h2>\n';
   body += '<p>We use it to reply with open slots, send the playbook or resource you requested, and follow up once. That is the whole list. We do not sell it, rent it, or hand it to anyone else, and we do not add you to anything you did not ask for.</p>\n';
-  body += '<h2>Where it lives</h2>\n';
-  body += '<p>Form submissions are processed by Netlify, the service that hosts this site, and are visible only to Coach Blake. The Locker remembers your email on your own device so your unlocked resources stay unlocked.</p>\n';
+
+  body += '<h2>Parents, and players under 18</h2>\n';
+  body += '<p>These forms are meant for a parent or guardian. We train players from roughly 11 through 18, and the questions that come next — cost, scheduling, health, whether this is even the right fit — are yours to answer. If your player is under 18, please send the form yourself so the conversation starts with you.</p>\n';
+  body += '<p>We do not knowingly collect personal information from a child under 13. If a child under 13 fills in one of these forms without you, we are not going to use it and we will delete it as soon as we know.</p>\n';
+  body += '<p>If you think your under-13 child submitted something here, email <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a> and tell us the email address they used. We will find it, delete it, and write back to confirm it is gone. No form to fill in, no reason needed, and nothing you have to explain.</p>\n';
+
+  body += '<h2>Who else touches it</h2>\n';
+  body += '<p>Two companies, and only because the site cannot work without them.</p>\n';
+  body += '<ul class="prog-list">\n';
+  body += '<li><b>Netlify</b> hosts this site, receives what the contact and playbook forms send, and stores playbook requests where Coach Blake can read them.</li>\n';
+  body += '<li><b>Resend</b> sends the playbook email. It gets the email address you gave and the playbook itself. Nothing else.</li>\n';
+  body += '</ul>\n';
+  body += '<p>That is the complete list. No mailing list tool, no advertising platform, no data broker, nobody else in the middle.</p>\n';
+
+  body += '<h2>What stays on your own device</h2>\n';
+  body += '<p>A few small things your browser keeps for you. None of them are sent anywhere.</p>\n';
+  body += '<ul class="prog-list">\n';
+  body += '<li>The email you used to open the Locker, so your unlocked resources stay unlocked next time. Hit "Log out" in the Locker and it is gone.</li>\n';
+  body += '<li>A count of the shots you have made in the little night court on the homepage. It is a number. That is genuinely all it is.</li>\n';
+  body += '<li>Which program you clicked, so the contact form arrives already knowing what you wanted to ask about. It clears when you close the tab.</li>\n';
+  body += '<li>A note that you have already seen the opening animation, so it does not replay on every page. That clears when you close the tab too.</li>\n';
+  body += '</ul>\n';
+  body += '<p>There is no analytics on this site, no advertising pixel, no session recording and no third-party script of any kind. Every script and font a page here loads is served from this site. Clearing your browser storage removes everything in that list.</p>\n';
+
+  body += '<h2>How long we keep it</h2>\n';
+  body += '<p>As long as it is useful for the reason you gave it to us: answering your question, sending what you asked for, running your player\'s sessions. There is no fixed clock on it. If you are not training with us and you would rather we did not hold it, say so and we will not.</p>\n';
+
   body += '<h2>Want it gone?</h2>\n';
-  body += '<p>Email <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a> and we delete your information. One message, done.</p>\n';
+  body += '<p>Email <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a> and we delete what we hold on you. One message, done, no reason owed. You can also just ask what is on file and we will tell you.</p>\n';
+
+  body += '<h2>If this page changes</h2>\n';
+  body += '<p>The date at the top changes with it. This version is in effect as of ' + LEGAL_EFFECTIVE + '.</p>\n';
+  body += '<p>The <a href="/terms">terms</a> cover booking, cancellations, photos, and what training does and does not promise. Anything else, <a href="/contact">just ask</a>.</p>\n';
+
+  body += OWNER_NOTE_PRIVACY;
   body += '</div>\n</section>\n</main>\n';
   const html = buildSimplePage({
     title: 'Privacy | Fast Basketball',
-    description: 'What Fast Basketball collects, what we do with it, and how to have it removed. Straight answers, no legal maze.',
+    description: 'What Fast Basketball collects, who touches it, how children under 13 are handled, and how to have it removed. Straight answers, no legal maze.',
     canonicalPath: '/privacy',
     bodyHtml: body,
     content,
@@ -271,6 +332,76 @@ function step11b_privacyPage(content, prelude) {
   });
   writeHtml(resolve(DIST, 'privacy', 'index.html'), html);
   return ['/privacy'];
+}
+
+// Rates here must match TRAINING_PAGES above and src/templates/sections/programs.html.
+// The scheduling policy is a bracketed owner placeholder on purpose: nobody but the owner
+// knows what it is, and a made-up cancellation window is a promise the business would have
+// to keep. It is written to be impossible to mistake for finished copy.
+// OWNER TODO before launch: write the real cancellation policy into the 'Scheduling,
+// cancelling and no shows' section below -- notice required to reschedule without a
+// charge, what happens on a no-show, what happens if Coach Blake cancels, and how a
+// missed session counts against the ten-session package and monthly College Track
+// billing. The visitor-facing copy currently says it is handled case by case, which is
+// true for a new program but is not a policy. Do not ship a bracketed placeholder here.
+function step11c_termsPage(content, prelude) {
+  let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
+  body += '<div class="eyebrow">The Fine Print</div>\n<h1>Terms</h1>\n';
+  body += '<p class="lede">What you are agreeing to when you book a session. Same as the privacy page: plain English, no legal maze.</p>\n';
+  body += '<p class="trust-line">In effect ' + LEGAL_EFFECTIVE + '</p>\n';
+  body += '</div>\n</header>\n';
+  body += '<section class="band band-ink">\n<div class="shell">\n';
+
+  body += '<h2>Who books</h2>\n';
+  body += '<p>If the player is under 18, a parent or guardian books, is the person we talk to about scheduling and health, and is responsible for payment. Players 18 and over can book for themselves.</p>\n';
+  body += '<p>If your player emails us first because they are keen, no problem at all. We will just bring you into it before anything gets scheduled.</p>\n';
+
+  body += '<h2>Training is physical</h2>\n';
+  body += '<p>Basketball training is exercise. Players run, cut, jump, land, and go live against another player. Injuries happen in every sport — a rolled ankle, a jammed finger, occasionally worse — and good coaching lowers that risk without removing it. You should know that going in.</p>\n';
+  body += '<p>Before the first session, tell Coach Blake anything that changes how your player can train: asthma, a heart condition, a concussion history, a knee still coming back, allergies, medication, anything a coach would want to know quickly. It stays between you and him, and it changes how he runs the hour.</p>\n';
+  body += '<p>A written waiver and medical form is handled separately, signed in person before the first session. This page is not that form and does not stand in for it.</p>\n';
+
+  body += '<h2>What training promises, and what it cannot</h2>\n';
+  body += '<p>Coach Blake will make your player better. That is the work, and the shot chart and the progress log are there so you do not have to take our word for it.</p>\n';
+  body += '<p>Nobody can promise the rest. Not playing time, not a starting spot, not a roster place, not a college offer, not a scholarship, not a coach returning a call. Those calls belong to high school coaches, club coaches and college staffs, and they are not ours to make. The College Track Program buys the work, the film review and honest guidance on how recruiting actually runs. It does not buy an outcome, and anyone who tells you otherwise is selling you something.</p>\n';
+
+  body += '<h2>What it costs</h2>\n';
+  body += '<ul class="prog-list">\n';
+  body += '<li>First Look session: free, 60 minutes, no obligation.</li>\n';
+  body += '<li>Private one on one: $75 per 60 minute session. Ten sessions $675, which is $67.50 a session.</li>\n';
+  body += '<li>Small group: $45 per player per session.</li>\n';
+  body += '<li>College Track Program: $349 per month.</li>\n';
+  body += '</ul>\n';
+  body += '<p>Coach Blake tells you how to pay when you book. If a rate changes, the new rate applies to sessions booked after the change, never to sessions you have already paid for.</p>\n';
+
+  body += '<h2>Scheduling, cancelling and no shows</h2>\n';
+  body += '<p>Sessions are booked directly with Coach Blake. Weather, school and travel happen, and we would always rather move a session than lose it.</p>\n';
+  body += '<p><b>Tell him as early as you can and he will work with you. A session moved is better than a session lost. While the program is new, missed sessions inside a package are sorted out case by case rather than by a rule, and when that policy is set it will be written here.</b></p>\n';
+
+  body += '<h2>Photos and video</h2>\n';
+  body += '<p>No photo or video of your player goes anywhere public without your explicit permission. Not on Instagram, not on this site, not anywhere else. Coach Blake will ask, and asking means a real yes from you — silence is a no.</p>\n';
+  body += '<p>Say yes today and change your mind next year and that is fine. Email <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a> and it comes down. You do not need a reason.</p>\n';
+  body += '<p>Coach Blake may film during a session for coaching, because showing a player their own footwork is half the value of film. That footage stays between him and you unless you have said otherwise.</p>\n';
+
+  body += '<h2>If these terms change</h2>\n';
+  body += '<p>The date at the top changes with them, and the version in effect when you booked is the one that applies to that booking. This version is in effect as of ' + LEGAL_EFFECTIVE + '.</p>\n';
+
+  body += '<h2>Which state\'s law applies</h2>\n';
+  body += '<p>Florida.</p>\n';
+  body += '<p>The <a href="/privacy">privacy page</a> covers what we collect and how to have it deleted. If anything here is unclear, <a href="/contact">ask us</a> before you book — that is a much better outcome for everyone than reading it afterwards.</p>\n';
+
+  body += OWNER_NOTE_TERMS;
+  body += '</div>\n</section>\n</main>\n';
+  const html = buildSimplePage({
+    title: 'Terms | Fast Basketball',
+    description: 'Who books, what training costs, what it promises, how photos are handled, and what to know about physical risk. Plain English, no legal maze.',
+    canonicalPath: '/terms',
+    bodyHtml: body,
+    content,
+    prelude
+  });
+  writeHtml(resolve(DIST, 'terms', 'index.html'), html);
+  return ['/terms'];
 }
 
 function step11_blogIndex(content, prelude) {
@@ -333,6 +464,7 @@ async function main() {
   allPaths.push(...step10_contactPage(sections, content, prelude));
   allPaths.push(...step11_blogIndex(content, prelude));
   allPaths.push(...step11b_privacyPage(content, prelude));
+  allPaths.push(...step11c_termsPage(content, prelude));
 
   writeSitemap(allPaths, SITE_URL);
   writeRobots(SITE_URL);

@@ -5,6 +5,7 @@
 
   var nameInput = document.getElementById('pbName');
   var emailInput = document.getElementById('pbEmail');
+  var guardianInput = document.getElementById('pbGuardian');
 
   function clearFieldErr(input){
     input.removeAttribute('aria-invalid');
@@ -28,7 +29,7 @@
     input.setAttribute('aria-describedby', m.id);
     fld.appendChild(m);
   }
-  [nameInput, emailInput].forEach(function(inp){
+  [nameInput, emailInput, guardianInput].forEach(function(inp){
     if(inp) inp.addEventListener('input', function(){ clearFieldErr(inp); });
   });
 
@@ -46,9 +47,13 @@
     var ok = true;
     if(!name){ setFieldErr(nameInput, "Add the player's first name so the plan has a name on it."); ok = false; } else { clearFieldErr(nameInput); }
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ setFieldErr(emailInput, 'That email looks off. Check the spelling and try again.'); ok = false; } else { clearFieldErr(emailInput); }
+    /* Parent gate: a child must not be able to hand over their own email. */
+    var guardianOk = !guardianInput || guardianInput.checked;
+    if(!guardianOk){ setFieldErr(guardianInput, 'Tick this so we know a parent or guardian is asking. Players, go grab one.'); ok = false; } else if(guardianInput){ clearFieldErr(guardianInput); }
     if(!ok){
       var firstBad = form.querySelector('.fld.err input');
       if(firstBad) firstBad.focus();
+      if(window.fbToast) window.fbToast(guardianOk ? 'Add a first name and a valid email' : 'Confirm a parent or guardian is asking');
       return;
     }
 
@@ -60,6 +65,10 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: name, email: email, grade: grade, position: position, focus: focus,
+        /* Consent record. Only ever true — submission is blocked above otherwise.
+           ponytail: netlify/functions/playbook.mjs currently drops unknown keys. Its owner
+           should add guardianConfirmed to storeLead() so the confirmation is actually kept. */
+        guardianConfirmed: true,
         referrer: document.referrer || window.location.href
       })
     }).then(function(res){

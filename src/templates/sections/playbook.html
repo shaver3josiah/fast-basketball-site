@@ -8,16 +8,24 @@
         <!-- Netlify wiring mirrors #ctForm (see fixContactForm in src/render.mjs): method=POST +
              data-netlify + matching hidden form-name + honeypot, so a no-JS submit still posts.
              With JS on, src/js/playbook-form.js preventDefault()s and posts to /playbook/generate. -->
+        <!-- OWNER, PLEASE READ. NOT LEGAL ADVICE. The parent-or-guardian confirmation and the
+             privacy/terms links below are a good-faith starting point written by a non-lawyer, to
+             cut the risk of collecting a child's email address with no adult involved. They are not
+             a compliance guarantee. Have a Florida attorney review this form, the privacy notice
+             and the terms before launch. Parents never see this note; it is a source comment. -->
         <form id="pbForm" name="playbook" method="POST" data-netlify="true" netlify-honeypot="pb-hp" novalidate>
           <input type="hidden" name="form-name" value="playbook">
           <p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="pb-hp" id="pbHp" tabindex="-1" autocomplete="off"></label></p>
+          <p class="pb-note" style="margin:0 0 18px;">Parents and guardians, this one is for you. Tell us about your player and the plan lands in your inbox. Players, go grab a parent — it takes them about a minute.</p>
           <div class="fld-row">
             <div class="fld">
-              <label for="pbName">Player First Name</label>
-              <input type="text" id="pbName" name="name" placeholder="Jordan" autocomplete="name" required>
+              <label for="pbName">Player's First Name</label>
+              <!-- autocomplete off, not "name": the adult filling this in would otherwise be
+                   offered their own name for the player's field. -->
+              <input type="text" id="pbName" name="name" placeholder="Jordan" autocomplete="off" required>
             </div>
             <div class="fld">
-              <label for="pbGrade">Grade</label>
+              <label for="pbGrade">Player's Grade</label>
               <select id="pbGrade" name="grade">
                 <option>6th</option><option>7th</option><option>8th</option>
                 <option>9th</option><option>10th</option><option selected>11th</option><option>12th</option>
@@ -25,19 +33,19 @@
             </div>
           </div>
           <div class="fld">
-            <label for="pbEmail">Email (parent or player)</label>
+            <label for="pbEmail">Parent or Guardian Email</label>
             <input type="email" id="pbEmail" name="email" placeholder="you@email.com" autocomplete="email" required>
           </div>
           <div class="fld-row">
             <div class="fld">
-              <label for="pbPos">Position</label>
+              <label for="pbPos">Player's Position</label>
               <select id="pbPos" name="position">
                 <option>Point Guard</option><option>Shooting Guard</option>
                 <option>Wing</option><option>Forward</option><option>Center</option>
               </select>
             </div>
             <div class="fld">
-              <label for="pbFocus">Biggest Gap</label>
+              <label for="pbFocus">Player's Biggest Gap</label>
               <select id="pbFocus" name="focus">
                 <option>Ball handling under pressure</option>
                 <option>Shooting consistency</option>
@@ -47,8 +55,23 @@
               </select>
             </div>
           </div>
+          <!-- Parent gate. Wrapped in .fld on purpose: playbook-form.js finds the error slot with
+               input.closest('.fld'), so the injected .f-err lands here like every other field.
+               Inline styles only (src/styles/ is frozen this round) — they undo the uppercase
+               eyebrow label and the full-width input box that .fld would otherwise apply.
+               base.css OWNER: .fld input:focus sets outline:3px solid transparent, which suppresses
+               the browser's own focus ring on a checkbox and leaves only a faint red glow. Please
+               add: .fld input[type=checkbox]:focus-visible{outline:3px solid var(--fast-red);
+               outline-offset:3px;} — it cannot be done from an inline style attribute. -->
+          <div class="fld">
+            <label for="pbGuardian" style="display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;">
+              <input type="checkbox" id="pbGuardian" name="guardian-confirmed" value="yes" required style="width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;">
+              <span>I'm this player's parent or guardian, or I'm 18 or older, and this is my own email address.</span>
+            </label>
+          </div>
           <button type="submit" class="btn btn-primary" style="width:100%;">Build My Playbook</button>
           <p class="pb-note">No spam. You get the playbook, a short follow up, and nothing else unless you ask.</p>
+          <p class="pb-note" style="margin-top:4px;">What we do with it: <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Privacy</a> and <a href="/terms" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Terms</a>.</p>
         </form>
         <div class="pb-out" id="pbOut">
           <!-- H4 -> H3: the section heading is the H2 above, so H4 skipped a level.

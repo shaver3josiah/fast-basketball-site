@@ -19,12 +19,20 @@
       </div>
     </div>
     <div class="pb-form rise">
+      <!-- OWNER, PLEASE READ. NOT LEGAL ADVICE. The parent-or-guardian confirmation and the
+           privacy/terms links below are a good-faith starting point written by a non-lawyer, to
+           cut the risk of collecting a child's contact details with no adult involved. They are not
+           a compliance guarantee. Have a Florida attorney review this form, the privacy notice
+           and the terms before launch. Parents never see this note; it is a source comment.
+           The exact string on the next line is matched by fixContactForm in src/render.mjs to
+           inject the Netlify attributes and honeypot — do not edit it. -->
       <form id="ctForm" novalidate>
+        <p class="pb-note" style="margin:0 0 18px;">Parents and guardians, send this one yourself. Coach Blake replies to you, and nothing gets booked until you say yes to a time.</p>
         <div class="fld-row">
-          <div class="fld"><label for="cName">Your Name</label><input type="text" id="cName" name="name" autocomplete="name" placeholder="Parent or player" required></div>
-          <div class="fld"><label for="cPhone">Phone</label><input type="tel" id="cPhone" name="phone" autocomplete="tel" placeholder="(954) 555 0100"></div>
+          <div class="fld"><label for="cName">Parent or Guardian Name</label><input type="text" id="cName" name="name" autocomplete="name" placeholder="Your name" required></div>
+          <div class="fld"><label for="cPhone">Your Phone</label><input type="tel" id="cPhone" name="phone" autocomplete="tel" placeholder="(954) 555 0100"></div>
         </div>
-        <div class="fld"><label for="cEmail">Email</label><input type="email" id="cEmail" name="email" autocomplete="email" placeholder="you@email.com" required></div>
+        <div class="fld"><label for="cEmail">Parent or Guardian Email</label><input type="email" id="cEmail" name="email" autocomplete="email" placeholder="you@email.com" required></div>
         <div class="fld">
           <label for="cArea">Area</label>
           <select id="cArea" name="area">
@@ -36,9 +44,19 @@
         <div class="fld"><label for="cMsg">Tell us about the player</label><textarea id="cMsg" name="message" placeholder="Grade, position, current team, and where they want to be playing in two years."></textarea></div>
         <input type="hidden" name="program" id="cProgram" value="">
         <p class="trust-line" id="ctProgramLine" style="display:none;"></p>
+        <!-- Parent gate. .fld wrapper is deliberate: contact-form.js finds the error slot with
+             input.closest('.fld'). Inline styles only (src/styles/ is frozen this round) — see the
+             base.css owner note in playbook.html about the missing checkbox focus ring. -->
+        <div class="fld">
+          <label for="ctGuardian" style="display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;">
+            <input type="checkbox" id="ctGuardian" name="guardian-confirmed" value="yes" required style="width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;">
+            <span>I'm the player's parent or guardian, or I'm 18 or older, and these are my own contact details.</span>
+          </label>
+        </div>
         <p class="f-err" id="ctErr" role="alert" style="display:none;margin:0 0 12px;"></p>
         <button type="submit" class="btn btn-primary" style="width:100%;">Send and Get Slots</button>
         <p class="trust-line">You hear back within one business day with open slots. No obligation, and the first session is free.</p>
+        <p class="pb-note" style="margin-top:4px;">What we do with it: <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Privacy</a> and <a href="/terms" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Terms</a>.</p>
       </form>
       <div class="pb-out" id="ctDone" tabindex="-1">
         <!-- aria-level rather than a real level 2 tag: base.css styles this through the
@@ -53,6 +71,14 @@
     </div>
   </div>
 </section>
+
+<!-- EVERYTHING BELOW THIS LINE IS DEAD and never reaches a page: both callers cut this file at
+     the first </section> above (trimContactSection in src/render.mjs, trimToFirstSectionClose via
+     build.mjs step10). It still holds an old inline copy of the #pbForm and #ctForm submit
+     handlers with NO parent-or-guardian check in them. If anyone ever stops trimming this file,
+     those unguarded handlers ship and the parent gate is gone. Delete this tail or port the
+     guardian check across before changing the trim. Live handlers: src/js/contact-form.js and
+     src/js/playbook-form.js. -->
 
 </main>
 

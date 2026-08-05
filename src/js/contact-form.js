@@ -30,6 +30,7 @@
 
   var nameInput = document.getElementById('cName');
   var emailInput = document.getElementById('cEmail');
+  var guardianInput = document.getElementById('ctGuardian');
   var formErr = document.getElementById('ctErr');
   var done = document.getElementById('ctDone');
   var btn = form.querySelector('button[type="submit"]');
@@ -88,9 +89,14 @@
       setErr(emailInput, 'That email looks off. Check the spelling and try again.');
       bad = bad || emailInput;
     } else { clearErr(emailInput); }
+    /* Parent gate: a child must not be able to send their own details. */
+    if(guardianInput && !guardianInput.checked){
+      setErr(guardianInput, 'Tick this so we know an adult is sending it. Players, grab a parent.');
+      bad = bad || guardianInput;
+    } else if(guardianInput){ clearErr(guardianInput); }
     if(bad){
       bad.focus();
-      say('Add a name and a valid email');
+      say(bad === guardianInput ? 'Confirm a parent or guardian is sending this' : 'Add a name and a valid email');
       return;
     }
 

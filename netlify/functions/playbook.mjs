@@ -150,6 +150,7 @@ export default async (request, context) => {
     grade,
     position: position.id,
     focus: skillGap.id,
+    guardianConfirmed: payload.guardianConfirmed === true,
     referrer: payload.referrer || null,
     ip,
     emailSent

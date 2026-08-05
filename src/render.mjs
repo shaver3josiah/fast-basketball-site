@@ -291,7 +291,13 @@ export function buildFooter({ anchors = false } = {}) {
     '<div class="ft-col"><h3>Areas</h3>' + AREA_SERVED.slice(0, 4).map((name) => '<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
     '<div class="ft-col"><h3>More</h3><a href="/#receipts">The Résumé</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
     '</div>\n</div>\n' +
-    '<div class="ft-bot"><span>&copy; 2026 Fast Basketball. All rights reserved. <a href="/privacy">Privacy</a></span><span>Coral Springs, Florida</span></div>\n' +
+    // OWNER NOTE: the old line here claimed copyright and "all rights reserved".
+    // Fast Basketball is pre-launch with no verified entity and no registered marks,
+    // so that claim was removed. The name and tagline below assert nothing. Do not
+    // put back a ©, a ™, or "all rights reserved" until a Florida attorney says so.
+    // The Privacy and Terms pages are a good-faith starting point, not legal advice,
+    // and should be reviewed by a Florida attorney before launch.
+    '<div class="ft-bot"><span>Fast Basketball. Elevate to Execute. <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></span><span>Coral Springs, Florida</span></div>\n' +
     '</div>\n</footer>\n' +
     '<div class="mob-bar" id="mobBar">\n' +
     '<a href="' + contactHref + '" class="btn btn-primary">Free First Look</a>\n' +

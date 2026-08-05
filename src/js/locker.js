@@ -85,6 +85,7 @@
   var closeBtn = document.getElementById('lockerModalClose');
   var loginForm = document.getElementById('lockerLoginForm');
   var emailInput = document.getElementById('lockerEmail');
+  var guardianInput = document.getElementById('lockerGuardian');
   var userEmailEl = document.getElementById('lockerUserEmail');
   var logoutBtn = document.getElementById('lockerLogoutBtn');
   var gotoBtn = document.getElementById('lockerGotoBtn');
@@ -116,6 +117,13 @@
     fld.appendChild(m);
   }
   if(emailInput) emailInput.addEventListener('input', function(){ clearFieldErr(emailInput); });
+  if(guardianInput) guardianInput.addEventListener('input', function(){ clearFieldErr(guardianInput); });
+  /* One call site for "put the login form back to blank", so a reopened modal never shows a
+     stale parent-gate error. */
+  function resetLoginErrs(){
+    if(emailInput) clearFieldErr(emailInput);
+    if(guardianInput) clearFieldErr(guardianInput);
+  }
 
   function getLockerEmail(){
     try { return localStorage.getItem('fb_locker_email') || ''; } catch(e){ return ''; }
@@ -173,7 +181,7 @@
     } else {
       showPanel('form');
       if(loginForm) loginForm.reset();
-      if(emailInput) clearFieldErr(emailInput);
+      resetLoginErrs();
     }
     overlay.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -216,7 +224,8 @@
     clearLockerEmail();
     refreshAllCards(false);
     showPanel('form');
-    if(emailInput) clearFieldErr(emailInput);
+    if(loginForm) loginForm.reset();
+    resetLoginErrs();
     if(window.fbToast) window.fbToast('Logged out on this device');
   });
 
@@ -230,6 +239,12 @@
         grade: opts.grade || '',
         position: opts.position || '',
         focus: opts.focus || '',
+        /* Consent record. Always true by construction: every path here needs an email on file,
+           and the only thing that puts one there is the login form, which blocks submission
+           until the parent-or-guardian box is ticked.
+           ponytail: netlify/functions/playbook.mjs drops unknown keys — its owner should add
+           guardianConfirmed to storeLead() so the confirmation is actually kept. */
+        guardianConfirmed: true,
         referrer: document.referrer || window.location.href
       })
     }).then(function(res){
@@ -294,12 +309,21 @@
     loginForm.addEventListener('submit', function(e){
       e.preventDefault();
       var email = emailInput.value.trim();
+      var bad = null;
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
         setFieldErr(emailInput, 'That email looks off. Check the spelling and try again.');
-        emailInput.focus();
+        bad = emailInput;
+      } else { clearFieldErr(emailInput); }
+      /* Parent gate: the email that unlocks the Locker has to be an adult's. */
+      if(guardianInput && !guardianInput.checked){
+        setFieldErr(guardianInput, 'Tick this so we know a parent or guardian is unlocking it.');
+        bad = bad || guardianInput;
+      } else if(guardianInput){ clearFieldErr(guardianInput); }
+      if(bad){
+        bad.focus();
+        if(window.fbToast) window.fbToast(bad === guardianInput ? 'Confirm a parent or guardian is unlocking this' : 'Check the email address');
         return;
       }
-      clearFieldErr(emailInput);
       var submitBtn = loginForm.querySelector('button[type="submit"]');
       var prevText = submitBtn.textContent;
       submitBtn.disabled = true;

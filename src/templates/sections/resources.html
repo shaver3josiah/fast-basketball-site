@@ -11,7 +11,7 @@
     <div class="head">
       <div class="eyebrow">The Locker</div>
       <h2>The work does not stop at the buzzer.</h2>
-      <p class="lede">Workout blocks, drill packs, and film guides Coach Blake actually assigns. The free ones only need an inbox to send them to. The rest unlock with that same email — one login, no passwords.</p>
+      <p class="lede">Workout blocks, drill packs, and film guides Coach Blake actually assigns. The free ones only need a parent's inbox to send them to. The rest unlock with that same email — one login, no passwords.</p>
     </div>
     <!-- LOCKER STATE. The three states locker.js actually has are Free / Locked / Unlocked, and the
          button must match: "Get it by email" (free, no email on file yet), "Unlock with email"
@@ -98,15 +98,30 @@
       <div data-panel="form">
         <div class="eyebrow">Unlock The Locker</div>
         <h3 style="margin:14px 0 8px;">Email in. Plans out.</h3>
-        <p class="modal-p">No password, no account setup. Add your email and every locked plan on this page unlocks on this device.</p>
+        <p class="modal-p">No password, no account setup. Parents and guardians: add your email and every locked plan on this page unlocks on this device. Players, this is the part to hand to a parent.</p>
+        <!-- OWNER, PLEASE READ. NOT LEGAL ADVICE. The parent-or-guardian confirmation and the
+             privacy/terms links below are a good-faith starting point written by a non-lawyer, to
+             cut the risk of collecting a child's email address with no adult involved. They are not
+             a compliance guarantee. Have a Florida attorney review this form, the privacy notice
+             and the terms before launch. Parents never see this note; it is a source comment. -->
         <form id="lockerLoginForm" novalidate>
           <div class="fld">
-            <label for="lockerEmail">Email (parent or player)</label>
+            <label for="lockerEmail">Parent or Guardian Email</label>
             <input type="email" id="lockerEmail" name="email" placeholder="you@email.com" autocomplete="email" required>
+          </div>
+          <!-- Parent gate. .fld wrapper is deliberate: locker.js finds the error slot with
+               input.closest('.fld'). Inline styles only (src/styles/ is frozen this round) — see the
+               base.css owner note in playbook.html about the missing checkbox focus ring. -->
+          <div class="fld">
+            <label for="lockerGuardian" style="display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;">
+              <input type="checkbox" id="lockerGuardian" name="guardian-confirmed" value="yes" required style="width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;">
+              <span>I'm the player's parent or guardian, or I'm 18 or older, and this is my own email address.</span>
+            </label>
           </div>
           <button type="submit" class="btn btn-primary" style="width:100%;">Unlock The Locker</button>
         </form>
         <p class="pb-note">Same list as the playbook. One short follow up, nothing else.</p>
+        <p class="pb-note" style="margin-top:4px;">What we do with it: <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Privacy</a> and <a href="/terms" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Terms</a>.</p>
       </div>
 
       <div data-panel="sent" hidden>

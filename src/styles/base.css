@@ -465,6 +465,10 @@ nav.eyebrow a{min-width:44px;justify-content:center;}
   transition:border-color .25s,box-shadow .25s;
 }
 .fld input:focus,.fld select:focus,.fld textarea:focus{outline:3px solid transparent;outline-offset:2px;border-color:var(--fast-red);box-shadow:0 0 0 3px rgba(230,12,32,.16);}
+/* A checkbox is too small to read the glow above, and the transparent outline leaves
+   keyboard users with no visible focus at all. The consent boxes are the one control
+   on this site a parent MUST be able to find by keyboard, so give them a real ring. */
+.fld input[type=checkbox]:focus-visible{outline:3px solid var(--fast-red);outline-offset:3px;box-shadow:none;}
 .fld input::placeholder,.fld textarea::placeholder{color:#8F8F9C;opacity:1;}
 .fld textarea{resize:vertical;min-height:110px;}
 .fld-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
