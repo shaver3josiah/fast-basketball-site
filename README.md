@@ -55,7 +55,7 @@ Set these in the Netlify dashboard under Site configuration, Environment variabl
 
 | Variable | Holds |
 |---|---|
-| `SITE_URL` | The site's public URL, for example `https://fastbasketballmiami.com`. Used in canonicals, the sitemap, and structured data. Until it is set, Netlify's automatic `URL` variable (the `.netlify.app` address) is used; a production build fails if neither is available. |
+| `SITE_URL` | Overrides the site's public URL. Used in canonicals, the sitemap, and structured data. Leave it unset unless the domain changes: `src/lib/site-config.mjs` already defaults to the production domain `https://kingfastbasketball.com`, and Netlify's automatic `URL` variable (the `.netlify.app` address) is used ahead of that default on deploys where no custom domain is attached. |
 | `ADMIN_PASSWORD` | The single password that unlocks /admin. |
 | `ADMIN_SESSION_SECRET` | A long random string used to sign the admin login cookie. Generate once, never reuse elsewhere. |
 | `GITHUB_TOKEN` | A fine-grained GitHub personal access token, write access to this one repository only. Lets the admin panel commit content and photo changes. |
@@ -63,7 +63,7 @@ Set these in the Netlify dashboard under Site configuration, Environment variabl
 | `GITHUB_BRANCH` | The branch the site deploys from. Defaults to `main` if not set. |
 | `NETLIFY_BUILD_HOOK_URL` | Optional. A Netlify build hook URL. If set, the admin panel calls it after every save as a backup trigger, in case GitHub-triggered auto deploys are ever turned off. |
 | `RESEND_API_KEY` | API key for the Resend transactional email service, used to email the generated playbook. |
-| `PLAYBOOK_FROM_EMAIL` | The from address playbook emails are sent from, for example `playbook@fastbasketballmiami.com`. Must be a verified sender in Resend. |
+| `PLAYBOOK_FROM_EMAIL` | The from address playbook emails are sent from, for example `playbook@kingfastbasketball.com`. Must be a verified sender in Resend. |
 
 If `RESEND_API_KEY` or `PLAYBOOK_FROM_EMAIL` are missing, the playbook function still generates and returns the document. It just skips sending the email and reports that in its response, so a visitor's download never depends on email working.
 

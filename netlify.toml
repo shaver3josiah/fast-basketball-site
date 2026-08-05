@@ -164,6 +164,10 @@
 
 [context.production.environment]
   SITE_ENV = "production"
+  # "true" writes an indexable robots.txt (Allow: /, plus the sitemap line).
+  # "false" writes Disallow: / and search engines stay out. Deliberately "true":
+  # launch indexable. Flip to "false" and redeploy to pull the site back out of
+  # search — that is the whole switch, no other file changes.
   ROBOTS_ALLOW = "true"
 
 [context.deploy-preview.environment]

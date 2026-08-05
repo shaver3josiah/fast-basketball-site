@@ -1,7 +1,8 @@
-// SITE_URL (custom domain) wins; Netlify's automatic URL env var covers the
-// .netlify.app stage; the placeholder only survives local preview builds.
-// The build refuses to publish a production build while the placeholder remains.
-export const SITE_URL = process.env.SITE_URL || process.env.URL || 'https://SITE-DOMAIN-PENDING.example';
+// SITE_URL (explicit override) wins; Netlify's automatic URL env var covers the
+// .netlify.app stage; the default is the production domain the business owns.
+// build.mjs still hard-fails a production build on a *.example placeholder, so
+// never put one back here — set SITE_URL in the Netlify environment instead.
+export const SITE_URL = process.env.SITE_URL || process.env.URL || 'https://kingfastbasketball.com';
 
 export const BUSINESS_NAME = 'Fast Basketball';
 

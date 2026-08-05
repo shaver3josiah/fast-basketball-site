@@ -30,6 +30,9 @@ export function businessEntity({ description, email, suburbs }) {
     '@type': ['LocalBusiness', 'SportsActivityLocation'],
     '@id': BUSINESS_ID,
     name: BUSINESS_NAME,
+    // Raw "&": JSON-LD lives in script raw text, where the HTML parser does not
+    // decode entities. "&amp;" here would be read literally by every consumer.
+    slogan: 'Elevate & Execute',
     description,
     url: absoluteUrl('/'),
     email,

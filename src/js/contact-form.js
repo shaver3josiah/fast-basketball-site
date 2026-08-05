@@ -115,7 +115,7 @@
       say('Message sent. Talk soon.');
     }).catch(function(){
       /* ponytail: typed values stay in the DOM, so a retry costs the visitor nothing. */
-      showFormErr('That did not send. Try once more, or email coach@fastbasketball.com and we will pick it up there.');
+      showFormErr('That did not send. Try once more, or email coach@kingfastbasketball.com and we will pick it up there.');
       say('Send failed. Try again or email us');
     }).finally(function(){
       if(btn){ btn.disabled = false; btn.textContent = btnLabel; }

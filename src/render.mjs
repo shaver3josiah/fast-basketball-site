@@ -248,7 +248,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
     jsonLd: [
       // The canonical business entity. It lived in _prelude.html's <head>, which the
       // build never emits, so the homepage shipped no business identity at all.
-      businessEntity({ description: HOMEPAGE_DESCRIPTION, email: 'coach@fastbasketball.com', suburbs }),
+      businessEntity({ description: HOMEPAGE_DESCRIPTION, email: 'coach@kingfastbasketball.com', suburbs }),
       faqPage(FAQ_PAIRS),
       breadcrumbList([{ name: 'Home', path: '/' }])
     ]

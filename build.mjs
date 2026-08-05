@@ -11,15 +11,10 @@ import { SITE_URL } from './src/lib/site-config.mjs';
 const ROOT = process.cwd();
 const DIST = resolve(ROOT, 'dist');
 
-// PRICE PENDING, same as the homepage program cards: no real rate exists yet, so no number
-// goes on the page. Every training page mirrors the homepage wording rather than staying silent,
-// because a search lands a parent here, not on the homepage cards.
-const ASK_PRICE = {
-  amount: 'Ask',
-  unit: 'At your First Look',
-  line: 'Pricing is quoted at your First Look, which is free either way.'
-};
-
+// Each page states its own price: a search lands a parent on /training/<slug>, not on the
+// homepage cards, so that page has to answer "what does it cost" by itself. `unit` renders
+// inside .prog-price, which is white-space:nowrap — keep it to about two short words.
+// Amounts must match the homepage cards in src/templates/sections/programs.html.
 const TRAINING_PAGES = [
   {
     slug: 'first-look', textKey: 'prog.1', title: 'Free First Look Session | Fast Basketball', label: 'First Look Session',
@@ -29,16 +24,19 @@ const TRAINING_PAGES = [
   },
   {
     slug: 'private', textKey: 'prog.2', title: 'Private Basketball Training in Coral Springs | Fast Basketball', label: 'Private One on One',
-    features: ['Custom plan updated every four sessions', 'Footwork, handle, and finishing blocks', 'Shot chart and progress log', 'Packages of 5 and 10 available'],
+    price: { amount: '$75', unit: 'Per 60 Min', line: '$75 for a full 60 minute session. Your First Look before it is free.' },
+    features: ['Custom plan updated every four sessions', 'Footwork, handle, and finishing blocks', 'Shot chart and progress log', 'Packages of 5 and 10 available, 10 sessions $675 ($67.50 a session)'],
     next: 'Every session is built around the three things standing between your player and the next level. The plan updates every four sessions, and the shot chart shows the change before anyone has to take our word for it.'
   },
   {
     slug: 'small-group', textKey: 'prog.3', title: 'Small Group Basketball Training in North Broward | Fast Basketball', label: 'Small Group',
+    price: { amount: '$45', unit: 'Per Player', line: '$45 per player per session. Your First Look before it is free.' },
     features: ['Level matched groups only', 'Live one on one and two on two', 'Great for teammates and siblings', 'Weekly recurring slots'],
     next: 'Two to four players at the same level, going at each other every week. Skills get tested against a live defender the day they are taught, because that is the only version of a skill that shows up in a game.'
   },
   {
     slug: 'college-track', textKey: 'prog.4', title: 'College Track Basketball Program | Fast Basketball', label: 'College Track Program',
+    price: { amount: '$349', unit: 'Per Month', line: '$349 per month. Your First Look before it is free.' },
     features: ['Two private sessions per week', 'Monthly film review session', 'Highlight reel guidance', 'Recruiting profile and outreach help'],
     next: 'Twelve weeks for juniors and seniors who are serious about hearing from college programs. Coach Blake evaluated recruiting film from the college side of the table — the same eye now reviews your film, your reel, and your outreach.'
   }
@@ -157,7 +155,7 @@ function step8_trainingPages(content, prelude) {
     // Same .prog-price block the homepage cards use. The inline colour is the value base.css
     // already gives this caption on a dark surface (.prog-c.flag .prog-price small); the hero
     // band is dark and there is no dark-band rule for a bare .prog-price, hence it inline.
-    const price = page.price || ASK_PRICE;
+    const price = page.price;
     body += '<div class="prog-price" style="margin:22px 0 20px;">' + escapeHtml(price.amount) +
       '<small style="color:#8A8A96;">' + escapeHtml(price.unit) + '</small></div>\n';
     body += '<a href="/contact" class="btn btn-primary" data-program="' + escapeHtml(page.label) + '">Book This Program</a>\n';
@@ -261,7 +259,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<h2>Where it lives</h2>\n';
   body += '<p>Form submissions are processed by Netlify, the service that hosts this site, and are visible only to Coach Blake. The Locker remembers your email on your own device so your unlocked resources stay unlocked.</p>\n';
   body += '<h2>Want it gone?</h2>\n';
-  body += '<p>Email <a href="mailto:coach@fastbasketball.com">coach@fastbasketball.com</a> and we delete your information. One message, done.</p>\n';
+  body += '<p>Email <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a> and we delete your information. One message, done.</p>\n';
   body += '</div>\n</section>\n</main>\n';
   const html = buildSimplePage({
     title: 'Privacy | Fast Basketball',
