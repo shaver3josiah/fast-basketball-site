@@ -43,7 +43,12 @@
         <p class="trust-line">You hear back within one business day with open slots. No obligation, and the first session is free.</p>
       </form>
       <div class="pb-out" id="ctDone" tabindex="-1">
-        <h4>Got it. Message received.</h4>
+        <!-- aria-level rather than a real level 2 tag: base.css styles this through the
+             element selector ".pb-out h4" (shared with the playbook) and src/styles/ is not
+             ours to change. Level 2 reads correctly on both pages, under the h1 on /contact/
+             and alongside the section headings on the homepage. Left at level 4 it skipped
+             straight down from the /contact/ h1. -->
+        <h2>Got it. Message received.</h2>
         <p>Coach Blake reads these himself. You will hear back within one business day with open slots for your area, and nothing happens until you say yes to a time.</p>
         <p>If it has not landed by then, check your spam folder for <a href="mailto:coach@fastbasketball.com">coach@fastbasketball.com</a>, then email us directly and we will sort it out.</p>
       </div>

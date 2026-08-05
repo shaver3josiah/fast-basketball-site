@@ -13,8 +13,11 @@ function endSentence(text) {
   return /[.!?]$/.test(t) ? t : t + '.';
 }
 
-// Notes are attached as appositives after an em dash, so the leading capital
-// goes unless the note opens with a proper name ("City of Coral Gables ...").
+// Notes are attached after a colon, so the leading capital goes unless the note
+// opens with a proper name ("City of Coral Gables ..."). A colon rather than an
+// em dash on purpose: it reads correctly for both noun-phrase notes ("zoned high
+// school for ...") and verb-phrase notes ("serves the Hammocks ..."), and dashing
+// every record put 5 em dashes on each suburb page, which is its own machine tell.
 function appositive(note) {
   const t = String(note).trim();
   const second = t.split(/\s+/)[1] || '';
@@ -35,12 +38,14 @@ function venueDetail(v) {
 export function schoolsProse(suburb) {
   const parts = [];
   const highs = (suburb.high_schools || []).filter((h) => h && h.name);
+  // One school folds its note into the opener; naming it, stopping, then naming it
+  // again immediately reads as a stutter.
   if (highs.length === 1 && highs[0].note) {
-    parts.push(endSentence('The high school game in ' + suburb.name + ' runs through ' + highs[0].name + ' — ' + appositive(highs[0].note)));
+    parts.push(endSentence('The high school game in ' + suburb.name + ' runs through ' + highs[0].name + ': ' + appositive(highs[0].note)));
   } else if (highs.length > 0) {
     parts.push(endSentence('The high school game in ' + suburb.name + ' runs through ' + joinList(highs.map((h) => h.name))));
     for (const h of highs) {
-      if (h.note) parts.push(endSentence(h.name + ' — ' + appositive(h.note)));
+      if (h.note) parts.push(endSentence(h.name + ': ' + appositive(h.note)));
     }
   }
   const mids = (suburb.middle_schools || []).filter((m) => m && m.name);
@@ -59,16 +64,18 @@ export function venuesProse(suburb) {
   // second sentence, and that is how 11 of the 12 records are shaped.
   if (venues.length === 1) {
     const v = venues[0];
-    const tail = [v.address, venueDetail(v)].filter(Boolean).join(' — ');
-    return endSentence(opener + v.name + (tail ? ', ' + tail : ''));
+    const detail = venueDetail(v);
+    // Colon, matching schoolsProse. Promoting the detail to its own sentence
+    // instead would strand a subject-less fragment ("A rec center with ...").
+    return endSentence(opener + v.name + (v.address ? ', ' + v.address : '') + (detail ? ': ' + detail : ''));
   }
 
   const parts = [endSentence(opener + joinList(venues.map((v) => v.name)))];
   for (const v of venues) {
     const detail = venueDetail(v);
-    if (v.address && detail) parts.push(endSentence(v.name + ' is at ' + v.address + ' — ' + detail));
+    if (v.address && detail) parts.push(endSentence(v.name + ' is at ' + v.address + ': ' + detail));
     else if (v.address) parts.push(endSentence(v.name + ' is at ' + v.address));
-    else if (v.note) parts.push(endSentence(v.name + ' — ' + detail));
+    else if (v.note) parts.push(endSentence(v.name + ': ' + detail));
     else if (detail) parts.push(endSentence(v.name + ' is ' + detail));
   }
   return parts.join(' ');

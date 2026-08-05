@@ -212,7 +212,11 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   if (includeHeroPreload) head += heroPreload(content, responsiveManifest) + '\n';
   head += fontPreloadLinks() + '\n';
   head += stylesheetLinks() + '\n';
-  head += '<noscript><style>.zr,.rise{opacity:1 !important;transform:none !important;filter:none !important}</style></noscript>\n';
+  // The second selector is not redundant: .rcp-c.rise:not(.in) .rcp-shot img and
+  // .coach-img.rise:not(.in) img hide the DESCENDANT image, so unhiding .rise alone
+  // left the resume photos, the portrait and the badge invisible without JS.
+  head += '<noscript><style>.zr,.rise{opacity:1 !important;transform:none !important;filter:none !important}'
+    + '.rcp-c .rcp-shot img,.coach-img img,.coach-badge{opacity:1 !important;animation:none !important}</style></noscript>\n';
   for (const data of jsonLd) head += jsonLdScript(data) + '\n';
   head += '</head>\n';
   return head;
@@ -223,7 +227,10 @@ function scriptsBlock() {
 }
 
 export function assembleHomepage({ sections, prelude, content, responsiveManifest, playbookTemplates }) {
-  const bodyStart = prelude.indexOf('<body');
+  // Anchor past </head> first: the head carries comments that mention <body>/<nav>
+  // literally, and a bare indexOf('<body') matches the comment instead of the tag,
+  // which ships the comment tail as visible copy and wraps the page in a phantom <nav>.
+  const bodyStart = prelude.indexOf('<body', prelude.indexOf('</head>'));
   const bodyMarkup = prelude.slice(bodyStart);
 
   let page = '';
@@ -273,9 +280,9 @@ export function buildFooter({ anchors = false } = {}) {
     '<div><a href="/" class="brand ft-brand" aria-label="Fast Basketball home"><img src="/brand/logo-white.svg" alt="Fast Basketball" width="250" height="106" loading="lazy" decoding="async"></a>' +
     '<p style="color:#7E7E8A;font-size:.9rem;max-width:32ch;">Private basketball training in Miami. Built by a college coach for players chasing the next level.</p></div>\n' +
     '<div class="ft-nav">\n' +
-    '<div class="ft-col"><h5>Training</h5>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
-    '<div class="ft-col"><h5>Areas</h5>' + AREA_SERVED.slice(0, 4).map((name) => '<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
-    '<div class="ft-col"><h5>More</h5><a href="/#receipts">The Résumé</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
+    '<div class="ft-col"><h3>Training</h3>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
+    '<div class="ft-col"><h3>Areas</h3>' + AREA_SERVED.slice(0, 4).map((name) => '<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
+    '<div class="ft-col"><h3>More</h3><a href="/#receipts">The Résumé</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
     '</div>\n</div>\n' +
     '<div class="ft-bot"><span>&copy; 2026 Fast Basketball. All rights reserved. <a href="/privacy">Privacy</a></span><span>Miami, Florida</span></div>\n' +
     '</div>\n</footer>\n' +
@@ -288,7 +295,9 @@ export function buildFooter({ anchors = false } = {}) {
 
 export function buildNav(prelude) {
   const navStart = prelude.indexOf('<nav class="nav"');
-  const navEnd = prelude.indexOf('</nav>');
+  // Search the close tag from navStart, not from 0, so a </nav> mentioned in an
+  // earlier head comment can never truncate the nav to an empty slice.
+  const navEnd = prelude.indexOf('</nav>', navStart);
   if (navStart === -1 || navEnd === -1) return '';
   const raw = prelude.slice(navStart, navEnd + '</nav>'.length) + '\n';
   return '<a class="skip-link" href="#main">Skip to content</a>\n' + raw.replace(/href="#/g, 'href="/#');

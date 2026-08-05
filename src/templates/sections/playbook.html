@@ -1,10 +1,10 @@
 <section class="band band-dark" id="playbook">
   <div class="shell pb">
     <div>
-      <div class="eyebrow rise">Free Resource</div>
-      <h2 class="zr" style="margin:18px 0 20px;">Your playbook, <br><span class="hollow">built for you.</span></h2>
-      <p class="lede rise" data-edit="pb.lede">Tell us the player, the position, and the one thing standing in their way. We build a custom four week workout block, send it to your inbox, and hand you the download right here.</p>
-      <div class="pb-form rise" style="margin-top:28px;">
+      <div class="eyebrow">Free Resource</div>
+      <h2 style="margin:18px 0 20px;">Your playbook, <br><span class="hollow">built for you.</span></h2>
+      <p class="lede" data-edit="pb.lede">Tell us the player, the position, and the one thing standing in their way. We build a custom four week workout block, send it to your inbox, and hand you the download right here.</p>
+      <div class="pb-form" style="margin-top:28px;">
         <!-- Netlify wiring mirrors #ctForm (see fixContactForm in src/render.mjs): method=POST +
              data-netlify + matching hidden form-name + honeypot, so a no-JS submit still posts.
              With JS on, src/js/playbook-form.js preventDefault()s and posts to /playbook/generate. -->
@@ -51,15 +51,21 @@
           <p class="pb-note">No spam. You get the playbook, a short follow up, and nothing else unless you ask.</p>
         </form>
         <div class="pb-out" id="pbOut">
-          <h4 id="pbTitle">Playbook ready</h4>
+          <!-- H4 -> H3: the section heading is the H2 above, so H4 skipped a level.
+               base.css styles these by tag (`.pb-out h4` / `.pb-sheet h4`) and h1,h2,h3 carry
+               shared display rules, so the inline declarations below restate the *current*
+               rendered values exactly (1.1rem, bold, 1.6 leading, no tracking) rather than
+               restyling. base.css owner: retarget those two selectors to h3, then delete these. -->
+          <h3 id="pbTitle" style="font-size:1.1rem;font-weight:700;line-height:1.6;letter-spacing:normal;text-wrap:normal;margin-bottom:8px;">Playbook ready</h3>
           <p id="pbMsg">Generated and queued to your inbox. Download it below.</p>
           <ul class="pb-list" id="pbList"></ul>
         </div>
       </div>
     </div>
-    <div class="rise">
+    <!-- Wrapper kept (it is the second .pb grid cell), .rise dropped. -->
+    <div>
       <div class="pb-sheet">
-        <h4>Guard Development Playbook</h4>
+        <h3 style="font-size:1.3rem;font-weight:700;line-height:1.6;letter-spacing:normal;text-wrap:normal;margin-bottom:4px;">Guard Development Playbook</h3>
         <div class="pbs-sub">Sample / 4 Week Block</div>
         <div class="pbs-row"><b>Week 1</b><span>Stance, pivots, both hands</span></div>
         <div class="pbs-row"><b>Week 2</b><span>Change of pace, hesitation reads</span></div>

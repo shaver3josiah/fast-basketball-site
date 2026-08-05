@@ -33,7 +33,9 @@ const one = schoolsProse({
 ends(one);
 clean(one);
 notesClosed(one, ['Zoned high school for Westchester, 8865 SW 16th St']);
-assert.ok(one.includes('Coral Park — zoned high school'), one);
+// Colon, not an em dash: 5 dashes per suburb page tripped the em-dash-overuse detector.
+assert.ok(one.includes('Coral Park: zoned high school'), one);
+assert.ok(!one.includes('—'), 'no em dashes in generated suburb prose: ' + one);
 
 // many high schools
 const manyNotes = ['Zoned high school for much of central Kendall, 10655 SW 97th Ave', 'Serves the Hammocks and West Kendall area'];
@@ -44,7 +46,8 @@ const many = schoolsProse({
 ends(many);
 clean(many);
 notesClosed(many, manyNotes);
-assert.ok(many.includes('97th Ave. Varela —'), many);
+assert.ok(many.includes('97th Ave. Varela:'), many);
+ assert.ok(!many.includes('—'), 'no em dashes: ' + many);
 
 // high school with no note at all
 const noNote = schoolsProse({ name: 'X', high_schools: [{ name: 'A High' }, { name: 'B High' }] });
@@ -55,7 +58,7 @@ clean(noNote);
 assert.ok(schoolsProse({
   name: 'Coral Gables',
   high_schools: [{ name: 'Gables High', note: 'City of Coral Gables zoned high school, 450 Bird Rd' }]
-}).includes('— City of Coral Gables'));
+}).includes(': City of Coral Gables'));
 
 // missing note / address / type must not leave a dangling connector
 for (const v of [

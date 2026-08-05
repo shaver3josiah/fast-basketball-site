@@ -9,16 +9,26 @@
   </style>
   <div class="shell">
     <div class="head">
-      <div class="eyebrow rise">The Locker</div>
-      <h2 class="zr">The work does not <br>stop at the <span class="hollow">buzzer.</span></h2>
-      <p class="lede rise">Workout blocks, drill packs, and film guides Coach Blake actually assigns. The open ones are yours right now. The rest unlock with your email — one login, no passwords.</p>
+      <div class="eyebrow">The Locker</div>
+      <h2>The work does not <br>stop at the <span class="hollow">buzzer.</span></h2>
+      <p class="lede">Workout blocks, drill packs, and film guides Coach Blake actually assigns. The free ones only need an inbox to send them to. The rest unlock with that same email — one login, no passwords.</p>
     </div>
-    <!-- The two data-locked="false" cards read "Free", not "Unlocked": nothing is unlocked until an
-         email is on file, and their button still says "Get it by email". src/js/locker.js:139 rewrites
-         this chip to "Unlocked" on load for every open card and re-introduces the contradiction —
-         that line needs to emit "Free" when its `unlocked` argument is false. Owner: locker.js. -->
-    <div class="res stg">
-      <article class="res-c rise openres" style="--i:0" data-resource-id="1" data-locked="false" data-position="point-guard" data-focus="ball-handling">
+    <!-- LOCKER STATE. The three states locker.js actually has are Free / Locked / Unlocked, and the
+         button must match: "Get it by email" (free, no email on file yet), "Unlock with email"
+         (locked), "Download" (email on file). The two data-locked="false" cards below therefore ship
+         "Free" + "Get it by email" — consistent, and correct with JS off. The lede above was also
+         reworded: "the open ones are yours right now" was false, since a free card still routes
+         through the email modal on click.
+
+         STILL BROKEN, AND NOT FIXABLE FROM THIS FILE: src/js/locker.js:139 runs on load via
+         refreshAllCards() and hard-codes the chip text to "Unlocked" for every open card, while
+         :142 keeps the button at "Get it by email" — so with JS on the contradiction comes straight
+         back and no markup here can prevent it. locker.js:139 needs to emit "Free" instead of
+         "Unlocked" when its `unlocked` argument is false. Owner: src/js/locker.js.
+         (Tags deliberately not written out above — see render.mjs:226, literal markup inside a
+         comment has broken this build's head/nav slicing before.) -->
+    <div class="res">
+      <article class="res-c openres" data-resource-id="1" data-locked="false" data-position="point-guard" data-focus="ball-handling">
         <div class="res-top">
           <span class="res-meta">4-Week Block · Web + Inbox</span>
           <span class="res-open">Free</span>
@@ -28,7 +38,7 @@
         <button type="button" class="res-get" data-action="download">Get it by email</button>
       </article>
 
-      <article class="res-c rise openres" style="--i:1" data-resource-id="2" data-locked="false" data-position="shooting-guard" data-focus="shooting-consistency">
+      <article class="res-c openres" data-resource-id="2" data-locked="false" data-position="shooting-guard" data-focus="shooting-consistency">
         <div class="res-top">
           <span class="res-meta">4-Week Block · Web + Inbox</span>
           <span class="res-open">Free</span>
@@ -38,7 +48,7 @@
         <button type="button" class="res-get" data-action="download">Get it by email</button>
       </article>
 
-      <article class="res-c rise" style="--i:2" data-resource-id="3" data-locked="true" data-position="power-forward" data-focus="finishing-through-contact">
+      <article class="res-c" data-resource-id="3" data-locked="true" data-position="power-forward" data-focus="finishing-through-contact">
         <div class="res-top">
           <span class="res-meta">4-Week Block · Web + Inbox</span>
           <span class="res-lock"><i class="lk"></i>Locked</span>
@@ -48,7 +58,7 @@
         <button type="button" class="res-get" data-action="unlock">Unlock with email</button>
       </article>
 
-      <article class="res-c rise" style="--i:3" data-resource-id="4" data-locked="true" data-position="wing" data-focus="defensive-footwork">
+      <article class="res-c" data-resource-id="4" data-locked="true" data-position="wing" data-focus="defensive-footwork">
         <div class="res-top">
           <span class="res-meta">4-Week Block · Web + Inbox</span>
           <span class="res-lock"><i class="lk"></i>Locked</span>
@@ -58,7 +68,7 @@
         <button type="button" class="res-get" data-action="unlock">Unlock with email</button>
       </article>
 
-      <article class="res-c rise" style="--i:4" data-resource-id="5" data-locked="true" data-comingsoon="true">
+      <article class="res-c" data-resource-id="5" data-locked="true" data-comingsoon="true">
         <div class="res-top">
           <span class="res-meta">5 Sessions</span>
           <span class="res-lock">Coming Soon</span>
@@ -68,7 +78,7 @@
         <button type="button" class="res-get" disabled aria-disabled="true">Coming Soon</button>
       </article>
 
-      <article class="res-c rise" style="--i:5" data-resource-id="6" data-locked="true" data-comingsoon="true">
+      <article class="res-c" data-resource-id="6" data-locked="true" data-comingsoon="true">
         <div class="res-top">
           <span class="res-meta">6 Weeks · Web + Inbox</span>
           <span class="res-lock">Coming Soon</span>

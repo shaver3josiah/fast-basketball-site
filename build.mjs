@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { validateSuburbs, formatErrors } from './src/lib/validate-suburbs.mjs';
-import { generateResponsiveImages, generateOgImage } from './scripts/responsive-images.mjs';
+import { generateResponsiveImages } from './scripts/responsive-images.mjs';
 import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, fixContactForm, fixPlaybookForm, trimToFirstSectionClose, escapeHtml } from './src/render.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
 import { renderCoachPage } from './src/lib/coach-page.mjs';
@@ -11,9 +11,19 @@ import { SITE_URL } from './src/lib/site-config.mjs';
 const ROOT = process.cwd();
 const DIST = resolve(ROOT, 'dist');
 
+// PRICE PENDING, same as the homepage program cards: no real rate exists yet, so no number
+// goes on the page. Every training page mirrors the homepage wording rather than staying silent,
+// because a search lands a parent here, not on the homepage cards.
+const ASK_PRICE = {
+  amount: 'Ask',
+  unit: 'At your First Look',
+  line: 'Pricing is quoted at your First Look, which is free either way.'
+};
+
 const TRAINING_PAGES = [
   {
     slug: 'first-look', textKey: 'prog.1', title: 'Free First Look Session | Fast Basketball Miami', label: 'First Look Session',
+    price: { amount: 'Free', unit: '60 Minutes', line: 'No obligation. The report is yours either way.' },
     features: ['Full movement and shooting form screen', 'Live one on one reads against Coach Blake', 'Written strengths and gaps report, yours to keep', 'Open slots offered within one business day'],
     next: 'Bring your player, their shoes, and sixty minutes. Coach Blake watches them move, puts them through live reads, and writes down exactly where they stand. You leave with the report whether or not you ever book again.'
   },
@@ -34,9 +44,21 @@ const TRAINING_PAGES = [
   }
 ];
 
+// Footer column labels ("Training / Areas / More") ship as <h5> from buildFooter, so every
+// page's outline ended H2 > H5 > H5 > H5 — a skipped level on all 20+ pages. Both the markup
+// (src/render.mjs) and its only styling hook (the element selector `.ft-col h5` in
+// src/styles/base.css) sit outside this slice, and swapping the tag without the CSS would
+// resize the labels. aria-level raises the exposed level for assistive tech and audits while
+// leaving the rendered pixels identical.
+// ponytail: collapse to a plain <h2> the day buildFooter and `.ft-col h5` can change together.
+function fixFooterHeadingLevels(html) {
+  return html.replace(/<div class="ft-col"><h5>/g, '<div class="ft-col"><h5 role="heading" aria-level="2">');
+}
+
+// Single funnel: every page in this build is written through here.
 function writeHtml(path, html) {
   mkdirSync(resolve(path, '..'), { recursive: true });
-  writeFileSync(path, html);
+  writeFileSync(path, fixFooterHeadingLevels(html));
 }
 
 // Standalone pages built from homepage section fragments start at <h2>;
@@ -86,13 +108,16 @@ function step3_copyStatic() {
   console.log('Copied static assets into dist/.');
 }
 
+// SOCIAL CARD: /brand/og-image-1200x630.png wins, so the og-cover.jpg build step is gone.
+// og-cover.jpg was sharp's automatic "attention" crop of the hero photo: it lopped the top of
+// Coach Blake's head off, carried no logo and no wordmark, and gave a third of the frame to a
+// ladder brand's logo. The brand card is drawn at exactly 1200x630, is legible at thumbnail
+// size, and is what src/render.mjs buildHead already points every page at. One card, one path.
 async function step4_responsiveImages() {
   const contentPath = resolve(ROOT, 'src/data/content.json');
   const sourceDirs = [resolve(ROOT, 'src/images/source'), resolve(ROOT, 'src/images/uploads')];
   const outDir = resolve(DIST, 'images');
-  const content = JSON.parse(readFileSync(contentPath, 'utf8'));
   const result = await generateResponsiveImages({ contentPath, sourceDirs, outDir });
-  await generateOgImage({ heroImage: content.images['hero.nets'], sourceDirs, outDir });
   writeFileSync(resolve(ROOT, 'src/data/responsive-manifest.json'), JSON.stringify(result, null, 2) + '\n');
   console.log('Generated responsive image variants for ' + Object.keys(result).length + ' images.');
   return result;
@@ -129,7 +154,14 @@ function step8_trainingPages(content, prelude) {
     body += '<div class="eyebrow">Fast Basketball Program</div>\n';
     body += '<h1>' + escapeHtml(page.label) + '</h1>\n';
     body += '<p class="lede">' + escapeHtml(content.text[page.textKey]) + '</p>\n';
+    // Same .prog-price block the homepage cards use. The inline colour is the value base.css
+    // already gives this caption on a dark surface (.prog-c.flag .prog-price small); the hero
+    // band is dark and there is no dark-band rule for a bare .prog-price, hence it inline.
+    const price = page.price || ASK_PRICE;
+    body += '<div class="prog-price" style="margin:22px 0 20px;">' + escapeHtml(price.amount) +
+      '<small style="color:#8A8A96;">' + escapeHtml(price.unit) + '</small></div>\n';
     body += '<a href="/contact" class="btn btn-primary" data-program="' + escapeHtml(page.label) + '">Book This Program</a>\n';
+    body += '<p class="trust-line">' + escapeHtml(price.line) + '</p>\n';
     body += '</div>\n</header>\n';
     body += '<section class="band band-ink">\n<div class="shell">\n';
     body += '<h2>What you get</h2>\n<ul class="prog-list">\n';
@@ -175,6 +207,20 @@ function step9_playbookPage(sections, content, playbookTemplates, prelude) {
   return ['/playbook'];
 }
 
+// The six item FAQ lives in areas.html for the homepage. Slice that same <section> in rather
+// than copying it, so the two pages can never drift. Behaviour needs nothing extra: /js/main.js
+// wires every .faq-q it finds and already ships on every page, and it assigns the faqA<n> ids
+// per document, so the two pages cannot collide.
+function faqSection(areasHtml) {
+  const anchor = areasHtml.indexOf('<div class="faq">');
+  const start = anchor === -1 ? -1 : areasHtml.lastIndexOf('<section', anchor);
+  const end = anchor === -1 ? -1 : areasHtml.indexOf('</section>', anchor);
+  if (start === -1 || end === -1) {
+    throw new Error('could not locate the FAQ <section> in areas.html — /contact/ would ship without it');
+  }
+  return areasHtml.slice(start, end + '</section>'.length) + '\n';
+}
+
 function step10_contactPage(sections, content, prelude) {
   let body = trimToFirstSectionClose(sections.contact);
   body = applyTextEdits(body, {
@@ -185,7 +231,8 @@ function step10_contactPage(sections, content, prelude) {
     'ct.area': content.text['ct.area']
   });
   body = fixContactForm(body);
-  body = '<main id="main">\n' + promoteFirstH2(body) + '</main>\n';
+  // FAQ is appended after promoteFirstH2 so the contact heading stays the page's only <h1>.
+  body = '<main id="main">\n' + promoteFirstH2(body) + faqSection(sections.areas) + '</main>\n';
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact' }])];
   const html = buildSimplePage({
     title: 'Contact Fast Basketball | Book a Session in Miami',

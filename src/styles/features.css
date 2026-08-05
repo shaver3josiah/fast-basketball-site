@@ -101,8 +101,10 @@
 .modal h3{font-size:1.5rem;}
 .modal-p{font-size:.95rem;color:var(--text-body-dark);margin-bottom:20px;}
 .modal-row{display:flex;gap:12px;flex-wrap:wrap;}
-.modal-x{position:absolute;top:12px;right:12px;width:40px;height:40px;flex-shrink:0;}
-.modal-x::before,.modal-x::after{content:"";position:absolute;top:19px;left:11px;width:18px;height:2px;background:#8C8C99;transition:background .2s;}
+/* 44px box, not 40 (WCAG 2.5.5). The X strokes are 18x2, so centring them in the
+   box is left:(44-18)/2=13px, top:(44-2)/2=21px — was 11/19 for the 40px box. */
+.modal-x{position:absolute;top:12px;right:12px;width:44px;height:44px;flex-shrink:0;}
+.modal-x::before,.modal-x::after{content:"";position:absolute;top:21px;left:13px;width:18px;height:2px;background:#8C8C99;transition:background .2s;}
 .modal-x::before{transform:rotate(45deg);}
 .modal-x::after{transform:rotate(-45deg);}
 .modal-x:hover::before,.modal-x:hover::after{background:var(--red-hot);}

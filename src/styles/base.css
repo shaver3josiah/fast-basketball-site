@@ -60,7 +60,9 @@ p{text-wrap:pretty;}
    The card surface stays dark (--ink-lift), so copy inside it must stay light;
    the note below sits on chalk, so it and its links must go dark. */
 .band-light .rcp-txt h3{color:var(--bone);}
-.band-light .rcp-note{color:var(--text-body-light);}
+/* --line-dark is rgba(255,255,255,.10) — invisible on chalk, so the note's rule
+   above the links vanished on the coach page. */
+.band-light .rcp-note{color:var(--text-body-light);border-top-color:var(--line-light);}
 .band-light .rcp-note a{color:var(--red-deep);}
 
 /* Suburb pages have no .head wrapper — their copy is a bare <p> straight under
@@ -68,6 +70,28 @@ p{text-wrap:pretty;}
    either carries its own cap (.lede) or lives inside a card/component, so it
    sits deeper than a direct child and this scoped rule leaves it alone. */
 .band .shell>p{max-width:70ch;}
+
+/* Bare prose links in band copy (the coach page IG handle, the nearby-suburb
+   cross-links) were ~19px tall — under the 44px touch floor (WCAG 2.5.5).
+   padding-block on an inline box, NOT the display:inline-block+padding that
+   .rcp-note a uses: vertical padding on an inline element grows its hit box
+   (19 -> 47px) without growing the line box, so the paragraph re-flows by
+   exactly zero. inline-block measured +135px on the Kendall neighbours
+   paragraph, because every line holding a link gets taller.
+   Three guards stop it ever stacking on a rule that already pads:
+   - `a:not([class])` skips every classed link (.btn, .suburb-programs li a);
+   - the `>` child combinator limits it to <p> sitting directly in .shell, so
+     .credential-links (nested in .credential-block) is structurally out of reach;
+   - .rcp-note IS a direct child of .shell, so it is excluded by name.
+   Padding is not additive in CSS anyway — a second match would override, not sum. */
+.band .shell>p:not(.rcp-note)>a:not([class]){padding-block:14px;}
+/* The rule above is scoped to <p> in .shell, so it cannot reach the contact rows
+   or the suburb breadcrumb. Both are flex children, where padding would reflow —
+   min-height on an inline-flex box hits 44px without moving anything. */
+.ct-r a,nav.eyebrow a{display:inline-flex;align-items:center;min-height:44px;}
+/* Short crumbs ("Home") are wider than 24px but under 44; centring inside a 44px
+   min-width costs ~6px of layout and clears the AAA target floor. */
+nav.eyebrow a{min-width:44px;justify-content:center;}
 
 /* ---------- BRAND MARK (square icon + UI text label — the wordmark is never rebuilt in type) ---------- */
 .brand{display:flex;align-items:center;gap:11px;padding:6px 0;}
@@ -372,6 +396,10 @@ p{text-wrap:pretty;}
 .prog-list{list-style:none;margin-bottom:26px;flex-grow:1;}
 .prog-list li{padding:9px 0 9px 26px;position:relative;font-size:.95rem;color:#3E3E48;border-bottom:1px solid var(--chalk-2);}
 .prog-c.flag .prog-list li{color:#C4C4CE;border-bottom-color:rgba(255,255,255,.09);}
+/* .prog-list li is coloured for the white card on the chalk band. The /training/*
+   pages emit it bare on a dark band (build.mjs), where #3E3E48 measured 1.75:1.
+   Keyed to the dark surfaces themselves so any future reuse is covered too. */
+.band-ink .prog-list li,.band-dark .prog-list li{color:#C4C4CE;border-bottom-color:rgba(255,255,255,.09);}
 .prog-list li::before{content:"";position:absolute;left:0;top:16px;width:12px;height:2px;background:var(--fast-red);}
 
 /* ---------- METHOD ---------- */
@@ -445,7 +473,7 @@ p{text-wrap:pretty;}
 .pb-note{font-size:.8rem;color:#8F8F9C;margin-top:13px;}
 .pb-out{margin-top:20px;padding:20px;border:1px dashed rgba(230,12,32,.5);border-radius:11px;background:rgba(230,12,32,.07);display:none;}
 .pb-out.show{display:block;animation:zrIn .7s linear forwards;}
-.pb-out h4{font-family:var(--font-display);font-size:1.1rem;margin-bottom:8px;text-transform:uppercase;}
+.pb-out :is(h2,h3,h4){font-family:var(--font-display);font-size:1.1rem;margin-bottom:8px;text-transform:uppercase;}
 .pb-out p{font-size:.9rem;color:#B3B3BF;margin-bottom:14px;}
 .pb-list{list-style:none;}
 .pb-list li{border-bottom:1px solid var(--line-dark);}
@@ -522,7 +550,7 @@ p{text-wrap:pretty;}
 .ft{background:var(--court-black);border-top:1px solid var(--line-dark);padding:56px 0 34px;}
 .ft-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-bottom:40px;}
 .ft-nav{display:flex;gap:56px;flex-wrap:wrap;}
-.ft-col h5{font-family:var(--font-eyebrow);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint-dark);margin-bottom:14px;}
+.ft-col h3{font-family:var(--font-eyebrow);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint-dark);margin-bottom:14px;}
 .ft-col a{display:block;min-height:44px;padding:10px 0;color:#AFAFBB;font-size:.93rem;transition:color .22s,transform .25s;}
 .ft-col a:hover{color:var(--red-hot);transform:translateX(3px);}
 .ft-bot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--line-dark);font-size:.83rem;color:#8F8F9C;}
@@ -600,6 +628,9 @@ body.adm-live [data-img]{outline:2px dashed rgba(230,12,32,.6);outline-offset:2p
 @media(max-width:1040px){
   .hero-grid,.coach,.pb,.ct{grid-template-columns:1fr;gap:40px;}
   .mth{grid-template-columns:repeat(2,1fr);}
+  /* 5 steps into 2 columns leaves step 05 orphaned beside an empty cell. Let the
+     last step run the full width so the sequence reads 2+2+1 with no hole. */
+  .mth-s:last-child{grid-column:1/-1;}
   .rcp{grid-template-columns:repeat(2,1fr);}
   .areas{grid-template-columns:repeat(3,1fr);}
   .score{grid-template-columns:repeat(2,1fr);}
