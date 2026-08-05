@@ -36,10 +36,26 @@ export function validateSuburb(record, label) {
     }
   }
 
-  if (!Array.isArray(record.high_schools) || record.high_schools.length < 1) {
-    fail('high_schools', 'is required and must contain at least one entry');
+  // Empty is legal: Margate has no public high school inside the city and
+  // inventing one to satisfy a schema is worse than a shorter page. The
+  // combined check below is what stops a record from having no schools at all,
+  // which would ship an empty <p> where the schools prose goes.
+  if (!Array.isArray(record.high_schools)) {
+    fail('high_schools', 'is required and must be an array, which may be empty when a city has no high school');
   } else if (record.high_schools.some((h) => !h || !h.name)) {
     fail('high_schools', 'every entry must have a name');
+  }
+
+  if (!Array.isArray(record.middle_schools)) {
+    fail('middle_schools', 'is required and must be an array');
+  } else if (record.middle_schools.some((m) => !m || !m.name)) {
+    fail('middle_schools', 'every entry must have a name');
+  }
+
+  const schoolCount = (Array.isArray(record.high_schools) ? record.high_schools.length : 0) +
+    (Array.isArray(record.middle_schools) ? record.middle_schools.length : 0);
+  if (schoolCount < 1) {
+    fail('high_schools', 'and middle_schools cannot both be empty, a page needs at least one school to name');
   }
 
   if (!Array.isArray(record.training_venues) || record.training_venues.length < 1) {

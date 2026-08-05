@@ -39,8 +39,8 @@ export function renderResumeCards(content, responsiveManifest) {
 }
 
 export function renderCoachPage({ content, responsiveManifest, prelude }) {
-  const title = 'Coach Blake Kingsley | Founder, Fast Basketball Miami';
-  const description = 'Coach Blake Kingsley was on staff for the 2025 Horizon League champion Robert Morris Colonials and the 2024 NJCAA Region 16 champion Moberly Area. Now training players in Miami.';
+  const title = 'Coach Blake Kingsley | Founder, Fast Basketball';
+  const description = 'Coach Blake Kingsley was on staff for the 2025 Horizon League champion Robert Morris Colonials and the 2024 NJCAA Region 16 champion Moberly Area. Now training players in north Broward County.';
   const canonicalPath = '/coach-blake-kingsley';
 
   const jsonLd = [

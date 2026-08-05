@@ -1,284 +1,132 @@
 [
   {
-    "name": "Kendall",
-    "slug": "kendall",
-    "county": "Miami-Dade",
+    "name": "Coral Springs",
+    "slug": "coral-springs",
+    "county": "Broward",
     "tier": 1,
-    "zip_codes": ["33156", "33176", "33183", "33186"],
+    "zip_codes": ["33065", "33067", "33071", "33076"],
     "drive_time_from_base_min": null,
     "high_schools": [
-      { "name": "Miami Killian Senior High School", "type": "public", "note": "Zoned high school for much of central Kendall, 10655 SW 97th Ave" },
-      { "name": "Felix Varela Senior High School", "type": "public", "note": "Serves the Hammocks and West Kendall area" }
+      { "name": "Coral Springs High School", "type": "public", "note": "Serves the area from 7201 W Sample Rd, 2,177 students" },
+      { "name": "Coral Glades High School", "type": "public", "note": "Serves the area from 2700 Sportsplex Dr" },
+      { "name": "J.P. Taravella High School", "type": "public", "note": "Serves the area from 10600 Riverside Dr, 2,436 students" }
     ],
     "middle_schools": [
-      { "name": "Arvida Middle School", "type": "public" }
+      { "name": "Forest Glen Middle School", "type": "public", "note": "Every one of its eighth graders goes on to Coral Springs High" },
+      { "name": "Sawgrass Springs Middle School", "type": "public", "note": "Its eighth graders go on to Coral Glades High, all of them" },
+      { "name": "Ramblewood Middle School", "type": "public", "note": "Sends the whole eighth grade on to J.P. Taravella High" },
+      { "name": "Coral Springs Middle School", "type": "public", "note": "Splits almost exactly down the middle, half to Coral Glades and half to Stoneman Douglas" }
     ],
     "training_venues": [
-      { "name": "Kendale Lakes Park", "address": "7850 SW 142nd Ave, Miami, FL 33183", "type": "public park", "courts": "outdoor", "note": "County park with confirmed outdoor basketball, tennis, and racquetball courts plus a recreation center running youth basketball programs" }
+      { "name": "Mullins Park", "address": "10000 Ben Geiger Drive, Coral Springs, FL 33065", "type": "city park", "courts": "outdoor", "note": "Outdoor courts open until 10pm, and one of the two sites the city Basketball Club plays at" },
+      { "name": "Betti Stradling Park", "address": "10301 Wiles Road, Coral Springs, FL 33076", "type": "city park", "courts": "outdoor", "note": "Outdoor courts open until 10:30pm most nights" },
+      { "name": "Forest Hills Park", "address": "2500 Forest Hills Boulevard, Coral Springs, FL 33065", "type": "city park", "courts": "outdoor", "note": "Outdoor courts in the Forest Hills neighbourhood" },
+      { "name": "North Community Park", "address": "5601 Coral Springs Drive, Coral Springs, FL 33076", "type": "city park", "courts": "outdoor", "note": "Outdoor courts on the north end of Coral Springs Drive" },
+      { "name": "Cypress Hammock", "address": "1300 Coral Springs Drive, Coral Springs, FL 33071", "type": "city park", "courts": "outdoor", "note": "Outdoor courts open until 10:30pm most nights" }
     ],
-    "local_paragraph": "Kendall is less one neighborhood than a whole stretch of southwest Miami-Dade, and asking where someone lives usually gets an answer built around cross streets, 88th Street or 137th Avenue, rather than a name. Killian and Varela split the area's basketball talent, each pulling players from a different corner of the sprawl. Kendale Lakes Park, off 142nd Avenue, keeps its hoops busy most evenings once homework wraps up, alongside tennis and racquetball courts under the same roof. Dadeland Mall marks the unofficial northern edge, a reference point locals use even for directions nowhere near the mall itself. Coaching a Kendall kid means planning around whichever stretch of the Turnpike he crosses that day, since a session that ignores commute time gets skipped more than one that plans for it.",
-    "landmarks": ["Dadeland Mall", "Kendall Drive corridor", "The Falls shopping center"],
-    "nearest_neighbors": ["pinecrest", "westchester", "palmetto-bay"],
+    "local_paragraph": "Three public high schools sit inside Coral Springs, and most of the middle schools feed them cleanly. Forest Glen sends its eighth graders to Coral Springs High, Sawgrass Springs to Coral Glades, Ramblewood to Taravella. Coral Springs Middle is the odd one out, splitting almost down the middle between Coral Glades and Stoneman Douglas, so a family there cannot assume which gym they end up in. The courts are all outdoor and all open late. Mullins Park runs until ten, Betti Stradling on Wiles Road and Cypress Hammock until ten thirty, with more at Forest Hills and North Community Park. There is no YMCA here and no Boys and Girls Club, so outside the seasonal rec league there is nothing to fall into.",
+    "landmarks": ["Coral Square Mall", "Sawgrass Nature Center and Wildlife Hospital", "Sample Road corridor"],
+    "nearest_neighbors": ["parkland", "coconut-creek", "margate"],
     "testimonial_slot": null,
-    "meta_title": "Kendall Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball skills training for Kendall boys 11 to 18, built around Killian and Varela schedules, from a coach who evaluated college recruits."
+    "meta_title": "Coral Springs Basketball Training | Fast Basketball",
+    "meta_description": "Private basketball training for Coral Springs players 11 to 18 at Mullins Park and Betti Stradling, from a coach who evaluated college recruits."
   },
   {
-    "name": "Pinecrest",
-    "slug": "pinecrest",
-    "county": "Miami-Dade",
+    "name": "Parkland",
+    "slug": "parkland",
+    "county": "Broward",
     "tier": 1,
-    "zip_codes": ["33156", "33143"],
+    "zip_codes": ["33067", "33076"],
     "drive_time_from_base_min": null,
     "high_schools": [
-      { "name": "Miami Palmetto Senior High School", "type": "public", "note": "Zoned high school for the Village of Pinecrest, 7431 SW 120th St" }
+      { "name": "Marjory Stoneman Douglas High School", "type": "public", "note": "Serves the area from 5901 Pine Island Rd" }
     ],
     "middle_schools": [
-      { "name": "Palmetto Middle School", "type": "public" }
+      { "name": "Westglades Middle School", "type": "public" }
     ],
     "training_venues": [
-      { "name": "Suniland Park", "address": "12855 Pinecrest Pkwy, Pinecrest, FL 33156", "type": "public park", "courts": "outdoor", "note": "Ten acre village park with confirmed outdoor basketball courts alongside baseball and football fields" }
+      { "name": "Parkland Recreation and Enrichment Center", "address": "10559 Trails End, Parkland, FL 33076", "type": "indoor city facility", "courts": "indoor", "note": "24,700 square foot air conditioned center with a full indoor court" },
+      { "name": "Pine Trails Park", "address": "10555 Trails End, Parkland, FL 33076", "type": "city park", "courts": "outdoor", "note": "The city's largest park, with outdoor basketball among its facilities" }
     ],
-    "local_paragraph": "Pinecrest carries itself like a small town tucked inside Miami-Dade, oak canopy over Red Road and a village government still arguing about tree ordinances. Palmetto pulls talent from the whole village and beyond, and its gym anchors most of the local basketball conversation. A short walk from the middle school of the same name, Suniland Park keeps its hoops full most afternoons, tucked a block off South Dixie Highway near the old Suniland shopping strip. Pinecrest Gardens draws an entirely different crowd, families there for the farmers market rather than a jump shot. A player already committed to the varsity roster still needs individual reps a team practice cannot supply on its own, which is where the extra work tends to happen.",
-    "landmarks": ["Pinecrest Gardens", "Suniland shopping district", "Old Cutler Road"],
-    "nearest_neighbors": ["kendall", "coral-gables", "palmetto-bay"],
+    "local_paragraph": "Parkland runs on one public high school. Marjory Stoneman Douglas sits on Pine Island Road, and for a player who wants to be seen at school, that is the whole path. Nearly everything else is on Trails End. Pine Trails Park, the biggest park the city has, keeps the outdoor hoops, and the recreation and enrichment center next door wraps 24,700 air conditioned square feet around a full indoor court. Parkland puts its own residents first in that building, so access gets confirmed before a session is booked, not after. One high school and one indoor court fill up fast, which is the argument for holding a weekly slot instead of hunting an opening every week.",
+    "landmarks": ["Trails End recreation corridor", "Pine Island Road", "Parkland City Hall on University Drive"],
+    "nearest_neighbors": ["coral-springs", "coconut-creek", "margate"],
     "testimonial_slot": null,
-    "meta_title": "Pinecrest Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training near Suniland Park for Pinecrest players 11 to 18, scheduled around Palmetto Panthers practice and school demands."
+    "meta_title": "Parkland Basketball Training | Fast Basketball",
+    "meta_description": "Private basketball training for Parkland players 11 to 18 near Pine Trails Park and Stoneman Douglas, built around an already full school week."
   },
   {
-    "name": "Coral Gables",
-    "slug": "coral-gables",
-    "county": "Miami-Dade",
+    "name": "Coconut Creek",
+    "slug": "coconut-creek",
+    "county": "Broward",
     "tier": 1,
-    "zip_codes": ["33134", "33146"],
+    "zip_codes": ["33063", "33066", "33073"],
     "drive_time_from_base_min": null,
     "high_schools": [
-      { "name": "Coral Gables Senior High School", "type": "public", "note": "City of Coral Gables zoned high school, 450 Bird Rd, home of the Cavaliers" }
+      { "name": "Monarch High School", "type": "public", "note": "Serves the area from 5050 Wiles Rd, 2,213 students" },
+      { "name": "Coconut Creek High School", "type": "public", "note": "Serves the area from 1400 NW 44th Ave, 1,972 students" }
     ],
     "middle_schools": [
-      { "name": "Ponce de Leon Middle School", "type": "public" }
+      { "name": "Margate Middle School", "type": "public" }
     ],
     "training_venues": [
-      { "name": "Coral Gables War Memorial Youth Center", "address": "405 University Dr, Coral Gables, FL 33134", "type": "rec center", "courts": "both", "note": "Confirmed 13,244 square foot indoor gymnasium plus outdoor lighted basketball courts, membership required for youth center access" }
+      { "name": "Windmill Park", "address": "700 Lyons Rd, Coconut Creek, FL 33063", "type": "city park", "courts": "outdoor", "note": "Outdoor basketball courts, open to 10pm on weeknights" },
+      { "name": "Winston Park", "address": "5201 NW 49 Ave, Coconut Creek, FL 33073", "type": "city park", "courts": "outdoor", "note": "Outdoor basketball alongside a nature trail" }
     ],
-    "local_paragraph": "Coral Gables is a city of coral rock arches and roundabouts, and Coral Gables Senior High sits right on Bird Road, close enough to the Biltmore that visiting families sometimes confuse the two landmarks. The War Memorial Youth Center on University Drive has both an indoor gym and lighted outdoor courts, making it one of the few Gables venues that works rain or shine. Miracle Mile is a few blocks north, useful shorthand when describing where a gym sits relative to downtown. Families here tend to be scheduling around Ponce de Leon Middle and a packed after school calendar, so training sessions get built around whatever window actually exists that week rather than an ideal one that never shows up.",
-    "landmarks": ["Miracle Mile", "Biltmore Hotel", "Venetian Pool"],
-    "nearest_neighbors": ["pinecrest", "westchester", "kendall"],
+    "local_paragraph": "The city that calls itself the Butterfly Capital of the World runs two public high schools: Monarch on Wiles Road with 2,213 students, and Coconut Creek High on NW 44th Avenue with 1,972. The MainStreet district, boxed in by Wiles, Lyons, Sample and State Road 7, is the city's own name for its centre. Basketball here is simpler than that. Windmill Park on Lyons Road keeps outdoor courts lit until ten on weeknights, and Winston Park has more beside its nature trail. The indoor gym at the recreation complex sits behind a CreekFit membership, and the city publishes no way to rent a basketball court, so we plan around daylight, dinner, and a court nobody can reserve ahead of us.",
+    "landmarks": ["Seminole Casino Coconut Creek", "the MainStreet district", "Lyons Road recreation corridor"],
+    "nearest_neighbors": ["margate", "coral-springs", "tamarac"],
     "testimonial_slot": null,
-    "meta_title": "Coral Gables Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Coral Gables families at War Memorial Youth Center, built around Cavaliers practice and a packed school week."
+    "meta_title": "Coconut Creek Basketball Training | Fast Basketball",
+    "meta_description": "Private basketball training for Coconut Creek players 11 to 18 at Windmill and Winston Park, scheduled around Monarch and Creek practice."
   },
   {
-    "name": "Westchester",
-    "slug": "westchester",
-    "county": "Miami-Dade",
-    "tier": 1,
-    "zip_codes": ["33144", "33165"],
-    "drive_time_from_base_min": null,
-    "high_schools": [
-      { "name": "Miami Coral Park Senior High School", "type": "public", "note": "Zoned high school for Westchester, 8865 SW 16th St" }
-    ],
-    "middle_schools": [
-      { "name": "Rockway Middle School", "type": "public" }
-    ],
-    "training_venues": [
-      { "name": "Miller Drive Park", "address": "5510 SW 94th Ct, Miami, FL 33165", "type": "public park", "courts": "outdoor", "note": "Confirmed outdoor basketball, tennis, and pickleball courts" },
-      { "name": "Tropical Park", "address": "7900 SW 40th St, Miami, FL 33155", "type": "public park", "courts": "outdoor", "note": "Large county park with confirmed outdoor basketball courts, a short drive northeast of Westchester proper" }
-    ],
-    "local_paragraph": "Westchester is one of the older, more built out corners of unincorporated Miami-Dade, tight single family blocks stacked between Bird Road and Coral Way. Coral Park has been the neighborhood's basketball address for generations, a program alumni still bring up decades later at family gatherings. Miller Drive Park, tucked off 94th Court near Rockway Middle, fills its basketball, tennis, and pickleball courts once the bell rings for the day. A few minutes northeast on 40th Street, Tropical Park adds another option for a family willing to make the short drive. Because Westchester is dense and every side street eventually dead ends into a bigger road, Fast Basketball plans a route before picking a venue, not after.",
-    "landmarks": ["Bird Road corridor", "Tamiami Park", "Fontainebleau shopping district"],
-    "nearest_neighbors": ["coral-gables", "kendall", "doral"],
-    "testimonial_slot": null,
-    "meta_title": "Westchester Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Westchester players 11 to 18 at Miller Drive Park, scheduled around Coral Park High practice and travel time."
-  },
-  {
-    "name": "Doral",
-    "slug": "doral",
-    "county": "Miami-Dade",
-    "tier": 1,
-    "zip_codes": ["33166", "33172", "33178"],
-    "drive_time_from_base_min": null,
-    "high_schools": [
-      { "name": "Ronald W. Reagan/Doral Senior High School", "type": "public", "note": "Zoned high school for the City of Doral, 8600 NW 107th Ave" }
-    ],
-    "middle_schools": [
-      { "name": "Doral Academy Charter Middle School", "type": "charter" }
-    ],
-    "training_venues": [
-      { "name": "Doral Central Park", "address": "3005 NW 92nd Ave, Doral, FL 33172", "type": "public park", "courts": "outdoor", "note": "Confirmed outdoor basketball courts inside a larger city sports complex" }
-    ],
-    "local_paragraph": "Doral did not exist as its own city until 2003, and the construction cranes along 107th Avenue make clear it has not stopped growing since. Doral High anchors much of the area's basketball scene near where 107th meets the Palmetto Expressway. Nearby, Doral Central Park stretches across 92nd Avenue with enough acreage for baseball diamonds, a dog park, and a set of hoops that rarely sit empty on a weekday evening. CityPlace Doral gives visitors a landmark to navigate by when a court is a few turns off the main road. Doral pulls kids from dozens of countries and just as many club sports calendars, so Fast Basketball asks about a full week before building a plan instead of assuming a blank schedule.",
-    "landmarks": ["CityPlace Doral", "Trump National Doral", "NW 41st Street corridor"],
-    "nearest_neighbors": ["miami-lakes", "westchester", "coral-gables"],
-    "testimonial_slot": null,
-    "meta_title": "Doral Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball skills training for Doral players 11 to 18 at Doral Central Park, built around Doral Senior High practice and club conflicts."
-  },
-  {
-    "name": "Miami Lakes",
-    "slug": "miami-lakes",
-    "county": "Miami-Dade",
-    "tier": 1,
-    "zip_codes": ["33014", "33016", "33018"],
-    "drive_time_from_base_min": null,
-    "high_schools": [
-      { "name": "Hialeah-Miami Lakes Senior High School", "type": "public", "note": "Zoned high school serving Miami Lakes, 7977 W 12th Ave" },
-      { "name": "Miami Lakes Educational Center", "type": "public", "note": "Career and technical public high school located in Miami Lakes, 5780 NW 158th St" }
-    ],
-    "middle_schools": [
-      { "name": "Miami Lakes Middle School", "type": "public" }
-    ],
-    "training_venues": [
-      { "name": "Miami Lakes Optimist Park", "address": "6411 NW 162nd St, Miami Lakes, FL 33014", "type": "public park", "courts": "outdoor", "note": "Confirmed four outdoor basketball courts within a larger multi sport park" }
-    ],
-    "local_paragraph": "Miami Lakes still has the small town feel its planners intended, with Main Street as the obvious center and Miami Lakes Educational Center serving much of the area's high school population. Miami Lakes Optimist Park, off NW 162nd Street, has four outdoor courts that get steady traffic from Miami Lakes Middle kids right after the bell. Royal Oaks Park sits nearby too, a quieter option on weekends. Because Miami Lakes borders both Hialeah and the Palmetto Expressway corridor, families here often want a coach willing to work early mornings before the commute gets bad. Fast Basketball schedules around that reality instead of asking Miami Lakes parents to fight afternoon traffic to reach a gym across town.",
-    "landmarks": ["Main Street Miami Lakes", "Royal Oaks Park", "Palmetto Expressway corridor"],
-    "nearest_neighbors": ["doral", "westchester", "aventura"],
-    "testimonial_slot": null,
-    "meta_title": "Miami Lakes Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Miami Lakes players 11 to 18 at Optimist Park, scheduled around school and early morning availability."
-  },
-  {
-    "name": "Palmetto Bay",
-    "slug": "palmetto-bay",
-    "county": "Miami-Dade",
-    "tier": 2,
-    "zip_codes": ["33157", "33176"],
-    "drive_time_from_base_min": null,
-    "high_schools": [
-      { "name": "Coral Reef Senior High School", "type": "public", "note": "Zoned high school serving Palmetto Bay, 10101 SW 152nd St" }
-    ],
-    "middle_schools": [
-      { "name": "Southwood Middle School", "type": "public" }
-    ],
-    "training_venues": [
-      { "name": "Palmetto Bay Park", "address": "17535 SW 95th Ave, Palmetto Bay, FL 33157", "type": "public park", "courts": "outdoor", "note": "Confirmed basketball and pickleball courts on the Village of Palmetto Bay's own facility page" }
-    ],
-    "local_paragraph": "Palmetto Bay runs along Old Cutler Road, shaded and slower paced than the suburbs just north of it, with Coral Reef Senior High serving as the area's main feeder into college recruiting conversations. Palmetto Bay Park, on SW 95th Avenue, has basketball and pickleball courts that share space with a skate park and two playgrounds. Southwood Middle sits a short drive west, and its dismissal time shapes a lot of family schedules in the village. Fast Basketball works with Palmetto Bay families who want their son seen by the same kind of eye that used to sit in the stands evaluating recruits, without turning a Tuesday evening into a fight through rush hour traffic on US-1.",
-    "landmarks": ["Old Cutler Road", "Franjo Triangle", "Deering Estate"],
-    "nearest_neighbors": ["kendall", "pinecrest", "coral-gables"],
-    "testimonial_slot": null,
-    "meta_title": "Palmetto Bay Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Palmetto Bay families near Coral Reef High, from a coach who recently evaluated college recruiting prospects."
-  },
-  {
-    "name": "Aventura",
-    "slug": "aventura",
-    "county": "Miami-Dade",
-    "tier": 2,
-    "zip_codes": ["33160", "33180"],
-    "drive_time_from_base_min": null,
-    "high_schools": [
-      { "name": "Don Soffer Aventura High School", "type": "charter", "note": "Public charter high school on NE 213th Street, opened 2020" }
-    ],
-    "middle_schools": [
-      { "name": "Aventura City of Excellence School", "type": "charter" }
-    ],
-    "training_venues": [
-      { "name": "Founders Park", "address": "3105 NE 190th St, Aventura, FL 33180", "type": "public park", "courts": "outdoor", "note": "Outdoor basketball court completed November 2024, converted from a former tennis court" }
-    ],
-    "local_paragraph": "Aventura is compact and vertical, condo towers stacked along Biscayne Boulevard with Aventura Mall as the landmark everyone already knows. Don Soffer Aventura High School opened relatively recently on NE 213th Street and has quickly become the center of the area's basketball conversation. Founders Park, just off NE 190th Street, added an outdoor basketball court in 2024, giving the city courts that did not exist a few years earlier. Families here are often balancing a school day at Aventura City of Excellence with club commitments across the county line in Broward. Fast Basketball treats Aventura as its own pocket of the service area, with sessions timed around the Waterways traffic pattern rather than a one size schedule that ignores it.",
-    "landmarks": ["Aventura Mall", "Waterways", "Biscayne Boulevard corridor"],
-    "nearest_neighbors": ["miami-lakes", "doral", "weston"],
-    "testimonial_slot": null,
-    "meta_title": "Aventura Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Aventura players 11 to 18 near Don Soffer Aventura High, scheduled around club ball and a tight school day."
-  },
-  {
-    "name": "Weston",
-    "slug": "weston",
+    "name": "Margate",
+    "slug": "margate",
     "county": "Broward",
     "tier": 2,
-    "zip_codes": ["33326", "33327", "33331", "33332"],
+    "zip_codes": ["33063"],
     "drive_time_from_base_min": null,
-    "high_schools": [
-      { "name": "Cypress Bay High School", "type": "public", "note": "Zoned high school for most of Weston, 18600 Vista Park Blvd" }
-    ],
+    "high_schools": [],
     "middle_schools": [
-      { "name": "Tequesta Trace Middle School", "type": "public" },
-      { "name": "Falcon Cove Middle School", "type": "public" }
+      { "name": "Margate Middle School", "type": "public", "note": "Serves the area from 500 NW 65th Ave" }
     ],
     "training_venues": [
-      { "name": "Weston Regional Park", "address": "20200 Saddle Club Rd, Weston, FL 33327", "type": "public park", "courts": "outdoor", "note": "Confirmed eight outdoor lighted basketball courts, free to use" }
+      { "name": "Firefighters Park", "address": "2500 Rock Island Rd, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "Full size lighted courts that host every Margate Youth Basketball League game and practice, open to 10pm" },
+      { "name": "Coral Gate Park", "address": "5650 Coral Lake Drive, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "Three half courts, open to 10pm" },
+      { "name": "Centennial Park", "address": "7800 Royal Palm Blvd, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "One full size ADA accessible court" },
+      { "name": "Andrews Field", "address": "500 NW 65th Ave, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "Outdoor courts and a quarter mile track, sharing an address with Margate Middle School" }
     ],
-    "local_paragraph": "Weston sits west of the Everglades levee, planned and orderly, with Cypress Bay High School serving as the largest single feeder of basketball talent in the city. Weston Regional Park, on Saddle Club Road, has eight outdoor basketball courts, more than almost anywhere else in this part of Broward, and they stay busy through the evening. Tequesta Trace Middle and Falcon Cove Middle split the city's younger players between them. Bonaventure gives longtime residents a shorthand for the western half of town. Fast Basketball works with Weston families around a school and club schedule that is often already full, adding a focused skill session rather than one more full length scrimmage to an already long week.",
-    "landmarks": ["Weston Town Center", "Bonaventure", "Saddle Club Road corridor"],
-    "nearest_neighbors": ["pembroke-pines", "cooper-city", "miramar"],
+    "local_paragraph": "No public high school sits inside Margate, and no indoor gym either. Every court in this city is outdoors. Margate Middle on NW 65th Avenue is where essentially every player here comes up, and Andrews Field shares its address, so the courts and the quarter mile track sit a walk from the school door. Firefighters Park on Rock Island Road runs until ten and hosts every Margate Youth Basketball League game and practice. Coral Gate Park has three half courts, Centennial one full ADA accessible court. Median age in Margate is 45, so the kids who play here play on purpose, and the league charges non-residents 150 dollars rather than turning them away.",
+    "landmarks": ["Margate Boulevard", "Calypso Cove at Royal Palm Park", "State Road 7"],
+    "nearest_neighbors": ["coconut-creek", "coral-springs", "tamarac"],
     "testimonial_slot": null,
-    "meta_title": "Weston Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Weston families near Cypress Bay High and Weston Regional Park, built around an already full school week."
+    "meta_title": "Margate Basketball Training | Fast Basketball",
+    "meta_description": "Private basketball training for Margate players 11 to 18 at Firefighters Park, built around the city youth league and Margate Middle School."
   },
   {
-    "name": "Pembroke Pines",
-    "slug": "pembroke-pines",
+    "name": "Tamarac",
+    "slug": "tamarac",
     "county": "Broward",
     "tier": 2,
-    "zip_codes": ["33026", "33028", "33029"],
+    "zip_codes": ["33321"],
     "drive_time_from_base_min": null,
     "high_schools": [
-      { "name": "Charles W. Flanagan High School", "type": "public", "note": "Zoned high school for southern Pembroke Pines, 12800 Taft St" }
+      { "name": "Millennium 6-12 Collegiate Academy", "type": "public", "note": "Serves the area from 5803 NW 94th Ave, grades six through twelve, 1,435 students" }
     ],
     "middle_schools": [
-      { "name": "Walter C. Young Middle School", "type": "public" },
-      { "name": "Pines Middle School", "type": "public" }
+      { "name": "Millennium 6-12 Collegiate Academy", "type": "public" }
     ],
     "training_venues": [
-      { "name": "C.B. Smith Park", "address": "900 N Flamingo Rd, Pembroke Pines, FL 33028", "type": "public park", "courts": "outdoor", "note": "Confirmed outdoor basketball courts inside a large county park also known for its water park" }
+      { "name": "Tamarac Community Center", "address": "8601 W Commercial Blvd, Tamarac, FL", "type": "indoor city facility", "courts": "indoor", "note": "Indoor gymnasium that hosts city youth basketball, open to 8:30pm on weeknights" },
+      { "name": "Tamarac Sports Complex", "address": "9901 NW 77th St, Tamarac, FL 33321", "type": "city complex", "courts": "outdoor", "note": "Outdoor basketball courts sharing a gate with the skate park, tennis and ball fields" },
+      { "name": "Waters Edge Park", "address": "7508 NW 61st St, Tamarac, FL 33321", "type": "city park", "courts": "outdoor", "note": "Outdoor courts, open until dusk" }
     ],
-    "local_paragraph": "Pembroke Pines is one of Broward's biggest cities by population, stretching from Flamingo Road almost to the Everglades levee on the west side. Flanagan alone sends dozens of players a year into some level of college ball, drawing kids from well outside its immediate zone. C.B. Smith Park, better known locally for its water park than for basketball, still keeps courts busy along North Flamingo Road most weekday evenings. Walter C. Young feeds the high school roster years in advance, while Pines Middle, closer to Douglas Road on the east side, sends players a different direction entirely. A city this large means two Pembroke Pines addresses can be twenty minutes apart, so Fast Basketball confirms where a kid actually lives before deciding which end of town to meet him in.",
-    "landmarks": ["Pembroke Lakes Mall", "Flamingo Road corridor", "City Center at Pembroke Pines"],
-    "nearest_neighbors": ["miramar", "cooper-city", "weston"],
+    "local_paragraph": "Millennium 6-12 Collegiate Academy on NW 94th Avenue is the only public school in Tamarac that carries a player to twelfth grade, 1,435 students across seven grades. After that, high school ball belongs to somebody else's city. The community center on West Commercial Boulevard holds the indoor gym, open to eight thirty on weeknights, and it hosts the city league at 90 dollars for residents and 110 for everybody else. A four week fundamentals class for ages seven through thirteen runs 40 dollars. Outdoors, the sports complex on NW 77th Street shares a gate with the skate park, and Waters Edge off NW 61st Street runs until dusk. Tamarac carries a large retirement population, so a player who wants real competition is usually driving to find it.",
+    "landmarks": ["Colony West Country Club", "Woodmont Country Club", "the Sunday farmers market at Veterans Park"],
+    "nearest_neighbors": ["margate", "coconut-creek", "coral-springs"],
     "testimonial_slot": null,
-    "meta_title": "Pembroke Pines Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Pembroke Pines players 11 to 18 near C.B. Smith Park, scheduled around Flanagan practice and travel ball."
-  },
-  {
-    "name": "Miramar",
-    "slug": "miramar",
-    "county": "Broward",
-    "tier": 2,
-    "zip_codes": ["33023", "33025", "33027"],
-    "drive_time_from_base_min": null,
-    "high_schools": [
-      { "name": "Miramar High School", "type": "public", "note": "Zoned high school for the City of Miramar, 3601 SW 89th Ave" }
-    ],
-    "middle_schools": [
-      { "name": "New Renaissance Middle School", "type": "public" },
-      { "name": "Glades Middle School", "type": "public" }
-    ],
-    "training_venues": [
-      { "name": "Miramar Regional Park", "address": "16801 Miramar Pkwy, Miramar, FL 33027", "type": "public park", "courts": "outdoor", "note": "Confirmed outdoor basketball courts within a large multi field regional park" }
-    ],
-    "local_paragraph": "Miramar sits right against the Miami-Dade line, close enough that plenty of residents work north of the county border and drive home against traffic every evening. The high school on 89th Avenue has quietly sent players into college programs for years without much outside attention. A short trip down Miramar Parkway, the regional park spreads basketball courts across a much bigger complex the city expanded gradually over two decades. New Renaissance and Glades split the youngest players between two different feeder patterns on opposite sides of town. Because so many parents here are still driving home from Miami-Dade at five o'clock, Fast Basketball leaves room in the evening rather than assuming everyone is free the second school lets out.",
-    "landmarks": ["Miramar Town Center", "Silver Lakes", "Miramar Parkway corridor"],
-    "nearest_neighbors": ["pembroke-pines", "cooper-city", "weston"],
-    "testimonial_slot": null,
-    "meta_title": "Miramar Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Miramar players 11 to 18 near Miramar Regional Park, scheduled around Miramar High practice and commute time."
-  },
-  {
-    "name": "Cooper City",
-    "slug": "cooper-city",
-    "county": "Broward",
-    "tier": 2,
-    "zip_codes": ["33328", "33330"],
-    "drive_time_from_base_min": null,
-    "high_schools": [
-      { "name": "Cooper City High School", "type": "public", "note": "Zoned high school for Cooper City, 9401 Stirling Rd" }
-    ],
-    "middle_schools": [
-      { "name": "Pioneer Middle School", "type": "public" }
-    ],
-    "training_venues": [
-      { "name": "Brian Piccolo Sports Park", "address": "9501 Sheridan St, Cooper City, FL 33024", "type": "public park", "courts": "outdoor", "note": "Confirmed two outdoor basketball courts inside a large county park just over the Cooper City line. [VERIFY] the mailing zip code is shared with neighboring Pembroke Pines and Hollywood addresses" }
-    ],
-    "local_paragraph": "Cooper City markets itself as the place families move to on purpose, not just where they end up, and the high school on Stirling Road backs up that reputation with one of the stronger athletic programs in western Broward. Just over the city line on Sheridan Street, Brian Piccolo hosts soccer fields, a velodrome, and a couple of basketball hoops most residents already visit for reasons that have nothing to do with the sport. Pioneer feeds directly into the varsity roster a few years down the line, so younger players here are usually thinking two steps ahead already. A plan that competes with an already packed practice calendar gets dropped fast, so sessions get built to sit alongside it instead.",
-    "landmarks": ["Brian Piccolo Sports Park", "Embassy Lakes", "Stirling Road corridor"],
-    "nearest_neighbors": ["pembroke-pines", "weston", "miramar"],
-    "testimonial_slot": null,
-    "meta_title": "Cooper City Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Cooper City families near Brian Piccolo Park, built around Cooper City High practice and a full school week."
+    "meta_title": "Tamarac Basketball Training | Fast Basketball",
+    "meta_description": "Private basketball training for Tamarac players 11 to 18 near the Tamarac Sports Complex and Millennium 6-12, indoor and outdoor courts."
   }
 ]

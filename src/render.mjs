@@ -16,7 +16,7 @@ const IMAGE_RENDER_RULES = {
 
 const FAQ_PAIRS = [
   { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year. Younger players get more habit building, older players get more decision work and recruiting support.' },
-  { question: 'Where do sessions actually happen?', answer: 'Partner gyms and courts across Miami Dade and Broward. When you book, you get the exact location for your area. If you have access to a court through a school or community center, we can often train there.' },
+  { question: 'Where do sessions actually happen?', answer: 'City parks and partner courts across north Broward County. When you book, you get the exact location for your area. If you have access to a court through a school or community center, we can often train there.' },
   { question: 'How fast will we see a difference?', answer: 'Form changes show up in two to three weeks. Game changes usually take six to eight, because a skill has to survive speed, contact, and fatigue before it shows up on a Friday night.' },
   { question: 'Do you help with college recruiting?', answer: 'Yes, inside the College Track Program. Coach Blake spent the last two seasons on college staffs at the NJCAA and NCAA Division I levels, so he has evaluated high school film from the recruiting side.' },
   { question: 'Is the First Look session really free?', answer: 'Yes. It is a full evaluation. You leave with a written summary of strengths and gaps whether or not you book anything after.' },
@@ -235,11 +235,11 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
 
   // One string for the meta description and the entity description, so the two
   // cannot describe the business differently.
-  const HOMEPAGE_DESCRIPTION = 'Private basketball training in Miami with Coach Blake Kingsley, on staff for two championship programs in two years including the 2025 Horizon League champion Robert Morris Colonials. Serving Kendall, Pinecrest, Coral Gables, Doral, Westchester and Miami Lakes.';
+  const HOMEPAGE_DESCRIPTION = 'Private basketball training in north Broward County with Coach Blake Kingsley, on staff for two championship programs in two years including the 2025 Horizon League champion Robert Morris Colonials. Serving Coral Springs, Parkland, Coconut Creek, Margate and Tamarac.';
 
   let page = '';
   page += buildHead({
-    title: 'Fast Basketball | Private Basketball Training in Miami, FL | Coach Blake Kingsley',
+    title: 'Fast Basketball | Private Basketball Training in Coral Springs, FL | Coach Blake Kingsley',
     description: HOMEPAGE_DESCRIPTION,
     canonicalPath: '/',
     includeHeroPreload: true,
@@ -285,13 +285,13 @@ export function buildFooter({ anchors = false } = {}) {
     '<div class="shell">\n' +
     '<div class="ft-top">\n' +
     '<div><a href="/" class="brand ft-brand" aria-label="Fast Basketball home"><img src="/brand/logo-white.svg" alt="Fast Basketball" width="250" height="106" loading="lazy" decoding="async"></a>' +
-    '<p style="color:#7E7E8A;font-size:.9rem;max-width:32ch;">Private basketball training in Miami. Built by a college coach for players chasing the next level.</p></div>\n' +
+    '<p style="color:#7E7E8A;font-size:.9rem;max-width:32ch;">Private basketball training in north Broward. Built by a college coach for players chasing the next level.</p></div>\n' +
     '<div class="ft-nav">\n' +
     '<div class="ft-col"><h3>Training</h3>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
     '<div class="ft-col"><h3>Areas</h3>' + AREA_SERVED.slice(0, 4).map((name) => '<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
     '<div class="ft-col"><h3>More</h3><a href="/#receipts">The Résumé</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
     '</div>\n</div>\n' +
-    '<div class="ft-bot"><span>&copy; 2026 Fast Basketball. All rights reserved. <a href="/privacy">Privacy</a></span><span>Miami, Florida</span></div>\n' +
+    '<div class="ft-bot"><span>&copy; 2026 Fast Basketball. All rights reserved. <a href="/privacy">Privacy</a></span><span>Coral Springs, Florida</span></div>\n' +
     '</div>\n</footer>\n' +
     '<div class="mob-bar" id="mobBar">\n' +
     '<a href="' + contactHref + '" class="btn btn-primary">Free First Look</a>\n' +

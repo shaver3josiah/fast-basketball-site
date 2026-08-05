@@ -5,9 +5,11 @@ export const SITE_URL = process.env.SITE_URL || process.env.URL || 'https://SITE
 
 export const BUSINESS_NAME = 'Fast Basketball';
 
+// Must stay in lockstep with src/data/suburbs.json: the footer builds
+// /basketball-training/<slug> links from these names, so a name with no matching
+// suburb record is a 404 in the footer of every page.
 export const AREA_SERVED = [
-  'Kendall', 'Pinecrest', 'Coral Gables', 'Doral', 'Westchester', 'Miami Lakes',
-  'Palmetto Bay', 'Aventura', 'Weston', 'Pembroke Pines', 'Miramar', 'Cooper City'
+  'Coral Springs', 'Parkland', 'Coconut Creek', 'Margate', 'Tamarac'
 ];
 
 export const PROGRAM_PAGES = [

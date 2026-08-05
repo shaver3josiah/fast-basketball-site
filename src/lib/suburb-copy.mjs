@@ -50,7 +50,26 @@ export function schoolsProse(suburb) {
   }
   const mids = (suburb.middle_schools || []).filter((m) => m && m.name);
   if (mids.length > 0) {
-    parts.push('Middle schoolers mostly come up through ' + joinList(mids.map((m) => m.name)) + '. That is the age to fix a habit, before a varsity tryout finds it first.');
+    // With no high school in the record (Margate has none), the middle school has
+    // to open the paragraph instead of following one. The opener stays neutral on
+    // purpose: an empty high_schools array is missing data everywhere except the
+    // one city where the absence was actually verified, so the code never asserts
+    // that a city has no high school. That claim belongs in local_paragraph.
+    const opener = highs.length > 0
+      ? 'Middle schoolers mostly come up through '
+      : 'The school game in ' + suburb.name + ' starts at ';
+    // Same 1-vs-many shape as the high schools above, so a middle school note
+    // (the verified BCPS feeder pattern) reaches the page instead of being
+    // dropped on the floor, and a single school never gets named twice in a row.
+    if (mids.length === 1 && mids[0].note) {
+      parts.push(endSentence(opener + mids[0].name + ': ' + appositive(mids[0].note)));
+    } else {
+      parts.push(endSentence(opener + joinList(mids.map((m) => m.name))));
+      for (const m of mids) {
+        if (m.note) parts.push(endSentence(m.name + ': ' + appositive(m.note)));
+      }
+    }
+    parts.push('That is the age to fix a habit, before a varsity tryout finds it first.');
   }
   return parts.join(' ');
 }
@@ -101,7 +120,7 @@ export function whyHereProse(suburb) {
   const tierLine = suburb.tier === 1
     ? suburb.name + ' is core coverage, so weekly recurring slots are easiest to hold here and rarely get bumped.'
     : suburb.name + ' runs on a scheduled rotation, so booking a recurring weekly slot early keeps the same time all season.';
-  return 'Coach Blake came to Miami straight off the college side of the recruiting table — two staffs, two championships, an NCAA Tournament run. Every ' + suburb.name + ' session gets that same evaluator’s eye. ' +
+  return 'Coach Blake came to North Broward straight off the college side of the recruiting table — two staffs, two championships, an NCAA Tournament run. Every ' + suburb.name + ' session gets that same evaluator’s eye. ' +
     tierLine + ' The method does not change by zip code: screen, isolate, load, read, log. A ' + suburb.name + ' player builds the exact same foundation as every player in the program, just closer to home.';
 }
 

@@ -2,24 +2,19 @@
   <div class="shell">
     <div class="head">
       <div class="eyebrow">Service Areas</div>
-      <h2>Training across <br>Dade and Broward.</h2>
-      <p class="lede">Sessions run at partner gyms, school courts, and private facilities. Each area below gets its own page with local gyms, schools, and directions.</p>
+      <h2>Training across <br>north Broward.</h2>
+      <p class="lede">Sessions run at city parks and community courts across these five cities. Each area below gets its own page with the local schools, the courts we use, and what the schedule there actually looks like.</p>
     </div>
-    <!-- Stagger dropped: 12 tiles x 110ms was 1.2s of cascade on what is really a link list.
-         Nothing here is ordered, so sequencing it signalled nothing. The tiles have hover motion. -->
+    <!-- Stagger dropped: a cascade on what is really a link list signalled nothing.
+         Nothing here is ordered. The tiles have hover motion. Names and tiers must match
+         src/data/suburbs.json and AREA_SERVED: fixAreaLinks in src/render.mjs rewrites each
+         href by matching the <b> text, so a tile that is not a suburb record stays on #contact. -->
     <div class="areas">
-      <a href="#contact" class="area"><b>Kendall</b><span>Tier 1</span></a>
-      <a href="#contact" class="area"><b>Pinecrest</b><span>Tier 1</span></a>
-      <a href="#contact" class="area"><b>Coral Gables</b><span>Tier 1</span></a>
-      <a href="#contact" class="area"><b>Westchester</b><span>Tier 1</span></a>
-      <a href="#contact" class="area"><b>Doral</b><span>Tier 1</span></a>
-      <a href="#contact" class="area"><b>Miami Lakes</b><span>Tier 1</span></a>
-      <a href="#contact" class="area"><b>Palmetto Bay</b><span>Tier 2</span></a>
-      <a href="#contact" class="area"><b>Aventura</b><span>Tier 2</span></a>
-      <a href="#contact" class="area"><b>Weston</b><span>Tier 2</span></a>
-      <a href="#contact" class="area"><b>Pembroke Pines</b><span>Tier 2</span></a>
-      <a href="#contact" class="area"><b>Miramar</b><span>Tier 2</span></a>
-      <a href="#contact" class="area"><b>Cooper City</b><span>Tier 2</span></a>
+      <a href="#contact" class="area"><b>Coral Springs</b><span>Tier 1</span></a>
+      <a href="#contact" class="area"><b>Parkland</b><span>Tier 1</span></a>
+      <a href="#contact" class="area"><b>Coconut Creek</b><span>Tier 1</span></a>
+      <a href="#contact" class="area"><b>Margate</b><span>Tier 2</span></a>
+      <a href="#contact" class="area"><b>Tamarac</b><span>Tier 2</span></a>
     </div>
   </div>
 </section>
@@ -57,7 +52,7 @@
       </div>
       <div class="faq-i">
         <button class="faq-q">Where do sessions actually happen?</button>
-        <div class="faq-a"><p>Partner gyms and courts across Miami Dade and Broward. When you book, you get the exact location for your area. If you have access to a court through a school or community center, we can often train there.</p></div>
+        <div class="faq-a"><p>City parks and partner courts across north Broward County. When you book, you get the exact location for your area. If you have access to a court through a school or community center, we can often train there.</p></div>
       </div>
       <div class="faq-i">
         <button class="faq-q">How fast will we see a difference?</button>

@@ -49,6 +49,43 @@ notesClosed(many, manyNotes);
 assert.ok(many.includes('97th Ave. Varela:'), many);
  assert.ok(!many.includes('—'), 'no em dashes: ' + many);
 
+// no high school at all (Margate): must degrade to middle-school-only copy, not
+// open on a dangling "runs through" and not claim a high school that is not there.
+const midsOnly = schoolsProse({
+  name: 'Margate',
+  high_schools: [],
+  middle_schools: [{ name: 'Margate Middle School', note: 'Serves the area from 500 NW 65th Ave' }]
+});
+ends(midsOnly);
+clean(midsOnly);
+assert.ok(midsOnly.includes('The school game in Margate starts at Margate Middle School: serves the area'), midsOnly);
+notesClosed(midsOnly, ['Serves the area from 500 NW 65th Ave']);
+assert.ok(!/high school/i.test(midsOnly), 'must not mention a high school it does not have: ' + midsOnly);
+// missing key entirely behaves the same as an empty array
+ends(schoolsProse({ name: 'Margate', middle_schools: [{ name: 'Margate Middle School' }] }));
+// neither list: still empty, never a bare fragment
+assert.equal(schoolsProse({ name: 'Margate', high_schools: [], middle_schools: [] }), '');
+
+// middle school notes must reach the page (verified feeder pattern), closed off
+// and never fused into the next record
+const feederNotes = ['Every one of its eighth graders goes on to Coral Springs High', 'Sends the whole eighth grade on to J.P. Taravella High'];
+const feeders = schoolsProse({
+  name: 'Coral Springs',
+  high_schools: [{ name: 'Coral Springs High' }],
+  middle_schools: [
+    { name: 'Forest Glen Middle School', note: feederNotes[0] },
+    { name: 'Ramblewood Middle School', note: feederNotes[1] },
+    { name: 'Coral Springs Middle School' }
+  ]
+});
+ends(feeders);
+clean(feeders);
+notesClosed(feeders, feederNotes);
+// notes follow the list sentence, each closed, and a note-less school adds nothing
+assert.ok(feeders.includes('Coral Springs Middle School. Forest Glen Middle School: every one'), feeders);
+assert.ok(feeders.includes('Coral Springs High. Ramblewood Middle School: sends the whole'), feeders);
+assert.ok(!feeders.includes('—'), 'no em dashes: ' + feeders);
+
 // high school with no note at all
 const noNote = schoolsProse({ name: 'X', high_schools: [{ name: 'A High' }, { name: 'B High' }] });
 ends(noNote);

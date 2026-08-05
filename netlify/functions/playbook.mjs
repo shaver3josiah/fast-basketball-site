@@ -59,7 +59,7 @@ function buildPlaybookHtml({ name, grade, positionLabel, skillGap }) {
     '</style></head><body><div class="w">' +
     '<div class="brand-name">Fast Basketball</div>' +
     '<h1>' + escapeHtml(name) + "'s <span class=\"r\">4 Week Block</span></h1>" +
-    '<div class="sub">Miami, FL / Built by Coach Blake Kingsley</div>' +
+    '<div class="sub">North Broward, FL / Built by Coach Blake Kingsley</div>' +
     '<div class="credential">Coach Blake Kingsley spent the two seasons before founding Fast Basketball on staff for the 2025 Horizon League champion Robert Morris Colonials and the 2024 NJCAA Region 16 champion Moberly Area Community College Greyhounds.</div>' +
     '<div class="meta">' +
     '<div><span>Grade</span><b>' + escapeHtml(grade) + '</b></div>' +
@@ -70,7 +70,7 @@ function buildPlaybookHtml({ name, grade, positionLabel, skillGap }) {
     '<h2>Daily Work</h2><table>' + drillRows + '</table>' +
     '<h2>Progression</h2><p class="diagnosis">' + escapeHtml(skillGap.progression) + '</p>' +
     '<div class="note">Log every session. Two to three weeks for form changes to show up, six to eight for them to survive a live game.</div>' +
-    '<div class="ft">Fast Basketball, Miami FL. Forward this to another parent, a teammate, or a coach.</div>' +
+    '<div class="ft">Fast Basketball, north Broward FL. Forward this to another parent, a teammate, or a coach.</div>' +
     '</div></body></html>';
 }
 

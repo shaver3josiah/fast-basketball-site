@@ -1,0 +1,124 @@
+{
+  "_README": "Verified research, August 2026. EVERY entry here was confirmed against an official source (city .gov parks pages, NCES/CCD federal school records, Census Reporter ACS 2024). Anything that could not be confirmed is marked UNVERIFIED and MUST NOT be published as fact. School ATTENDANCE BOUNDARIES were deliberately not researched -- they live only in the interactive BCPS locator -- so never write 'zoned for X'. Use 'serves the area' language instead.",
+  "_do_not_publish": [
+    "Cypress Park, Coral Springs -- basketball courts were removed/converted to pickleball. Aggregators still list them. DO NOT list as a venue.",
+    "Sabal Pines Park, Coconut Creek -- the city's own amenity page does NOT list basketball. DO NOT list.",
+    "Caporella Park, Tamarac -- city lists a 'multi-purpose court', not basketball. DO NOT claim hoops.",
+    "North Lauderdale -- NO basketball court confirmed at any of its 18 parks. NO page until a human calls 954-724-7061.",
+    "Any school attendance boundary or 'zoned for' claim, all cities."
+  ],
+  "cities": [
+    {
+      "name": "Coral Springs", "slug": "coral-springs", "county": "Broward", "tier": 1,
+      "zip_codes": ["33065", "33067", "33071", "33076"],
+      "high_schools": [
+        { "name": "Coral Springs High School", "type": "public", "note": "7201 W Sample Rd, 2,177 students" },
+        { "name": "Coral Glades High School", "type": "public", "note": "2700 Sportsplex Dr" },
+        { "name": "J.P. Taravella High School", "type": "public", "note": "10600 Riverside Dr, 2,436 students" }
+      ],
+      "middle_schools": [
+        { "name": "Forest Glen Middle School", "type": "public", "note": "every one of its eighth graders goes on to Coral Springs High" },
+        { "name": "Sawgrass Springs Middle School", "type": "public", "note": "feeds Coral Glades High outright" },
+        { "name": "Ramblewood Middle School", "type": "public", "note": "feeds J.P. Taravella High outright" },
+        { "name": "Coral Springs Middle School", "type": "public", "note": "splits almost exactly down the middle, half to Coral Glades and half to Stoneman Douglas" }
+      ],
+      "_feeder_note": "VERIFIED from the official BCPS 2025-26 Feeder Pattern from Middle to High School report (observed student counts, not inference): Forest Glen 100% to Coral Springs High; Sawgrass Springs 100% to Coral Glades; Ramblewood 100% to Taravella; Coral Springs Middle 50.5% Coral Glades / 49.5% Stoneman Douglas. This is a genuinely local, checkable detail and it is safe to publish -- unlike ADDRESS-LEVEL zoning, which remains unverified. Feeder pattern = where students actually go. Attendance boundary = which address is assigned where. Say the former, never the latter.",
+      "training_venues": [
+        { "name": "Mullins Park", "address": "10000 Ben Geiger Drive, Coral Springs, FL 33065", "type": "city park", "courts": "outdoor", "note": "Outdoor courts open until 10pm, and one of the two sites the city Basketball Club plays at" },
+        { "name": "Betti Stradling Park", "address": "10301 Wiles Road, Coral Springs, FL 33076", "type": "city park", "courts": "outdoor", "note": "Outdoor courts open until 10:30pm most nights" },
+        { "name": "Forest Hills Park", "address": "2500 Forest Hills Boulevard, Coral Springs, FL 33065", "type": "city park", "courts": "outdoor", "note": "Outdoor courts in the Forest Hills neighbourhood" },
+        { "name": "North Community Park", "address": "5601 Coral Springs Drive, Coral Springs, FL 33076", "type": "city park", "courts": "outdoor", "note": "Outdoor courts on the north end of Coral Springs Drive" },
+        { "name": "Cypress Hammock", "address": "1300 Coral Springs Drive, Coral Springs, FL 33071", "type": "city park", "courts": "outdoor", "note": "Outdoor courts open until 10:30pm most nights" }
+      ],
+      "landmarks": ["Coral Square Mall", "Sawgrass Nature Center and Wildlife Hospital", "Sample Road corridor", "Sportsplex Drive", "Coral Springs Museum of Art"],
+      "demographics": { "population": 138783, "median_household_income": 93602, "under_18_pct": 25.8 },
+      "competition": ["City of Coral Springs Basketball Club, $150 registration plus $60 out-of-area", "Elite Basketball Academy, $115 per month", "N Zone Sports South Florida", "i9 Sports"],
+      "_caution": "CORRECTED Aug 2026 from a second verification pass. (1) NO city park page states a basketball court count anywhere in Coral Springs. The earlier 'two courts' at Betti Stradling and 'four courts' at Sportsplex were unsourced -- NEVER state a court number for this city. (2) Cypress PARK (1301 Coral Springs Dr) has NO basketball; Cypress HAMMOCK (1300 Coral Springs Dr) does. Nearly identical addresses, different parks -- do not confuse them. (3) Sportsplex is deliberately omitted as a session venue: its courts are closed until 6pm on school days, which is exactly when a trainer would use them. (4) Riverside Park omitted -- courts close at 9pm. Castlewood omitted -- sunset only, no lights. (5) Coral Springs Gymnasium is omitted: the city has NO working web page for it, all four plausible URLs 404, and its address is third-party only. It is real and hosts Basketball Club games, but nothing about it is city-verifiable. (6) Courts ARE reservable here, unlike Coconut Creek -- permit required, 3 days ahead, $15 single-use or $25 multi-use, call 954-345-2200. (7) Median income corrected to $93,602 (ACS 2020-2024) from $98,926, and population to the 2025 estimate of 138,783. (8) Heron Bay, Wyndham Lakes, Whispering Woods and Cypress Glen could NOT be confirmed as named areas from any city source -- do not name them even though they appear on the client's map. Turtle Run, Ramblewood and Forest Hills ARE confirmed. (9) Strong verified positioning fact: there is NO YMCA and NO Boys & Girls Club anywhere in Coral Springs, Parkland, Margate, Coconut Creek or Tamarac."
+    },
+    {
+      "name": "Parkland", "slug": "parkland", "county": "Broward", "tier": 1,
+      "zip_codes": ["33067", "33076"],
+      "high_schools": [
+        { "name": "Marjory Stoneman Douglas High School", "type": "public", "note": "5901 Pine Island Rd" }
+      ],
+      "middle_schools": [
+        { "name": "Westglades Middle School", "type": "public" }
+      ],
+      "training_venues": [
+        { "name": "Parkland Recreation and Enrichment Center", "address": "10559 Trails End, Parkland, FL 33076", "type": "indoor city facility", "courts": "indoor", "note": "24,700 square foot air conditioned center with a full indoor court" },
+        { "name": "Pine Trails Park", "address": "10555 Trails End, Parkland, FL 33076", "type": "city park", "courts": "outdoor", "note": "The city's largest park, with outdoor basketball among its facilities" }
+      ],
+      "landmarks": ["Trails End recreation corridor", "Pine Island Road", "Parkland City Hall on University Drive"],
+      "demographics": { "population": 37178, "median_household_income": 198669 },
+      "competition": ["Parkland Basketball Club", "City of Parkland Athletics"],
+      "_caution": "Parkland is a resident-priority city. Non-resident access to P-REC is UNVERIFIED -- confirm before marketing sessions there. Westglades Middle serves Parkland but its NCES mailing city is Coral Springs; do not write 'Westglades Middle in Parkland'."
+    },
+    {
+      "name": "Coconut Creek", "slug": "coconut-creek", "county": "Broward", "tier": 1,
+      "zip_codes": ["33063", "33066", "33073"],
+      "high_schools": [
+        { "name": "Monarch High School", "type": "public", "note": "5050 Wiles Rd, 2,213 students" },
+        { "name": "Coconut Creek High School", "type": "public", "note": "1400 NW 44th Ave, 1,972 students" }
+      ],
+      "middle_schools": [
+        { "name": "Margate Middle School", "type": "public" }
+      ],
+      "training_venues": [
+        { "name": "Windmill Park", "address": "700 Lyons Rd, Coconut Creek, FL 33063", "type": "city park", "courts": "outdoor", "note": "Outdoor basketball courts, open to 10pm on weeknights" },
+        { "name": "Winston Park", "address": "5201 NW 49 Ave, Coconut Creek, FL 33073", "type": "city park", "courts": "outdoor", "note": "Outdoor basketball alongside a nature trail" }
+      ],
+      "landmarks": ["Seminole Casino Coconut Creek", "Lyons Road recreation corridor", "Wiles Road", "the MainStreet district", "Butterfly Capital of the World"],
+      "demographics": { "population": 58330, "median_household_income": 75014, "households_with_children_pct": 27.5 },
+      "competition": ["Creek Sports city youth basketball", "Coconut Creek girls basketball league ages 8-17", "N Zone Sports"],
+      "_caution": "CORRECTED Aug 2026 from a second verification pass. (1) George S. Gerber Memorial Park is REMOVED -- its basketball court is CLOSED for resurfacing with no reopening date. Do not list it. (2) The city's indoor gym at the Recreation Complex, 4455 Sol Press Blvd 33073, is real but gated behind a CreekFit 'Fitness+' membership -- resident Fitness-only at $50/yr explicitly EXCLUDES the gym, non-resident is $250/yr, and gym access is unavailable during camp programming. Do not imply open indoor access. (3) The city publishes NO way to rent a basketball court -- only fields, volleyball and pavilions. Outdoor drop-in at Windmill and Winston is the realistic option. (4) No court counts are published anywhere in the city; never state one. (5) 'Butterfly Capital of the World' IS confirmed on the city's own About page and is safe to use. The MainStreet district is defined by the city as bounded by Wiles Rd north, Lyons Rd east, Sample Rd south, SR 7 west. (6) coconutcreek.net now 301s to coconutcreek.gov. (7) Wyndham Lakes, Centura Parc and Cocobay have NO official-source confirmation -- do not name them even though Wyndham Lakes appears on the client's map."
+    },
+    {
+      "name": "Margate", "slug": "margate", "county": "Broward", "tier": 2,
+      "zip_codes": ["33063"],
+      "high_schools": [],
+      "middle_schools": [
+        { "name": "Margate Middle School", "type": "public", "note": "500 NW 65th Ave" }
+      ],
+      "training_venues": [
+        { "name": "Firefighters Park", "address": "2500 Rock Island Rd, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "full size lighted courts that host every Margate Youth Basketball League game and practice, open to 10pm" },
+        { "name": "Coral Gate Park", "address": "5650 Coral Lake Drive, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "three half courts, open to 10pm" },
+        { "name": "Centennial Park", "address": "7800 Royal Palm Blvd, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "one full size ADA accessible court" },
+        { "name": "Andrews Field", "address": "500 NW 65th Ave, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "outdoor courts and a quarter mile track, sharing an address with Margate Middle School" }
+      ],
+      "landmarks": ["Firefighters Park on Rock Island Road", "Calypso Cove at Royal Palm Park", "Margate Boulevard", "State Road 7"],
+      "demographics": { "population": 59198, "median_household_income": 62450, "households_with_children_pct": 22.6, "median_age": 45.0 },
+      "competition": ["Margate Basketball League, ages 5-13, $100 resident / $150 non-resident"],
+      "_note": "NO public high school is located in Margate. high_schools is intentionally empty. Nearest are Coconut Creek HS, Monarch HS and Coral Springs HS, but which ones Margate students zone to is UNVERIFIED -- do not state it. Margate explicitly welcomes non-residents to its league, which is the most useful published fact of any of the six cities."
+    },
+    {
+      "name": "Tamarac", "slug": "tamarac", "county": "Broward", "tier": 2,
+      "zip_codes": ["33321"],
+      "high_schools": [
+        { "name": "Millennium 6-12 Collegiate Academy", "type": "public", "note": "5803 NW 94th Ave, grades six through twelve, 1,435 students" }
+      ],
+      "middle_schools": [
+        { "name": "Millennium 6-12 Collegiate Academy", "type": "public" }
+      ],
+      "training_venues": [
+        { "name": "Tamarac Community Center", "address": "8601 W Commercial Blvd, Tamarac, FL", "type": "indoor city facility", "courts": "indoor", "note": "Indoor gymnasium that hosts city youth basketball, open to 8:30pm on weeknights" },
+        { "name": "Tamarac Sports Complex", "address": "9901 NW 77th St, Tamarac, FL 33321", "type": "city complex", "courts": "outdoor", "note": "Outdoor basketball courts sharing a gate with the skate park, tennis and ball fields" },
+        { "name": "Waters Edge Park", "address": "7508 NW 61st St, Tamarac, FL 33321", "type": "city park", "courts": "outdoor", "note": "Outdoor courts, open until dusk" }
+      ],
+      "landmarks": ["Colony West Country Club", "Woodmont Country Club", "West Commercial Boulevard", "NW 88th Avenue civic corridor", "the Sunday farmers market at Veterans Park"],
+      "demographics": { "population": 75150, "median_household_income": 64044, "households_with_children_pct": 22.0, "median_age": 41.8 },
+      "competition": ["Tamarac youth basketball league, $90 resident / $110 non-resident", "Tamarac Basketball Fundamentals class ages 7-13, $40 resident / $50 non-resident for four weeks"],
+      "_note": "Millennium is the ONLY 9-12-inclusive public school physically in Tamarac. Other high schools serving Tamarac students sit in neighbouring cities. Tamarac has a large retirement population; households-with-children share is VERIFIED at 22.0% (ACS 2024 5-year, table B11005) -- the lowest of the five cities, and it matters commercially here more than anywhere else."
+    }
+  ],
+  "excluded": [
+    {
+      "name": "North Lauderdale",
+      "reason": "The city's park directory lists 18 parks by name and street address with NO amenities. Parks and Rec confirms the city runs basketball leagues but never says where. Not one court is confirmed. Publishing a venue here would be a guess. Unblock with one call to 954-724-7061, then it can have a page.",
+      "parks_named_but_unconfirmed": ["Hampton Pines Park, 7800 Hampton Blvd", "North Lauderdale Sports Complex, 701 SW 71 Ave (may be the same site as 'Jack Brady Sports Complex')", "Broadview Community Park, 7001 SW 17 St"]
+    }
+  ],
+  "old_slugs_for_redirects": [
+    "kendall", "pinecrest", "coral-gables", "doral", "westchester", "miami-lakes",
+    "palmetto-bay", "aventura", "weston", "pembroke-pines", "miramar", "cooper-city"
+  ]
+}

@@ -86,6 +86,82 @@
   status = 301
   force = true
 
+# RETIRED SERVICE AREA, August 2026. The business moved from Miami-Dade to north
+# Broward, so these twelve city pages are gone and no equivalent page exists.
+# They point at the service-area list rather than at a Broward city page, because
+# sending a Kendall parent to a Coral Springs page would be a lie told by redirect.
+[[redirects]]
+  from = "/basketball-training/kendall"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/pinecrest"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/coral-gables"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/doral"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/westchester"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/miami-lakes"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/palmetto-bay"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/aventura"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/weston"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/pembroke-pines"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/miramar"
+  to = "/#areas"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/basketball-training/cooper-city"
+  to = "/#areas"
+  status = 301
+  force = true
+
 [context.production.environment]
   SITE_ENV = "production"
   ROBOTS_ALLOW = "true"

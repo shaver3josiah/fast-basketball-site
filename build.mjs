@@ -22,23 +22,23 @@ const ASK_PRICE = {
 
 const TRAINING_PAGES = [
   {
-    slug: 'first-look', textKey: 'prog.1', title: 'Free First Look Session | Fast Basketball Miami', label: 'First Look Session',
+    slug: 'first-look', textKey: 'prog.1', title: 'Free First Look Session | Fast Basketball', label: 'First Look Session',
     price: { amount: 'Free', unit: '60 Minutes', line: 'No obligation. The report is yours either way.' },
     features: ['Full movement and shooting form screen', 'Live one on one reads against Coach Blake', 'Written strengths and gaps report, yours to keep', 'Open slots offered within one business day'],
     next: 'Bring your player, their shoes, and sixty minutes. Coach Blake watches them move, puts them through live reads, and writes down exactly where they stand. You leave with the report whether or not you ever book again.'
   },
   {
-    slug: 'private', textKey: 'prog.2', title: 'Private Basketball Training in Miami | Fast Basketball', label: 'Private One on One',
+    slug: 'private', textKey: 'prog.2', title: 'Private Basketball Training in Coral Springs | Fast Basketball', label: 'Private One on One',
     features: ['Custom plan updated every four sessions', 'Footwork, handle, and finishing blocks', 'Shot chart and progress log', 'Packages of 5 and 10 available'],
     next: 'Every session is built around the three things standing between your player and the next level. The plan updates every four sessions, and the shot chart shows the change before anyone has to take our word for it.'
   },
   {
-    slug: 'small-group', textKey: 'prog.3', title: 'Small Group Basketball Training in Miami | Fast Basketball', label: 'Small Group',
+    slug: 'small-group', textKey: 'prog.3', title: 'Small Group Basketball Training in North Broward | Fast Basketball', label: 'Small Group',
     features: ['Level matched groups only', 'Live one on one and two on two', 'Great for teammates and siblings', 'Weekly recurring slots'],
     next: 'Two to four players at the same level, going at each other every week. Skills get tested against a live defender the day they are taught, because that is the only version of a skill that shows up in a game.'
   },
   {
-    slug: 'college-track', textKey: 'prog.4', title: 'College Track Basketball Program Miami | Fast Basketball', label: 'College Track Program',
+    slug: 'college-track', textKey: 'prog.4', title: 'College Track Basketball Program | Fast Basketball', label: 'College Track Program',
     features: ['Two private sessions per week', 'Monthly film review session', 'Highlight reel guidance', 'Recruiting profile and outreach help'],
     next: 'Twelve weeks for juniors and seniors who are serious about hearing from college programs. Coach Blake evaluated recruiting film from the college side of the table — the same eye now reviews your film, your reel, and your outreach.'
   }
@@ -168,7 +168,7 @@ function step8_trainingPages(content, prelude) {
     for (const f of page.features) body += '<li>' + escapeHtml(f) + '</li>\n';
     body += '</ul>\n';
     body += '<h2>How it works</h2>\n<p style="max-width:70ch;">' + escapeHtml(page.next) + '</p>\n';
-    body += '<p>Sessions run at partner gyms and courts across Miami Dade and Broward. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
+    body += '<p>Sessions run at city parks and partner courts across north Broward County. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
     body += '</div>\n</section>\n</main>\n';
     const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }])];
     const html = buildSimplePage({
@@ -194,7 +194,7 @@ function step9_playbookPage(sections, content, playbookTemplates, prelude) {
   body = '<main id="main">\n' + promoteFirstH2(body) + '</main>\n';
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Free Playbook', path: '/playbook' }])];
   const html = buildSimplePage({
-    title: 'Free Custom Basketball Playbook | Fast Basketball Miami',
+    title: 'Free Custom Basketball Playbook | Fast Basketball',
     description: content.text['pb.lede'],
     canonicalPath: '/playbook',
     bodyHtml: body,
@@ -235,7 +235,7 @@ function step10_contactPage(sections, content, prelude) {
   body = '<main id="main">\n' + promoteFirstH2(body) + faqSection(sections.areas) + '</main>\n';
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact' }])];
   const html = buildSimplePage({
-    title: 'Contact Fast Basketball | Book a Session in Miami',
+    title: 'Contact Fast Basketball | Book a Session in North Broward',
     description: content.text['ct.lede'],
     canonicalPath: '/contact',
     bodyHtml: body,
@@ -281,7 +281,7 @@ function step11_blogIndex(content, prelude) {
     '<p class="lede">Training notes and recruiting guidance are on the way. Check back soon, or follow along on <a href="https://www.instagram.com/blakekingsleyjr/" target="_blank" rel="noopener">Instagram</a>.</p>\n' +
     '</div>\n</header>\n</main>\n';
   const html = buildSimplePage({
-    title: 'Blog | Fast Basketball Miami',
+    title: 'Blog | Fast Basketball North Broward',
     description: 'Training notes and recruiting guidance from Coach Blake Kingsley.',
     canonicalPath: '/blog/',
     bodyHtml: body,
