@@ -5,7 +5,7 @@
   /* =====================================================
      MIAMI NIGHTS — night shot scene
      ===================================================== */
-  var stage = document.getElementById('niteStage');
+  var stage = null; /* night court is owned by /js/night-court.js (slingshot) now */
   if(stage){
     var makesEl = document.getElementById('niteMakesCount');
     var idleBall = document.getElementById('niteIdleBall');

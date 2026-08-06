@@ -90,6 +90,12 @@
       <a href="#contact">Contact</a>
     </div>
     <a href="#contact" class="btn btn-primary">Free First Look</a>
+    <!-- Light/dark toggle. js/theme.js owns the state and rewrites the aria-label,
+         so the label always names the action the click performs, not the state. -->
+    <button type="button" class="theme-btn" id="themeBtn" aria-label="Switch to dark mode">
+      <svg class="ic-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19"/></svg>
+      <svg class="ic-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.4 14.2A8.5 8.5 0 1 1 9.8 3.6a7 7 0 1 0 10.6 10.6z"/></svg>
+    </button>
     <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks"><i></i></button>
   </div>
 </nav>
@@ -101,6 +107,13 @@
   <div class="hero-court"></div>
   <div class="hero-wash"></div>
   <div class="shell hero-grid">
+    <!-- Two lockups, one per theme. .only-dark / .only-light in fb-polish.css show
+         exactly one; both are decorative, so alt is empty and the pair never reaches
+         a screen reader as a duplicate. -->
+    <div class="hero-mark" aria-hidden="true">
+      <img class="only-dark" src="/brand/logo-white.svg" alt="" width="250" height="106">
+      <img class="only-light" src="/brand/logo.svg" alt="" width="250" height="106">
+    </div>
     <div class="hero-copy">
       <div class="eyebrow fade-seq" data-edit="hero.eyebrow">North Broward, FL &nbsp;/&nbsp; College Track Skills Training</div>
       <h1>

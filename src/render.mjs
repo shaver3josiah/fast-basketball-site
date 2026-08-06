@@ -1,4 +1,5 @@
-﻿import { readFileSync } from 'node:fs';
+﻿import { readFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { absoluteUrl, AREA_SERVED, PROGRAM_PAGES } from './lib/site-config.mjs';
 import { faqPage, jsonLdScript, breadcrumbList, businessEntity } from './lib/structured-data.mjs';
@@ -41,6 +42,30 @@ export function loadSections(root) {
   }
   const prelude = readFileSync(resolve(dir, '_prelude.html'), 'utf8');
   return { sections, prelude };
+}
+
+// Cache-busting, keyed on the file's own content.
+//
+// netlify.toml serves /styles/* and /js/* with `max-age=31536000, immutable`. That is
+// correct and fast, and it also means a returning visitor keeps the cached copy for a
+// YEAR — so without a changing URL, a CSS or JS fix never reaches anyone who has
+// already visited. The preview6 build solved this with a hand-typed `?v=20260805d`,
+// which works exactly until somebody forgets to bump it.
+//
+// A content hash cannot be forgotten: the URL changes when, and only when, the bytes
+// change, so an unchanged file keeps its cached copy and a changed one always busts.
+const assetHashes = new Map();
+
+export function asset(path) {
+  if (assetHashes.has(path)) return assetHashes.get(path);
+  const file = resolve(process.cwd(), 'src' + path);
+  let out = path;
+  if (existsSync(file)) {
+    const hash = createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 8);
+    out = path + '?v=' + hash;
+  }
+  assetHashes.set(path, out);
+  return out;
 }
 
 export function escapeHtml(str) {
@@ -169,11 +194,22 @@ function fontPreloadLinks() {
 }
 
 function stylesheetLinks() {
-  return '<link rel="stylesheet" href="/styles/tokens.css">' +
-    '<link rel="stylesheet" href="/styles/fonts.css">' +
-    '<link rel="stylesheet" href="/styles/base.css">' +
-    '<link rel="stylesheet" href="/styles/site.css">' +
-    '<link rel="stylesheet" href="/styles/features.css">';
+  return '<link rel="stylesheet" href="' + asset('/styles/tokens.css') + '">' +
+    '<link rel="stylesheet" href="' + asset('/styles/fonts.css') + '">' +
+    '<link rel="stylesheet" href="' + asset('/styles/base.css') + '">' +
+    '<link rel="stylesheet" href="' + asset('/styles/site.css') + '">' +
+    '<link rel="stylesheet" href="' + asset('/styles/features.css') + '">' +
+    // fb-polish.css carries the light theme and the night-court styling, and it must
+    // load LAST so it can override the base cascade. It went missing from the repo
+    // entirely — it existed only inside the preview6 build output.
+    '<link rel="stylesheet" href="' + asset('/styles/fb-polish.css') + '">';
+}
+
+// theme.js is the one script that cannot be deferred. It reads localStorage and puts
+// .fb-light on <html> before first paint; loading it any later means every visitor in
+// light mode gets a black flash first.
+function themeScript() {
+  return '<script src="' + asset('/js/theme.js') + '"></script>';
 }
 
 function heroPreload(content, responsiveManifest) {
@@ -215,7 +251,8 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   head += '<link rel="apple-touch-icon" href="/brand/apple-touch-icon-180.png">\n';
   if (includeHeroPreload) head += heroPreload(content, responsiveManifest) + '\n';
   head += fontPreloadLinks() + '\n';
-  head += stylesheetLinks() + extraStyles.map((href) => '<link rel="stylesheet" href="' + href + '">').join('') + '\n';
+  head += stylesheetLinks() + extraStyles.map((href) => '<link rel="stylesheet" href="' + asset(href) + '">').join('') + '\n';
+  head += themeScript() + '\n';
   // The second selector is not redundant: .rcp-c.rise:not(.in) .rcp-shot img and
   // .coach-img.rise:not(.in) img hide the DESCENDANT image, so unhiding .rise alone
   // left the resume photos, the portrait and the badge invisible without JS.
@@ -227,7 +264,13 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
 }
 
 function scriptsBlock() {
-  return '<script src="/js/main.js" defer></script>\n';
+  return '<script src="' + asset('/js/main.js') + '" defer></script>\n';
+}
+
+// The night-court slingshot. type="module" is deliberate — it is deferred by default
+// and gets its own scope, and main.js calls into it through window.fbNiteMade.
+export function nightCourtScript() {
+  return '<script type="module" src="' + asset('/js/night-court.js') + '"></script>\n';
 }
 
 export function assembleHomepage({ sections, prelude, content, responsiveManifest, playbookTemplates, suburbs = [] }) {
@@ -273,10 +316,13 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   body = injectResumeExtras(body, content.resumeExtra, responsiveManifest);
   if (playbookTemplates) body = fixPlaybookForm(body, playbookTemplates);
   body += buildFooter({ anchors: true });
+  // night-court.js first: it is a module, so it is deferred anyway, and main.js
+  // reaches into it via window.fbNiteMade once both have run.
+  body += nightCourtScript();
   body += scriptsBlock();
-  body += '<script src="/js/playbook-form.js" defer></script>\n';
-  body += '<script src="/js/locker.js" defer></script>\n';
-  body += '<script src="/js/contact-form.js" defer></script>\n';
+  body += '<script src="' + asset('/js/playbook-form.js') + '" defer></script>\n';
+  body += '<script src="' + asset('/js/locker.js') + '" defer></script>\n';
+  body += '<script src="' + asset('/js/contact-form.js') + '" defer></script>\n';
   body += '</body>\n</html>\n';
 
   return page + body;
@@ -288,7 +334,9 @@ export function buildFooter({ anchors = false } = {}) {
   return '<footer class="ft">\n' +
     '<div class="shell">\n' +
     '<div class="ft-top">\n' +
-    '<div><a href="/" class="brand ft-brand" aria-label="Fast Basketball home"><img src="/brand/logo-white.svg" alt="Fast Basketball" width="250" height="106" loading="lazy" decoding="async"></a>' +
+    '<div><a href="/" class="brand ft-brand" aria-label="Fast Basketball home">' +
+    '<img class="only-dark" src="/brand/logo-white.svg" alt="Fast Basketball" width="250" height="106" loading="lazy" decoding="async">' +
+    '<img class="only-light" src="/brand/logo.svg" alt="Fast Basketball" width="250" height="106" loading="lazy" decoding="async"></a>' +
     '<p style="color:#7E7E8A;font-size:.9rem;max-width:32ch;">Private basketball training in north Broward. Built by a college coach for players chasing the next level.</p></div>\n' +
     '<div class="ft-nav">\n' +
     '<div class="ft-col"><h3>Training</h3>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
@@ -327,7 +375,7 @@ export function buildSimplePage({ title, description, canonicalPath, bodyHtml, c
   page += bodyHtml;
   page += buildFooter();
   page += scriptsBlock();
-  for (const src of extraScripts) page += '<script src="' + src + '" defer></script>\n';
+  for (const src of extraScripts) page += '<script src="' + asset(src) + '" defer></script>\n';
   page += '</body>\n</html>\n';
   return page;
 }

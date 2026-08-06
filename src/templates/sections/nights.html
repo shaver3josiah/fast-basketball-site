@@ -2,23 +2,31 @@
   <div class="nite-stars" aria-hidden="true"></div>
   <div class="nite-stars s2" aria-hidden="true"></div>
   <div class="nite-horizon" aria-hidden="true"></div>
-  <div class="nite-stage" id="niteStage">
+  <!-- data-auto-nite is the hook js/night-court.js binds the slingshot to. The
+       .nite-court wrapper is the coordinate frame every shot is measured against, so
+       the ball, the guide arc and the hoop all scale together. -->
+  <div class="nite-stage" id="niteStage" data-auto-nite="1">
+  <div class="nite-court">
     <div class="nite-city" aria-hidden="true">
       <i style="height:42%"></i><i style="height:66%"></i><i style="height:50%"></i><i style="height:90%"></i><i style="height:58%"></i><i style="height:100%"></i><i style="height:72%"></i><i style="height:46%"></i><i style="height:82%"></i><i style="height:36%"></i>
     </div>
     <div class="nite-floor" aria-hidden="true"></div>
-    <svg class="nite-guide" viewBox="0 0 1240 520" preserveAspectRatio="none" aria-hidden="true"><path d="M140 430 Q560 -30 1000 236" /></svg>
+    <svg class="nite-guide" viewBox="0 0 1240 520" preserveAspectRatio="none" aria-hidden="true"><path d="M562 430 Q785 60 1008 236" /></svg>
     <div class="hoop" aria-hidden="true">
       <span class="board"></span>
       <span class="rim"></span>
-      <svg class="net" viewBox="0 0 64 62"><path d="M8 2 L16 58 M56 2 L48 58 M22 2 L26 58 M42 2 L38 58 M8 2 Q32 16 56 2 M11 20 Q32 33 53 20 M14 40 Q32 51 50 40" /></svg>
+      <!-- Split into cords and three rings so the net can ripple on a make. One
+           combined path could only animate as a single object. -->
+      <svg class="net" viewBox="0 0 64 62"><path class="net-cord" d="M8 2 L16 58 M56 2 L48 58 M22 2 L26 58 M42 2 L38 58" /><path class="net-ring r1" d="M8 2 Q32 16 56 2" /><path class="net-ring r2" d="M11 20 Q32 33 53 20" /><path class="net-ring r3" d="M14 40 Q32 51 50 40" /></svg>
     </div>
     <span class="nball idle" id="niteIdleBall" aria-hidden="true"><i></i></span>
     <div class="swish-flash" id="niteSwishFlash" aria-hidden="true">Swish</div>
+    </div>
     <div class="nite-copy">
       <div class="eyebrow">Night Court</div>
       <h2>Win each practice. Win each day.</h2>
       <p class="lede">The gym closes. The habit does not. Take a shot at the night court — every make gets logged, the same way your reps do.</p>
+      <p class="trust-line" style="margin-top:14px">Grab the ball, pull it back, let it fly. A make sends you straight to booking.</p>
       <div class="nite-cta">
         <button type="button" class="btn btn-primary" id="niteShotBtn">Take the Shot</button>
         <span class="makes" role="status"><b id="niteMakesCount">0</b>makes logged</span>

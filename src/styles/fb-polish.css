@@ -1,0 +1,663 @@
+/* ============================================================================
+   fb-polish.css — Fast Basketball
+   Load LAST, after tokens.css, fonts.css, base.css, site.css, features.css.
+
+   Two jobs, no copy or markup changes:
+     PART 1  Rebuilds the intro lockup choreography (.alogo.play): FAST slams
+             in, the stage and glow recoil off the hit, and the crescent sweeps
+             out of the strike point along its own line. Transform + opacity
+             only: the old clip-path reveal on a 23,770-char path is gone.
+     PART 2  iPhone-Safari and large-screen corrections.
+
+   Every rule is scoped to an existing class. Nothing here needs a rebuild of
+   the templates. Pair with the two-line change in js/main.js (see patch notes)
+   so the JS dismissal timer reads --t-intro instead of a hard-coded 3100ms.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------- tokens --- */
+:root{
+  --ease-strike:cubic-bezier(.62,0,.36,1);    /* accelerate in, hard stop     */
+  --ease-whip:cubic-bezier(.14,.92,.22,1);    /* fast out, long settle        */
+  --ease-recoil:cubic-bezier(.34,1.42,.44,1); /* overshoot, for impacts       */
+  --t-intro:2.5s;                             /* MINIMUM intro display time */
+}
+
+/* ============================================================================
+   PART 1 — THE SWOOSH BUILD
+   Geometry (viewBox 0 0 1537.26 649.16, measured off logo-anim.svg):
+     FAST row      y  24-294   speed lines x 24-331, F 155-686, A 434-841, ST 784-1515
+     BASKETBALL    y 344-386   x 358-1204, rules at x 168-319 and 1246-1388
+     crescent      y 411-625   x 454-1080  — left tip low, right tip high
+   FAST is thrown upward into place, the stage and glow recoil off that hit,
+   and the crescent sweeps out of the strike point along its own line — a
+   whip, not a curtain. Nothing is revealed by a wipe. After the build the
+   stage holds on a slow breathe until the page's critical assets are in, so
+   the intro doubles as the loading cover.
+   ========================================================================= */
+
+.alogo{position:relative;}
+.alogo.play .al-cres{will-change:transform,opacity;}
+
+/* --- the crescent sweeps out of the strike point, left tip first --------- */
+.alogo .al-cres{transform-origin:0% 50%;}
+.alogo.play .al-cres{animation:alSwoosh .64s var(--ease-whip) .30s both;}
+@keyframes alSwoosh{
+  0%  {opacity:0;transform:translateX(-2%) scaleX(.03) scaleY(.6) rotate(-5deg);}
+  14% {opacity:1;}
+  74% {transform:scaleX(1.05) scaleY(1.02) rotate(1.1deg);animation-timing-function:var(--ease-recoil);}
+  100%{opacity:1;transform:none;}
+}
+
+/* --- FAST is knocked up and out of the impact, not slid in from the left -- */
+.alogo.play .al-f {--dx:-15%;animation:alLetterHit .54s var(--ease-recoil) .10s both;}
+.alogo.play .al-a {--dx:0%;  animation:alLetterHit .54s var(--ease-recoil) .145s both;}
+.alogo.play .al-st{--dx:13%; animation:alLetterHit .54s var(--ease-recoil) .19s both;}
+@keyframes alLetterHit{
+  0%  {opacity:0;transform:translate(var(--dx,0),48%) skewX(-11deg) scale(.9);}
+  58% {opacity:1;transform:translate(0,-5%) skewX(2deg) scale(1.02);}
+  100%{opacity:1;transform:none;}
+}
+
+/* --- speed lines are the exhaust of the hit, and the one live beat in the
+       hang: two gusts, the second wider, so 1.4s-2.3s is never a dead frame - */
+.alogo.play .al-ln{
+  animation:
+    alLineOut .46s var(--ease-whip) both,
+    alGustA .40s ease-in-out,
+    alGustB .52s ease-in-out;
+  animation-delay:
+    calc(.16s + var(--i,0)*.034s),
+    calc(1.02s + var(--i,0)*.028s),
+    calc(1.68s + var(--i,0)*.038s);
+}
+@keyframes alLineOut{
+  0%  {opacity:0;transform:translateX(-46%) scaleX(3.2);}
+  55% {opacity:1;}
+  100%{opacity:1;transform:none;}
+}
+@keyframes alGustA{0%,100%{transform:none;}45%{transform:translateX(-6%) scaleX(1.18);}}
+@keyframes alGustB{0%,100%{transform:none;}45%{transform:translateX(-11%) scaleX(1.34);opacity:.72;}}
+
+/* --- the A-notch keeps its cross-axis strike, retimed to read after impact  */
+.alogo.play .al-notch{animation:alNotchHit .38s var(--ease-recoil) .26s both;}
+@keyframes alNotchHit{
+  0%  {opacity:0;transform:translate(88%,-96%) rotate(14deg);}
+  64% {opacity:1;transform:translate(-5%,4%) rotate(-2deg);}
+  100%{opacity:1;transform:none;}
+}
+
+/* --- rules wipe outward, BASKETBALL rises between them ------------------- */
+.alogo.play .al-rule{animation:alRuleOut .44s var(--ease-whip) .56s both;}
+@keyframes alRuleOut{0%{opacity:0;transform:scaleX(0);}100%{opacity:1;transform:none;}}
+.alogo.play .al-wl{animation:alWordUp .40s var(--ease-recoil) both;animation-delay:calc(.60s + var(--i,0)*.026s);}
+@keyframes alWordUp{
+  0%  {opacity:0;transform:translateY(74%) scaleY(.86);}
+  62% {opacity:1;transform:translateY(-9%) scaleY(1.03);}
+  100%{opacity:1;transform:none;}
+}
+
+/* --- stage: pushed in, snapped by the impact, then held on a slow breathe
+       for as long as loading needs — the exit is a separate animation fired
+       by .done, so the overlay genuinely covers the page load. No blur: the
+       old scale(8)+blur(14px) was a full-screen filter on exit. ------------ */
+.intro-mark{
+  animation:introBuild 1.1s var(--ease-strike) both,introBreathe 3.6s ease-in-out 1.1s infinite;
+  will-change:transform,opacity;
+}
+@keyframes introBuild{
+  0%  {transform:scale(1.075);animation-timing-function:var(--ease-strike);}
+  22% {transform:scale(1.052);}
+  32% {transform:scale(1);animation-timing-function:var(--ease-recoil);}   /* impact */
+  41% {transform:scale(.988);}
+  55% {transform:scale(1.006);}
+  100%{transform:scale(1);}
+}
+@keyframes introBreathe{0%,100%{transform:scale(1);}50%{transform:scale(1.014);}}
+#intro.done .intro-mark{animation:introOut .55s var(--ease-launch) both;}
+@keyframes introOut{0%{transform:scale(1);opacity:1;}100%{transform:scale(2.15);opacity:0;}}
+
+/* --- the glow is the impact flash, then a low pulse for the hold. -------- */
+.intro-glow{
+  width:92vmax;height:92vmax;
+  animation:introGlowIn 1.3s var(--ease-rush) both,introGlowPulse 3.6s ease-in-out 1.3s infinite;
+}
+@keyframes introGlowIn{
+  0%  {transform:scale(2.6);opacity:0;}
+  18% {opacity:.24;}
+  27% {transform:scale(.88);opacity:.95;}
+  60% {transform:scale(1.06);opacity:.4;}
+  100%{transform:scale(1.1);opacity:.34;}
+}
+@keyframes introGlowPulse{0%,100%{opacity:.34;transform:scale(1.1);}50%{opacity:.26;transform:scale(1.16);}}
+
+/* --- tagline gets a drawn rule so it lands rather than just fading ------- */
+.intro-mark .im-sub{position:relative;animation:imSubV2 .7s var(--ease-rush) .92s both;}
+@keyframes imSubV2{0%{opacity:0;letter-spacing:.34em;}100%{opacity:1;letter-spacing:.5em;}}
+.intro-mark .im-sub::after{
+  content:"";position:absolute;left:50%;bottom:-14px;width:64px;height:2px;margin-left:-32px;
+  background:var(--fast-red);transform:scaleX(0);
+  animation:imRule .5s var(--ease-whip) 1.12s both;
+}
+@keyframes imRule{to{transform:none;}}
+
+/* --- the mark needs presence on a phone: 283px was under the brand floor -- */
+@media(max-width:860px){.intro-mark .im-logo{width:min(86vw,430px);}}
+
+/* ============================================================================
+   PART 2 — iPHONE 16 SAFARI + DESKTOP CORRECTIONS
+   ========================================================================= */
+
+/* 1. iOS dynamic toolbar. 100vh is the LARGE viewport on iOS Safari, so the
+      intro overlay and the hero were both taller than the visible area — the
+      Skip button and the hero CTA sat under the toolbar on first paint. */
+body.intro-locked{height:100dvh;}
+.hero{min-height:100svh;}
+
+/* 2. The sticky mobile CTA bar pads itself for the home indicator; body did
+      not, so the last ~34px of the footer sat under the bar on an iPhone 16. */
+@media(max-width:860px){
+  body{padding-bottom:calc(70px + env(safe-area-inset-bottom));}
+}
+
+/* 3. Landscape notch: the shell was a flat 24px, which puts copy under the
+      rounded corner when an iPhone is turned sideways. */
+.shell{
+  padding-left:max(24px,env(safe-area-inset-left));
+  padding-right:max(24px,env(safe-area-inset-right));
+}
+
+/* 4. THE BIG ONE. Inputs were .97rem = 15.5px. Under 16px, iOS Safari zooms
+      the whole page when a field takes focus — every form on the site did it:
+      tap the email box and the layout jumps. 16px stops it. */
+@media(pointer:coarse){
+  .fld input,.fld select,.fld textarea,
+  .adm-f input,.adm-f textarea{font-size:16px;}
+}
+
+/* 5. iOS paints a translucent grey rectangle over any tapped link or button.
+      On near-black bands that reads as a rendering fault. Kill it and let the
+      real press state do the work — which the DS specifies as a compression
+      the ghost and locker buttons never got. */
+a,button,[role=button],summary{-webkit-tap-highlight-color:transparent;}
+/* Two-word button labels ("Slow Motion", "Check Availability") wrapped inside the
+   pill because .btn never set white-space. A pill is a single-line component. */
+.btn{white-space:nowrap;}
+.btn-primary:active{transform:translateY(-1px) scale(.97);}
+.btn-ghost:active{border-color:var(--fast-red);transform:translateY(-1px) scale(.97);}
+.res-get:active:not(:disabled){transform:translateY(-1px) scale(.97);}
+.area:active{transform:translateY(-1px) scale(.98);}
+
+/* 6. The mobile nav drawer had no height limit. Seven links plus padding
+      overflow a landscape iPhone with no way to reach the last two. */
+@media(max-width:860px){
+  .nav-links{
+    max-height:calc(100dvh - var(--nav-h));
+    overflow-y:auto;overscroll-behavior:contain;
+    -webkit-backdrop-filter:blur(16px);
+    padding-bottom:calc(26px + env(safe-area-inset-bottom));
+  }
+}
+
+/* 7. Micro-label floor. A cluster of uppercase tracked labels shipped between
+      9.9px and 10.6px — legible on a 3x phone, not on a 27" monitor at 100%.
+      Nothing under 11px now, and the tightest tracking is loosened. */
+.res-lock,.res-open{font-size:.7rem;}
+.res-meta{font-size:.69rem;}
+.cc-stat span{font-size:.69rem;letter-spacing:.11em;}
+.cc-label{font-size:.7rem;}
+.cc-cap em{font-size:.7rem;}
+.prog-tag{font-size:.7rem;}
+.rcp-yr{font-size:.72rem;}
+/* #82828F on court-black measured 4.76:1 at 11.8px uppercase — technically AA,
+   practically hard work. #9A9AA8 takes it to 6.6:1. */
+.trust-i span{color:#9A9AA8;}
+
+/* 8. .hollow is a 2px text-stroke. At the desktop h1 (90px) that is 2% of cap
+      height; at the mobile floor (41.6px) it is 4.8% and the letterforms clog.
+      Scale the stroke with the type. */
+@media(max-width:640px){.hollow{-webkit-text-stroke-width:1.6px;}}
+@media(max-width:400px){.hollow{-webkit-text-stroke-width:1.35px;}}
+
+/* 9. At one column every method step kept its right-hand hairline, drawing a
+      stray rule down the right edge of the stack. */
+@media(max-width:520px){
+  .mth-s{border-right:0;}
+  .mth-s:last-child{border-bottom:0;}
+}
+
+/* 10. Four 4:5 résumé cards stacked one-up ran the section past 1700px on a
+       phone. A 16:11 crop keeps every caption and cuts it roughly in half. */
+@media(max-width:520px){
+  .rcp-shot{aspect-ratio:16/11;}
+  .rcp-shot img{object-position:50% 32%;}
+}
+
+/* 11. Laptop fold. On a 1440x900 screen the hero ran ~1100px tall, so the h1,
+       the CTA and the championship photo could never be seen together. Keyed
+       to viewport HEIGHT, so nothing changes on a tall monitor. */
+@media (min-width:1041px) and (max-height:900px){
+  .hero{padding-top:calc(var(--nav-h) + 22px);padding-bottom:34px;}
+  .hero-cta{margin:24px 0 22px;}
+  .hero-trust{padding-top:20px;}
+  .cc-shot{aspect-ratio:4/3;}
+  .cc-shot img{height:100%;object-fit:cover;object-position:50% 30%;}
+}
+
+/* 12. Very wide screens: 1240px of content in a 2560px black field left the
+       résumé row reading as four narrow slivers. The shell stays 1240 (it is a
+       brand decision) but the gallery gets air back. */
+@media(min-width:1600px){
+  .rcp{gap:20px;}
+  .head{max-width:820px;}
+}
+
+/* 13. The mobile Swish flash was centred with margin-left:-120px against a
+       ~150px string, so it sat 30px right of centre. */
+@media(max-width:960px){
+  .swish-flash{left:50%;margin-left:0;transform:translateX(-50%);}
+  .swish-flash.on{animation:nSwishInM .9s var(--ease-reveal);}
+}
+@keyframes nSwishInM{
+  0%  {opacity:0;transform:translateX(-50%) scale(.6);}
+  20% {opacity:1;transform:translateX(-50%) scale(1.06);}
+  70% {opacity:1;transform:translateX(-50%) scale(1);}
+  100%{opacity:0;transform:translateX(-50%) scale(1.15);}
+}
+
+/* 14. Long-press callout on the interactive night-court stage felt broken. */
+.nite-stage,.nball,.hoop{-webkit-touch-callout:none;user-select:none;}
+
+/* 15. THE NIGHT COURT WAS AMPUTATED ON MOBILE.
+       features.css hides .hoop, .nite-guide and .nball below 960px, so a phone
+       got the copy, a "Take the Shot" button, and a Swish that flashes with no
+       ball, no rim and no court. That is a broken feature, not a responsive
+       adaptation — and phones are most of this audience.
+
+       The desktop scene cannot reflow: .nball's offset-path is authored in
+       absolute px against a 1240x560 box. So the court gets its own portrait
+       layout at phone size, with its own arc.
+
+       MARKUP: wrap the court layers (.nite-city, .nite-floor, .nite-guide,
+       .hoop, .nball, .swish-flash) in <div class="nite-court"> inside
+       .nite-stage, leaving .nite-copy as a sibling. Nothing else changes. */
+.nite-court{position:absolute;inset:0;}
+@media(max-width:960px){
+  .nite-stage{height:auto;padding:0;cursor:auto;display:flex;flex-direction:column;}
+  .nite-copy{position:static;left:auto;top:auto;margin:0 24px;max-width:60ch;order:1;}
+  .nite-court{
+    position:relative;inset:auto;order:2;
+    width:320px;height:400px;margin:36px auto 0;cursor:pointer;
+    transform:scale(var(--court-k,1));transform-origin:top center;
+    margin-bottom:calc(400px * (var(--court-k,1) - 1));
+  }
+  .hoop,.nball{display:block;}
+  .nite-guide{display:none;}          /* authored for the 1240px stage */
+  .nite-city{left:0;right:0;bottom:58px;height:118px;gap:4px;}
+  .nite-floor{height:58px;}
+  .nite-horizon{bottom:0;height:200px;}
+  .hoop{left:auto;right:2px;top:18px;width:104px;transform:scale(.82);transform-origin:top right;}
+  .nball{offset-path:path("M 45 301 Q 150 6 282 86 L 284 140");width:34px;height:34px;}
+  .nball:not(.idle){left:0;top:0;}
+  .nball.idle{offset-path:none;left:28px;top:284px;}
+  .swish-flash{left:50%;top:150px;bottom:auto;margin-left:0;transform:translateX(-50%);font-size:2.4rem;}
+}
+@media(min-width:561px) and (max-width:960px){.nite-court{--court-k:1.3;}}
+
+/* 17. NIGHT COURT FEEL. (a) The make felt thin: the whole net skewed once. It
+       now snaps down under the ball and ripples through three decaying swings,
+       and the rim pops with a hot flash. (b) The ball was a flat gradient
+       circle with two straight seams; the markup now carries a real seamed
+       ball SVG inside .nball i — these rules retire the old pseudo-element
+       seams. Red ramp tokens only. */
+.net.sway{animation:nNetSwish .9s var(--ease-whip);}
+@keyframes nNetSwish{
+  0%  {transform:none;}
+  16% {transform:scaleY(1.24) scaleX(.86) translateY(3px);}
+  36% {transform:scaleY(1.05) skewX(7deg);}
+  56% {transform:scaleY(1.1) skewX(-5deg);}
+  76% {transform:scaleY(1.02) skewX(2deg);}
+  100%{transform:none;}
+}
+.rim.hit{animation:nRimPop .55s var(--ease-whip);}
+@keyframes nRimPop{
+  30% {transform:translateY(3px);box-shadow:0 0 30px rgba(255,58,65,.95);}
+}
+.nball i{background:none;}
+.nball i::before,.nball i::after{display:none;}
+.nball svg{display:block;width:100%;height:100%;}
+
+/* 18. SLINGSHOT. The shot is aimed now: grab the ball, pull back, release.
+       All geometry is rect-derived in js/night-court.js; these are just the
+       affordances. Red ramp + chalk white only. */
+.nball{pointer-events:auto;touch-action:none;cursor:grab;}
+.nball:active{cursor:grabbing;}
+.nball::after{content:"";position:absolute;inset:-22px;border-radius:50%;}
+.nite-sling{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:3;}
+.nite-sling line{stroke:rgba(255,58,65,.9);stroke-width:3;stroke-linecap:round;stroke-dasharray:5 7;}
+.nite-sling .dot{fill:rgba(255,255,255,.55);}
+
+/* 19. LIGHT MODE — the default. Dark stays one tap away (theme button by the
+       hamburger, stored in fb_theme). The Night Court and the intro overlay
+       stay night on purpose. Palette values only; teal is darkened along its
+       own hue for light surfaces (logged per the DS iconography rule). */
+.only-light{display:none;}
+html.fb-light .only-light{display:block;}
+html.fb-light .only-dark{display:none;}
+/* The toggle must HUG the right-side cluster, not take its own distributed
+   slot in a space-between bar: switch the bar to flex-start and push with
+   auto margins (links on desktop; the toggle itself once links are a drawer). */
+.nav-in{justify-content:flex-start;}
+.nav-links{margin-left:auto;margin-right:14px;}
+@media(max-width:1040px){.theme-btn{margin-left:auto;}}
+.theme-btn{width:44px;height:44px;display:grid;place-items:center;color:var(--bone);border-radius:50%;transition:color .2s,transform .25s var(--ease-rush);}
+.theme-btn:hover{color:var(--red-hot);transform:rotate(18deg);}
+.theme-btn .ic-moon{display:none;}
+html.fb-light .theme-btn{color:var(--court-black);}
+html.fb-light .theme-btn .ic-moon{display:block;}
+html.fb-light .theme-btn .ic-sun{display:none;}
+
+html.fb-light body{background:var(--bone);color:var(--court-black);}
+html.fb-light .band-dark:not(.nite){background:var(--bone);color:var(--court-black);}
+html.fb-light .band-ink{background:var(--chalk);color:var(--court-black);}
+html.fb-light .band-dark.nite{color:var(--bone);}
+html.fb-light .nite .lede{color:#C9C9D2;}
+html.fb-light .nite .trust-line{color:#8F8F9C;}
+html.fb-light .hollow{filter:none;}
+html.fb-light .lede{color:var(--text-body-light);}
+html.fb-light .band-red .lede{color:var(--bone);}
+html.fb-light .nav.stuck{background:rgba(245,243,239,.9);border-bottom-color:var(--line-light);}
+html.fb-light .nav-links a{color:var(--text-soft-light);}
+html.fb-light .nav-links a:hover{color:var(--court-black);}
+html.fb-light .brand-name{color:var(--court-black);}
+html.fb-light .nav-toggle i,html.fb-light .nav-toggle i::before,html.fb-light .nav-toggle i::after{background:var(--court-black);}
+html.fb-light .intro-skip{color:#9C9CA9;}
+@media(max-width:1040px){
+  html.fb-light .nav-links{background:rgba(245,243,239,.97);border-bottom-color:var(--line-light);}
+  html.fb-light .nav-links a{border-bottom-color:var(--line-light);}
+}
+html.fb-light .hero-court{background-image:linear-gradient(rgba(10,10,12,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(10,10,12,.05) 1px,transparent 1px);}
+html.fb-light .hero-wash{display:none;}   /* red blush reads as a stain on white */
+html.fb-light .hero-trust{border-top-color:var(--line-light);}
+html.fb-light .trust-i span{color:var(--text-soft-light);}
+html.fb-light .trust-line{color:var(--text-soft-light);}
+html.fb-light .court-card{background:var(--bone);border-color:var(--chalk-2);box-shadow:var(--shadow-light);}
+html.fb-light .cc-label{color:var(--text-soft-light);border-bottom-color:var(--line-light);}
+html.fb-light .cc-foot{border-top-color:var(--line-light);}
+html.fb-light .cc-stat{border-right-color:var(--line-light);}
+html.fb-light .cc-stat b{color:var(--court-black);}
+html.fb-light .cc-stat span{color:var(--text-soft-light);}
+html.fb-light .rcp-note{color:var(--text-soft-light);border-top-color:var(--line-light);}
+html.fb-light .rcp-note a{color:var(--red-deep);}
+html.fb-light .rcp-next{background:var(--bone);border-color:var(--chalk-2);}
+html.fb-light .rcp-next p{color:var(--text-body-light);}
+html.fb-light .rcp-next p b{color:var(--court-black);}
+html.fb-light .aud-c{background:var(--bone);border-color:var(--chalk-2);}
+html.fb-light .aud-c:hover{background:var(--bone);border-color:rgba(230,12,32,.45);}
+html.fb-light .aud-c p{color:var(--text-soft-light);}
+html.fb-light .mth{border-top-color:var(--line-light);}
+html.fb-light .mth-s{border-right-color:var(--line-light);border-bottom-color:var(--line-light);}
+html.fb-light .mth-s:hover{background:var(--bone);}
+html.fb-light .mth-s p{color:var(--text-soft-light);}
+html.fb-light .coach-img{border-color:var(--chalk-2);background:var(--chalk);}
+/* Same trap as .cc-cap: the badge chip is court-black in BOTH themes, but its
+   name inherited the theme text colour, so light mode painted "Blake Kingsley"
+   #0A0A0C on #0A0A0C — the name plate rendered blank. */
+.coach-badge b{color:var(--bone);}
+html.fb-light .coach-body p{color:var(--text-body-light);}
+html.fb-light .coach-body p:first-of-type{color:var(--court-black);}
+html.fb-light .cred{border-color:var(--line-light);}
+html.fb-light .cred span{color:var(--slate);}
+html.fb-light .pb-form{background:var(--bone);border-color:var(--chalk-2);box-shadow:var(--shadow-light);}
+html.fb-light .fld label{color:var(--text-soft-light);}
+html.fb-light .fld input,html.fb-light .fld select,html.fb-light .fld textarea{background:var(--bone);border-color:var(--chalk-2);color:var(--court-black);}
+html.fb-light .fld input::placeholder,html.fb-light .fld textarea::placeholder{color:var(--slate);}
+html.fb-light .pb-form .fld label{color:var(--text-body-light) !important;}
+html.fb-light .pb-note{color:var(--text-soft-light);}
+html.fb-light .pb-list a{color:var(--red-deep);}
+html.fb-light .pb-out p{color:var(--text-body-light);}
+html.fb-light .res-c{background:var(--bone);border-color:var(--chalk-2);}
+html.fb-light .res-c p{color:var(--text-soft-light);}
+html.fb-light .res-lock{color:var(--slate);}
+html.fb-light .res-get{border-color:var(--chalk-2);}
+html.fb-light .res-open,html.fb-light .openres .res-get{color:#0C7C74;}
+html.fb-light .gbp p{color:var(--text-soft-light);}
+html.fb-light .ct-r{border-bottom-color:var(--line-light);}
+html.fb-light .ct-r b{color:var(--slate);}
+html.fb-light .btn-ghost{border-color:var(--line-light);color:var(--court-black);}
+html.fb-light .nite .btn-ghost{border-color:var(--line-dark);color:var(--bone);}
+html.fb-light .ft{background:var(--chalk);border-top-color:var(--line-light);}
+html.fb-light .ft-col h3{color:var(--slate);}
+html.fb-light .ft-col a{color:var(--text-soft-light);}
+html.fb-light .ft-col a:hover{color:var(--red-deep);}
+html.fb-light .ft-bot{color:var(--slate);border-top-color:var(--line-light);}
+html.fb-light .ft p{color:var(--text-soft-light) !important;}
+html.fb-light .mob-bar{background:rgba(245,243,239,.97);border-top-color:var(--line-light);}
+
+/* 20. HERO MARK. The lockup sits right of the headline column on desktop
+       (above the championship card) and above the headline on a phone.
+       250px floor per the logo rules; theme-swapped red/white masters. */
+.hero-grid{grid-template-areas:"copy mark" "copy card";grid-template-rows:auto 1fr;}
+.hero-copy{grid-area:copy;}
+.hero-grid .hero-mark{grid-area:mark;width:min(250px,80%);margin:0 auto 18px;align-self:center;opacity:0;animation:fadeSeq .7s .15s var(--ease-rush) forwards;}
+.hero-grid .court-card{grid-area:card;}
+.hero-mark img{width:100%;height:auto;display:block;}
+@media(max-width:1040px){
+  .hero-grid{grid-template-areas:"mark" "copy" "card";grid-template-rows:auto;}
+  .hero-grid .hero-mark{width:min(58vw,250px);margin:0 0 6px;align-self:start;}
+}
+
+/* 16. Between 861px and 1040px — small laptops, split-screen windows, iPad in
+       portrait — the seven nav links wrapped onto two lines and the "Free First
+       Look" pill overflowed the shell, because base.css only switches to the
+       hamburger at 860px. Move the switch to 1040px, where the hero, coach,
+       playbook and contact grids already collapse, and bring the sticky CTA bar
+       with it so the primary action is never the thing that disappears. */
+.nav-links a{white-space:nowrap;}
+@media(max-width:1040px){
+  .nav-links{
+    position:fixed;top:var(--nav-h);left:0;right:0;
+    background:rgba(10,10,12,.97);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    flex-direction:column;gap:0;
+    padding:14px 24px calc(26px + env(safe-area-inset-bottom));
+    border-bottom:1px solid var(--line-dark);
+    transform:translateY(-120%);visibility:hidden;
+    transition:transform .45s var(--ease-rush),visibility .45s;
+    max-height:calc(100dvh - var(--nav-h));
+    overflow-y:auto;overscroll-behavior:contain;
+  }
+  .nav-links.open{transform:none;visibility:visible;}
+  .nav-links a{width:100%;padding:14px 0;border-bottom:1px solid var(--line-dark);}
+  .nav-toggle{display:grid;}
+  .nav .btn-primary{display:none;}
+  .mob-bar{display:flex;}
+  body{padding-bottom:calc(70px + env(safe-area-inset-bottom));}
+  .adm-fab{bottom:calc(70px + env(safe-area-inset-bottom) + 12px);}
+}
+
+
+/* 20. THE HERO LOCKUP DOUBLED IN DARK MODE. Section 15 added
+       `.hero-mark img{display:block}` (0-1-1), which outranks the theme rule
+       `.only-light{display:none}` (0-1-0) — so the red lockup painted UNDER the
+       white one and the dark hero opened on two stacked logos. Scoping the
+       theme rule to the theme root puts it back in front. With the duplicate
+       gone the single mark sat alone at the top of a 229px row, so it now
+       drops down to cap the card it belongs to and the hero sheds ~135px of
+       empty column. */
+html:not(.fb-light) .only-light{display:none;}
+@media(min-width:1041px){
+  .hero-grid{row-gap:28px;}
+  .hero-grid .hero-mark{margin:clamp(40px,5.2vw,74px) auto 20px;align-self:end;}
+}
+
+/* 21. THE NIGHT COURT BALL WAS BEHIND THE COPY. `.nball.idle` sits at
+       left:118px — inside the 440px copy column, which carries z-index:2. The
+       one object the section asks you to grab was painted behind a paragraph.
+       Move it out to mid-court, still on the floor line, and re-aim the dashed
+       guide (markup, same 1240x520 space) along the exact parabola
+       night-court.js solves — T = 0.85s, g = 2.7H — so the hint matches the
+       shot it is hinting at. */
+@media(min-width:961px){
+  .nball.idle{left:540px;}
+}
+
+/* 22. THE SWISH. A make skewed the whole net once, as one card-like plane. Cord
+       does not do that. The net is now four elements: the cords snap taut and
+       flash white at the strike, then each ring bulges and drops in sequence so
+       a wave runs top to bottom and the bottom ring flares last, as the ball
+       leaves. The rim slams down into an expanding shock ring, and the word
+       lands a beat later, once the ball is clear of the net. Transform, stroke
+       and opacity only — nothing here triggers layout. */
+.net{overflow:visible;}
+.net .net-cord{transform-box:fill-box;transform-origin:50% 0;}
+.net .net-ring{transform-box:fill-box;transform-origin:50% 50%;}
+.net.sway{animation:nNetSwish .9s var(--ease-whip);}
+@keyframes nNetSwish{
+  0%  {transform:none;}
+  9%  {transform:translateY(2px) scaleY(1.22) scaleX(.9);}
+  28% {transform:scaleY(1.07) skewX(6deg);}
+  50% {transform:scaleY(1.03) skewX(-4deg);}
+  70% {transform:scaleY(1.01) skewX(2.2deg);}
+  86% {transform:skewX(-1deg);}
+  100%{transform:none;}
+}
+.net.sway .net-cord{animation:nCordSnap .86s var(--ease-whip);}
+@keyframes nCordSnap{
+  0%  {transform:none;stroke-width:1.5;stroke:rgba(255,255,255,.5);}
+  12% {transform:scaleY(1.14);stroke-width:2.1;stroke:rgba(255,255,255,.95);}
+  38% {transform:scaleY(.97);stroke-width:1.6;}
+  62% {transform:scaleY(1.02);}
+  100%{transform:none;stroke-width:1.5;stroke:rgba(255,255,255,.5);}
+}
+.net.sway .net-ring{animation:nRingWave .6s var(--ease-whip) both;}
+.net.sway .r2{animation-delay:.06s;}
+.net.sway .r3{animation-delay:.12s;}
+@keyframes nRingWave{
+  0%  {transform:none;stroke-width:1.5;stroke:rgba(255,255,255,.5);}
+  20% {transform:translateY(4px) scaleX(1.18) scaleY(1.12);stroke-width:2.2;stroke:rgba(255,255,255,1);}
+  46% {transform:translateY(1px) scaleX(.93);stroke-width:1.7;}
+  72% {transform:translateY(1px) scaleX(1.04);}
+  100%{transform:none;stroke-width:1.5;stroke:rgba(255,255,255,.5);}
+}
+.rim.hit{animation:nRimSlam .6s var(--ease-recoil);}
+@keyframes nRimSlam{
+  0%  {transform:none;box-shadow:0 0 18px rgba(230,12,32,.8);}
+  20% {transform:translateY(4px) scaleX(1.05);box-shadow:0 0 38px rgba(255,58,65,1);}
+  52% {transform:translateY(-1px);box-shadow:0 0 26px rgba(255,58,65,.9);}
+  100%{transform:none;box-shadow:0 0 18px rgba(230,12,32,.8);}
+}
+.rim::after{content:"";position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:2px solid var(--red-hot);opacity:0;pointer-events:none;}
+.rim.hit::after{animation:nShockRing .62s var(--ease-rush);}
+@keyframes nShockRing{
+  0%  {opacity:.9;transform:scale(.3);}
+  100%{opacity:0;transform:scale(2.8);}
+}
+.swish-flash.on{animation:nSwishIn .8s .13s var(--ease-reveal) both;}
+@media(prefers-reduced-motion:reduce){
+  .net.sway,.net.sway .net-cord,.net.sway .net-ring,.rim.hit::after{animation:none;}
+}
+
+/* 23. WCAG on the court-card caption: the "Horizon League Champions" label ran
+       --red-hot on the near-black pill — 3.6:1 at 11px bold, under the 4.5:1
+       floor for text that small. White on the same pill clears it at 19.6:1. */
+.cc-cap em{color:var(--bone);}
+
+/* 24. THE INTRO RAN 3.05s (2.5s hold + .55s exit). Retimed to land at ~1.43s
+       end to end: the build is scaled to ~0.62x so FAST, the notch, the sweep
+       and BASKETBALL all resolve by 0.78s, the hold drops to 0.95s, and the
+       second "hang" gust is cut — with no hang left to fill, it was only ever
+       there to keep 1.4-2.3s alive. Retimed in CSS, not with a playbackRate
+       hack, so the shipped site's --t-intro dismissal matches exactly. */
+:root{--t-intro:.95s;}
+.alogo.play .al-cres{animation:alSwoosh .40s var(--ease-whip) .18s both;}
+.alogo.play .al-f {animation:alLetterHit .34s var(--ease-recoil) .06s both;}
+.alogo.play .al-a {animation:alLetterHit .34s var(--ease-recoil) .09s both;}
+.alogo.play .al-st{animation:alLetterHit .34s var(--ease-recoil) .12s both;}
+.alogo.play .al-ln{
+  animation:alLineOut .29s var(--ease-whip) both,alGustA .30s ease-in-out;
+  animation-delay:calc(.10s + var(--i,0)*.021s),calc(.52s + var(--i,0)*.018s);
+}
+.alogo.play .al-notch{animation:alNotchHit .24s var(--ease-recoil) .16s both;}
+.alogo.play .al-rule{animation:alRuleOut .27s var(--ease-whip) .35s both;}
+.alogo.play .al-wl{animation:alWordUp .25s var(--ease-recoil) both;animation-delay:calc(.37s + var(--i,0)*.016s);}
+.intro-mark{animation:introBuild .68s var(--ease-strike) both,introBreathe 3.6s ease-in-out .68s infinite;}
+#intro.done .intro-mark{animation:introOut .48s var(--ease-launch) both;}
+
+/* 25. THE COURT-CARD CAPTION FAILED ON BOTH COUNTS. The label is an
+       inline-block pill inside a 1.05 line-height Anton block, so the headline
+       ran straight through it — two strings on one line, neither readable. And
+       the scrim under them faded out at 46%, leaving white display type sitting
+       on the lit net and the ladder. Label to its own line; scrim carries a
+       hard floor under the whole caption zone (>= .88 alpha where the text
+       sits, so white clears 4.5:1 against any pixel of the photo). */
+.cc-shot::after{background:linear-gradient(to top,rgba(10,10,12,.96) 0%,rgba(10,10,12,.88) 22%,rgba(10,10,12,.46) 46%,transparent 66%);}
+.cc-cap em{display:block;width:fit-content;margin-bottom:8px;}
+/* Light mode repainted the caption near-black — .cc-cap inherits the card's
+   text colour, and the card turns dark-on-white. Text sitting on a photo scrim
+   is white in BOTH themes; it is never theme text. */
+.cc-cap{color:var(--bone);}
+
+/* 26. The right column still read as a hole: a 250px lockup floating in a
+       523px column with 65px of air above it. Fill the column instead of
+       padding around it — the mark scales to 390px (well over the 250px
+       floor) and the air above drops to 18px, so the hero loses ~25px and the
+       lockup reads as the cap of the card rather than a stray object. */
+@media(min-width:1041px){
+  .hero-grid .hero-mark{width:min(390px,100%);margin:18px auto 16px;}
+}
+
+/* 27. FACES FIRST. Measured face boxes, as % of each source image (x0-x1 /
+       y0-y1), read off a 5% grid laid over the originals:
+         hero-nets       42-56 / 46-60   Blake under the net
+         coach-portrait  41-58 /  7-24   Blake courtside
+         resume-trophy   44-60 /  3-17   Blake + the Horizon League trophy
+         resume-team     46-73 / 22-36   two faces: the player, then Blake
+         resume-juco     30-73 / 12-26   two faces: the player, then Blake
+         resume-work     58-70 / 35-45   Blake in the RMU weight room
+       At 4:5 the résumé and coach photos are their NATIVE ratio (640x800,
+       880x1100), so the desktop grid crops nothing. Every failure was in the
+       narrower crops, and all of them are vertical: these photos are all
+       taller than their crop boxes, so cover scales to width and only the Y
+       term of object-position does anything.
+
+   (a) Résumé cards on a phone (16:11) keep 55% of the source height, and one
+       blanket 50% 32% put that window at 14-69% for all four. Checked crop by
+       crop against the boxes above: it holds resume-team (faces 22-36) and
+       resume-work (35-45) with room to spare, and frames both tighter than any
+       nudge would — those two keep the blanket value on purpose. The other two
+       sit high in their frames and were losing skulls. */
+@media(max-width:520px){
+  .rcp-shot{aspect-ratio:16/11;}
+  .rcp-shot img{height:100%;object-fit:cover;}
+  .rcp-shot img[src*="resume-trophy"]{object-position:50% 2%;}  /* cap at 3%  -> window 1-56 */
+  .rcp-shot img[src*="resume-juco"]  {object-position:50% 8%;}  /* hair at 12% -> window 4-59 */
+}
+
+/* (b) The hero court card crops to 4:3 on a phone and on laptops under 900px
+       tall. At the default 50% the face sat 43-68% down the frame — inside the
+       caption scrim, which is already .38 alpha at 66% and climbing. 72% lifts
+       him to 25-50%, clear of the scrim and of the two-line caption, and still
+       holds the net, the scissors and the jersey.
+       height + object-fit are repeated here ON PURPOSE. object-position is
+       inert on an `height:auto` image, so if the earlier rule that sets cover
+       ever loses (stale cached stylesheet, reordered link, a rebuild that drops
+       item 11) this block silently does nothing and the card top-clips to the
+       rim — which is exactly what shipped. It now stands on its own. */
+@media(max-width:520px){
+  .cc-shot img{height:100%;object-fit:cover;object-position:50% 72%;}
+}
+@media(min-width:1041px) and (max-height:900px){
+  .cc-shot{aspect-ratio:4/3;}
+  .cc-shot img{height:100%;object-fit:cover;object-position:50% 72%;}
+}
+
+/* (c) Hover zoom pushed through the faces. .rcp-shot img scales to 1.09 from
+       the centre, which eats the outer 4% of the frame — exactly where the cap
+       and forehead sit on the trophy card. Zoom from the face instead, so the
+       photo grows around it and the face stays put. */
+.rcp-shot img[src*="resume-trophy"]{transform-origin:52% 10%;}
+.rcp-shot img[src*="resume-juco"]  {transform-origin:51% 19%;}
+.rcp-shot img[src*="resume-team"]  {transform-origin:59% 29%;}
+.rcp-shot img[src*="resume-work"]  {transform-origin:64% 40%;}
+.cc-shot img{transform-origin:49% 53%;}
+.coach-img img{transform-origin:50% 16%;}

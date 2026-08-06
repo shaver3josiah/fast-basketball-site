@@ -39,6 +39,14 @@
 
 * { box-sizing: border-box; }
 
+/* The `hidden` attribute is only a UA-stylesheet rule (`[hidden]{display:none}`), and
+   ANY author display declaration outranks it. .ed-app{display:flex},
+   .ed-gate{display:grid} and .ed-empty{display:grid} each silently defeated it, so
+   `el.hidden = true` did nothing: login succeeded, the editor loaded underneath, and
+   the fixed full-screen login overlay stayed put forever. It read as "login is broken"
+   when the only broken thing was one missing line of CSS. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--ed-bg);

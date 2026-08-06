@@ -14,12 +14,58 @@
     intro.classList.add('done');
     document.body.classList.remove('intro-locked');
     try { sessionStorage.setItem('fb_intro_seen', '1'); } catch(e){}
-    setTimeout(function(){ if(intro.parentNode) intro.parentNode.removeChild(intro); }, 700);
+    setTimeout(function(){ intro.style.display = 'none'; }, 700); /* kept in the DOM for the swish replay */
   }
   if(intro){
-    if(reduced || introSeen){ endIntro(); } else { setTimeout(endIntro, 3100); }
+    var introMs = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--t-intro')) || 2.5) * 1000;
+    if(reduced || introSeen){ endIntro(); } else { setTimeout(endIntro, introMs); }
     var skip = document.getElementById('skipIntro');
     if(skip) skip.addEventListener('click', endIntro);
+  }
+
+  /* Slingshot make (js/night-court.js) -> quick 1.25s lockup cut -> contact card. */
+  window.fbNiteMade = function(){
+    var dest = function(){
+      var t = document.querySelector('#contact');
+      if(t) window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - 90, behavior: 'auto' });
+      else location.hash = '#contact';
+    };
+    if(reduced || !intro || !document.body.contains(intro)){ setTimeout(dest, 900); return; }
+    setTimeout(function(){
+      intro.style.display = '';
+      delete intro.dataset.done;
+      intro.classList.remove('done');
+      var mark = intro.querySelector('.alogo');
+      if(mark){ mark.classList.remove('play'); void mark.offsetWidth; mark.classList.add('play'); }
+      document.body.classList.add('intro-locked');
+      setTimeout(function(){
+        dest();
+        intro.classList.add('done');
+        document.body.classList.remove('intro-locked');
+        setTimeout(function(){ intro.classList.remove('done'); intro.dataset.done = '1'; intro.style.display = 'none'; }, 700);
+      }, 1250);
+    }, 1000);
+  };
+
+  /* Double-click the nav brand to replay the full intro. */
+  var brandEl = document.querySelector('.nav .brand');
+  if(brandEl && intro){
+    brandEl.setAttribute('title', 'Double-click to replay the intro');
+    brandEl.addEventListener('dblclick', function(e){
+      e.preventDefault();
+      if(reduced) return;
+      intro.style.display = '';
+      delete intro.dataset.done;
+      intro.classList.remove('done');
+      var mk = intro.querySelector('.alogo');
+      if(mk){ mk.classList.remove('play'); void mk.offsetWidth; mk.classList.add('play'); }
+      document.body.classList.add('intro-locked');
+      setTimeout(function(){
+        intro.classList.add('done');
+        document.body.classList.remove('intro-locked');
+        setTimeout(function(){ intro.classList.remove('done'); intro.dataset.done = '1'; intro.style.display = 'none'; }, 700);
+      }, introMs);
+    });
   }
 
   var nav = document.getElementById('nav');
