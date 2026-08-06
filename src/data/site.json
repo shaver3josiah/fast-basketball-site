@@ -27,7 +27,8 @@
                 "fit": "cover",
                 "focalX": 50,
                 "focalY": 32,
-                "radius": 18
+                "radius": 18,
+                "priority": true
               },
               "box": { "desktop": { "x": 56, "y": 8, "w": 36, "h": 84, "rot": 0 }, "tablet": null, "mobile": null }
             },

@@ -43,11 +43,15 @@ export default async (request) => {
     scalePx,
     warn: (m) => warnings.push(m),
     legacy: () => '',
-    renderImage: (key, alt) => {
+    renderImage: (key, alt, opts = {}) => {
       const image = content.images[key];
       if (!image || !manifest[key]) return null;
       const local = { images: { [key]: { ...image, alt: alt || image.alt } } };
-      return renderImage(key, local, manifest, { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 750px) 92vw, 45vw' });
+      return renderImage(key, local, manifest, {
+        loading: opts.priority ? 'eager' : 'lazy',
+        fetchpriority: opts.priority ? 'high' : 'auto',
+        sizes: '(max-width: 750px) 92vw, 45vw'
+      });
     }
   };
 

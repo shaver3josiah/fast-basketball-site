@@ -118,18 +118,23 @@ export const ELEMENT_TYPES = {
     // In the phone auto-stack a box goes to height:auto. An image would then have no
     // height of its own to fill, so it keeps the proportions it was drawn at instead.
     stackBehaviour: 'aspect',
-    defaults: { key: null, alt: '', fit: 'cover', focalX: 50, focalY: 50, radius: 0 },
+    defaults: { key: null, alt: '', fit: 'cover', focalX: 50, focalY: 50, radius: 0, priority: false },
     fields: [
       f.image('key', 'Photo'),
       f.text('alt', 'Alt text', { required: true, help: 'Describes the photo for screen readers and search. Required — a photo without it cannot be saved.' }),
       f.select('fit', 'Fit', ['cover', 'contain']),
       f.number('focalX', 'Focal point across', { unit: '%', min: 0, max: 100 }),
       f.number('focalY', 'Focal point down', { unit: '%', min: 0, max: 100 }),
-      f.number('radius', 'Corner radius', { unit: 'px', min: 0, max: 200 })
+      f.number('radius', 'Corner radius', { unit: 'px', min: 0, max: 200 }),
+      // Every canvas image used to be lazy, including one sitting at the top of the
+      // page. A lazy hero is a measurable LCP hit, because the browser waits to find
+      // out it was needed all along. The hand-built homepage hero has always been
+      // eager+high; this is the same control, made explicit.
+      f.toggle('priority', 'Load immediately', { help: 'Turn on for a photo visible before scrolling. Leave off for everything below the fold.' })
     ],
     render(props, ctx) {
       const alt = escapeHtml(props.alt || '');
-      const pic = ctx.renderImage(props.key, alt);
+      const pic = ctx.renderImage(props.key, alt, { priority: !!props.priority });
       if (!pic) {
         // An element pointing at a deleted photo renders as a labelled placeholder
         // rather than a broken <img>, and the build logs it. Silent breakage on a

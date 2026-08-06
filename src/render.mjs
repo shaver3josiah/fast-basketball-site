@@ -193,7 +193,7 @@ function fontPreloadLinks() {
   return '<link rel="preload" href="/fonts/anton-400-normal.woff2" as="font" type="font/woff2" crossorigin>';
 }
 
-function stylesheetLinks() {
+export function stylesheetLinks() {
   return '<link rel="stylesheet" href="' + asset('/styles/tokens.css') + '">' +
     '<link rel="stylesheet" href="' + asset('/styles/fonts.css') + '">' +
     '<link rel="stylesheet" href="' + asset('/styles/base.css') + '">' +
