@@ -537,7 +537,7 @@ function step12_canvasPages(content, responsiveManifest, prelude) {
       title: page.title,
       description: page.description,
       canonicalPath: page.path,
-      bodyHtml: '<main id="main">\n' + out.html + '</main>\n',
+      bodyHtml: '<main id="main" class="cv-page">\n' + out.html + '</main>\n',
       content,
       prelude,
       robots: page.draft ? 'noindex, nofollow' : 'index, follow',

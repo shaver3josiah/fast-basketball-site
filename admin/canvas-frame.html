@@ -15,6 +15,11 @@
      editor was previewing a cascade the live site does not have. "What you drag is
      what ships" only holds if this list cannot be forgotten. -->
 <!--SITE_STYLES-->
+<!-- theme.js puts .fb-light on <html> and the site defaults to LIGHT. Without it the
+     editor rendered every canvas in dark while the published page was light, so the
+     editor and the live page simply did not look like each other. Same script, same
+     position in <head>, same result. -->
+<script src="/js/theme.js"></script>
 <style>
   /* The artboard never scrolls — the pane around it does. A scrollbar inside the frame
      steals ~17px, so the canvas would be 1423px while every percentage in the document

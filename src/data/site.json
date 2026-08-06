@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "updated": "2026-08-06T00:00:00.000Z",
+  "updated": "2026-08-06T15:51:26.586Z",
   "pages": [
     {
       "id": "lab",
@@ -14,7 +14,10 @@
           "type": "canvas",
           "name": "Lab hero",
           "designHeight": 720,
-          "background": { "kind": "color", "value": "--court-black" },
+          "background": {
+            "kind": "color",
+            "value": "--court-black"
+          },
           "elements": [
             {
               "id": "el_lab_photo",
@@ -30,15 +33,41 @@
                 "radius": 18,
                 "priority": true
               },
-              "box": { "desktop": { "x": 56, "y": 8, "w": 36, "h": 84, "rot": 0 }, "tablet": null, "mobile": null }
+              "box": {
+                "desktop": {
+                  "x": 56,
+                  "y": 8,
+                  "w": 36,
+                  "h": 84,
+                  "rot": 0
+                },
+                "tablet": null,
+                "mobile": null
+              }
             },
             {
               "id": "el_lab_rule",
               "type": "shape",
               "name": "Red rule",
               "z": 2,
-              "props": { "shape": "rect", "fill": "--fast-red", "radius": 2, "strokeWidth": 0, "opacity": 1 },
-              "box": { "desktop": { "x": 8, "y": 21, "w": 5, "h": 1.1, "rot": 0 }, "tablet": null, "mobile": null }
+              "props": {
+                "shape": "rect",
+                "fill": "--fast-red",
+                "radius": 2,
+                "strokeWidth": 0,
+                "opacity": 1
+              },
+              "box": {
+                "desktop": {
+                  "x": 8,
+                  "y": 21,
+                  "w": 5,
+                  "h": 1.1,
+                  "rot": 0
+                },
+                "tablet": null,
+                "mobile": null
+              }
             },
             {
               "id": "el_lab_head",
@@ -57,7 +86,17 @@
                 "tracking": 0.01,
                 "color": "--bone"
               },
-              "box": { "desktop": { "x": 8, "y": 26, "w": 44, "h": null, "rot": 0 }, "tablet": null, "mobile": null }
+              "box": {
+                "desktop": {
+                  "x": 8,
+                  "y": 26,
+                  "w": 44,
+                  "h": null,
+                  "rot": 0
+                },
+                "tablet": null,
+                "mobile": null
+              }
             },
             {
               "id": "el_lab_lede",
@@ -76,15 +115,41 @@
                 "tracking": 0,
                 "color": "--text-body-dark"
               },
-              "box": { "desktop": { "x": 8, "y": 55, "w": 36, "h": null, "rot": 0 }, "tablet": null, "mobile": null }
+              "box": {
+                "desktop": {
+                  "x": 8,
+                  "y": 55,
+                  "w": 36,
+                  "h": null,
+                  "rot": 0
+                },
+                "tablet": null,
+                "mobile": null
+              }
             },
             {
               "id": "el_lab_cta",
               "type": "button",
               "name": "Primary CTA",
               "z": 4,
-              "props": { "label": "Book a Free First Look", "href": "/contact", "variant": "primary", "fontSize": 16, "newTab": false },
-              "box": { "desktop": { "x": 8, "y": 76, "w": 26, "h": null, "rot": 0 }, "tablet": null, "mobile": null }
+              "props": {
+                "label": "Book a Free First Look",
+                "href": "/contact",
+                "variant": "primary",
+                "fontSize": 16,
+                "newTab": false
+              },
+              "box": {
+                "desktop": {
+                  "x": 8,
+                  "y": 76,
+                  "w": 26,
+                  "h": null,
+                  "rot": 0
+                },
+                "tablet": null,
+                "mobile": null
+              }
             }
           ]
         }

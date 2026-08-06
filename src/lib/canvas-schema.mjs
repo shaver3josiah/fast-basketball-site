@@ -78,6 +78,13 @@ export const ELEMENT_TYPES = {
   text: {
     label: 'Text',
     icon: 'type',
+    // Typography must be written onto the element that actually renders the text, not
+    // onto the wrapper. base.css styles bare h1/h2/h3 (font-family, size, weight,
+    // line-height, letter-spacing, text-transform), and a child's own rule always
+    // beats a value inherited from its parent — so putting these on the wrapper meant
+    // six of this type's ten inspector fields silently did nothing on any heading.
+    // #id .cv-t is (1,1,0) and wins cleanly over base.css's (0,0,1) element selectors.
+    cssScope: ' .cv-t',
     defaults: { content: 'New text', tag: 'p', fontSize: 24, weight: 400, align: 'left', color: '--chalk', family: 'body', lineHeight: 1.4, tracking: 0, transform: 'none' },
     fields: [
       f.richline('content', 'Text', { multiline: true }),
@@ -190,6 +197,9 @@ export const ELEMENT_TYPES = {
   button: {
     label: 'Button',
     icon: 'mouse-pointer-click',
+    // Same reason as text: .btn in base.css sets its own font-size (.74rem), which beat
+    // the wrapper's inherited value and made the Size field inert.
+    cssScope: ' .btn',
     defaults: { label: 'Book a session', href: '/contact', variant: 'primary', fontSize: 16, newTab: false },
     fields: [
       f.text('label', 'Button text', { required: true }),

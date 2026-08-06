@@ -70,10 +70,13 @@
     stage.innerHTML = payload.html || '';
     document.body.classList.add('is-editing');
     applyLockClasses();
+    // Deliberately does NOT re-select here. The frame's copy of selectedId is stale by
+    // definition after a reload — the parent owns selection and pushes it immediately
+    // after this call. Re-selecting from stale state both fought the parent and fired
+    // a 'select' echo that rebuilt the inspector out from under whatever the owner was
+    // typing into.
     if (selectedId && !document.getElementById(selectedId)) selectedId = null;
     setupMoveable();
-    if (selectedId) select(selectedId);
-    wireHitTesting();
   }
 
   function refresh() { if (moveable) moveable.updateRect(); }
@@ -86,6 +89,9 @@
     });
   }
 
+  // Bound ONCE against #stage, which survives every load. It used to be called from
+  // load(), so each re-render stacked another pair of listeners on the same node and a
+  // single click eventually fired the handler a dozen times.
   function wireHitTesting() {
     stage.addEventListener('mousedown', function (e) {
       var node = e.target.closest ? e.target.closest('.cv-el') : null;
@@ -101,7 +107,10 @@
 
   // ------------------------------------------------------------------ selection
 
-  function select(id) {
+  // `silent` is set when the PARENT is telling the frame what is selected, rather than
+  // the user clicking. Emitting in that case sends a 'select' straight back to the
+  // parent, which rebuilds the inspector — destroying the input the owner is typing in.
+  function select(id, silent) {
     if (selectedId) {
       var prev = document.getElementById(selectedId);
       if (prev) prev.classList.remove('is-selected');
@@ -118,7 +127,7 @@
         : [];
       moveable.updateRect();
     }
-    emit('select', { id: id });
+    if (!silent) emit('select', { id: id });
   }
 
   // ------------------------------------------------------------------ moveable
@@ -184,7 +193,7 @@
   // Read the truth back off the DOM rather than trusting the arithmetic that put it
   // there. If a CSS rule, a min-width or a flex quirk moved the element somewhere other
   // than where the drag math said, the saved box matches what the owner is looking at.
-  function commit(node) {
+  function commit(node, coalesce) {
     var data = elementData(node.id);
     if (!data) return;
     var pct = readPct(node);
@@ -192,20 +201,41 @@
     box.h = (data.box.desktop.h === null || data.box.desktop.h === undefined) ? null : r(pct.h);
     var m = /rotate\((-?[\d.]+)deg\)/.exec(node.style.transform || '');
     box.rot = m ? Number(m[1]) : (data.box.desktop.rot || 0);
-    emit('change', { id: node.id, box: box });
+    emit('change', { id: node.id, box: box, coalesce: !!coalesce });
   }
 
-  // Nudging with the keyboard is how you fix the last two pixels, and it is the one
-  // thing a mouse is genuinely bad at.
+  // Keyboard lives here, in the frame, because a keydown never crosses an iframe
+  // boundary. Once you click the canvas the frame owns focus, so every shortcut bound
+  // in the parent was dead from that moment on — including the Ctrl+Z the delete toast
+  // tells you to press. Delete belongs here for the same reason: this is the one
+  // document where "the canvas has focus" is a fact rather than something inferred
+  // from the absence of a focused form field.
   document.addEventListener('keydown', function (e) {
+    var mod = e.metaKey || e.ctrlKey;
+    if (mod) {
+      var k = e.key.toLowerCase();
+      if (k === 'z') { e.preventDefault(); emit('shortcut', { name: e.shiftKey ? 'redo' : 'undo' }); return; }
+      if (k === 's') { e.preventDefault(); emit('shortcut', { name: 'save' }); return; }
+      return;
+    }
+
     if (!selectedId) return;
+
+    if (e.key === 'Escape') { select(null); return; }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      emit('delete', { id: selectedId });
+      return;
+    }
+
+    // Nudging is how you fix the last two pixels, and it is the one thing a mouse is
+    // genuinely bad at.
     var step = e.shiftKey ? 1 : 0.2;
     var dx = 0, dy = 0;
     if (e.key === 'ArrowLeft') dx = -step;
     else if (e.key === 'ArrowRight') dx = step;
     else if (e.key === 'ArrowUp') dy = -step;
     else if (e.key === 'ArrowDown') dy = step;
-    else if (e.key === 'Escape') { select(null); return; }
     else return;
     e.preventDefault();
     var node = document.getElementById(selectedId);
@@ -214,10 +244,15 @@
     node.style.left = r(pct.x + dx) + '%';
     node.style.top = r(pct.y + dy) + '%';
     if (moveable) moveable.updateRect();
-    commit(node);
+    // coalesce: a run of arrow presses is one edit, not twelve. Without this a few
+    // seconds of nudging flushes the entire undo stack.
+    commit(node, true);
   });
 
   window.addEventListener('resize', function () { if (moveable) moveable.updateRect(); });
+
+  // Once, at init. #stage outlives every load, so the listeners bound to it do too.
+  wireHitTesting();
 
   emit('ready', {});
 })();

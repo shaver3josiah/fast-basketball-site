@@ -90,20 +90,46 @@ function runBuild(reason) {
   });
 }
 
+// The cache key for every function import. Node caches an ESM module for the life of
+// the process, keyed by URL — and that cache covers the module's ENTIRE import graph.
+// Keying off the function file's own mtime therefore does almost nothing: editing
+// src/lib/canvas-compile.mjs leaves admin-canvas-render.mjs untouched, so the server
+// keeps serving the compiler it loaded at boot. That is exactly how the editor ends up
+// rendering with a different compiler than the build uses, which shows up as the
+// editor and the published page quietly disagreeing.
+//
+// One counter, bumped by the watcher on any source change, busts the whole graph.
+let sourceGeneration = Date.now();
+
 function watchSources() {
-  const targets = ['src', 'admin'].map((d) => resolve(ROOT, d)).filter(existsSync);
+  // netlify/ is watched for the cache bump only — functions are not part of dist, so
+  // changing one needs no rebuild, just a fresh import.
+  const rebuildDirs = ['src', 'admin'].map((d) => resolve(ROOT, d)).filter(existsSync);
+  const bumpOnlyDirs = ['netlify'].map((d) => resolve(ROOT, d)).filter(existsSync);
   let timer = null;
-  for (const dir of targets) {
+
+  for (const dir of rebuildDirs) {
     watch(dir, { recursive: true }, (_event, filename) => {
       if (!filename) return;
       // responsive-manifest.json is written BY the build, inside src/data. Without
       // this guard every build triggers the next one and the server spins forever.
       if (String(filename).includes('responsive-manifest.json')) return;
+      sourceGeneration = Date.now();
       clearTimeout(timer);
       timer = setTimeout(() => runBuild('changed ' + String(filename).split(/[\\/]/).pop()), 150);
     });
   }
-  console.log('[watch] ' + targets.length + ' source director' + (targets.length === 1 ? 'y' : 'ies'));
+
+  for (const dir of bumpOnlyDirs) {
+    watch(dir, { recursive: true }, (_event, filename) => {
+      if (!filename) return;
+      sourceGeneration = Date.now();
+      console.log('[watch] function reloaded: ' + String(filename).split(/[\\/]/).pop());
+    });
+  }
+
+  const total = rebuildDirs.length + bumpOnlyDirs.length;
+  console.log('[watch] ' + total + ' source director' + (total === 1 ? 'y' : 'ies'));
 }
 
 // ---------------------------------------------------------------- functions
@@ -115,10 +141,10 @@ async function callFunction(name, req, res) {
     return res.end(JSON.stringify({ error: 'no function named "' + name + '"' }));
   }
 
-  // Node caches ESM imports for the life of the process, so an edited function would
-  // keep serving its old code until restart. The mtime query busts that per save.
-  const mtime = (await stat(file)).mtimeMs;
-  const mod = await import(pathToFileURL(file).href + '?v=' + mtime);
+  // Keyed on sourceGeneration, not this file's mtime. Node's module cache spans the
+  // whole import graph, so the handler must be re-imported whenever ANY source it
+  // depends on changes, not only when the handler itself is edited.
+  const mod = await import(pathToFileURL(file).href + '?v=' + sourceGeneration);
   if (typeof mod.default !== 'function') {
     res.writeHead(500, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ error: name + '.mjs has no default export' }));

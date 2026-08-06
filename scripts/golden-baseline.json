@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-08-06T15:29:36.881Z",
+  "recorded": "2026-08-06T15:52:42.494Z",
   "files": {
     "404.html": {
       "sha": "26e229491d142905",
@@ -14,28 +14,28 @@
       "bytes": 12191
     },
     "admin/canvas-frame.html": {
-      "sha": "e55269baebf5d059",
-      "bytes": 2765
+      "sha": "c6b3b74a2282cd97",
+      "bytes": 3100
     },
     "admin/canvas-frame.js": {
-      "sha": "723013fc0cf7abab",
-      "bytes": 8250
+      "sha": "1f13ff3a3cbed70d",
+      "bytes": 10271
     },
     "admin/canvas-schema.js": {
       "sha": "5a1bd8324a753c8f",
       "bytes": 7775
     },
     "admin/editor.css": {
-      "sha": "855df29cabc897a6",
-      "bytes": 12115
+      "sha": "7b3555f54cae21bd",
+      "bytes": 12536
     },
     "admin/editor.html": {
       "sha": "e9d738597f256c1c",
       "bytes": 3538
     },
     "admin/editor.js": {
-      "sha": "e20dae184744b6ea",
-      "bytes": 23081
+      "sha": "11c93face2226da8",
+      "bytes": 24222
     },
     "admin/index.html": {
       "sha": "6db97fce8837c6fa",
@@ -138,8 +138,8 @@
       "bytes": 812
     },
     "lab/index.html": {
-      "sha": "70ac6cd54c4106cb",
-      "bytes": 6835
+      "sha": "9c80404f46e503c4",
+      "bytes": 6851
     },
     "playbook/index.html": {
       "sha": "9d3cce2941bc12a7",
@@ -162,12 +162,12 @@
       "bytes": 41694
     },
     "styles/canvas-generated.css": {
-      "sha": "a41dda09dbfad4cc",
-      "bytes": 1640
+      "sha": "7cafd52c9b329b94",
+      "bytes": 1709
     },
     "styles/canvas.css": {
-      "sha": "fa2cc84478a7d398",
-      "bytes": 2333
+      "sha": "57718aeba76a2d0c",
+      "bytes": 2882
     },
     "styles/fb-polish.css": {
       "sha": "2d9d93c7f0957db1",

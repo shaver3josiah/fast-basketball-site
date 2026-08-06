@@ -7,6 +7,16 @@
   overflow: hidden;
 }
 
+/* The nav is position:fixed, 74px tall, at the top of every page. A canvas section is
+   the first thing in <main>, so the nav sat on top of its first 74px — a tenth of the
+   artboard — while the editor showed that strip unobstructed. Anything the owner
+   placed up there looked fine in the editor and was covered on the live site.
+   Reserving the nav's height means nothing ever overlays the canvas, in either place,
+   so the section is the same 1440x720 box in the editor and in the browser. */
+.cv-page {
+  padding-top: var(--nav-h);
+}
+
 .cv-el {
   box-sizing: border-box;
   /* An element is a positioned box; what fills it is the element type's business. */

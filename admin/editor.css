@@ -255,7 +255,12 @@ body {
    dragging the phone layout while the label says Desktop. The artboard has to stay at
    design size; only the view zooms. */
 .ed-frame-scaler {
-  transform-origin: top center;
+  /* top left, not top center. editor.js reserves the ALREADY-SCALED width for this
+     box, so a centre origin scaled the iframe about the midpoint of the small box and
+     threw the artboard ~180px to the right, pushing a fifth of it off-screen behind a
+     scrollbar. With a left origin the painted canvas maps onto the box it reserved,
+     and .ed-frame-wrap's justify-content:center does the centring for real. */
+  transform-origin: top left;
   flex: none;
 }
 

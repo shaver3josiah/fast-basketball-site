@@ -88,7 +88,14 @@ function stackSize(el, designHeight) {
   const behaviour = def?.stackBehaviour || 'auto';
 
   if (behaviour === 'fixed-height' && box.h) {
-    return { height: Math.max(2, Math.round((box.h / 100) * designHeight)) + 'px' };
+    // Width comes back too, because the stack's blanket width:100% turns a 5%-wide
+    // accent rule into a full-width red slab across the phone layout. A decorative
+    // shape was drawn at a deliberate size; keep its proportions and let it cap at the
+    // column rather than stretching edge to edge.
+    return {
+      width: 'min(100%, ' + Math.round((box.w / 100) * DESIGN_WIDTH) + 'px)',
+      height: Math.max(2, Math.round((box.h / 100) * designHeight)) + 'px'
+    };
   }
   if (behaviour === 'aspect' && box.h && box.w) {
     const w = (box.w / 100) * DESIGN_WIDTH;
@@ -138,12 +145,24 @@ export function compileSection(section, ctx) {
     const inner = def.render(el.props || {}, ctx) || '';
     html += '<div class="cv-el cv-' + el.type + '" id="' + el.id + '">' + inner + '</div>\n';
 
-    css.push(declBlock(sel, {
+    // Geometry belongs to the wrapper; appearance belongs to whatever actually renders
+    // it. A type with a cssScope writes its style onto the child (#id .cv-t, #id .btn)
+    // because base.css styles those elements directly, and a child's own declaration
+    // always beats a value inherited from its parent. Without the split, every
+    // typographic field on a heading or a button was a control that did nothing.
+    const geometry = {
       position: 'absolute',
       ...boxDecls(el.box.desktop),
-      'z-index': String(el.z ?? 1),
-      ...(def.css ? def.css(el.props || {}, ctx) : {})
-    }));
+      'z-index': String(el.z ?? 1)
+    };
+    const appearance = def.css ? def.css(el.props || {}, ctx) : {};
+
+    if (def.cssScope) {
+      css.push(declBlock(sel, geometry));
+      css.push(declBlock(sel + def.cssScope, appearance));
+    } else {
+      css.push(declBlock(sel, { ...geometry, ...appearance }));
+    }
     if (el.hidden?.desktop) css.push(declBlock(sel, { display: 'none' }));
   }
 

@@ -295,7 +295,10 @@
       if (out.error) { toast(out.error, 'error'); return; }
       frameWin.CanvasFrame.onEvent = handleFrameEvent;
       frameWin.CanvasFrame.load({ html: out.html, css: out.css, section: section });
-      if (state.selectedId) frameWin.CanvasFrame.select(state.selectedId);
+      // Always push the parent's selection, null included, and always silently. The
+      // parent is authoritative; a silent push cannot echo back as a 'select' and so
+      // cannot rebuild the inspector while the owner is typing in it.
+      frameWin.CanvasFrame.select(state.selectedId, true);
       showBlockingErrors(out.errors);
     }).catch(function () {
       toast('Could not draw the canvas. Is the dev server still running?', 'error');
@@ -324,23 +327,39 @@
     renderTimer = setTimeout(function () { renderQueued = false; renderCanvas(); }, 220);
   }
 
+  var lastCoalesceAt = 0;
+
   function handleFrameEvent(e) {
     if (e.type === 'select') {
+      // Idempotence guard. Cheap, and it means a stray echo can never cost the owner
+      // the field they are typing in.
+      if (e.id === state.selectedId) return;
       state.selectedId = e.id;
       renderInspector();
     } else if (e.type === 'change') {
-      var el = selectedElement();
-      if (!el || el.id !== e.id) {
-        var els = currentSection().elements;
-        for (var i = 0; i < els.length; i++) if (els[i].id === e.id) el = els[i];
-      }
+      var el = null;
+      var els = (currentSection() && currentSection().elements) || [];
+      for (var i = 0; i < els.length; i++) if (els[i].id === e.id) el = els[i];
       if (!el) return;
-      pushHistory();
+
+      // A run of arrow-key nudges is one edit. Snapshotting each keypress filled the
+      // 60-entry stack in a few seconds and threw away everything before it.
+      var now = Date.now();
+      if (!e.coalesce || now - lastCoalesceAt > 700) pushHistory();
+      lastCoalesceAt = e.coalesce ? now : 0;
+
       el.box.desktop = Object.assign({}, el.box.desktop, e.box);
       markDirty();
-      renderInspector();
-      // No canvas re-render here: the frame already moved the element, and redrawing
-      // would replace the node moveable is holding mid-gesture.
+      renderGeometry(el);
+      // Only the geometry inputs are refreshed, not the whole inspector: a full
+      // rebuild here would blow away focus for anyone mid-edit. And no canvas
+      // re-render, because the frame already moved the node moveable is holding.
+    } else if (e.type === 'delete') {
+      deleteElement();
+    } else if (e.type === 'shortcut') {
+      if (e.name === 'undo') undo();
+      else if (e.name === 'redo') redo();
+      else if (e.name === 'save' && state.dirty) save();
     } else if (e.type === 'activate') {
       var target = document.querySelector('#inspFields [data-primary="true"]');
       if (target) { target.focus(); target.select && target.select(); }
@@ -627,12 +646,12 @@
 
   document.addEventListener('keydown', function (e) {
     var mod = e.metaKey || e.ctrlKey;
+    // Delete/Backspace is NOT handled here. It lived here guarded only by "the focused
+    // element is not a form field", and <body> passes that test — so when a rebuild
+    // dropped focus to <body>, the next Backspace deleted the element instead of a
+    // character. The frame owns that shortcut now, where canvas focus is a fact.
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
     else if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); if (state.dirty) save(); }
-    else if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedId
-      && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) {
-      e.preventDefault(); deleteElement();
-    }
   });
 
   window.addEventListener('beforeunload', function (e) {
