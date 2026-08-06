@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<title>Canvas surface</title>
+<!-- The real site stylesheets, loaded in an isolated document.
+     base.css styles bare elements (body, h1, a, button), so loading it into the
+     editor's own document would restyle the editor chrome. An iframe is the cheap,
+     total fix: the canvas gets the site's exact cascade and the editor keeps its own. -->
+<link rel="stylesheet" href="/styles/tokens.css">
+<link rel="stylesheet" href="/styles/fonts.css">
+<link rel="stylesheet" href="/styles/base.css">
+<link rel="stylesheet" href="/styles/canvas.css">
+<style>
+  /* The artboard never scrolls — the pane around it does. A scrollbar inside the frame
+     steals ~17px, so the canvas would be 1423px while every percentage in the document
+     is measured against 1440, and every drag would land slightly off. */
+  html, body { margin: 0; padding: 0; background: var(--court-black); overflow: hidden; }
+  /* The compiled section's own generated rules land here at runtime. */
+</style>
+<style id="sectionCss"></style>
+<style>
+  /* Editing affordances. Scoped to .is-editing so a screenshot of the frame with the
+     class removed is exactly the published page — no editor furniture baked in. */
+  .is-editing .cv-el { cursor: grab; }
+  .is-editing .cv-el:hover { outline: 1px solid var(--red-hot); outline-offset: 2px; }
+  .is-editing .cv-el.is-selected { outline: 2px solid var(--fast-red); outline-offset: 2px; }
+  .is-editing .cv-el.is-locked { cursor: not-allowed; }
+
+  /* moveable draws its control box into the document; keep it above the artwork. */
+  .moveable-control-box { z-index: 9999; }
+
+  /* An empty section still needs to be a drop target with a visible extent. */
+  .cv-sec:empty::after {
+    content: 'Empty section';
+    display: grid; place-items: center; height: 100%;
+    color: var(--text-faint-dark); font: 500 .9rem/1 var(--font-body);
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script src="/admin/vendor/moveable.min.js"></script>
+<script src="/admin/canvas-frame.js"></script>
+</body>
+</html>

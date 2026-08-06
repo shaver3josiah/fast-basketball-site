@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-08-06T14:14:14.953Z",
+  "recorded": "2026-08-06T14:52:41.386Z",
   "files": {
     "404.html": {
       "sha": "26e229491d142905",
@@ -13,6 +13,30 @@
       "sha": "99ae06ed88934cc1",
       "bytes": 12191
     },
+    "admin/canvas-frame.html": {
+      "sha": "77fb4e7be7b76410",
+      "bytes": 2137
+    },
+    "admin/canvas-frame.js": {
+      "sha": "723013fc0cf7abab",
+      "bytes": 8250
+    },
+    "admin/canvas-schema.js": {
+      "sha": "367d173a85469925",
+      "bytes": 7523
+    },
+    "admin/editor.css": {
+      "sha": "d0889842517bbae0",
+      "bytes": 11598
+    },
+    "admin/editor.html": {
+      "sha": "e9d738597f256c1c",
+      "bytes": 3538
+    },
+    "admin/editor.js": {
+      "sha": "e20dae184744b6ea",
+      "bytes": 23081
+    },
     "admin/index.html": {
       "sha": "6db97fce8837c6fa",
       "bytes": 1577
@@ -20,6 +44,14 @@
     "admin/schema.js": {
       "sha": "7372d5248ce4dc83",
       "bytes": 2178
+    },
+    "admin/vendor/moveable.min.js": {
+      "sha": "6c6c78751303afd6",
+      "bytes": 245551
+    },
+    "admin/vendor/selecto.min.js": {
+      "sha": "2ec017a727576abb",
+      "bytes": 62204
     },
     "basketball-training/coconut-creek/index.html": {
       "sha": "08aff77de669e69d",

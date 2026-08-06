@@ -1,0 +1,420 @@
+/* Canvas editor chrome.
+ *
+ * Product register, not brand: the site is where the personality lives, and a tool
+ * that competes with the artwork for attention is a tool you fight. One system sans,
+ * a fixed rem scale, restrained neutrals, and the brand red reserved for exactly two
+ * jobs — the current selection and the primary action.
+ *
+ * Light chrome around a dark canvas is deliberate. The site is near-black; a dark
+ * editor would blur the line between "the tool" and "the page", and the artboard has
+ * to read as the artboard. Every canvas editor worth using makes this same call.
+ */
+
+:root {
+  --ed-bg: #F4F4F6;
+  --ed-surface: #FFFFFF;
+  --ed-rail: #FAFAFB;
+  --ed-line: #E2E2E7;
+  --ed-line-strong: #CFCFD6;
+  --ed-ink: #1A1A20;
+  --ed-ink-2: #55555F;
+  --ed-ink-3: #7C7C88;
+  --ed-accent: #D40D1F;
+  --ed-accent-soft: #FDEBEC;
+  --ed-danger: #B3261E;
+  --ed-focus: #0B63CE;
+
+  --ed-r: 6px;
+  --ed-r-lg: 9px;
+
+  --ed-top-h: 52px;
+  --ed-rail-w: 232px;
+  --ed-insp-w: 296px;
+
+  --ed-t: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ed-bg);
+  color: var(--ed-ink);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A single visible focus treatment everywhere, so keyboard users never lose the caret. */
+:focus-visible {
+  outline: 2px solid var(--ed-focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ---------------------------------------------------------------- login gate */
+
+.ed-gate {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ed-bg);
+  z-index: 50;
+}
+
+.ed-gate-card {
+  width: min(340px, calc(100vw - 32px));
+  background: var(--ed-surface);
+  border: 1px solid var(--ed-line);
+  border-radius: var(--ed-r-lg);
+  padding: 28px;
+  display: grid;
+  gap: 10px;
+  box-shadow: 0 12px 32px -20px rgba(10, 10, 20, 0.4);
+}
+
+.ed-gate-card h1 { margin: 0; font-size: 1.125rem; letter-spacing: -0.01em; }
+.ed-gate-card > p { margin: 0 0 8px; color: var(--ed-ink-3); font-size: 0.8125rem; }
+.ed-gate-card label { font-weight: 600; font-size: 0.8125rem; }
+
+/* ---------------------------------------------------------------- shell */
+
+.ed-app { display: flex; flex-direction: column; height: 100vh; }
+
+.ed-top {
+  height: var(--ed-top-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 14px;
+  background: var(--ed-surface);
+  border-bottom: 1px solid var(--ed-line);
+}
+
+.ed-top-left, .ed-top-right { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+.ed-mark { font-weight: 700; letter-spacing: -0.01em; font-size: 0.875rem; }
+
+.ed-crumb {
+  color: var(--ed-ink-3);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ed-status { color: var(--ed-ink-3); font-size: 0.8125rem; white-space: nowrap; }
+.ed-status[data-state="dirty"] { color: var(--ed-accent); font-weight: 600; }
+.ed-status[data-state="saved"] { color: #1F7A3D; }
+
+.ed-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: var(--ed-rail-w) minmax(0, 1fr) var(--ed-insp-w);
+  min-height: 0;
+}
+
+/* ---------------------------------------------------------------- rails */
+
+.ed-rail, .ed-inspector {
+  background: var(--ed-rail);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.ed-rail { border-right: 1px solid var(--ed-line); }
+.ed-inspector { border-left: 1px solid var(--ed-line); }
+
+.ed-panel { padding: 14px; border-bottom: 1px solid var(--ed-line); }
+
+.ed-panel-h {
+  margin: 0 0 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ed-ink-3);
+}
+
+.ed-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+
+.ed-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--ed-r);
+  background: transparent;
+  color: var(--ed-ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ed-t), border-color var(--ed-t);
+}
+
+.ed-item:hover { background: #EDEDF1; }
+
+.ed-item[aria-current="true"] {
+  background: var(--ed-accent-soft);
+  border-color: #F3C6C9;
+  font-weight: 600;
+}
+
+.ed-item[aria-disabled="true"] {
+  color: var(--ed-ink-3);
+  cursor: default;
+}
+
+.ed-item[aria-disabled="true"]:hover { background: transparent; }
+
+.ed-item-note {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  color: var(--ed-ink-3);
+  white-space: nowrap;
+}
+
+.ed-toolbox { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+.ed-tool {
+  padding: 10px 8px;
+  border: 1px solid var(--ed-line-strong);
+  border-radius: var(--ed-r);
+  background: var(--ed-surface);
+  color: var(--ed-ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--ed-t), background var(--ed-t);
+}
+
+.ed-tool:hover { border-color: var(--ed-accent); background: var(--ed-accent-soft); }
+
+/* ---------------------------------------------------------------- stage */
+
+.ed-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--ed-bg);
+}
+
+.ed-stage-bar {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--ed-line);
+  background: var(--ed-surface);
+}
+
+.ed-stage-label { font-weight: 600; font-size: 0.8125rem; }
+.ed-stage-note { color: var(--ed-ink-3); font-size: 0.75rem; }
+
+.ed-zoom {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  color: var(--ed-ink-2);
+  padding: 1px 6px;
+  border: 1px solid var(--ed-line);
+  border-radius: 4px;
+}
+
+.ed-frame-wrap {
+  flex: 1;
+  min-height: 0;
+  padding: 20px;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+
+/* The canvas is ALWAYS 1440px wide and scaled to fit.
+   Sizing the iframe to the available space instead would put it below 1000px on most
+   laptops, which trips the compiler's own auto-stack rule — and then the owner is
+   dragging the phone layout while the label says Desktop. The artboard has to stay at
+   design size; only the view zooms. */
+.ed-frame-scaler {
+  transform-origin: top center;
+  flex: none;
+}
+
+.ed-frame {
+  display: block;
+  /* content-box on purpose: the global border-box would let the 1px border eat into
+     the 1440, giving a 1438px container. Type is sized in cqw against that container,
+     so the preview would render fractionally smaller than the built page. */
+  box-sizing: content-box;
+  width: 1440px;
+  border: 1px solid var(--ed-line-strong);
+  border-radius: var(--ed-r-lg);
+  background: #0A0A0C;
+  box-shadow: 0 10px 30px -22px rgba(10, 10, 20, 0.5);
+}
+
+/* ---------------------------------------------------------------- inspector */
+
+.ed-empty { padding: 20px 16px; color: var(--ed-ink-2); display: grid; gap: 10px; }
+.ed-empty p { margin: 0; font-size: 0.8125rem; }
+.ed-empty-h { font-weight: 600; color: var(--ed-ink); }
+
+.ed-insp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ed-line);
+}
+
+.ed-insp-type { font-weight: 600; font-size: 0.8125rem; }
+
+.ed-fields, .ed-insp-geo { padding: 14px; display: grid; gap: 12px; }
+.ed-insp-geo { border-top: 1px solid var(--ed-line); }
+
+.ed-field { display: grid; gap: 5px; }
+
+.ed-field label { font-size: 0.75rem; font-weight: 600; color: var(--ed-ink-2); }
+
+.ed-field-help { font-size: 0.6875rem; color: var(--ed-ink-3); margin: 0; }
+
+.ed-field-error { font-size: 0.6875rem; color: var(--ed-danger); margin: 0; font-weight: 600; }
+
+.ed-geo-grid { grid-template-columns: 1fr 1fr; display: grid; gap: 10px; padding: 0; }
+
+/* ---------------------------------------------------------------- controls */
+
+input[type="text"], input[type="password"], input[type="number"], input[type="url"], textarea, select {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--ed-line-strong);
+  border-radius: var(--ed-r);
+  background: var(--ed-surface);
+  color: var(--ed-ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  transition: border-color var(--ed-t), box-shadow var(--ed-t);
+}
+
+textarea { resize: vertical; min-height: 68px; line-height: 1.45; }
+
+input:hover, textarea:hover, select:hover { border-color: var(--ed-ink-3); }
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--ed-focus);
+  box-shadow: 0 0 0 3px rgba(11, 99, 206, 0.14);
+}
+
+input[aria-invalid="true"] { border-color: var(--ed-danger); }
+
+.ed-swatches { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.ed-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(10, 10, 20, 0.22);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform var(--ed-t), box-shadow var(--ed-t);
+}
+
+.ed-swatch:hover { transform: scale(1.12); }
+
+.ed-swatch[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--ed-surface), 0 0 0 4px var(--ed-accent);
+}
+
+.ed-toggle { display: flex; align-items: center; gap: 8px; }
+.ed-toggle input { width: auto; }
+
+/* ---------------------------------------------------------------- buttons */
+
+.ed-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--ed-line-strong);
+  border-radius: var(--ed-r);
+  background: var(--ed-surface);
+  color: var(--ed-ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--ed-t), border-color var(--ed-t), opacity var(--ed-t);
+}
+
+.ed-btn:hover:not(:disabled) { background: #EDEDF1; border-color: var(--ed-ink-3); }
+.ed-btn:active:not(:disabled) { background: #E4E4EA; }
+
+.ed-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.ed-btn-primary {
+  background: var(--ed-accent);
+  border-color: var(--ed-accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.ed-btn-primary:hover:not(:disabled) { background: #B80A1A; border-color: #B80A1A; }
+.ed-btn-primary:active:not(:disabled) { background: #A00915; }
+
+.ed-btn-danger { color: var(--ed-danger); border-color: #E8C4C1; }
+.ed-btn-danger:hover:not(:disabled) { background: #FCEDEC; border-color: var(--ed-danger); }
+
+.ed-error { color: var(--ed-danger); font-size: 0.8125rem; margin: 0; min-height: 1.2em; }
+
+/* ---------------------------------------------------------------- toast */
+
+.ed-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translate(-50%, 12px);
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: var(--ed-r);
+  background: var(--ed-ink);
+  color: #fff;
+  font-size: 0.8125rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--ed-t), transform var(--ed-t);
+  z-index: 60;
+}
+
+.ed-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.ed-toast[data-tone="error"] { background: var(--ed-danger); }
+
+/* ---------------------------------------------------------------- narrow */
+
+/* The editor is a desktop tool. Below this the three panes stop being usable side by
+   side, so say that plainly instead of shipping a cramped layout that half works. */
+@media (max-width: 900px) {
+  .ed-body { grid-template-columns: 1fr; }
+  .ed-rail, .ed-inspector { display: none; }
+  .ed-stage::before {
+    content: 'The canvas editor needs a wider screen. Open it on a laptop or desktop.';
+    display: block;
+    padding: 16px;
+    background: var(--ed-accent-soft);
+    border-bottom: 1px solid #F3C6C9;
+    font-weight: 600;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 1ms !important; }
+}

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Canvas Editor | Fast Basketball</title>
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="stylesheet" href="/admin/editor.css">
+</head>
+<body>
+
+<div id="gate" class="ed-gate">
+  <form class="ed-gate-card" id="gateForm">
+    <h1>Canvas Editor</h1>
+    <p>Fast Basketball</p>
+    <label for="gatePassword">Password</label>
+    <input type="password" id="gatePassword" autocomplete="current-password" required>
+    <button type="submit" class="ed-btn ed-btn-primary">Log in</button>
+    <p class="ed-error" id="gateError" role="alert"></p>
+  </form>
+</div>
+
+<div id="app" class="ed-app" hidden>
+
+  <header class="ed-top">
+    <div class="ed-top-left">
+      <span class="ed-mark">Fast Basketball</span>
+      <span class="ed-crumb" id="crumb">—</span>
+    </div>
+    <div class="ed-top-right">
+      <span class="ed-status" id="status" role="status" aria-live="polite"></span>
+      <button class="ed-btn" id="undoBtn" disabled title="Undo (Ctrl+Z)">Undo</button>
+      <button class="ed-btn" id="redoBtn" disabled title="Redo (Ctrl+Shift+Z)">Redo</button>
+      <button class="ed-btn ed-btn-primary" id="saveBtn" disabled>Save</button>
+    </div>
+  </header>
+
+  <div class="ed-body">
+
+    <aside class="ed-rail" aria-label="Pages and elements">
+      <section class="ed-panel">
+        <h2 class="ed-panel-h">Pages</h2>
+        <ul class="ed-list" id="pageList"></ul>
+      </section>
+
+      <section class="ed-panel">
+        <h2 class="ed-panel-h">Sections</h2>
+        <ul class="ed-list" id="sectionList"></ul>
+      </section>
+
+      <section class="ed-panel">
+        <h2 class="ed-panel-h">Add element</h2>
+        <div class="ed-toolbox" id="toolbox"></div>
+      </section>
+    </aside>
+
+    <main class="ed-stage" id="stageWrap">
+      <div class="ed-stage-bar">
+        <span class="ed-stage-label" id="stageLabel">Desktop 1440</span>
+        <span class="ed-zoom" id="zoomLabel">100%</span>
+        <span class="ed-stage-note">Tablet and phone stack automatically. Per&#8209;breakpoint layout is next.</span>
+      </div>
+      <div class="ed-frame-wrap" id="frameWrap">
+        <div class="ed-frame-scaler" id="frameScaler">
+          <iframe id="canvasFrame" class="ed-frame" src="/admin/canvas-frame.html" title="Page canvas"></iframe>
+        </div>
+      </div>
+    </main>
+
+    <aside class="ed-inspector" aria-label="Element settings">
+      <div id="inspectorEmpty" class="ed-empty">
+        <p class="ed-empty-h">Nothing selected</p>
+        <p>Click anything on the page to edit it. Drag to move, pull a corner to resize, or use the handle above it to rotate.</p>
+        <p>Arrow keys nudge the selection. Hold Shift to move further.</p>
+      </div>
+      <div id="inspector" hidden>
+        <header class="ed-insp-head">
+          <span class="ed-insp-type" id="inspType"></span>
+          <button class="ed-btn ed-btn-danger" id="deleteBtn">Delete</button>
+        </header>
+        <div class="ed-fields" id="inspFields"></div>
+        <div class="ed-insp-geo">
+          <h3 class="ed-panel-h">Position</h3>
+          <div class="ed-geo-grid" id="geoGrid"></div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<div class="ed-toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/admin/canvas-schema.js"></script>
+<script src="/admin/editor.js" defer></script>
+</body>
+</html>
