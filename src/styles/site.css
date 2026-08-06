@@ -1,4 +1,11 @@
-picture{display:block;}
+/* display:contents, not block. As a block box, <picture> became the img's
+   containing block with height:auto, so every `height:100%` on a photo
+   (.cc-shot, .rcp-shot, .coach-img) resolved to auto — which makes
+   object-fit/object-position inert and top-clips the crop boxes instead of
+   centring them. The hero card lost Blake's face on any screen under 900px
+   tall. contents removes the box; the img now sizes against the aspect-ratio
+   frame that was always meant to hold it. */
+picture{display:contents;}
 picture img{width:100%;height:auto;display:block;}
 .suburb-hero{padding:calc(var(--nav-h) + 48px) 0 64px;}
 .suburb-hero h1{margin:14px 0 18px;}
