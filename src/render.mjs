@@ -188,7 +188,11 @@ function heroPreload(content, responsiveManifest) {
   return '<link rel="preload" as="image" href="' + fallback + '" imagesrcset="' + jpegSrcset + '" imagesizes="' + rules.sizes + '" fetchpriority="high">';
 }
 
-export function buildHead({ title, description, canonicalPath, ogImage, includeHeroPreload, content, responsiveManifest, jsonLd = [] }) {
+// robots and extraStyles both default to today's behaviour so no existing page's
+// output moves. Canvas pages are the only callers that pass them: draft pages set
+// robots to noindex, and only canvas pages pull in the two canvas stylesheets, which
+// keeps those bytes off the 16 pages that do not use them.
+export function buildHead({ title, description, canonicalPath, ogImage, includeHeroPreload, content, responsiveManifest, jsonLd = [], robots = 'index, follow', extraStyles = [] }) {
   const canonical = absoluteUrl(canonicalPath);
   const ogImagePath = ogImage ? absoluteUrl(ogImage) : absoluteUrl('/brand/og-image-1200x630.png');
   let head = '<!DOCTYPE html>\n<html lang="en">\n<head>\n';
@@ -196,7 +200,7 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   head += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
   head += '<title>' + escapeHtml(title) + '</title>\n';
   head += '<meta name="description" content="' + escapeHtml(description) + '">\n';
-  head += '<meta name="robots" content="index, follow">\n';
+  head += '<meta name="robots" content="' + robots + '">\n';
   head += '<link rel="canonical" href="' + canonical + '">\n';
   head += '<meta property="og:type" content="website">\n';
   head += '<meta property="og:title" content="' + escapeHtml(title) + '">\n';
@@ -211,7 +215,7 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   head += '<link rel="apple-touch-icon" href="/brand/apple-touch-icon-180.png">\n';
   if (includeHeroPreload) head += heroPreload(content, responsiveManifest) + '\n';
   head += fontPreloadLinks() + '\n';
-  head += stylesheetLinks() + '\n';
+  head += stylesheetLinks() + extraStyles.map((href) => '<link rel="stylesheet" href="' + href + '">').join('') + '\n';
   // The second selector is not redundant: .rcp-c.rise:not(.in) .rcp-shot img and
   // .coach-img.rise:not(.in) img hide the DESCENDANT image, so unhiding .rise alone
   // left the resume photos, the portrait and the badge invisible without JS.
@@ -316,8 +320,8 @@ export function buildNav(prelude) {
   return '<a class="skip-link" href="#main">Skip to content</a>\n' + raw.replace(/href="#/g, 'href="/#');
 }
 
-export function buildSimplePage({ title, description, canonicalPath, bodyHtml, content, prelude, jsonLd = [], extraScripts = [] }) {
-  let page = buildHead({ title, description, canonicalPath, includeHeroPreload: false, content, jsonLd });
+export function buildSimplePage({ title, description, canonicalPath, bodyHtml, content, prelude, jsonLd = [], extraScripts = [], robots, extraStyles }) {
+  let page = buildHead({ title, description, canonicalPath, includeHeroPreload: false, content, jsonLd, robots, extraStyles });
   page += '<body>\n';
   page += buildNav(prelude);
   page += bodyHtml;

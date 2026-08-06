@@ -38,10 +38,18 @@ These are engineering decisions, not restrictions on what you can drag.
 1. **Positions are stored relative, never in raw pixels.** An element's box is a
    percentage of its section, emitted with container-query units. Resize the browser
    and the composition scales instead of falling apart.
-2. **Every section auto-derives its mobile layout from day one.** The compiler
-   reflows canvas children into reading order and stacks them at narrow widths
-   automatically. You override it by hand when you want to; you never inherit a
-   broken phone layout by forgetting to.
+2. **The canvas is a desktop surface, and everything narrower auto-stacks.** Below
+   1000px the compiler reflows canvas children into reading order and stacks them,
+   automatically. You override that by hand per breakpoint when you want to; you never
+   inherit a broken narrow layout by forgetting to.
+
+   The 1000px line is not a preference, it is arithmetic. A canvas section's height
+   comes from an aspect ratio, so it halves when the viewport halves — but type is
+   floored so it stays readable, and so it does not halve with it. Somewhere below
+   1000px the content outgrows the box and elements start overlapping. Proportional
+   geometry and clamped type are incompatible by construction, and one has to give.
+   Measured in a real browser: at 768px the first build overlapped the headline with
+   the lede, and the lede with the button. Stacking is what fixes it.
 3. **The build refuses to compile a broken page.** Overflow, unreadable contrast and
    missing alt text fail the build rather than shipping. A guard that fires after
    publish is not a guard.

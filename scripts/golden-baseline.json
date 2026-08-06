@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-08-06T13:39:16.206Z",
+  "recorded": "2026-08-06T14:14:14.953Z",
   "files": {
     "404.html": {
       "sha": "26e229491d142905",
@@ -97,6 +97,10 @@
       "sha": "87489225853636fe",
       "bytes": 4857
     },
+    "lab/index.html": {
+      "sha": "4b543239d0462dfe",
+      "bytes": 5661
+    },
     "playbook/index.html": {
       "sha": "61e26096fa349baa",
       "bytes": 12535
@@ -116,6 +120,14 @@
     "styles/base.css": {
       "sha": "4f5366433e8d69b5",
       "bytes": 41694
+    },
+    "styles/canvas-generated.css": {
+      "sha": "a41dda09dbfad4cc",
+      "bytes": 1640
+    },
+    "styles/canvas.css": {
+      "sha": "fa2cc84478a7d398",
+      "bytes": 2333
     },
     "styles/features.css": {
       "sha": "da057e14f71677b8",

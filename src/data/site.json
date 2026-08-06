@@ -1,0 +1,93 @@
+{
+  "version": 2,
+  "updated": "2026-08-06T00:00:00.000Z",
+  "pages": [
+    {
+      "id": "lab",
+      "path": "/lab",
+      "draft": true,
+      "title": "Canvas Lab | Fast Basketball",
+      "description": "Proving ground for the canvas editor. Not linked, not indexed, not in the sitemap.",
+      "sections": [
+        {
+          "id": "sec_lab_hero",
+          "type": "canvas",
+          "name": "Lab hero",
+          "designHeight": 720,
+          "background": { "kind": "color", "value": "--court-black" },
+          "elements": [
+            {
+              "id": "el_lab_photo",
+              "type": "image",
+              "name": "Hero photo",
+              "z": 1,
+              "props": {
+                "key": "hero.nets",
+                "alt": "Coach Blake Kingsley cutting down the net after Robert Morris won the 2025 Horizon League championship",
+                "fit": "cover",
+                "focalX": 50,
+                "focalY": 32,
+                "radius": 18
+              },
+              "box": { "desktop": { "x": 56, "y": 8, "w": 36, "h": 84, "rot": 0 }, "tablet": null, "mobile": null }
+            },
+            {
+              "id": "el_lab_rule",
+              "type": "shape",
+              "name": "Red rule",
+              "z": 2,
+              "props": { "shape": "rect", "fill": "--fast-red", "radius": 2, "strokeWidth": 0, "opacity": 1 },
+              "box": { "desktop": { "x": 8, "y": 21, "w": 5, "h": 1.1, "rot": 0 }, "tablet": null, "mobile": null }
+            },
+            {
+              "id": "el_lab_head",
+              "type": "text",
+              "name": "Headline",
+              "z": 3,
+              "props": {
+                "content": "Elevate\nto Execute",
+                "tag": "h1",
+                "family": "display",
+                "fontSize": 88,
+                "weight": 400,
+                "align": "left",
+                "transform": "uppercase",
+                "lineHeight": 0.92,
+                "tracking": 0.01,
+                "color": "--bone"
+              },
+              "box": { "desktop": { "x": 8, "y": 26, "w": 44, "h": null, "rot": 0 }, "tablet": null, "mobile": null }
+            },
+            {
+              "id": "el_lab_lede",
+              "type": "text",
+              "name": "Lede",
+              "z": 3,
+              "props": {
+                "content": "Fifty-one wins and two championships in two seasons on college staffs. That eye is now in north Broward, one player at a time.",
+                "tag": "p",
+                "family": "body",
+                "fontSize": 21,
+                "weight": 400,
+                "align": "left",
+                "transform": "none",
+                "lineHeight": 1.55,
+                "tracking": 0,
+                "color": "--text-body-dark"
+              },
+              "box": { "desktop": { "x": 8, "y": 55, "w": 36, "h": null, "rot": 0 }, "tablet": null, "mobile": null }
+            },
+            {
+              "id": "el_lab_cta",
+              "type": "button",
+              "name": "Primary CTA",
+              "z": 4,
+              "props": { "label": "Book a Free First Look", "href": "/contact", "variant": "primary", "fontSize": 16, "newTab": false },
+              "box": { "desktop": { "x": 8, "y": 76, "w": 26, "h": null, "rot": 0 }, "tablet": null, "mobile": null }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
