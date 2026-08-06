@@ -49,6 +49,32 @@ These are engineering decisions, not restrictions on what you can drag.
 Rules 2 and 3 sit in Phase 1 on purpose. They are the difference between a canvas
 editor and a canvas footgun, and retrofitting either one later is a rescue project.
 
+### Rule 4, added after research: saving is not publishing
+
+Netlify no longer bills in build minutes. It bills in credits, **15 per successful
+production deploy**, and the free tier is **300 credits** — twenty deploys. Netlify's
+own wording for what happens after that:
+
+> "all of your web projects (sites/apps) are paused and visitors to your web projects
+> will find a `Site not available` page"
+
+([Netlify: how credits work](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/how-credits-work/),
+[pricing](https://www.netlify.com/pricing/))
+
+Today, every admin save commits to GitHub, and every commit triggers a production
+deploy. **The site as it stands goes dark on the owner's twentieth edit of the month.**
+That is true right now, before any of this is built.
+
+So the editor splits the two, in Phase 1:
+
+- **Save** — continuous, instant, unlimited, costs nothing. Drafts go to Netlify Blobs
+  in production and to a local file in development.
+- **Publish** — deliberate, explicit, commits to GitHub and spends one deploy. The
+  button shows how many deploys are left this month.
+
+Deploy previews, branch deploys, failed deploys and rollbacks all cost zero credits,
+so preview-before-publish is free and version rollback is free.
+
 ---
 
 ## Phase 1 — Canvas engine, compiler, and a working local demo
@@ -65,6 +91,7 @@ localhost, with no cloud credentials, and you can drag something and see it chan
 | 5 | **Local dev server** — `scripts/dev-server.mjs` | Zero dependencies. Serves `dist/`, routes `/.netlify/functions/*` to the real handlers, rebuilds on save, live-reloads the preview. |
 | 6 | **Canvas editor v1** | Select, drag, resize, rotate, multi-select marquee, snapping with smart guides, z-order, group, lock, undo/redo, keyboard shortcuts, breakpoint switcher. Elements: text, image, shape, button. |
 | 7 | **Migration of the nine existing sections** | Imported as locked legacy sections that render byte-identically today, unlockable into canvas sections one at a time. Patient conversion, not a proud rewrite. |
+| 8 | **Save/publish split** (see Rule 4) | Drafts to Netlify Blobs in production, a local file in dev. Only an explicit Publish commits and spends a deploy. Not optional — without it the site is capped at twenty edits a month. |
 
 **Dependencies added:** `moveable` and `selecto` (MIT, vanilla, self-hosted into
 `admin/vendor/` so the existing `script-src 'self'` CSP holds). These solve transform
@@ -128,6 +155,37 @@ the panel.
 checklist signed.
 
 ---
+
+## What the research changed
+
+Two research passes ran against this plan: an inventory of what Wix actually lets a
+non-technical owner edit, and a survey of editor architectures (Puck, Editor.js,
+TinaCMS, Decap, Sanity, Payload, Builder.io, Plasmic, Keystatic).
+
+**Breakpoints match Wix Studio's defaults** — desktop 1001px and up, tablet 751–1000,
+phone 320–750 — because they are what anyone who has used a site builder expects.
+Wix caps you at six; there is no reason to cap here.
+
+**Cheap wins Wix does not offer**, straight off the complaint list: sections reorder by
+drag rather than by clicking arrows, undo survives a page reload instead of dying with
+the browser tab, and there are no artificial ceilings on pages, colors, redirects or
+meta tags. Wix caps those at 298, 25, 5,000 and 10 respectively.
+
+**Every editor framework was rejected, and the reason is the same one.**
+`netlify/functions/preview.mjs` already imports the real renderer and server-renders a
+live page from draft content. That means preview fidelity — the hardest problem in
+visual editing — is already solved here, and every candidate tool would *regress* it:
+Decap requires rewriting all nine sections in `React.createElement` for its preview,
+Puck requires them as React components. Both leave two renderers to keep in sync, and
+they drift the first time somebody edits one. Building on the existing renderer keeps
+one source of truth and adds no framework to the public site.
+
+**Priority was re-ordered against real usage.** The research ranked what small-business
+owners actually touch. Editing text, replacing images, previewing and publishing,
+undo/restore, links and buttons, and per-page SEO are all high-frequency. Gradients,
+blend modes and multi-breakpoint tuning are not. The Canva toolbox is still Phase 2 as
+you asked, but the high-frequency safety items — undo, preview, publish, version
+restore — move up to sit beside it rather than waiting for Phase 3.
 
 ## Honest notes
 

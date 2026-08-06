@@ -1,5 +1,5 @@
 import { verifyRequestSession } from './lib/auth.mjs';
-import { getFile, putFile } from './lib/github.mjs';
+import { getFile, putFile, putBinary } from './lib/store.mjs';
 import { readDimensions, sniffMime } from '../../src/lib/image-dimensions.mjs';
 import { IMAGE_KEYS, IMAGE_ASPECT_RULES, IMAGE_LABELS } from '../../src/lib/content-schema.mjs';
 
@@ -74,7 +74,7 @@ export default async (request) => {
   const filename = key.replace('.', '-') + '-' + timestamp + '.' + ext;
   const imagePath = 'src/images/uploads/' + filename;
 
-  await putFile(imagePath, buffer, 'admin: upload photo for ' + key, null);
+  await putBinary(imagePath, buffer, 'admin: upload photo for ' + key);
 
   const { content, sha } = await getFile(CONTENT_PATH);
   const contentData = JSON.parse(content);

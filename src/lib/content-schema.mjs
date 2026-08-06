@@ -5,9 +5,16 @@ export const TEXT_KEYS = [
   'prog.1', 'prog.2', 'prog.3', 'prog.4',
   'coach.name', 'coach.title', 'coach.p1', 'coach.p2', 'coach.p3',
   'pb.lede',
-  'tst.1', 'tst.2', 'tst.3',
   'ct.lede', 'ct.phone', 'ct.email', 'ct.ig', 'ct.area'
 ];
+
+// tst.1/2/3 used to live here. The testimonials came off the site when the review
+// placeholders were pulled for being unverified, and content.json lost the keys with
+// them — but this list kept requiring all three. validateContentShape therefore
+// returned three errors for the real content.json, and admin-content.mjs turns any
+// error into a 422, so EVERY save from the admin panel was rejected. The panel loaded
+// fine and only failed on Publish, which is why it went unnoticed.
+// Put these back the same day real reviews go on the page, not before.
 
 export const IMAGE_KEYS = [
   'hero.nets', 'rcp.trophy', 'rcp.team', 'rcp.juco', 'rcp.work', 'coach.portrait'
@@ -19,7 +26,6 @@ export const TEXT_GROUPS = {
   programs: ['prog.1', 'prog.2', 'prog.3', 'prog.4'],
   coach: ['coach.name', 'coach.title', 'coach.p1', 'coach.p2', 'coach.p3'],
   playbook: ['pb.lede'],
-  testimonials: ['tst.1', 'tst.2', 'tst.3'],
   contact: ['ct.lede', 'ct.phone', 'ct.email', 'ct.ig', 'ct.area']
 };
 
@@ -45,9 +51,6 @@ export const TEXT_LABELS = {
   'coach.p2': 'Coach bio paragraph 2',
   'coach.p3': 'Coach bio paragraph 3',
   'pb.lede': 'Playbook section intro',
-  'tst.1': 'Testimonial 1',
-  'tst.2': 'Testimonial 2',
-  'tst.3': 'Testimonial 3',
   'ct.lede': 'Contact section intro',
   'ct.phone': 'Phone number',
   'ct.email': 'Email address',

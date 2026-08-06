@@ -7,6 +7,13 @@ function sign(value, secret) {
   return createHmac('sha256', secret).update(value).digest('hex');
 }
 
+// Secure is correct and non-negotiable in production. The local dev server runs on
+// plain http://localhost, and while current browsers do treat localhost as a secure
+// context and accept the flag there, that is a browser policy the admin login should
+// not be betting on. FB_LOCAL is set by scripts/dev-server.mjs and nothing else, so
+// this can never drop Secure on a deployed site.
+const SECURE = process.env.FB_LOCAL === 'true' ? '' : ' Secure;';
+
 export function createSessionCookie() {
   const secret = process.env.ADMIN_SESSION_SECRET;
   if (!secret) throw new Error('ADMIN_SESSION_SECRET is not configured');
@@ -14,11 +21,11 @@ export function createSessionCookie() {
   const value = String(expires);
   const signature = sign(value, secret);
   const cookieValue = value + '.' + signature;
-  return COOKIE_NAME + '=' + cookieValue + '; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=' + Math.floor(SESSION_TTL_MS / 1000);
+  return COOKIE_NAME + '=' + cookieValue + '; Path=/; HttpOnly;' + SECURE + ' SameSite=Strict; Max-Age=' + Math.floor(SESSION_TTL_MS / 1000);
 }
 
 export function clearSessionCookie() {
-  return COOKIE_NAME + '=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0';
+  return COOKIE_NAME + '=; Path=/; HttpOnly;' + SECURE + ' SameSite=Strict; Max-Age=0';
 }
 
 export function verifyRequestSession(request) {

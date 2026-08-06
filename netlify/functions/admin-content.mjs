@@ -1,5 +1,5 @@
 import { verifyRequestSession } from './lib/auth.mjs';
-import { getFile, putFile } from './lib/github.mjs';
+import { getFile, putFile } from './lib/store.mjs';
 import { validateContentShape } from '../../src/lib/content-schema.mjs';
 
 const CONTENT_PATH = 'src/data/content.json';

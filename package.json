@@ -9,7 +9,10 @@
     "extract:images": "node scripts/extract-images.mjs",
     "split:sections": "node scripts/split-sections.mjs",
     "fetch:fonts": "node scripts/fetch-fonts.mjs",
-    "dev": "node build.mjs && npx --yes serve dist -l 8888"
+    "golden:snapshot": "node scripts/golden.mjs snapshot",
+    "golden:check": "node scripts/golden.mjs check",
+    "dev": "node scripts/dev-server.mjs",
+    "serve": "node build.mjs && npx --yes serve dist -l 8888"
   },
   "dependencies": {
     "@netlify/blobs": "^8.1.0"
