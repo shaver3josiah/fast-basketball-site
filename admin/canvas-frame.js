@@ -70,6 +70,7 @@
     stage.innerHTML = payload.html || '';
     document.body.classList.add('is-editing');
     applyLockClasses();
+    makeFocusable();
     // Deliberately does NOT re-select here. The frame's copy of selectedId is stale by
     // definition after a reload — the parent owns selection and pushes it immediately
     // after this call. Re-selecting from stale state both fought the parent and fired
@@ -89,6 +90,22 @@
     });
   }
 
+  // Without this the canvas is mouse-only: nothing in it is focusable, so a keyboard
+  // user can neither select an element nor reach the arrow-key nudging that already
+  // exists. tabindex is applied HERE rather than in the compiler, so it never reaches
+  // the published page — a visitor must not be able to tab through decorative boxes.
+  function makeFocusable() {
+    var sec = sectionEl();
+    if (sec) sec.classList.toggle('is-empty', !stage.querySelector('.cv-el'));
+    Array.prototype.forEach.call(stage.querySelectorAll('.cv-el'), function (node) {
+      if (node.classList.contains('is-locked')) return;
+      node.tabIndex = 0;
+      var data = elementData(node.id);
+      node.setAttribute('role', 'button');
+      node.setAttribute('aria-label', (data && data.name ? data.name : node.id) + ' — press arrow keys to move, Delete to remove');
+    });
+  }
+
   // Bound ONCE against #stage, which survives every load. It used to be called from
   // load(), so each re-render stacked another pair of listeners on the same node and a
   // single click eventually fired the handler a dozen times.
@@ -102,6 +119,12 @@
     stage.addEventListener('dblclick', function (e) {
       var node = e.target.closest ? e.target.closest('.cv-el') : null;
       if (node) emit('activate', { id: node.id });
+    });
+    // Tabbing onto an element selects it, so the keyboard path and the mouse path end
+    // in the same state and the inspector follows either one.
+    stage.addEventListener('focusin', function (e) {
+      var node = e.target.closest ? e.target.closest('.cv-el') : null;
+      if (node && node.id !== selectedId && !node.classList.contains('is-locked')) select(node.id);
     });
   }
 

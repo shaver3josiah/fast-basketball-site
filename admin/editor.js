@@ -207,7 +207,12 @@
         // the nine hand-built sections into canvas elements is undefined work; a button
         // that did something undefined would be worse than no button. Say why.
         btn.setAttribute('aria-disabled', 'true');
-        btn.title = 'Hand-built section. Converting it to a canvas is not built yet, so it stays locked rather than being changed unpredictably.';
+        var why = 'Hand-built section. Converting it to a canvas is not built yet, so it stays locked rather than being changed unpredictably.';
+        btn.title = why;
+        // aria-disabled does not block clicks, and the button keeps its place in the
+        // tab order — so it was a focusable control that did nothing at all. Say why
+        // instead of being inert.
+        btn.addEventListener('click', function () { toast(why); });
         var note = document.createElement('span');
         note.className = 'ed-item-note';
         note.textContent = 'locked';
@@ -244,6 +249,12 @@
   }
 
   function addElement(type) {
+    var sec = currentSection();
+    if (!sec || sec.type === 'legacy') {
+      toast('Pick a canvas section first — hand-built sections cannot take new elements.', 'error');
+      return;
+    }
+    if (!sec.elements) sec.elements = [];
     var def = SCHEMA.types[type];
     pushHistory();
     var el = {
@@ -260,7 +271,7 @@
       var first = Object.keys(state.images)[0];
       if (first) { el.props.key = first; el.props.alt = state.images[first].alt || ''; }
     }
-    currentSection().elements.push(el);
+    sec.elements.push(el);
     state.selectedId = el.id;
     markDirty();
     renderAll();
@@ -300,24 +311,27 @@
       // cannot rebuild the inspector while the owner is typing in it.
       frameWin.CanvasFrame.select(state.selectedId, true);
       showBlockingErrors(out.errors);
-    }).catch(function () {
-      toast('Could not draw the canvas. Is the dev server still running?', 'error');
+    }).catch(function (err) {
+      // Log the real thing. This catch spans the whole chain, so a TypeError inside
+      // the render path used to surface as "is the dev server still running?", which
+      // sent anyone debugging it to the wrong place entirely.
+      console.error('[canvas render]', err);
+      toast('Could not draw the canvas: ' + (err && err.message ? err.message : 'unknown error'), 'error');
     });
   }
 
-  // These are the same checks that will FAIL THE BUILD. Surfacing them here, while the
-  // element is still half-built, is the difference between a warning you can act on and
-  // a build error later with no context.
+  // These are the same checks that will FAIL THE BUILD. Surfacing them while the
+  // element is still half-built is the difference between a warning you can act on and
+  // a build error later with no context — but only if they are actually visible. They
+  // used to be written into the inspector's field list, which is hidden whenever
+  // nothing is selected, so a section-level error was shown only by accident.
   function showBlockingErrors(errors) {
-    var box = $('inspFields');
-    var existing = box.querySelector('.ed-field-error[data-global]');
-    if (existing) existing.remove();
-    if (!errors || !errors.length) return;
-    var p = document.createElement('p');
-    p.className = 'ed-field-error';
-    p.dataset.global = 'true';
-    p.textContent = errors[0];
-    box.prepend(p);
+    var bar = $('sectionAlert');
+    if (!errors || !errors.length) { bar.hidden = true; bar.textContent = ''; return; }
+    bar.textContent = errors.length === 1
+      ? errors[0]
+      : errors[0] + '  (+' + (errors.length - 1) + ' more)';
+    bar.hidden = false;
   }
 
   var renderQueued = false;
@@ -386,12 +400,18 @@
     renderGeometry(el);
   }
 
+  // Colour fields render a row of swatch buttons rather than one labellable control,
+  // so a <label for> there pointed at an id that is never created. Those get a plain
+  // caption plus a labelled group instead.
+  var UNLABELLABLE = { color: true };
+
   function fieldShell(field) {
     var wrap = document.createElement('div');
     wrap.className = 'ed-field';
-    var label = document.createElement('label');
+    var label = document.createElement(UNLABELLABLE[field.kind] ? 'span' : 'label');
     label.textContent = field.label + (field.required ? ' *' : '');
-    label.htmlFor = 'f_' + field.name;
+    if (!UNLABELLABLE[field.kind]) label.htmlFor = 'f_' + field.name;
+    else label.id = 'lbl_' + field.name;
     wrap.appendChild(label);
     return wrap;
   }
@@ -432,7 +452,12 @@
       if (field.max !== undefined) input.max = field.max;
       input.step = field.step || 1;
       input.value = value == null ? '' : value;
-      input.addEventListener('input', function () { commitPropDebounced(el, field, Number(input.value)); });
+      // An empty field is "unset", not zero. Number('') is 0, so backspacing the last
+      // digit out of Opacity set it to 0 and the shape vanished. null lets the
+      // registry default (?? 1, || 24) apply instead.
+      input.addEventListener('input', function () {
+        commitPropDebounced(el, field, input.value === '' ? null : Number(input.value));
+      });
     } else if (field.kind === 'toggle') {
       wrap.classList.add('ed-toggle');
       input = document.createElement('input');
@@ -492,6 +517,8 @@
   function colorField(el, field, wrap, value) {
     var row = document.createElement('div');
     row.className = 'ed-swatches';
+    row.setAttribute('role', 'group');
+    row.setAttribute('aria-labelledby', 'lbl_' + field.name);
     SCHEMA.themeColors.forEach(function (c) {
       var b = document.createElement('button');
       b.type = 'button';
@@ -515,9 +542,30 @@
   }
 
   function imageField(el, field, wrap, value) {
+    var keys = Object.keys(state.images);
+    if (!keys.length) {
+      var none = document.createElement('p');
+      none.className = 'ed-field-help';
+      none.textContent = 'No photos available. Upload one in the content admin first.';
+      wrap.appendChild(none);
+      return wrap;
+    }
     var select = document.createElement('select');
     select.id = 'f_' + field.name;
-    Object.keys(state.images).forEach(function (key) {
+    // Double-clicking an image on the canvas focuses the primary control; without this
+    // the image type had none, so the gesture did nothing at all.
+    select.dataset.primary = 'true';
+    if (!value) {
+      // A <select> shows its first option regardless, so an element with no photo
+      // looked as though it had one — and the owner had no way to tell.
+      var ph = document.createElement('option');
+      ph.value = '';
+      ph.disabled = true;
+      ph.selected = true;
+      ph.textContent = 'Choose a photo';
+      select.appendChild(ph);
+    }
+    keys.forEach(function (key) {
       var o = document.createElement('option');
       o.value = key;
       o.textContent = key;
@@ -557,8 +605,18 @@
       input.id = 'geo_' + spec.key;
       input.step = spec.key === 'rot' ? 1 : 0.5;
       input.value = box[spec.key] == null ? '' : box[spec.key];
-      if (spec.key === 'h') input.placeholder = 'auto';
+      // Only types that size to their own content may have no height. A shape renders
+      // nothing and an image has no box to fill, so clearing their height made them
+      // vanish on tablet and phone — the stack has no height to fall back on.
+      var needsHeight = SCHEMA.types[el.type].stackBehaviour === 'fixed-height'
+        || SCHEMA.types[el.type].stackBehaviour === 'aspect';
+      if (spec.key === 'h') input.placeholder = needsHeight ? 'required' : 'auto';
       input.addEventListener('change', function () {
+        if (spec.key === 'h' && needsHeight && input.value === '') {
+          input.value = box.h == null ? 10 : box.h;
+          toast('A ' + el.type + ' needs a height, or it disappears on phones.', 'error');
+          return;
+        }
         pushHistory();
         box[spec.key] = input.value === '' ? null : Number(input.value);
         markDirty();
@@ -658,11 +716,19 @@
     if (state.dirty) { e.preventDefault(); e.returnValue = ''; }
   });
 
-  frame.addEventListener('load', function () {
+  function onFrameReady() {
     frameWin = frame.contentWindow;
     if (frameWin.CanvasFrame) frameWin.CanvasFrame.onEvent = handleFrameEvent;
     if (state.site) { fitCanvas(); renderCanvas(); }
-  });
+  }
+
+  frame.addEventListener('load', onFrameReady);
+
+  // editor.js is deferred and the iframe is small, so the frame can finish loading
+  // before this script runs — in which case the load event has already fired and will
+  // never fire again, leaving the canvas permanently blank. Check for a frame that is
+  // already up rather than waiting for an event that has been and gone.
+  if (frame.contentWindow && frame.contentWindow.CanvasFrame) onFrameReady();
 
   renderToolbox();
   boot();

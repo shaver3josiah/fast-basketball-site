@@ -4,7 +4,7 @@ import { renderResumeCards } from './coach-page.mjs';
 import { schoolsProse, venuesProse, drivingProse, landmarksProse, neighborsProse, whyHereProse, slugToName } from './suburb-copy.mjs';
 import { suburbService, breadcrumbList, jsonLdScript } from './structured-data.mjs';
 import { PROGRAM_PAGES } from './site-config.mjs';
-import { buildHead, buildNav, buildFooter, renderImage, escapeHtml } from '../render.mjs';
+import { buildHead, buildNav, buildFooter, renderImage, escapeHtml, scriptsBlock } from '../render.mjs';
 
 // build.mjs regenerates responsive-manifest.json mid-build and does not hand it
 // to this renderer, so read it at call time (after that regeneration) rather
@@ -114,7 +114,7 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   page += buildNav(prelude);
   page += body;
   page += buildFooter();
-  page += '<script src="/js/main.js" defer></script>\n';
+  page += scriptsBlock();
   page += '</body>\n</html>\n';
   return page;
 }

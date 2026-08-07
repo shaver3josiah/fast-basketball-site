@@ -15,7 +15,7 @@
     <h1>Canvas Editor</h1>
     <p>Fast Basketball</p>
     <label for="gatePassword">Password</label>
-    <input type="password" id="gatePassword" autocomplete="current-password" required>
+    <input type="password" id="gatePassword" autocomplete="current-password" autofocus required>
     <button type="submit" class="ed-btn ed-btn-primary">Log in</button>
     <p class="ed-error" id="gateError" role="alert"></p>
   </form>
@@ -38,7 +38,7 @@
 
   <div class="ed-body">
 
-    <aside class="ed-rail" aria-label="Pages and elements">
+    <aside class="ed-rail" aria-label="Pages, sections and tools">
       <section class="ed-panel">
         <h2 class="ed-panel-h">Pages</h2>
         <ul class="ed-list" id="pageList"></ul>
@@ -55,12 +55,17 @@
       </section>
     </aside>
 
-    <main class="ed-stage" id="stageWrap">
+    <main class="ed-stage">
       <div class="ed-stage-bar">
-        <span class="ed-stage-label" id="stageLabel">Desktop 1440</span>
+        <span class="ed-stage-label">Desktop 1440</span>
         <span class="ed-zoom" id="zoomLabel">100%</span>
         <span class="ed-stage-note">Tablet and phone stack automatically. Per&#8209;breakpoint layout is next.</span>
       </div>
+      <!-- Section-level problems live here, above the canvas and always visible.
+           They used to be written into the inspector's field list, which is
+           display:none whenever nothing is selected — so the errors that will fail
+           the build were shown exactly when the owner was least likely to be looking. -->
+      <div class="ed-alert" id="sectionAlert" role="alert" hidden></div>
       <div class="ed-frame-wrap" id="frameWrap">
         <div class="ed-frame-scaler" id="frameScaler">
           <iframe id="canvasFrame" class="ed-frame" src="/admin/canvas-frame.html" title="Page canvas"></iframe>

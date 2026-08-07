@@ -52,10 +52,28 @@ function snapshotDist() {
   return files;
 }
 
-function cmdSnapshot() {
+function cmdSnapshot(force) {
   const files = snapshotDist();
+  const count = Object.keys(files).length;
+
+  // Guard the guard. The dev server rebuilds on every source change, and build.mjs
+  // starts by wiping dist/ — so a manual `npm run build` running alongside the watcher
+  // can snapshot a half-written tree. That happened: a 52-file baseline was silently
+  // replaced with 31 files, which would have masked every regression in the missing
+  // ones. A baseline that shrinks sharply is far more likely to be a race than a real
+  // deletion, so it has to be asked for out loud.
+  if (existsSync(BASELINE) && !force) {
+    const previous = Object.keys(JSON.parse(readFileSync(BASELINE, 'utf8')).files).length;
+    if (count < previous * 0.8) {
+      console.error('Refusing to snapshot: dist/ has ' + count + ' text file(s), down from ' + previous + '.');
+      console.error('That usually means the build was interrupted or two builds raced on dist/.');
+      console.error('Re-run `npm run build` and check dist/ looks right, then use --force if the drop is real.');
+      process.exit(1);
+    }
+  }
+
   writeFileSync(BASELINE, JSON.stringify({ recorded: new Date().toISOString(), files }, null, 2) + '\n');
-  console.log('Baseline recorded: ' + Object.keys(files).length + ' text file(s) in dist/.');
+  console.log('Baseline recorded: ' + count + ' text file(s) in dist/.');
   console.log('Wrote ' + relative(ROOT, BASELINE));
 }
 
@@ -99,9 +117,9 @@ function cmdCheck(diffTarget) {
 }
 
 const [cmd, ...rest] = process.argv.slice(2);
-if (cmd === 'snapshot') cmdSnapshot();
+if (cmd === 'snapshot') cmdSnapshot(rest.includes('--force'));
 else if (cmd === 'check') cmdCheck(rest.includes('--diff') ? rest[rest.indexOf('--diff') + 1] : null);
 else {
-  console.error('Usage: node scripts/golden.mjs <snapshot|check> [--diff <path>]');
+  console.error('Usage: node scripts/golden.mjs <snapshot|check> [--diff <path>] [--force]');
   process.exit(1);
 }

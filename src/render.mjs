@@ -263,7 +263,11 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   return head;
 }
 
-function scriptsBlock() {
+// Exported because suburb-page.mjs and coach-page.mjs each hand-wrote their own copy
+// of this tag. When asset() added content-hash cache-busting, those two copies did not
+// get it — so six pages would have served a stale main.js to returning visitors for a
+// year, which is the exact bug the hashing exists to prevent. One definition now.
+export function scriptsBlock() {
   return '<script src="' + asset('/js/main.js') + '" defer></script>\n';
 }
 

@@ -18,7 +18,10 @@
   --ed-line-strong: #CFCFD6;
   --ed-ink: #1A1A20;
   --ed-ink-2: #55555F;
-  --ed-ink-3: #7C7C88;
+  /* #7C7C88 measured 4.12:1 on white, 3.95 on the rail and 3.75 on the page — under
+     the 4.5:1 floor on every surface it is used on, and it carries real text (panel
+     headings, field help, the crumb, list notes). #67676F is 5.61 / 5.37 / 5.10. */
+  --ed-ink-3: #67676F;
   --ed-accent: #D40D1F;
   --ed-accent-soft: #FDEBEC;
   --ed-danger: #B3261E;
@@ -28,8 +31,12 @@
   --ed-r-lg: 9px;
 
   --ed-top-h: 52px;
-  --ed-rail-w: 232px;
-  --ed-insp-w: 296px;
+  /* Narrowed from 232/296. The canvas is a fixed 1440px artboard scaled to whatever
+     the middle track leaves, so every pixel the rails give back is zoom. At a 1280px
+     window this moves the canvas from 49% to 53%; the rails still hold their content
+     without wrapping. */
+  --ed-rail-w: 200px;
+  --ed-insp-w: 268px;
 
   --ed-t: 160ms cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -240,6 +247,16 @@ body {
   border-radius: 4px;
 }
 
+.ed-alert {
+  flex: none;
+  padding: 8px 16px;
+  background: #FDEBEC;
+  border-bottom: 1px solid #F3C6C9;
+  color: var(--ed-danger);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
 .ed-frame-wrap {
   flex: 1;
   min-height: 0;
@@ -331,7 +348,9 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3px rgba(11, 99, 206, 0.14);
 }
 
-input[aria-invalid="true"] { border-color: var(--ed-danger); }
+/* Attribute-only: the surrounding rules style input, textarea and select alike, and
+   an input-only selector left an invalid textarea (alt text, button label) unmarked. */
+[aria-invalid="true"] { border-color: var(--ed-danger); }
 
 .ed-swatches { display: flex; flex-wrap: wrap; gap: 5px; }
 
@@ -403,12 +422,15 @@ input[aria-invalid="true"] { border-color: var(--ed-danger); }
   color: #fff;
   font-size: 0.8125rem;
   opacity: 0;
+  /* visibility, not just opacity: an opacity-0 toast stays in the accessibility tree,
+     so a screen reader still finds its stale text long after it has faded out. */
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity var(--ed-t), transform var(--ed-t);
+  transition: opacity var(--ed-t), transform var(--ed-t), visibility var(--ed-t);
   z-index: 60;
 }
 
-.ed-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+.ed-toast.is-on { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
 .ed-toast[data-tone="error"] { background: var(--ed-danger); }
 
 /* ---------------------------------------------------------------- narrow */

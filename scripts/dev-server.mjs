@@ -204,7 +204,12 @@ async function serveStatic(urlPath, res) {
     let body = await readFile(filePath);
     const ext = extname(filePath).toLowerCase();
 
-    if (ext === '.html') {
+    // Live-reload is for the SITE, not for the editor. The editor holds the document,
+    // the selection and the whole undo stack in memory, and every save rewrites
+    // site.json — which the watcher sees, which reloaded the editor and threw all of
+    // that away the moment you pressed Save. The canvas iframe is excluded for the
+    // same reason: reloading it mid-edit drops the node moveable is holding.
+    if (ext === '.html' && !urlPath.startsWith('/admin/')) {
       body = Buffer.from(body.toString('utf8').replace('</body>', RELOAD_SNIPPET + '</body>'));
     }
     res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', 'Cache-Control': 'no-store' });

@@ -23,8 +23,11 @@
 <style>
   /* The artboard never scrolls — the pane around it does. A scrollbar inside the frame
      steals ~17px, so the canvas would be 1423px while every percentage in the document
-     is measured against 1440, and every drag would land slightly off. */
-  html, body { margin: 0; padding: 0; background: var(--court-black); overflow: hidden; }
+     is measured against 1440, and every drag would land slightly off.
+     overflow-clip-margin keeps that guarantee while giving moveable's resize and
+     rotate handles room to paint: plain overflow:hidden sheared them off for any
+     element sitting on the artboard edge, which is exactly where you need them. */
+  html, body { margin: 0; padding: 0; background: var(--court-black); overflow: clip; overflow-clip-margin: 48px; }
   /* The compiled section's own generated rules land here at runtime. */
 </style>
 <style id="sectionCss"></style>
@@ -35,12 +38,16 @@
   .is-editing .cv-el:hover { outline: 1px solid var(--red-hot); outline-offset: 2px; }
   .is-editing .cv-el.is-selected { outline: 2px solid var(--fast-red); outline-offset: 2px; }
   .is-editing .cv-el.is-locked { cursor: not-allowed; }
+  /* Keyboard focus needs its own affordance — hover outline never fires for a tabber. */
+  .is-editing .cv-el:focus-visible { outline: 3px solid var(--miami-teal); outline-offset: 3px; }
 
   /* moveable draws its control box into the document; keep it above the artwork. */
   .moveable-control-box { z-index: 9999; }
 
-  /* An empty section still needs to be a drop target with a visible extent. */
-  .cv-sec:empty::after {
+  /* An empty section still needs to be a drop target with a visible extent.
+     Keyed off a class the frame sets, not :empty — the compiler emits newlines inside
+     the section, so :empty could never match and this placeholder never once appeared. */
+  .cv-sec.is-empty::after {
     content: 'Empty section';
     display: grid; place-items: center; height: 100%;
     color: var(--text-faint-dark); font: 500 .9rem/1 var(--font-body);

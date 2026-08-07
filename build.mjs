@@ -116,7 +116,17 @@ function step3b_emitAdminSchema() {
   // ARE, never how they draw. That is what keeps one renderer instead of two.
   const types = {};
   for (const [type, def] of Object.entries(ELEMENT_TYPES)) {
-    types[type] = { label: def.label, icon: def.icon, fields: def.fields, defaults: def.defaults };
+    // stackBehaviour has to cross over: the editor uses it to know which types must
+    // keep a height (a shape renders nothing, an image has no box to fill, so clearing
+    // theirs makes them vanish on phones). Leaving it out of this projection meant the
+    // editor's guard read undefined and never fired.
+    types[type] = {
+      label: def.label,
+      icon: def.icon,
+      fields: def.fields,
+      defaults: def.defaults,
+      stackBehaviour: def.stackBehaviour || 'auto'
+    };
   }
   const canvas = 'window.FB_CANVAS = ' + JSON.stringify({
     types, fontFamilies: FONT_FAMILIES, themeColors: THEME_COLORS,
@@ -149,9 +159,11 @@ function step3d_syncFrameStyles() {
 function step3c_copyVendor() {
   const vendorDir = resolve(DIST, 'admin/vendor');
   mkdirSync(vendorDir, { recursive: true });
+  // selecto was copied here for a multi-select feature that is not built yet, and
+  // nothing loaded it — 40KB shipped to the admin for nothing. It comes back the day
+  // marquee selection does, not before.
   const files = [
-    ['node_modules/moveable/dist/moveable.min.js', 'moveable.min.js'],
-    ['node_modules/selecto/dist/selecto.min.js', 'selecto.min.js']
+    ['node_modules/moveable/dist/moveable.min.js', 'moveable.min.js']
   ];
   for (const [from, to] of files) {
     const src = resolve(ROOT, from);

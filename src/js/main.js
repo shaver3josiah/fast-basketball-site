@@ -181,7 +181,12 @@
     var barState = {hero:true, contact:false, foot:false};
     function setBar(){ mobBar.classList.toggle('on', !barState.hero && !barState.contact && !barState.foot); }
     function watch(el, key){
-      if(!el) return;
+      /* A missing sentinel means "not over it", not "permanently over it". barState
+         starts hero:true, which is right on the homepage before the observer first
+         fires — but every other page has no #home, so this returned early and left
+         hero true forever. setBar() then never added .on and the mobile CTA bar was
+         invisible on all fifteen interior pages while still occupying its space. */
+      if(!el){ barState[key] = false; return; }
       new IntersectionObserver(function(entries){
         barState[key] = entries[0].isIntersecting;
         setBar();

@@ -1,4 +1,4 @@
-import { buildHead, buildNav, buildFooter, renderImage, escapeHtml } from '../render.mjs';
+import { buildHead, buildNav, buildFooter, renderImage, escapeHtml, scriptsBlock } from '../render.mjs';
 import { founderPerson, breadcrumbList, jsonLdScript } from './structured-data.mjs';
 
 const RESUME_KEYS = ['rcp.trophy', 'rcp.team', 'rcp.juco', 'rcp.work'];
@@ -76,7 +76,7 @@ export function renderCoachPage({ content, responsiveManifest, prelude }) {
   page += buildNav(prelude);
   page += body;
   page += buildFooter();
-  page += '<script src="/js/main.js" defer></script>\n';
+  page += scriptsBlock();
   page += '</body>\n</html>\n';
   return page;
 }

@@ -12,6 +12,7 @@ import { verifyRequestSession } from './lib/auth.mjs';
 import { isLocal } from './lib/store.mjs';
 import { compileSection, scalePx } from '../../src/lib/canvas-compile.mjs';
 import { renderImage } from '../../src/render.mjs';
+import { validateSite } from '../../src/lib/site-schema.mjs';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json' }
@@ -60,5 +61,20 @@ export default async (request) => {
   // is a warning to show in the inspector, not a reason to refuse to draw the canvas.
   // The BUILD is where the same errors are fatal. Same check, different consequence.
   const out = compileSection(section, ctx);
-  return json({ html: out.html, css: out.css, errors: out.errors, warnings });
+
+  // The same validator the save endpoint runs, on the same shape, reported live.
+  // Dragging an element off the canvas edge renders perfectly well but fails
+  // validateBox — so without this the owner only found out at Save, by which point the
+  // offending element was off-screen and hard to find. Reusing the validator rather
+  // than re-checking here is the point: one definition of "valid", two moments.
+  const shapeErrors = validateSite({
+    pages: [{ id: 'preview', path: '/preview', title: 'preview', sections: [section] }]
+  }).filter((e) => !/^page "preview"/.test(e) || /element/.test(e));
+
+  return json({
+    html: out.html,
+    css: out.css,
+    errors: [...out.errors, ...shapeErrors],
+    warnings
+  });
 };
