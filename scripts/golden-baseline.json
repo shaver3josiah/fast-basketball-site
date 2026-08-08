@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-08-08T15:59:30.587Z",
+  "recorded": "2026-08-08T18:04:39.374Z",
   "files": {
     "404.html": {
       "sha": "26e229491d142905",
@@ -26,16 +26,16 @@
       "bytes": 11401
     },
     "admin/editor.css": {
-      "sha": "e8ff19743ed08234",
-      "bytes": 16515
+      "sha": "ac3af28a93f90856",
+      "bytes": 20193
     },
     "admin/editor.html": {
-      "sha": "23303ff9d4854338",
-      "bytes": 5851
+      "sha": "ba922b0b06384eca",
+      "bytes": 7219
     },
     "admin/editor.js": {
-      "sha": "76b92ed8273a2d5f",
-      "bytes": 49646
+      "sha": "1a70453cb21ff53f",
+      "bytes": 67964
     },
     "admin/index.html": {
       "sha": "6db97fce8837c6fa",

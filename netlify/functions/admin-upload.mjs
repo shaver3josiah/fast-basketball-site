@@ -1,17 +1,13 @@
 import { verifyRequestSession } from './lib/auth.mjs';
-import { getFile, putFile, putBinary } from './lib/store.mjs';
+import { getFile, putFile, putBinary, isLocal } from './lib/store.mjs';
+import { getMediaIndex, putMediaIndex, putMediaBlob } from './lib/draft.mjs';
 import { readDimensions, sniffMime } from '../../src/lib/image-dimensions.mjs';
 import { IMAGE_KEYS, IMAGE_ASPECT_RULES, IMAGE_LABELS } from '../../src/lib/content-schema.mjs';
+import { extFor, imagePathFor } from './lib/media-merge.mjs';
+import { randomUUID } from 'node:crypto';
 
 const CONTENT_PATH = 'src/data/content.json';
 const MAX_BYTES = 15 * 1024 * 1024;
-
-function extFor(mime) {
-  if (mime === 'image/jpeg') return 'jpg';
-  if (mime === 'image/png') return 'png';
-  if (mime === 'image/webp') return 'webp';
-  return null;
-}
 
 export default async (request) => {
   if (!verifyRequestSession(request)) {
@@ -71,41 +67,77 @@ export default async (request) => {
   }
 
   const timestamp = Date.now();
-  const filename = key.replace('.', '-') + '-' + timestamp + '.' + ext;
-  const imagePath = 'src/images/uploads/' + filename;
 
-  await putBinary(imagePath, buffer, 'admin: upload photo for ' + key);
+  // Resume-extra cards live in contentData.resumeExtra, an array outside content.images
+  // entirely — the staging model below has nowhere to put them, so this path is out of
+  // scope for this change and keeps committing directly exactly as it always has.
+  if (!IMAGE_KEYS.includes(key)) {
+    const filename = key.replace('.', '-') + '-' + timestamp + '.' + ext;
+    const imagePath = 'src/images/uploads/' + filename;
+    await putBinary(imagePath, buffer, 'admin: upload photo for ' + key);
 
-  const { content, sha } = await getFile(CONTENT_PATH);
-  const contentData = JSON.parse(content);
-
-  const imageRecord = {
-    src: '/images/' + filename,
-    alt: alt.trim(),
-    caption: caption && caption.trim() ? caption.trim() : null,
-    source: source && source.trim() ? source.trim() : null,
-    width: dims.width,
-    height: dims.height
-  };
-
-  if (IMAGE_KEYS.includes(key)) {
-    contentData.images[key] = imageRecord;
-  } else {
+    const { content, sha } = await getFile(CONTENT_PATH);
+    const contentData = JSON.parse(content);
+    const imageRecord = {
+      src: '/images/' + filename,
+      alt: alt.trim(),
+      caption: caption && caption.trim() ? caption.trim() : null,
+      source: source && source.trim() ? source.trim() : null,
+      width: dims.width,
+      height: dims.height
+    };
     if (!Array.isArray(contentData.resumeExtra)) contentData.resumeExtra = [];
     contentData.resumeExtra.push({ id: 'extra-' + timestamp, ...imageRecord });
+    contentData.version = 1;
+    contentData.updated = new Date().toISOString();
+    await putFile(CONTENT_PATH, JSON.stringify(contentData, null, 2) + '\n', 'admin: attach uploaded photo to content.json', sha);
+
+    const hook = process.env.NETLIFY_BUILD_HOOK_URL;
+    if (hook) {
+      try { await fetch(hook, { method: 'POST' }); } catch (err) { console.error('build hook trigger failed', err.message); }
+    }
+    return new Response(JSON.stringify({ ok: true, image: imageRecord }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
-  contentData.version = 1;
-  contentData.updated = new Date().toISOString();
+  // One of the 6 fixed slots: stage it. Publish flushes every staged photo into one
+  // commit, so uploading here never spends a deploy on its own.
+  const record = {
+    id: randomUUID(), key, filename: null, alt: alt.trim(), mime,
+    width: dims.width, height: dims.height, bytes: buffer.length, uploadedAt: timestamp,
+    caption: caption && caption.trim() ? caption.trim() : null,
+    source: source && source.trim() ? source.trim() : null
+  };
 
-  await putFile(CONTENT_PATH, JSON.stringify(contentData, null, 2) + '\n', 'admin: attach uploaded photo to content.json', sha);
-
-  const hook = process.env.NETLIFY_BUILD_HOOK_URL;
-  if (hook) {
-    try { await fetch(hook, { method: 'POST' }); } catch (err) { console.error('build hook trigger failed', err.message); }
+  if (isLocal) {
+    // No deploy to save locally — write straight through like every other local save.
+    const { path, src } = imagePathFor(record);
+    await putBinary(path, buffer, 'admin: upload photo for ' + key);
+    const { content, sha } = await getFile(CONTENT_PATH);
+    const contentData = JSON.parse(content);
+    contentData.images[key] = { src, alt: record.alt, caption: record.caption, source: record.source, width: dims.width, height: dims.height };
+    contentData.version = 1;
+    contentData.updated = new Date().toISOString();
+    await putFile(CONTENT_PATH, JSON.stringify(contentData, null, 2) + '\n', 'admin: attach uploaded photo to content.json', sha);
+    return new Response(JSON.stringify({ ok: true, image: contentData.images[key] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
-  return new Response(JSON.stringify({ ok: true, image: imageRecord }), {
+  await putMediaBlob(record.id, match[2]);
+  const index = await getMediaIndex();
+  index.push(record);
+  await putMediaIndex(index);
+
+  const image = {
+    src: '/.netlify/functions/admin-media?raw=' + record.id,
+    alt: record.alt, caption: record.caption, source: record.source,
+    width: dims.width, height: dims.height
+  };
+  return new Response(JSON.stringify({ ok: true, image, staged: true }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' }
   });

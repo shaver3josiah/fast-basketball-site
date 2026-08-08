@@ -76,6 +76,16 @@
           </div>
         </div>
       </section>
+
+      <section class="ed-panel" id="mediaPanel">
+        <h2 class="ed-panel-h">Photos</h2>
+        <div class="ed-media-drop" id="mediaDrop">
+          <button type="button" class="ed-btn" id="mediaAddBtn">Add photos</button>
+          <input type="file" id="mediaFile" accept="image/jpeg,image/png,image/webp" multiple hidden>
+          <p class="ed-field-help">Or drag photos here.</p>
+        </div>
+        <ul class="ed-media-grid" id="mediaGrid"></ul>
+      </section>
     </aside>
 
     <main class="ed-stage">
@@ -124,6 +134,23 @@
 </div>
 
 <div class="ed-toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="ed-modal-backdrop" id="mediaModal" hidden>
+  <div class="ed-modal" role="dialog" aria-modal="true" aria-labelledby="mediaModalTitle">
+    <h2 id="mediaModalTitle" class="ed-panel-h">Add photo</h2>
+    <div class="ed-crop-wrap" id="cropWrap"></div>
+    <p class="ed-field-help">Drag the box to choose what to keep, or use the arrow keys. Shift plus an arrow key resizes it.</p>
+    <div class="ed-field">
+      <label for="cropAlt">Alt text *</label>
+      <input type="text" id="cropAlt" required>
+      <p class="ed-field-help">Describes the photo for screen readers and search. Required before this can be uploaded.</p>
+    </div>
+    <div class="ed-modal-actions">
+      <button type="button" class="ed-btn" id="cropCancel">Cancel</button>
+      <button type="button" class="ed-btn ed-btn-primary" id="cropConfirm" disabled>Use this photo</button>
+    </div>
+  </div>
+</div>
 
 <!-- Field labels for the hand-built sections ("Coach bio paragraph 2" rather than
      "coach.p2"). Same generated file the content admin uses. -->

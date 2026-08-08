@@ -20,6 +20,7 @@
   var state = {
     site: null,
     images: {},
+    media: null,
     pageIndex: 0,
     sectionIndex: 0,
     selectedId: null,
@@ -233,6 +234,7 @@
       renderPublishState();
       renderAll();
     }).catch(function () { renderPublishState(); renderAll(); });
+    loadMedia();
   }
 
   // ------------------------------------------------------------------ rails
@@ -455,6 +457,392 @@
       if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
       if (e.key === 'Escape') { e.preventDefault(); renderLayers(); }
     });
+  }
+
+  // ------------------------------------------------------------------ media
+
+  // Elements and legacy fields reference photos by key, and only PUBLISHED keys live
+  // in content.json (state.images) — a freshly staged upload is still sitting in blob
+  // storage until Publish flushes it in. Fetched once at boot and re-fetched after any
+  // upload or delete, rather than kept in lockstep with every local edit.
+  function loadMedia() {
+    return api('admin-media').then(function (res) {
+      return res.ok ? res.json() : null;
+    }).then(function (data) {
+      state.media = (data && data.items) || [];
+      renderMedia();
+      // The inspector may already be open on an image element; without this the photo
+      // just uploaded is missing from its picker until something else redraws it.
+      renderInspector();
+    }).catch(function () {
+      state.media = state.media || [];
+      renderMedia();
+      renderInspector();
+    });
+  }
+
+  // The set of photos a picker may offer: everything published, plus staged uploads
+  // so a photo can be used the moment it lands rather than after the next Publish.
+  function pickerImages() {
+    var merged = {};
+    Object.keys(state.images).forEach(function (key) { merged[key] = state.images[key]; });
+    // Every library photo, not just the staged ones: state.images is read once at boot,
+    // so a photo uploaded during this session is already in content.json and completely
+    // absent from it. Filtering to staged here meant a fresh upload could not be used
+    // until the editor was reloaded.
+    (state.media || []).forEach(function (item) {
+      merged[item.key] = {
+        src: item.src, alt: item.alt, width: item.width, height: item.height,
+        library: true, staged: !!item.staged
+      };
+    });
+    return merged;
+  }
+
+  // Shared by the canvas image field and the legacy image swap: a grid of buttons
+  // beats a <select> once the options are photos rather than strings. Same shape as
+  // the colour swatches (role="group" of toggle buttons) — Tab visits each thumb,
+  // Enter or Space picks it, no listbox machinery required.
+  function thumbPicker(images, keys, selectedKey, onPick) {
+    var row = document.createElement('div');
+    row.className = 'ed-thumbgrid';
+    row.setAttribute('role', 'group');
+    var primaryPicked = false;
+    keys.forEach(function (key) {
+      var meta = images[key] || {};
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ed-thumb';
+      var label = meta.alt || key;
+      b.setAttribute('aria-label', label + (meta.staged ? ' — not published yet' : ''));
+      b.setAttribute('aria-pressed', key === selectedKey ? 'true' : 'false');
+      b.title = label;
+      if (meta.src) {
+        var img = document.createElement('img');
+        img.src = meta.src;
+        img.alt = '';
+        b.appendChild(img);
+      }
+      if (meta.staged) {
+        var badge = document.createElement('span');
+        badge.className = 'ed-media-badge';
+        badge.textContent = 'Not published yet';
+        b.appendChild(badge);
+      }
+      // Double-clicking an image on the canvas focuses the primary control (see the
+      // comment this replaced, on the old <select>'s dataset.primary); land that focus
+      // on the selected thumb, or the first one if nothing is chosen yet, so Enter can
+      // act immediately rather than tabbing through the grid first.
+      if (selectedKey ? key === selectedKey : !primaryPicked) {
+        b.dataset.primary = 'true';
+        primaryPicked = true;
+      }
+      b.addEventListener('click', function () { onPick(key); });
+      row.appendChild(b);
+    });
+    return row;
+  }
+
+  function renderMedia() {
+    var grid = $('mediaGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    if (state.media === null) {
+      var loading = document.createElement('p');
+      loading.className = 'ed-field-help';
+      loading.textContent = 'Loading photos…';
+      grid.appendChild(loading);
+      return;
+    }
+    if (!state.media.length) {
+      var empty = document.createElement('p');
+      empty.className = 'ed-field-help';
+      empty.textContent = 'No photos yet. Add some below.';
+      grid.appendChild(empty);
+      return;
+    }
+    state.media.forEach(function (item) { grid.appendChild(mediaItemRow(item)); });
+  }
+
+  function mediaItemRow(item) {
+    var li = document.createElement('li');
+    li.className = 'ed-media-item';
+
+    var thumb = document.createElement('div');
+    thumb.className = 'ed-media-thumb';
+    var img = document.createElement('img');
+    img.src = item.src;
+    img.alt = '';
+    thumb.appendChild(img);
+    if (item.staged) {
+      var badge = document.createElement('span');
+      badge.className = 'ed-media-badge';
+      badge.textContent = 'Not published yet';
+      thumb.appendChild(badge);
+    }
+    li.appendChild(thumb);
+
+    var altWrap = document.createElement('div');
+    altWrap.className = 'ed-field';
+    var altId = 'media_alt_' + item.key.replace(/\W+/g, '_');
+    var altLabel = document.createElement('label');
+    altLabel.htmlFor = altId;
+    altLabel.textContent = 'Alt text';
+    altWrap.appendChild(altLabel);
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.id = altId;
+    input.value = item.alt || '';
+    input.addEventListener('change', function () { saveMediaAlt(item.key, input.value); });
+    altWrap.appendChild(input);
+    li.appendChild(altWrap);
+
+    var actions = document.createElement('div');
+    actions.className = 'ed-media-actions';
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'ed-btn ed-btn-danger';
+    del.textContent = 'Delete';
+    del.setAttribute('aria-label', 'Delete ' + (item.alt || item.key));
+    del.addEventListener('click', function () { deleteMedia(item); });
+    actions.appendChild(del);
+    li.appendChild(actions);
+
+    return li;
+  }
+
+  // Alt text goes to admin-media, not admin-content. admin-content commits and fires the
+  // build hook on every POST, so saving a one-word fix through it would spend a deploy —
+  // the exact cost the Photos panel exists to avoid. admin-media stages it instead, and
+  // Publish writes it with everything else.
+  function saveMediaAlt(key, alt) {
+    api('admin-media', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: key, alt: alt })
+    }).then(function (res) {
+      return res.json().then(function (d) { return { ok: res.ok, data: d }; });
+    }).then(function (r) {
+      if (!r.ok) { toast(r.data.error || 'Could not save that alt text.', 'error'); return; }
+      if (state.content && state.content.images && state.content.images[key]) {
+        state.content.images[key].alt = alt;
+      }
+      toast(r.data.staged ? 'Alt text saved. Publish to put it on the site.' : 'Alt text saved.');
+      loadMedia();
+    }).catch(function () {
+      toast('Could not reach the server. Alt text was not saved.', 'error');
+    });
+  }
+
+  function deleteMedia(item) {
+    var label = item.alt || item.key;
+    // window.confirm() rather than a hand-built dialog: it is keyboard-operable for
+    // free (Tab never leaves it, Enter/Escape both work), which a custom modal would
+    // have to earn.
+    if (!window.confirm('Delete "' + label + '"? This cannot be undone.')) return;
+    api('admin-media', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: item.key })
+    }).then(function (res) {
+      return res.json().then(function (d) { return { ok: res.ok, status: res.status, data: d }; });
+    }).then(function (r) {
+      if (r.status === 409) {
+        var usedBy = (r.data.usedBy || []).join(', ');
+        toast('Still in use by ' + (usedBy || 'something else') + '.', 'error');
+        return;
+      }
+      if (!r.ok) { toast(r.data.error || 'Could not delete that photo.', 'error'); return; }
+      loadMedia();
+      toast('Deleted.');
+    }).catch(function () {
+      toast('Could not reach the server. Nothing was deleted.', 'error');
+    });
+  }
+
+  // ------------------------------------------------------------------ upload & crop
+
+  var ACCEPTED_MEDIA_MIME = { 'image/jpeg': true, 'image/png': true, 'image/webp': true };
+  var uploadQueue = [];
+  var cropState = null;
+  var cropDragging = null;
+  var CROP_MIN = 24;
+
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+  function queueUploads(fileList) {
+    var files = Array.prototype.filter.call(fileList, function (f) { return ACCEPTED_MEDIA_MIME[f.type]; });
+    if (!files.length) { toast('Choose a JPEG, PNG or WEBP photo.', 'error'); return; }
+    uploadQueue = uploadQueue.concat(files);
+    if (!cropState) startNextCrop();
+  }
+
+  function startNextCrop() {
+    if (!uploadQueue.length) {
+      $('mediaModal').hidden = true;
+      cropState = null;
+      return;
+    }
+    var file = uploadQueue.shift();
+    openCropModal(file, URL.createObjectURL(file));
+  }
+
+  function openCropModal(file, url) {
+    cropState = { file: file, url: url };
+    $('mediaModal').hidden = false;
+
+    var wrap = $('cropWrap');
+    wrap.innerHTML = '';
+    var display = document.createElement('img');
+    display.alt = '';
+    wrap.appendChild(display);
+    var box = buildCropBoxEl();
+    wrap.appendChild(box);
+
+    display.onload = function () {
+      cropState.natW = display.naturalWidth;
+      cropState.natH = display.naturalHeight;
+      initCropBox(display, box);
+    };
+    display.src = url;
+
+    $('cropAlt').value = '';
+    $('cropConfirm').disabled = true;
+    $('cropAlt').focus();
+  }
+
+  function buildCropBoxEl() {
+    var box = document.createElement('div');
+    box.className = 'ed-crop-box';
+    box.tabIndex = 0;
+    box.setAttribute('aria-label', 'Crop area. Drag to move or resize. Arrow keys move it, Shift with an arrow key resizes it.');
+    ['nw', 'ne', 'sw', 'se'].forEach(function (corner) {
+      var h = document.createElement('span');
+      h.className = 'ed-crop-handle ' + corner;
+      box.appendChild(h);
+    });
+    return box;
+  }
+
+  // Starts covering the whole image — cropping is opt-in, not a default the owner has
+  // to first discover and clear.
+  function initCropBox(display, box) {
+    cropState.display = display;
+    cropState.box = box;
+    cropState.rect = { x: 0, y: 0, w: display.clientWidth, h: display.clientHeight };
+    paintCropBox();
+
+    box.addEventListener('mousedown', function (e) {
+      if (e.target === box) startCropDrag(e, 'move');
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('.ed-crop-handle'), function (handle) {
+      handle.addEventListener('mousedown', function (e) {
+        e.stopPropagation();
+        startCropDrag(e, handle.className.replace('ed-crop-handle ', ''));
+      });
+    });
+    box.addEventListener('keydown', handleCropKey);
+  }
+
+  function paintCropBox() {
+    var r = cropState.rect;
+    cropState.box.style.left = r.x + 'px';
+    cropState.box.style.top = r.y + 'px';
+    cropState.box.style.width = r.w + 'px';
+    cropState.box.style.height = r.h + 'px';
+  }
+
+  function startCropDrag(e, mode) {
+    cropDragging = { mode: mode, startX: e.clientX, startY: e.clientY, rect: Object.assign({}, cropState.rect) };
+    document.addEventListener('mousemove', onCropDragMove);
+    document.addEventListener('mouseup', onCropDragEnd);
+    e.preventDefault();
+  }
+
+  function onCropDragMove(e) {
+    if (!cropDragging) return;
+    var dx = e.clientX - cropDragging.startX;
+    var dy = e.clientY - cropDragging.startY;
+    var bounds = { w: cropState.display.clientWidth, h: cropState.display.clientHeight };
+    var r = Object.assign({}, cropDragging.rect);
+    if (cropDragging.mode === 'move') {
+      r.x = clamp(r.x + dx, 0, bounds.w - r.w);
+      r.y = clamp(r.y + dy, 0, bounds.h - r.h);
+    } else {
+      applyCropCornerResize(r, cropDragging.mode, dx, dy, bounds);
+    }
+    cropState.rect = r;
+    paintCropBox();
+  }
+
+  function onCropDragEnd() {
+    cropDragging = null;
+    document.removeEventListener('mousemove', onCropDragMove);
+    document.removeEventListener('mouseup', onCropDragEnd);
+  }
+
+  // Keeps the corner OPPOSITE the one being dragged fixed, recomputed from the
+  // drag-start rect each move rather than accumulated — accumulating per-mousemove
+  // deltas onto a mutated rect is how these drift a few px off from where the mouse
+  // actually is after a long drag.
+  function applyCropCornerResize(r, corner, dx, dy, bounds) {
+    var left = r.x, top = r.y, right = r.x + r.w, bottom = r.y + r.h;
+    if (corner === 'nw') { left += dx; top += dy; }
+    else if (corner === 'ne') { right += dx; top += dy; }
+    else if (corner === 'sw') { left += dx; bottom += dy; }
+    else if (corner === 'se') { right += dx; bottom += dy; }
+    left = clamp(left, 0, right - CROP_MIN);
+    top = clamp(top, 0, bottom - CROP_MIN);
+    right = clamp(right, left + CROP_MIN, bounds.w);
+    bottom = clamp(bottom, top + CROP_MIN, bounds.h);
+    r.x = left; r.y = top; r.w = right - left; r.h = bottom - top;
+  }
+
+  function handleCropKey(e) {
+    var moveKeys = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true };
+    if (!moveKeys[e.key]) return;
+    e.preventDefault();
+    var bounds = { w: cropState.display.clientWidth, h: cropState.display.clientHeight };
+    var r = Object.assign({}, cropState.rect);
+    var step = 6;
+    if (e.shiftKey) {
+      if (e.key === 'ArrowRight') r.w = clamp(r.w + step, CROP_MIN, bounds.w - r.x);
+      else if (e.key === 'ArrowLeft') r.w = Math.max(CROP_MIN, r.w - step);
+      else if (e.key === 'ArrowDown') r.h = clamp(r.h + step, CROP_MIN, bounds.h - r.y);
+      else if (e.key === 'ArrowUp') r.h = Math.max(CROP_MIN, r.h - step);
+    } else {
+      if (e.key === 'ArrowRight') r.x = clamp(r.x + step, 0, bounds.w - r.w);
+      else if (e.key === 'ArrowLeft') r.x = clamp(r.x - step, 0, bounds.w - r.w);
+      else if (e.key === 'ArrowDown') r.y = clamp(r.y + step, 0, bounds.h - r.h);
+      else if (e.key === 'ArrowUp') r.y = clamp(r.y - step, 0, bounds.h - r.h);
+    }
+    cropState.rect = r;
+    paintCropBox();
+  }
+
+  // ctx.drawImage reads the image's natural pixel data regardless of how large the
+  // preview is on screen, so the crop box's on-screen rect first has to be scaled from
+  // displayed px back to natural px before it means anything to the canvas.
+  function renderCroppedImage() {
+    var display = cropState.display;
+    var scaleX = cropState.natW / display.clientWidth;
+    var scaleY = cropState.natH / display.clientHeight;
+    var r = cropState.rect;
+    var sx = r.x * scaleX, sy = r.y * scaleY, sw = r.w * scaleX, sh = r.h * scaleY;
+
+    // 2400px is 2x the build's largest responsive variant (1200px) — headroom without
+    // shipping full phone-camera resolution into the repo. The factor never exceeds 1,
+    // so a crop already smaller than that is left alone rather than blown up.
+    var factor = Math.min(1, 2400 / Math.max(sw, sh));
+    var dw = Math.max(1, Math.round(sw * factor));
+    var dh = Math.max(1, Math.round(sh * factor));
+
+    var canvas = document.createElement('canvas');
+    canvas.width = dw;
+    canvas.height = dh;
+    canvas.getContext('2d').drawImage(display, sx, sy, sw, sh, 0, 0, dw, dh);
+    return canvas.toDataURL('image/jpeg', 0.85);
   }
 
   // ------------------------------------------------------------------ align
@@ -789,10 +1177,35 @@
         state.content.images[key].caption = v || null;
         markDirty();
       }));
-      var hint = document.createElement('p');
-      hint.className = 'ed-field-help';
-      hint.textContent = 'Swap the photo itself in the content admin at /admin/ — this panel edits its wording.';
-      box.appendChild(hint);
+
+      var picWrap = document.createElement('div');
+      picWrap.className = 'ed-field';
+      var picLabel = document.createElement('span');
+      picLabel.id = 'lbl_legacyPhoto';
+      picLabel.textContent = 'Photo';
+      picWrap.appendChild(picLabel);
+
+      // Published photos only — this field writes straight into the fixed slot's
+      // `src` on Save with no draft/publish gate, unlike a canvas element's props.key.
+      // A staged upload's src is a temporary blob URL that stops resolving the moment
+      // Publish clears the staging area, so it is not stable enough to point a fixed
+      // slot at.
+      var picGrid = thumbPicker(state.images, Object.keys(state.images), key, function (newKey) {
+        var chosen = state.images[newKey];
+        if (!chosen) return;
+        state.content.images[key] = Object.assign({}, state.content.images[key], {
+          src: chosen.src,
+          width: chosen.width,
+          height: chosen.height,
+          alt: chosen.alt || ''
+        });
+        markDirty();
+        renderLegacyField(key, kind);
+        renderCanvas();
+      });
+      picGrid.setAttribute('aria-labelledby', 'lbl_legacyPhoto');
+      picWrap.appendChild(picGrid);
+      box.appendChild(picWrap);
       return;
     }
 
@@ -1017,50 +1430,38 @@
   }
 
   function imageField(el, field, wrap, value) {
-    var keys = Object.keys(state.images);
+    var images = pickerImages();
+    var keys = Object.keys(images);
     if (!keys.length) {
       var none = document.createElement('p');
       none.className = 'ed-field-help';
-      none.textContent = 'No photos available. Upload one in the content admin first.';
+      none.textContent = 'No photos yet. Add one in the Photos panel.';
       wrap.appendChild(none);
       return wrap;
     }
-    var select = document.createElement('select');
-    select.id = 'f_' + field.name;
-    // Double-clicking an image on the canvas focuses the primary control; without this
-    // the image type had none, so the gesture did nothing at all.
-    select.dataset.primary = 'true';
     if (!value) {
-      // A <select> shows its first option regardless, so an element with no photo
-      // looked as though it had one — and the owner had no way to tell.
-      var ph = document.createElement('option');
-      ph.value = '';
-      ph.disabled = true;
-      ph.selected = true;
-      ph.textContent = 'Choose a photo';
-      select.appendChild(ph);
+      // A grid of toggle buttons has no equivalent of a <select> showing its first
+      // option regardless — nothing reads as pressed until something is chosen — but
+      // an unmarked grid still looks unfinished without a line saying so.
+      var ph = document.createElement('p');
+      ph.className = 'ed-field-help';
+      ph.textContent = 'Choose a photo.';
+      wrap.appendChild(ph);
     }
-    keys.forEach(function (key) {
-      var o = document.createElement('option');
-      o.value = key;
-      o.textContent = key;
-      if (key === value) o.selected = true;
-      select.appendChild(o);
-    });
-    select.addEventListener('change', function () {
+    var grid = thumbPicker(images, keys, value, function (key) {
       pushHistory();
-      el.props.key = select.value;
+      el.props.key = key;
       // Take the NEW photo's alt, not "keep the old one if present". Swapping a
       // net-cutting shot for a portrait used to leave the description of the net —
       // wrong for every screen reader and every search engine, and invisible on screen.
       // If the new photo has no alt of its own, blank it so the required-field error
       // fires rather than shipping a lie.
-      el.props.alt = (state.images[select.value] && state.images[select.value].alt) || '';
+      el.props.alt = (images[key] && images[key].alt) || '';
       markDirty();
       renderInspector();
       queueCanvas();
     });
-    wrap.appendChild(select);
+    wrap.appendChild(grid);
     return wrap;
   }
 
@@ -1213,6 +1614,7 @@
     renderPages();
     renderSections();
     renderLayers();
+    renderMedia();
     fitCanvas();
     $('crumb').textContent = currentPage().path + '  ·  ' + (currentSection() ? currentSection().name : 'no section');
     renderInspector();
@@ -1225,6 +1627,70 @@
   $('redoBtn').addEventListener('click', redo);
   $('deleteBtn').addEventListener('click', deleteElement);
   $('duplicateBtn').addEventListener('click', duplicateElement);
+
+  $('mediaAddBtn').addEventListener('click', function () { $('mediaFile').click(); });
+  $('mediaFile').addEventListener('change', function () {
+    queueUploads(this.files);
+    this.value = '';
+  });
+
+  (function () {
+    var zone = $('mediaDrop');
+    ['dragenter', 'dragover'].forEach(function (evt) {
+      zone.addEventListener(evt, function (e) { e.preventDefault(); zone.classList.add('is-over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+      zone.addEventListener(evt, function (e) { e.preventDefault(); zone.classList.remove('is-over'); });
+    });
+    zone.addEventListener('drop', function (e) {
+      if (e.dataTransfer && e.dataTransfer.files) queueUploads(e.dataTransfer.files);
+    });
+  })();
+
+  $('cropAlt').addEventListener('input', function () {
+    $('cropConfirm').disabled = !$('cropAlt').value.trim();
+  });
+
+  $('cropCancel').addEventListener('click', function () {
+    if (cropState) URL.revokeObjectURL(cropState.url);
+    startNextCrop();
+  });
+
+  $('cropConfirm').addEventListener('click', function () {
+    var alt = $('cropAlt').value.trim();
+    if (!alt) return;
+    var dataUrl = renderCroppedImage();
+    var filename = cropState.file.name;
+    var url = cropState.url;
+    $('cropConfirm').disabled = true;
+    api('admin-media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: filename, alt: alt, dataUrl: dataUrl })
+    }).then(function (res) {
+      return res.json().then(function (d) { return { ok: res.ok, data: d }; });
+    }).then(function (r) {
+      if (!r.ok) {
+        toast(r.data.error || 'Could not upload that photo.', 'error');
+        $('cropConfirm').disabled = false;
+        return;
+      }
+      URL.revokeObjectURL(url);
+      toast('Uploaded.');
+      loadMedia();
+      startNextCrop();
+    }).catch(function () {
+      toast('Could not reach the server. That photo was not uploaded.', 'error');
+      $('cropConfirm').disabled = false;
+    });
+  });
+
+  // The dialog has no other Escape handling of its own, and the document-level keydown
+  // handler below is for editor shortcuts, not this modal — Escape has to be wired here
+  // or closing it would need a mouse.
+  $('mediaModal').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); $('cropCancel').click(); }
+  });
 
   document.addEventListener('keydown', function (e) {
     var mod = e.metaKey || e.ctrlKey;

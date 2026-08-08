@@ -83,10 +83,27 @@ Loop 2 scored 141 with every loop-1 fix verified and no regressions, and the row
 veto held against a hostile 15-element section measured at ten widths from 1000px down
 to 280px.
 
+### 8 Aug — the media library
+**Goal: the owner can put a photo on the site without asking anyone.** · uncommitted
+
+The largest named Phase 2 gap, closed. Photos upload from the editor, get cropped and
+downscaled in the browser before they leave it, and land in a Photos panel that any image
+element or hand-built slot can pick from. The dead end that told the owner to "swap the
+photo itself in the content admin" is gone.
+
+It cost almost nothing structurally, because the compiler was already built the right way:
+a library photo is an ordinary key in `content.json`, so `responsive-images.mjs` generates
+its variants and `render.mjs` renders it with **no change to the build at all**. Verified
+end to end — an uploaded photo came back out of the canvas as a generated `-640.webp`.
+
+What did need building was the cost control. Every GitHub commit triggers a deploy, and
+uploading a dozen photos the old way would have fired roughly 36 build triggers — 540
+credits against a 300/month budget, which is the site going offline. Uploads now stage in
+Blobs for free and Publish commits them in **one** commit via the Git Data API, so twelve
+photos cost one deploy instead of twelve.
+
 Still open, and deliberately so:
 
-- **Media library** — upload, organise, crop, reuse. The largest single gap. Photos can
-  be picked and swapped today, but only from what already exists.
 - **Group / ungroup and multi-select.** Distribute currently acts on every unlocked
   element in the section because there is nothing else to act on.
 - **A brand-kit editor.** The mechanism is proven — the compiled CSS is 100% `var()`
@@ -143,5 +160,16 @@ closes them.
 - **The editor is desktop-only** and says so below 900px.
 - **The deploy meter is a floor, not a truth.** It counts publishes made through the
   editor and cannot see deploys triggered by a git push or from Netlify's UI.
+- **The publish split does not cover hand-built sections yet.** `admin-content.mjs` commits
+  and fires the build hook on every POST, and the editor's Save routes there whenever a
+  hand-built section is being edited (`editor.js`, `state.mode === 'legacy'`). So editing
+  the hero or the coach bio still spends a deploy per save, exactly as it did before the
+  split existed. The canvas and the media library both stage properly; this one surface
+  does not. Fixing it means giving `content.json` the draft treatment `site.json` already
+  has, and giving the older Content Admin at `/admin/` a Publish button, since it has none
+  and currently relies on that immediate commit.
+- **Adding a resume card still commits directly.** The `resumeExtra` path in
+  `admin-upload.mjs` writes to an array rather than to `content.images`, which the staging
+  model has no way to represent, so it was left alone. Rare enough to be worth its cost.
 - **`/lab` is a proving ground**, not part of the site. It is `draft: true`, noindex and
   absent from the sitemap.

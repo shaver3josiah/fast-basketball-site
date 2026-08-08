@@ -72,3 +72,48 @@ export async function recordPublish() {
   // Keep the tail bounded; nothing older than the current month is ever read.
   await s.setJSON(PUBLISH_LOG, log.slice(-100));
 }
+
+// Staged photo uploads. Same store as the site draft, same reason: a write here costs
+// nothing, and only Publish turns it into a commit. Each guards isLocal itself so a
+// caller never needs to branch on it before asking — locally there is nothing staged,
+// there never was, and there never will be.
+const MEDIA_INDEX_KEY = 'media/__index';
+
+export async function getMediaIndex() {
+  if (isLocal) return [];
+  const s = await store();
+  return (await s.get(MEDIA_INDEX_KEY, { type: 'json' })) || [];
+}
+
+export async function putMediaIndex(index) {
+  if (isLocal) return;
+  const s = await store();
+  await s.setJSON(MEDIA_INDEX_KEY, index);
+}
+
+export async function getMediaBlob(id) {
+  if (isLocal) return null;
+  const s = await store();
+  return s.get('media/' + id, { type: 'text' });
+}
+
+export async function putMediaBlob(id, base64) {
+  if (isLocal) return;
+  const s = await store();
+  await s.set('media/' + id, base64);
+}
+
+export async function deleteMediaBlob(id) {
+  if (isLocal) return;
+  const s = await store();
+  await s.delete('media/' + id);
+}
+
+// Only after the commit succeeds: every blob is the owner's only copy of that photo
+// until then, same rule as the site draft above.
+export async function clearStagedMedia(index) {
+  if (isLocal) return;
+  const s = await store();
+  await Promise.all((index || []).map((r) => s.delete('media/' + r.id)));
+  await s.delete(MEDIA_INDEX_KEY);
+}

@@ -11,7 +11,7 @@
 //
 // Local mode is on when FB_LOCAL=true, which only scripts/dev-server.mjs sets.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { resolve, dirname } from 'node:path';
 import * as github from './github.mjs';
@@ -68,6 +68,23 @@ export async function putBinary(path, buffer, message) {
   writeFileSync(full, buffer);
   console.log('[store] wrote ' + path + ' (' + buffer.length + ' bytes)' + (message ? ' — ' + message : ''));
   return { local: true, path };
+}
+
+// One commit for a whole batch of files (staged media flush at publish time). Locally
+// there is no commit to batch — each file just goes straight to disk, same as putFile.
+export async function putFiles(files, message) {
+  if (!LOCAL) return github.putFiles(files, message);
+  for (const file of files) {
+    const full = localPath(file.path);
+    if (file.content === null) {
+      if (existsSync(full)) rmSync(full);
+      continue;
+    }
+    mkdirSync(dirname(full), { recursive: true });
+    writeFileSync(full, file.content);
+  }
+  console.log('[store] wrote ' + files.length + ' file(s) in one batch' + (message ? ' — ' + message : ''));
+  return { local: true, paths: files.map((f) => f.path) };
 }
 
 export const isLocal = LOCAL;
