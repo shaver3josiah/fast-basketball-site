@@ -24,6 +24,9 @@
     sectionIndex: 0,
     selectedId: null,
     dirty: false,
+    local: true,
+    hasDraft: false,
+    deploys: null,
     history: [],
     future: []
   };
@@ -120,11 +123,62 @@
       if (res.status === 401) { showGate(); return null; }
       if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || 'could not load'); });
       return res.json();
-    }).then(function (site) {
-      if (!site) return;
-      startEditor(site);
+    }).then(function (data) {
+      if (!data) return;
+      state.local = data.local;
+      state.hasDraft = data.hasDraft;
+      state.deploys = data.deploys;
+      startEditor(data.site);
     }).catch(function (err) {
       showGate(err.message);
+    });
+  }
+
+  // Publishing is the only action that spends a deploy, so it is the only one that
+  // needs to say anything about cost. Locally there is nothing to spend.
+  function renderPublishState() {
+    var btn = $('publishBtn');
+    var meter = $('deployMeter');
+    if (state.local) {
+      btn.hidden = true;
+      meter.textContent = 'Local — saves are live immediately';
+      meter.removeAttribute('data-warn');
+      return;
+    }
+    btn.hidden = false;
+    btn.disabled = !state.hasDraft;
+    var d = state.deploys || { used: 0, limit: 20 };
+    var left = Math.max(0, d.limit - d.used);
+    meter.textContent = left + ' of ' + d.limit + ' publishes left this month';
+    // Warn, never block. A hard stop would leave the owner unable to fix a typo on a
+    // live page, and this count cannot see deploys triggered outside the editor, so it
+    // is a floor rather than a fact.
+    if (left <= 5) meter.setAttribute('data-warn', 'true');
+    else meter.removeAttribute('data-warn');
+  }
+
+  function publish() {
+    var btn = $('publishBtn');
+    btn.disabled = true;
+    setStatus('Publishing…');
+    api('admin-publish', { method: 'POST' }).then(function (res) {
+      return res.json().then(function (d) { return { ok: res.ok, data: d }; });
+    }).then(function (r) {
+      if (!r.ok) {
+        setStatus('Not published', 'dirty');
+        toast(r.data.error || 'Publish failed.', 'error');
+        renderPublishState();
+        return;
+      }
+      state.hasDraft = false;
+      if (r.data.deploys) state.deploys = r.data.deploys;
+      setStatus('Published', 'saved');
+      toast(r.data.message || 'Published.');
+      renderPublishState();
+    }).catch(function () {
+      setStatus('Not published', 'dirty');
+      toast('Could not reach the server. Nothing was published.', 'error');
+      renderPublishState();
     });
   }
 
@@ -157,8 +211,9 @@
     // renders from, so the picker can only offer photos that actually exist.
     api('admin-content').then(function (r) { return r.ok ? r.json() : null; }).then(function (content) {
       if (content) state.images = content.images || {};
+      renderPublishState();
       renderAll();
-    }).catch(function () { renderAll(); });
+    }).catch(function () { renderPublishState(); renderAll(); });
   }
 
   // ------------------------------------------------------------------ rails
@@ -649,8 +704,15 @@
         return;
       }
       state.dirty = false;
-      setStatus('Saved — rebuilding', 'saved');
-      toast('Saved. The site is rebuilding; the page will show it in a moment.');
+      state.hasDraft = !!r.data.draft;
+      if (r.data.draft) {
+        setStatus('Saved as draft', 'saved');
+        toast('Saved. Nothing is live until you press Publish.');
+      } else {
+        setStatus('Saved — rebuilding', 'saved');
+        toast('Saved. The site is rebuilding; the page will show it in a moment.');
+      }
+      renderPublishState();
     }).catch(function () {
       setStatus('Not saved', 'dirty');
       btn.disabled = false;
@@ -698,6 +760,7 @@
   }
 
   $('saveBtn').addEventListener('click', save);
+  $('publishBtn').addEventListener('click', publish);
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
   $('deleteBtn').addEventListener('click', deleteElement);

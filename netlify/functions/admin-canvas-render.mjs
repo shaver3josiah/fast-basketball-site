@@ -9,7 +9,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { verifyRequestSession } from './lib/auth.mjs';
-import { isLocal } from './lib/store.mjs';
 import { compileSection, scalePx } from '../../src/lib/canvas-compile.mjs';
 import { renderImage } from '../../src/render.mjs';
 import { validateSite } from '../../src/lib/site-schema.mjs';
@@ -26,8 +25,10 @@ function loadImageContext() {
 }
 
 export default async (request) => {
+  // This used to refuse outside local mode, because saving committed to GitHub and a
+  // commit spends a deploy. That guard has been replaced by the real one: saves now
+  // write a draft and only Publish commits. Rendering is read-only and free.
   if (!verifyRequestSession(request)) return json({ error: 'not authenticated' }, 401);
-  if (!isLocal) return json({ error: 'the canvas editor only runs locally for now' }, 503);
   if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
   let section;

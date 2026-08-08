@@ -403,6 +403,25 @@ input:focus, textarea:focus, select:focus {
 .ed-btn-primary:hover:not(:disabled) { background: #B80A1A; border-color: #B80A1A; }
 .ed-btn-primary:active:not(:disabled) { background: #A00915; }
 
+/* Publish is the consequential button, so it is the darker one — Save is routine and
+   free, Publish spends a deploy and reaches real visitors. */
+.ed-btn-publish {
+  background: var(--ed-ink);
+  border-color: var(--ed-ink);
+  color: #fff;
+  font-weight: 600;
+}
+
+.ed-btn-publish:hover:not(:disabled) { background: #000; border-color: #000; }
+
+.ed-meter {
+  font-size: 0.75rem;
+  color: var(--ed-ink-3);
+  white-space: nowrap;
+}
+
+.ed-meter[data-warn] { color: var(--ed-danger); font-weight: 600; }
+
 .ed-btn-danger { color: var(--ed-danger); border-color: #E8C4C1; }
 .ed-btn-danger:hover:not(:disabled) { background: #FCEDEC; border-color: var(--ed-danger); }
 

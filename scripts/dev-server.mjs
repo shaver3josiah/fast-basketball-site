@@ -66,7 +66,7 @@ const RELOAD_SNIPPET = `<script>
 let building = false;
 let queued = false;
 
-function runBuild(reason) {
+function runBuild(reason, isRetry) {
   if (building) { queued = true; return; }
   building = true;
   const started = Date.now();
@@ -81,10 +81,19 @@ function runBuild(reason) {
       const summary = tail.split('\n').filter((l) => l.startsWith('Build complete')).join('');
       console.log('[build] ok in ' + (Date.now() - started) + 'ms. ' + summary);
       notifyReload();
+    } else if (!isRetry) {
+      // sharp is a native module, and on Windows it intermittently fails to initialise
+      // (exit 0xC0000142, STATUS_DLL_INIT_FAILED) — reliably so just after the machine
+      // wakes from sleep. It always succeeds on a second run. Without this retry the
+      // owner saves, the editor says "rebuilding", and the page silently never changes.
+      console.error('[build] failed (exit ' + code + '); retrying once…');
+      building = false;
+      return setTimeout(() => runBuild(reason + ' (retry)', true), 400);
     } else {
       // Leave the last good dist/ in place. A broken build should not blank the
       // preview the owner is looking at; it should say so and keep the old page.
-      console.error('[build] FAILED (exit ' + code + '). dist/ left at the last good build.');
+      console.error('[build] FAILED TWICE (exit ' + code + '). dist/ left at the last good build.');
+      console.error('[build] The page you are looking at is STALE. Fix the error above and save again.');
     }
     if (queued) { queued = false; runBuild('queued change'); }
   });
