@@ -24,6 +24,10 @@
     sectionIndex: 0,
     selectedId: null,
     dirty: false,
+    mode: 'canvas',
+    legacyId: null,
+    activeField: null,
+    content: { text: {}, images: {} },
     local: true,
     hasDraft: false,
     deploys: null,
@@ -210,7 +214,7 @@
     // Photo options for image elements come from the same content.json the site
     // renders from, so the picker can only offer photos that actually exist.
     api('admin-content').then(function (r) { return r.ok ? r.json() : null; }).then(function (content) {
-      if (content) state.images = content.images || {};
+      if (content) { state.images = content.images || {}; state.content = content; }
       renderPublishState();
       renderAll();
     }).catch(function () { renderPublishState(); renderAll(); });
@@ -258,27 +262,57 @@
       btn.textContent = section.name || section.id;
 
       if (isLegacy) {
-        // A locked section with no unlock button is the honest state. Converting one of
-        // the nine hand-built sections into canvas elements is undefined work; a button
-        // that did something undefined would be worse than no button. Say why.
         btn.setAttribute('aria-disabled', 'true');
-        var why = 'Hand-built section. Converting it to a canvas is not built yet, so it stays locked rather than being changed unpredictably.';
-        btn.title = why;
-        // aria-disabled does not block clicks, and the button keeps its place in the
-        // tab order — so it was a focusable control that did nothing at all. Say why
-        // instead of being inert.
-        btn.addEventListener('click', function () { toast(why); });
-        var note = document.createElement('span');
-        note.className = 'ed-item-note';
-        note.textContent = 'locked';
-        btn.appendChild(note);
+        btn.title = 'Hand-built section.';
       } else {
         btn.addEventListener('click', function () {
+          state.mode = 'canvas';
+          state.legacyId = null;
           state.sectionIndex = i;
           state.selectedId = null;
           renderAll();
         });
       }
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+
+    // The nine hand-built sections that make up the real site. They are NOT converted
+    // into canvas documents — they already carry the data-edit / data-img hooks the
+    // build substitutes through, so the fields are surfaced where they already exist.
+    // That is a fraction of the work of redrawing them, and it cannot regress a design
+    // nobody touched. Four of the nine carry no hooks and say so, because a section
+    // that does nothing when clicked is worse than one that explains itself.
+    var header = document.createElement('li');
+    header.className = 'ed-sub';
+    header.textContent = 'On the live site';
+    list.appendChild(header);
+
+    (SCHEMA.legacySections || []).forEach(function (sec) {
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.className = 'ed-item';
+      btn.type = 'button';
+      btn.textContent = sec.label;
+      var note = document.createElement('span');
+      note.className = 'ed-item-note';
+
+      if (!sec.hooks.length) {
+        note.textContent = 'no fields';
+        btn.setAttribute('aria-disabled', 'true');
+        btn.title = 'This section is hardcoded HTML with no editable fields yet. Adding them is a code change, not something the editor can do.';
+        btn.addEventListener('click', function () { toast(btn.title); });
+      } else {
+        note.textContent = sec.hooks.length + (sec.hooks.length === 1 ? ' field' : ' fields');
+        btn.setAttribute('aria-current', state.mode === 'legacy' && state.legacyId === sec.id ? 'true' : 'false');
+        btn.addEventListener('click', function () {
+          state.mode = 'legacy';
+          state.legacyId = sec.id;
+          state.selectedId = null;
+          renderAll();
+        });
+      }
+      btn.appendChild(note);
       li.appendChild(btn);
       list.appendChild(li);
     });
@@ -348,6 +382,26 @@
 
   function renderCanvas() {
     if (!frameWin || !frameWin.CanvasFrame) return;
+
+    // A hand-built section renders through the SAME endpoint, which runs the same
+    // templates and the same substitution the build runs. One renderer, still.
+    if (state.mode === 'legacy') {
+      api('admin-canvas-render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ legacy: state.legacyId, content: state.content })
+      }).then(function (r) { return r.json(); }).then(function (out) {
+        if (out.error) { toast(out.error, 'error'); return; }
+        frameWin.CanvasFrame.onEvent = handleFrameEvent;
+        frameWin.CanvasFrame.load({ html: out.html, css: '', section: null, legacy: true });
+        showBlockingErrors([]);
+      }).catch(function (err) {
+        console.error('[legacy render]', err);
+        toast('Could not draw that section: ' + (err && err.message ? err.message : 'unknown error'), 'error');
+      });
+      return;
+    }
+
     var section = currentSection();
     if (!section || section.type === 'legacy') {
       frameWin.CanvasFrame.load({ html: '', css: '', section: { id: 'none', elements: [] } });
@@ -423,6 +477,8 @@
       // Only the geometry inputs are refreshed, not the whole inspector: a full
       // rebuild here would blow away focus for anyone mid-edit. And no canvas
       // re-render, because the frame already moved the node moveable is holding.
+    } else if (e.type === 'field') {
+      renderLegacyField(e.key, e.kind);
     } else if (e.type === 'delete') {
       deleteElement();
     } else if (e.type === 'shortcut') {
@@ -437,7 +493,75 @@
 
   // ------------------------------------------------------------------ inspector
 
+  // Editing a hand-built section edits content.json, which is what those templates have
+  // always read from — the same store the existing content admin writes. No new data
+  // model, no conversion, no risk to a design that took four review rounds to settle.
+  function renderLegacyField(key, kind) {
+    state.activeField = key;
+    $('inspectorEmpty').hidden = true;
+    $('inspector').hidden = false;
+    $('inspType').textContent = (SCHEMA.legacySections.find(function (s) { return s.id === state.legacyId; }) || {}).label || 'Section';
+    $('deleteBtn').hidden = true;
+    $('geoGrid').innerHTML = '';
+
+    var box = $('inspFields');
+    box.innerHTML = '';
+
+    if (kind === 'image') {
+      var img = (state.content.images || {})[key] || {};
+      box.appendChild(fieldRow('Alt text', img.alt || '', function (v) {
+        state.content.images[key].alt = v;
+        markDirty();
+      }, true));
+      box.appendChild(fieldRow('Caption', img.caption || '', function (v) {
+        state.content.images[key].caption = v || null;
+        markDirty();
+      }));
+      var hint = document.createElement('p');
+      hint.className = 'ed-field-help';
+      hint.textContent = 'Swap the photo itself in the content admin at /admin/ — this panel edits its wording.';
+      box.appendChild(hint);
+      return;
+    }
+
+    var label = (window.FB_SCHEMA && window.FB_SCHEMA.textLabels[key]) || key;
+    box.appendChild(fieldRow(label, (state.content.text || {})[key] || '', function (v) {
+      state.content.text[key] = v;
+      markDirty();
+    }, true, true));
+  }
+
+  function fieldRow(label, value, onInput, primary, multiline) {
+    var wrap = document.createElement('div');
+    wrap.className = 'ed-field';
+    var l = document.createElement('label');
+    l.textContent = label;
+    l.htmlFor = 'lf_' + label.replace(/\W+/g, '');
+    var input = document.createElement(multiline || String(value).length > 60 ? 'textarea' : 'input');
+    if (input.tagName === 'INPUT') input.type = 'text';
+    input.id = l.htmlFor;
+    input.value = value;
+    if (primary) input.dataset.primary = 'true';
+    var t = null;
+    input.addEventListener('input', function () {
+      onInput(input.value);
+      clearTimeout(t);
+      t = setTimeout(renderCanvas, 420);
+    });
+    wrap.appendChild(l);
+    wrap.appendChild(input);
+    return wrap;
+  }
+
   function renderInspector() {
+    if (state.mode === 'legacy') {
+      if (!state.activeField) {
+        $('inspectorEmpty').hidden = false;
+        $('inspector').hidden = true;
+      }
+      return;
+    }
+    $('deleteBtn').hidden = false;
     var el = selectedElement();
     $('inspectorEmpty').hidden = !!el;
     $('inspector').hidden = !el;
@@ -689,6 +813,33 @@
     var btn = $('saveBtn');
     btn.disabled = true;
     setStatus('Saving…');
+
+    // Hand-built sections live in content.json, so they save through the endpoint that
+    // has always owned it rather than through the canvas document.
+    if (state.mode === 'legacy') {
+      return api('admin-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state.content)
+      }).then(function (res) {
+        return res.json().then(function (d) { return { ok: res.ok, data: d }; });
+      }).then(function (r) {
+        if (!r.ok) {
+          setStatus('Not saved', 'dirty');
+          btn.disabled = false;
+          toast((r.data.details && r.data.details[0]) || r.data.error || 'Save failed.', 'error');
+          return;
+        }
+        state.dirty = false;
+        setStatus('Saved — rebuilding', 'saved');
+        toast('Saved. The site is rebuilding.');
+      }).catch(function () {
+        setStatus('Not saved', 'dirty');
+        btn.disabled = false;
+        toast('Could not reach the server. Nothing was saved.', 'error');
+      });
+    }
+
     api('admin-site', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

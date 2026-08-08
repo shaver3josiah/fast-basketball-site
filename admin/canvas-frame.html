@@ -38,6 +38,20 @@
   .is-editing .cv-el:hover { outline: 1px solid var(--red-hot); outline-offset: 2px; }
   .is-editing .cv-el.is-selected { outline: 2px solid var(--fast-red); outline-offset: 2px; }
   .is-editing .cv-el.is-locked { cursor: not-allowed; }
+
+  /* Hand-built sections: the editable hooks the templates already carry. */
+  .is-legacy .is-field {
+    cursor: pointer;
+    outline: 1px dashed rgba(37, 224, 208, 0.55);
+    outline-offset: 3px;
+    transition: outline-color .16s ease, background .16s ease;
+  }
+  .is-legacy .is-field:hover,
+  .is-legacy .is-field:focus-visible {
+    outline: 2px solid var(--miami-teal);
+    background: rgba(37, 224, 208, 0.08);
+  }
+  .is-legacy .is-field.is-active { outline: 2px solid var(--fast-red); }
   /* Keyboard focus needs its own affordance — hover outline never fires for a tabber. */
   .is-editing .cv-el:focus-visible { outline: 3px solid var(--miami-teal); outline-offset: 3px; }
 

@@ -4,7 +4,9 @@ import { resolve } from 'node:path';
 import { absoluteUrl, AREA_SERVED, PROGRAM_PAGES } from './lib/site-config.mjs';
 import { faqPage, jsonLdScript, breadcrumbList, businessEntity } from './lib/structured-data.mjs';
 
-const SECTION_IDS = ['receipts', 'programs', 'method', 'coach', 'nights', 'playbook', 'resources', 'areas', 'contact'];
+// Exported so the editor can list the hand-built sections without keeping its own copy
+// of this order — the drift that has already bitten twice in this codebase.
+export const SECTION_IDS = ['receipts', 'programs', 'method', 'coach', 'nights', 'playbook', 'resources', 'areas', 'contact'];
 
 const IMAGE_RENDER_RULES = {
   'hero.nets': { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 760px) 88vw, 460px' },

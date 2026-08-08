@@ -69,6 +69,17 @@
     sectionCss.textContent = payload.css || '';
     stage.innerHTML = payload.html || '';
     document.body.classList.add('is-editing');
+    document.body.classList.toggle('is-legacy', !!payload.legacy);
+
+    // A hand-built section is real page markup, not a canvas: there are no boxes to
+    // drag, only the fields the templates already expose. So moveable stays out of it
+    // and the editable hooks become the click targets instead.
+    if (payload.legacy) {
+      if (moveable) { moveable.destroy(); moveable = null; }
+      markLegacyFields();
+      return;
+    }
+
     applyLockClasses();
     makeFocusable();
     // Deliberately does NOT re-select here. The frame's copy of selectedId is stale by
@@ -81,6 +92,28 @@
   }
 
   function refresh() { if (moveable) moveable.updateRect(); }
+
+  // data-edit / data-img are hooks the site's own templates have always carried and the
+  // build already substitutes through. Nothing is added to the markup here beyond a
+  // class and a tabindex, both of which live only in this frame.
+  function markLegacyFields() {
+    Array.prototype.forEach.call(stage.querySelectorAll('[data-edit],[data-img]'), function (node) {
+      var key = node.getAttribute('data-edit') || node.getAttribute('data-img');
+      var kind = node.hasAttribute('data-img') ? 'image' : 'text';
+      node.classList.add('is-field');
+      node.tabIndex = 0;
+      node.setAttribute('role', 'button');
+      node.setAttribute('aria-label', 'Edit ' + key);
+      node.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        emit('field', { key: key, kind: kind });
+      });
+      node.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); emit('field', { key: key, kind: kind }); }
+      });
+    });
+  }
 
   function applyLockClasses() {
     if (!section) return;

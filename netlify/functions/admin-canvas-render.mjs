@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { verifyRequestSession } from './lib/auth.mjs';
 import { compileSection, scalePx } from '../../src/lib/canvas-compile.mjs';
-import { renderImage } from '../../src/render.mjs';
+import { renderImage, loadSections, applyTextEdits, applyImageEdits } from '../../src/render.mjs';
 import { validateSite } from '../../src/lib/site-schema.mjs';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -32,14 +32,41 @@ export default async (request) => {
   if (request.method !== 'POST') return json({ error: 'method not allowed' }, 405);
 
   let section;
+  let legacy;
+  let draftContent;
   try {
-    ({ section } = await request.json());
+    ({ section, legacy, content: draftContent } = await request.json());
   } catch {
     return json({ error: 'invalid request body' }, 400);
   }
-  if (!section || !section.id) return json({ error: 'no section supplied' }, 400);
 
-  const { content, manifest } = loadImageContext();
+  const loaded = loadImageContext();
+  const manifest = loaded.manifest;
+  // The editor sends what it currently has, unsaved edits and all. Reading content.json
+  // from disk instead would mean the preview could only ever show the last SAVED state,
+  // so typing into a field would appear to do nothing until you pressed Save.
+  const content = draftContent && draftContent.text
+    ? { ...loaded.content, ...draftContent }
+    : loaded.content;
+
+  // A hand-built section. These are the nine templates the site has always shipped —
+  // real HTML that survived several rounds of design review — and they are rendered
+  // here exactly as the build renders them, content and all. Nothing is converted.
+  //
+  // They do not need converting to be editable: they already carry data-edit and
+  // data-img hooks bound to content.json, and the build already substitutes through
+  // them. Surfacing those hooks in this editor is a fraction of the work of rebuilding
+  // the sections as canvas elements, and it cannot regress a design nobody re-drew.
+  if (legacy) {
+    const { sections } = loadSections(process.cwd());
+    const raw = sections[legacy] || (legacy === 'hero' ? loadSections(process.cwd()).prelude : null);
+    if (!raw) return json({ error: 'unknown section "' + legacy + '"' }, 404);
+    let html = applyTextEdits(raw, content.text);
+    html = applyImageEdits(html, content.images, manifest);
+    return json({ html, css: '', errors: [], warnings: [], legacy: true });
+  }
+
+  if (!section || !section.id) return json({ error: 'no section supplied' }, 400);
   const warnings = [];
   const ctx = {
     scalePx,

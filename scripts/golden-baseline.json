@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-08-08T13:45:31.768Z",
+  "recorded": "2026-08-08T13:58:57.774Z",
   "files": {
     "404.html": {
       "sha": "26e229491d142905",
@@ -14,28 +14,28 @@
       "bytes": 12191
     },
     "admin/canvas-frame.html": {
-      "sha": "aa8bede6f53515d6",
-      "bytes": 3741
+      "sha": "d466aed671dc2ba0",
+      "bytes": 4237
     },
     "admin/canvas-frame.js": {
-      "sha": "6fa6b934321833fe",
-      "bytes": 11550
+      "sha": "25830b0b2262ceb0",
+      "bytes": 13027
     },
     "admin/canvas-schema.js": {
-      "sha": "1ac59b819a2af40a",
-      "bytes": 7913
+      "sha": "5323a76668898100",
+      "bytes": 9137
     },
     "admin/editor.css": {
-      "sha": "fc5f7bc0b398b5d2",
-      "bytes": 14164
+      "sha": "569d10cd3c05619a",
+      "bytes": 14468
     },
     "admin/editor.html": {
-      "sha": "23621c6169a44fc4",
-      "bytes": 4171
+      "sha": "9995770db3405685",
+      "bytes": 4361
     },
     "admin/editor.js": {
-      "sha": "ed8d7e3d9ec4b7c3",
-      "bytes": 30197
+      "sha": "0e5a6db211868345",
+      "bytes": 36040
     },
     "admin/index.html": {
       "sha": "6db97fce8837c6fa",
