@@ -93,6 +93,18 @@
 
   function refresh() { if (moveable) moveable.updateRect(); }
 
+  // The rendered height of an element as a percentage of its section. Text and buttons
+  // store h:null because they size to their own content, so the parent has no number to
+  // align against — only the frame, which has the laid-out node, can supply one.
+  function measure(id) {
+    var node = document.getElementById(id);
+    if (!node) return null;
+    var s = secRect();
+    var r0 = node.getBoundingClientRect();
+    return { w: (r0.width / s.width) * 100, h: (r0.height / s.height) * 100 };
+  }
+  api.measure = measure;
+
   // data-edit / data-img are hooks the site's own templates have always carried and the
   // build already substitutes through. Nothing is added to the markup here beyond a
   // class and a tabindex, both of which live only in this frame.
@@ -272,6 +284,9 @@
       var k = e.key.toLowerCase();
       if (k === 'z') { e.preventDefault(); emit('shortcut', { name: e.shiftKey ? 'redo' : 'undo' }); return; }
       if (k === 's') { e.preventDefault(); emit('shortcut', { name: 'save' }); return; }
+      // Ctrl+D was bound in the parent only, so it was dead the moment the canvas had
+      // focus — which is exactly when you want to duplicate the thing you just clicked.
+      if (k === 'd') { e.preventDefault(); emit('shortcut', { name: 'duplicate' }); return; }
       return;
     }
 

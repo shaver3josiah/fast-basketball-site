@@ -102,7 +102,7 @@
               "id": "el_lab_lede",
               "type": "text",
               "name": "Lede",
-              "z": 3,
+              "z": 4,
               "props": {
                 "content": "Fifty-one wins and two championships in two seasons on college staffs. That eye is now in north Broward, one player at a time.",
                 "tag": "p",
@@ -131,7 +131,7 @@
               "id": "el_lab_cta",
               "type": "button",
               "name": "Primary CTA",
-              "z": 4,
+              "z": 5,
               "props": {
                 "label": "Book a Free First Look",
                 "href": "/contact",

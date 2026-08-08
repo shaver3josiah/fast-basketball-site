@@ -105,7 +105,12 @@
       <div id="inspector" hidden>
         <header class="ed-insp-head">
           <span class="ed-insp-type" id="inspType"></span>
-          <button class="ed-btn ed-btn-danger" id="deleteBtn">Delete</button>
+          <span class="ed-insp-acts">
+            <!-- Keyboard-only duplication is invisible to the audience this is built
+                 for; the shortcut is the accelerator, not the affordance. -->
+            <button class="ed-btn" id="duplicateBtn" title="Duplicate (Ctrl+D)">Duplicate</button>
+            <button class="ed-btn ed-btn-danger" id="deleteBtn">Delete</button>
+          </span>
         </header>
         <div class="ed-fields" id="inspFields"></div>
         <div class="ed-insp-geo">

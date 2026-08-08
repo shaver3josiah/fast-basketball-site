@@ -561,3 +561,6 @@ input:focus, textarea:focus, select:focus {
 }
 
 .ed-align-row { display: flex; gap: 3px; }
+
+.ed-insp-acts { display: flex; gap: 6px; flex: none; }
+.ed-insp-head { flex-wrap: wrap; }

@@ -337,8 +337,10 @@
   function moveLayer(el, delta) {
     var ordered = orderedElements();
     var i = ordered.indexOf(el);
-    var j = i + delta;
-    if (i < 0 || j < 0 || j >= ordered.length) return;
+    // Clamped, so front/back can pass an oversized delta and land at the end rather
+    // than being rejected by a bounds check.
+    var j = Math.max(0, Math.min(ordered.length - 1, i + delta));
+    if (i < 0 || j === i) return;
     pushHistory();
     ordered.splice(j, 0, ordered.splice(i, 1)[0]);
     normaliseZ(ordered);
@@ -383,8 +385,10 @@
 
       var tools = document.createElement('span');
       tools.className = 'ed-layer-tools';
+      tools.appendChild(miniBtn('⤒', 'Bring to front', i === 0, function () { moveLayer(el, -ordered.length); }));
       tools.appendChild(miniBtn('▲', 'Bring forward', i === 0, function () { moveLayer(el, -1); }));
       tools.appendChild(miniBtn('▼', 'Send backward', i === ordered.length - 1, function () { moveLayer(el, 1); }));
+      tools.appendChild(miniBtn('⤓', 'Send to back', i === ordered.length - 1, function () { moveLayer(el, ordered.length); }));
       tools.appendChild(miniBtn(el.hidden && el.hidden.desktop ? '◌' : '●', 'Show or hide', false, function () {
         pushHistory();
         el.hidden = el.hidden || {};
@@ -448,13 +452,22 @@
     if (!el) { toast('Select something to align.'); return; }
     if (el.locked) { toast('That element is locked.'); return; }
     var b = el.box.desktop;
+
+    // Text and buttons store h:null — they size to their content — so `b.h || 0` made
+    // "align bottom" mean "put the TOP edge at 100%", parking the element entirely
+    // below the band with no error. Ask the frame for the laid-out height instead;
+    // every text and every button has a null height, so this was the common case.
+    var measured = (frameWin && frameWin.CanvasFrame && frameWin.CanvasFrame.measure)
+      ? frameWin.CanvasFrame.measure(el.id) : null;
+    var h = (b.h === null || b.h === undefined) ? (measured ? measured.h : 0) : b.h;
+
     pushHistory();
     if (how === 'left') b.x = 0;
     else if (how === 'right') b.x = 100 - b.w;
     else if (how === 'centerX') b.x = (100 - b.w) / 2;
     else if (how === 'top') b.y = 0;
-    else if (how === 'bottom') b.y = 100 - (b.h || 0);
-    else if (how === 'centerY') b.y = (100 - (b.h || 0)) / 2;
+    else if (how === 'bottom') b.y = Math.max(0, 100 - h);
+    else if (how === 'centerY') b.y = Math.max(0, (100 - h) / 2);
     b.x = Math.round(b.x * 1000) / 1000;
     b.y = Math.round(b.y * 1000) / 1000;
     markDirty();
@@ -497,6 +510,14 @@
     return 'el_' + type + '_' + Math.random().toString(36).slice(2, 8);
   }
 
+  // One above the current highest, NOT elements.length + 1. Length collides the moment
+  // anything has been deleted: remove one element from seven and the next add reuses a z
+  // that is already taken, at which point paint order falls back to document order and
+  // the layers panel is lying about which element is in front.
+  function nextZ(sec) {
+    return (sec.elements || []).reduce(function (max, e) { return Math.max(max, e.z || 0); }, 0) + 1;
+  }
+
   function addElement(type) {
     var sec = currentSection();
     if (!sec || sec.type === 'legacy') {
@@ -510,7 +531,7 @@
       id: newId(type),
       type: type,
       name: def.label,
-      z: (currentSection().elements || []).length + 1,
+      z: nextZ(sec),
       props: clone(def.defaults),
       box: { desktop: { x: 20, y: 40, w: 30, h: type === 'shape' || type === 'image' ? 12 : null, rot: 0 }, tablet: null, mobile: null }
     };
@@ -538,7 +559,7 @@
     copy.name = (el.name || SCHEMA.types[el.type].label) + ' copy';
     copy.box.desktop.x = Math.min(95, (copy.box.desktop.x || 0) + 3);
     copy.box.desktop.y = Math.min(95, (copy.box.desktop.y || 0) + 3);
-    copy.z = (sec.elements.length || 0) + 1;
+    copy.z = nextZ(sec);
     copy.locked = false;
     sec.elements.push(copy);
     state.selectedId = copy.id;
@@ -550,6 +571,11 @@
   function deleteElement() {
     var el = selectedElement();
     if (!el) return;
+    // Lock used to guard the mouse and nothing else: a locked element could still be
+    // deleted from the inspector, moved from the geometry fields and restyled from the
+    // props. One guard here covers both delete paths, since the canvas Delete key and
+    // the inspector button both route through this function.
+    if (el.locked) { toast('That element is locked. Unlock it in Layers first.'); return; }
     pushHistory();
     var els = currentSection().elements;
     els.splice(els.indexOf(el), 1);
@@ -640,6 +666,10 @@
       if (e.id === state.selectedId) return;
       state.selectedId = e.id;
       renderInspector();
+      // The layers panel is a view of the selection, so it has to follow a canvas click
+      // too. Without this, panel -> canvas worked and canvas -> panel did not, and the
+      // panel sat there highlighting something that was no longer selected.
+      renderLayers();
     } else if (e.type === 'change') {
       var el = null;
       var els = (currentSection() && currentSection().elements) || [];
@@ -665,6 +695,7 @@
     } else if (e.type === 'shortcut') {
       if (e.name === 'undo') undo();
       else if (e.name === 'redo') redo();
+      else if (e.name === 'duplicate') duplicateElement();
       else if (e.name === 'save' && state.dirty) save();
     } else if (e.type === 'activate') {
       var target = document.querySelector('#inspFields [data-primary="true"]');
@@ -749,7 +780,7 @@
     if (!el) return;
 
     var def = SCHEMA.types[el.type];
-    $('inspType').textContent = def.label;
+    $('inspType').textContent = def.label + (el.locked ? ' · locked' : '');
 
     var box = $('inspFields');
     box.innerHTML = '';
@@ -758,6 +789,22 @@
     });
 
     renderGeometry(el);
+
+    // Lock has to mean locked everywhere, not just against the mouse. Disabling the
+    // controls is what makes it legible: a greyed-out panel says "this is protected"
+    // without needing a toast to explain a click that silently did nothing.
+    $('duplicateBtn').disabled = false;
+    $('deleteBtn').disabled = !!el.locked;
+    if (el.locked) {
+      Array.prototype.forEach.call(
+        document.querySelectorAll('#inspFields input, #inspFields textarea, #inspFields select, #inspFields button, #geoGrid input'),
+        function (node) { node.disabled = true; }
+      );
+      var note = document.createElement('p');
+      note.className = 'ed-field-help';
+      note.textContent = 'Locked. Unlock it in Layers to edit.';
+      box.prepend(note);
+    }
   }
 
   // Colour fields render a row of swatch buttons rather than one labellable control,
@@ -1104,6 +1151,7 @@
   $('undoBtn').addEventListener('click', undo);
   $('redoBtn').addEventListener('click', redo);
   $('deleteBtn').addEventListener('click', deleteElement);
+  $('duplicateBtn').addEventListener('click', duplicateElement);
 
   document.addEventListener('keydown', function (e) {
     var mod = e.metaKey || e.ctrlKey;

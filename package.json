@@ -11,7 +11,7 @@
     "fetch:fonts": "node scripts/fetch-fonts.mjs",
     "golden:snapshot": "node scripts/golden.mjs snapshot",
     "golden:check": "node scripts/golden.mjs check",
-    "dev": "node scripts/dev-server.mjs",
+    "dev": "node --watch-path=./src/lib --watch-path=./src/render.mjs --watch-path=./netlify scripts/dev-server.mjs",
     "serve": "node build.mjs && npx --yes serve dist -l 8888"
   },
   "dependencies": {

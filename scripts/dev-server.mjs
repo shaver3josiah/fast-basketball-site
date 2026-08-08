@@ -150,9 +150,17 @@ async function callFunction(name, req, res) {
     return res.end(JSON.stringify({ error: 'no function named "' + name + '"' }));
   }
 
-  // Keyed on sourceGeneration, not this file's mtime. Node's module cache spans the
-  // whole import graph, so the handler must be re-imported whenever ANY source it
-  // depends on changes, not only when the handler itself is edited.
+  // Re-imports the handler when anything under src/ or admin/ changes. This alone is
+  // NOT enough to pick up a change inside src/lib/*.mjs — Node caches a module by its
+  // resolved URL, and the handler's static imports resolve to query-less URLs that stay
+  // in the registry no matter what query the handler itself carries. Two separate
+  // attempts to defeat that from inside the process failed, and the symptom each time
+  // was the editor and the build disagreeing about what the compiler does.
+  //
+  // The actual fix is `--watch-path` in package.json's dev script: Node restarts the
+  // whole process when the code under src/lib, src/render.mjs or netlify/ changes,
+  // which is the only way to be certain the graph is fresh. This query still earns its
+  // place for handler-only edits, which do not trip the restart.
   const mod = await import(pathToFileURL(file).href + '?v=' + sourceGeneration);
   if (typeof mod.default !== 'function') {
     res.writeHead(500, { 'Content-Type': 'application/json' });
