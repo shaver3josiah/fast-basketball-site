@@ -1,7 +1,7 @@
 # Fast Basketball — project timeline
 
 Repo: `shaver3josiah/fast-basketball-site` · branch `admin-canvas`
-Last updated: **8 August 2026, 11:20**
+Last updated: **8 August 2026, 12:05**
 
 Dates in "Done" are taken from the git history, not from memory. Dates in "Ahead" are
 **effort estimates against a working session**, not calendar commitments — the calendar
@@ -21,7 +21,7 @@ yet, and that is now a choice rather than a blocker.
 | Hand-built sections editable | 5 of 9 · 23 fields |
 | Golden-output baseline | 51 files locked |
 | Test suites | 2 |
-| Phase 2 rubric score | 118 / 160 (loop 2 grading in progress) |
+| Phase 2 rubric score | **141 / 160** — passed the 130 bar |
 
 ---
 
@@ -74,15 +74,24 @@ written before the work.
 
 ## Ahead
 
-### Now — finish Phase 2
-**Goal: score 130+ on the rubric, with no row below 3.**
-Estimate: **2–3 sessions**
+### Phase 2 — passed, 8 Aug
+**Goal was: score 130+ on the rubric. Result: 141/160 over two grading loops.**
 
-- Loop 2 fixes, once the current grading returns.
-- Media library — upload, organise, crop, reuse. The largest single gap, and rubric
-  row 14 is weighted ×3.
-- Group / ungroup, and multi-select so Distribute stops meaning "every element".
-- Per-corner radius.
+Loop 1 scored 118 and caught a bug in my own work — the dev server had been serving a
+stale compiler, so an earlier grade would have measured code that was not running.
+Loop 2 scored 141 with every loop-1 fix verified and no regressions, and the row 18
+veto held against a hostile 15-element section measured at ten widths from 1000px down
+to 280px.
+
+Still open, and deliberately so:
+
+- **Media library** — upload, organise, crop, reuse. The largest single gap. Photos can
+  be picked and swapped today, but only from what already exists.
+- **Group / ungroup and multi-select.** Distribute currently acts on every unlocked
+  element in the section because there is nothing else to act on.
+- **A brand-kit editor.** The mechanism is proven — the compiled CSS is 100% `var()`
+  with zero raw hex, and changing a token moves every consumer — but the only way to
+  change a token today is to edit `tokens.css` by hand.
 
 ### Next — Phase 3, safe to hand over
 **Goal: the owner can use it unsupervised without breaking anything.**
