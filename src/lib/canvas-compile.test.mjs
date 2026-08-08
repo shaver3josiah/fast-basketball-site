@@ -123,6 +123,48 @@ assert.ok(/#t\{left:4%/.test(block(ht, 1000)), 'hand-set tablet coordinates must
 assert.ok(!/flex-direction:column/.test(block(ht, 1000)), 'a hand-laid-out tablet must stay a canvas');
 assert.ok(/flex-direction:column/.test(block(ht, 750)), 'phone must stack out of a hand-laid-out tablet');
 
+// ---------------------------------------------------------------- element vocabulary
+
+// Every registered type must compile to something. A type that renders nothing AND
+// styles nothing is a toolbox button that produces an invisible element.
+import { ELEMENT_TYPES, SHADOWS, ICONS } from './canvas-schema.mjs';
+
+for (const [type, def] of Object.entries(ELEMENT_TYPES)) {
+  const box = { x: 10, y: 10, w: 20, h: def.stackBehaviour === 'auto' ? null : 10 };
+  const probe = compileSection({
+    id: 'probe', designHeight: 720,
+    elements: [el('p1', type, box, JSON.parse(JSON.stringify(def.defaults)))]
+  }, ctx);
+  const errs = probe.errors.filter((e) => !/Alt text|Photo/.test(e));
+  assert.equal(errs.length, 0, type + ' default element must compile clean: ' + errs.join('; '));
+  const rule = probe.css.split('\n').find((l) => l.startsWith('#p1'));
+  const renders = def.render(def.defaults, ctx);
+  assert.ok(
+    (renders && renders.length > 0) || /(background|border-top|color)/.test(rule || ''),
+    type + ' must render markup or paint something; it does neither'
+  );
+}
+
+// A shape with no content collapses in the stack unless it keeps a height AND a width.
+const dividerStack = compileSection({
+  id: 'ds', designHeight: 720,
+  elements: [el('d1', 'divider', { x: 10, y: 40, w: 30, h: 0.3 }, { color: '--line-dark', thickness: 1, style: 'solid' })]
+}, ctx);
+const dsMobile = block(dividerStack.css, 1000);
+assert.ok(/#d1\{[^}]*height:2px/.test(dsMobile), 'a divider must keep a visible height in the stack, got: ' + dsMobile);
+assert.ok(/#d1\{[^}]*width:min\(100%/.test(dsMobile), 'a divider must keep its drawn width, not stretch edge to edge');
+
+// Shadow presets must resolve to the site's own tokens, not invented values.
+for (const [name, value] of Object.entries(SHADOWS)) {
+  if (name === 'none') { assert.equal(value, undefined, 'none must emit no shadow'); continue; }
+  assert.ok(/^var\(--shadow-/.test(value), name + ' must use a design-system shadow token, got ' + value);
+}
+
+// Icon paths must be real path data, or the icon renders as an empty box.
+for (const [name, d] of Object.entries(ICONS)) {
+  assert.ok(/^[Mm]/.test(d) && d.length > 8, 'icon "' + name + '" is not usable path data');
+}
+
 // ---------------------------------------------------------------- validation
 
 // A required field left empty has to fail the build, not ship a broken page.

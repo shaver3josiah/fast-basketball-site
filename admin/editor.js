@@ -318,6 +318,166 @@
     });
   }
 
+  // ------------------------------------------------------------------ layers
+
+  // Paint order, top of the list = front of the canvas. z lives in the document, so the
+  // panel is a view of the data rather than a second source of truth for stacking.
+  function orderedElements() {
+    var els = ((currentSection() && currentSection().elements) || []).slice();
+    return els.sort(function (a, b) { return (b.z || 0) - (a.z || 0); });
+  }
+
+  // Rewrite z as a dense 1..n after any reorder. Sparse or duplicate z values make two
+  // elements' paint order depend on document order, which is invisible in the UI and
+  // therefore impossible to reason about.
+  function normaliseZ(ordered) {
+    ordered.forEach(function (el, i) { el.z = ordered.length - i; });
+  }
+
+  function moveLayer(el, delta) {
+    var ordered = orderedElements();
+    var i = ordered.indexOf(el);
+    var j = i + delta;
+    if (i < 0 || j < 0 || j >= ordered.length) return;
+    pushHistory();
+    ordered.splice(j, 0, ordered.splice(i, 1)[0]);
+    normaliseZ(ordered);
+    markDirty();
+    renderAll();
+  }
+
+  function renderLayers() {
+    var list = $('layerList');
+    var panel = $('layersPanel');
+    if (!list) return;
+    list.innerHTML = '';
+    if (state.mode === 'legacy' || !currentSection() || currentSection().type === 'legacy') {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+
+    var ordered = orderedElements();
+    $('alignBar').hidden = ordered.length < 2;
+
+    ordered.forEach(function (el, i) {
+      var li = document.createElement('li');
+      li.className = 'ed-layer' + (el.id === state.selectedId ? ' is-on' : '');
+
+      var name = document.createElement('button');
+      name.className = 'ed-layer-name';
+      name.type = 'button';
+      name.textContent = el.name || SCHEMA.types[el.type].label;
+      name.title = 'Click to select, double-click to rename';
+      name.addEventListener('click', function () {
+        state.selectedId = el.id;
+        if (frameWin && frameWin.CanvasFrame) frameWin.CanvasFrame.select(el.id, true);
+        renderInspector();
+        renderLayers();
+      });
+      name.addEventListener('dblclick', function () { renameLayer(el, name); });
+
+      var kind = document.createElement('span');
+      kind.className = 'ed-layer-kind';
+      kind.textContent = SCHEMA.types[el.type].label;
+
+      var tools = document.createElement('span');
+      tools.className = 'ed-layer-tools';
+      tools.appendChild(miniBtn('▲', 'Bring forward', i === 0, function () { moveLayer(el, -1); }));
+      tools.appendChild(miniBtn('▼', 'Send backward', i === ordered.length - 1, function () { moveLayer(el, 1); }));
+      tools.appendChild(miniBtn(el.hidden && el.hidden.desktop ? '◌' : '●', 'Show or hide', false, function () {
+        pushHistory();
+        el.hidden = el.hidden || {};
+        el.hidden.desktop = !el.hidden.desktop;
+        markDirty();
+        renderAll();
+      }));
+      tools.appendChild(miniBtn(el.locked ? '🔒' : '🔓', 'Lock or unlock', false, function () {
+        pushHistory();
+        el.locked = !el.locked;
+        markDirty();
+        renderAll();
+      }));
+
+      li.appendChild(name);
+      li.appendChild(kind);
+      li.appendChild(tools);
+      list.appendChild(li);
+    });
+  }
+
+  function miniBtn(glyph, title, disabled, onClick) {
+    var b = document.createElement('button');
+    b.className = 'ed-mini';
+    b.type = 'button';
+    b.textContent = glyph;
+    b.title = title;
+    b.setAttribute('aria-label', title);
+    b.disabled = !!disabled;
+    b.addEventListener('click', function (e) { e.stopPropagation(); onClick(); });
+    return b;
+  }
+
+  function renameLayer(el, node) {
+    var input = document.createElement('input');
+    input.className = 'ed-layer-rename';
+    input.value = el.name || '';
+    node.replaceWith(input);
+    input.focus();
+    input.select();
+    var commitName = function () {
+      pushHistory();
+      el.name = input.value.trim() || SCHEMA.types[el.type].label;
+      markDirty();
+      renderAll();
+    };
+    input.addEventListener('blur', commitName);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { e.preventDefault(); renderLayers(); }
+    });
+  }
+
+  // ------------------------------------------------------------------ align
+
+  // Aligns against the SECTION, not against the selection, because there is one
+  // selection at a time. Exact arithmetic on the stored percentages, so "centred" means
+  // centred rather than nearly.
+  function alignSelected(how) {
+    var el = selectedElement();
+    if (!el) { toast('Select something to align.'); return; }
+    if (el.locked) { toast('That element is locked.'); return; }
+    var b = el.box.desktop;
+    pushHistory();
+    if (how === 'left') b.x = 0;
+    else if (how === 'right') b.x = 100 - b.w;
+    else if (how === 'centerX') b.x = (100 - b.w) / 2;
+    else if (how === 'top') b.y = 0;
+    else if (how === 'bottom') b.y = 100 - (b.h || 0);
+    else if (how === 'centerY') b.y = (100 - (b.h || 0)) / 2;
+    b.x = Math.round(b.x * 1000) / 1000;
+    b.y = Math.round(b.y * 1000) / 1000;
+    markDirty();
+    renderAll();
+  }
+
+  function distribute(axis) {
+    var els = ((currentSection() && currentSection().elements) || []).filter(function (e) { return !e.locked; });
+    if (els.length < 3) { toast('Distributing needs at least three unlocked elements.'); return; }
+    var key = axis === 'h' ? 'x' : 'y';
+    var sorted = els.slice().sort(function (a, b) { return a.box.desktop[key] - b.box.desktop[key]; });
+    var first = sorted[0].box.desktop[key];
+    var last = sorted[sorted.length - 1].box.desktop[key];
+    var step = (last - first) / (sorted.length - 1);
+    pushHistory();
+    sorted.forEach(function (el, i) {
+      el.box.desktop[key] = Math.round((first + step * i) * 1000) / 1000;
+    });
+    markDirty();
+    renderAll();
+    toast('Spaced ' + sorted.length + ' elements evenly.');
+  }
+
   function renderToolbox() {
     var box = $('toolbox');
     box.innerHTML = '';
@@ -364,6 +524,27 @@
     state.selectedId = el.id;
     markDirty();
     renderAll();
+  }
+
+  // Offset by a few percent so the copy is visibly a copy rather than sitting exactly
+  // on top of the original, which reads as "nothing happened".
+  function duplicateElement() {
+    var el = selectedElement();
+    if (!el) { toast('Select something to duplicate.'); return; }
+    var sec = currentSection();
+    pushHistory();
+    var copy = clone(el);
+    copy.id = newId(el.type);
+    copy.name = (el.name || SCHEMA.types[el.type].label) + ' copy';
+    copy.box.desktop.x = Math.min(95, (copy.box.desktop.x || 0) + 3);
+    copy.box.desktop.y = Math.min(95, (copy.box.desktop.y || 0) + 3);
+    copy.z = (sec.elements.length || 0) + 1;
+    copy.locked = false;
+    sec.elements.push(copy);
+    state.selectedId = copy.id;
+    markDirty();
+    renderAll();
+    toast('Duplicated. Ctrl+Z undoes it.');
   }
 
   function deleteElement() {
@@ -901,9 +1082,17 @@
     fitTimer = setTimeout(fitCanvas, 100);
   });
 
+  $('alignBar').addEventListener('click', function (e) {
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    if (btn.dataset.align) alignSelected(btn.dataset.align);
+    else if (btn.dataset.distribute) distribute(btn.dataset.distribute);
+  });
+
   function renderAll() {
     renderPages();
     renderSections();
+    renderLayers();
     fitCanvas();
     $('crumb').textContent = currentPage().path + '  ·  ' + (currentSection() ? currentSection().name : 'no section');
     renderInspector();
@@ -924,6 +1113,7 @@
     // character. The frame owns that shortcut now, where canvas focus is a fact.
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
     else if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); if (state.dirty) save(); }
+    else if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicateElement(); }
   });
 
   window.addEventListener('beforeunload', function (e) {

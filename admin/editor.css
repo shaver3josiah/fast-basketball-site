@@ -484,3 +484,80 @@ input:focus, textarea:focus, select:focus {
   text-transform: uppercase;
   color: var(--ed-ink-3);
 }
+
+/* ---------------------------------------------------------------- layers */
+
+.ed-layers { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 1px; }
+
+.ed-layer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name tools" "kind tools";
+  align-items: center;
+  gap: 0 6px;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--ed-r);
+}
+
+.ed-layer:hover { background: #EDEDF1; }
+.ed-layer.is-on { background: var(--ed-accent-soft); border-color: #F3C6C9; }
+
+.ed-layer-name {
+  grid-area: name;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ed-ink);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ed-layer-kind { grid-area: kind; font-size: 0.6875rem; color: var(--ed-ink-3); }
+.ed-layer-tools { grid-area: tools; display: flex; gap: 2px; }
+
+.ed-layer-rename {
+  grid-area: name;
+  width: 100%;
+  padding: 2px 5px;
+  font-size: 0.8125rem;
+}
+
+.ed-mini {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid var(--ed-line-strong);
+  border-radius: 4px;
+  background: var(--ed-surface);
+  color: var(--ed-ink-2);
+  font: inherit;
+  font-size: 0.6875rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--ed-t), background var(--ed-t);
+}
+
+.ed-mini:hover:not(:disabled) { border-color: var(--ed-accent); background: var(--ed-accent-soft); }
+.ed-mini:disabled { opacity: 0.35; cursor: not-allowed; }
+.ed-mini.wide { flex: 1; min-width: 0; }
+
+/* ---------------------------------------------------------------- align */
+
+.ed-align { display: grid; gap: 5px; padding-top: 8px; border-top: 1px solid var(--ed-line); }
+
+.ed-align-h {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ed-ink-3);
+}
+
+.ed-align-row { display: flex; gap: 3px; }

@@ -26,6 +26,38 @@ export const BREAKPOINTS = [
 
 export const HEADING_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p'];
 
+// Named depths rather than a free-form shadow editor. Four presets a non-designer can
+// choose between beat six numeric inputs they have to combine correctly, and these are
+// the site's own shadow tokens, so canvas elements sit at the same depths as the rest
+// of the page instead of inventing new ones.
+export const SHADOWS = {
+  none: undefined,
+  soft: 'var(--shadow-hover)',
+  card: 'var(--shadow-card)',
+  lifted: 'var(--shadow-sheet)'
+};
+
+// A small curated icon set, inline. Bundling Lucide would mean a new dependency, a
+// sprite build step and ~1400 icons to ship one whistle — for a basketball trainer's
+// site these are the ones that actually get used. Adding another is one line here.
+// Declared above ELEMENT_TYPES because the registry reads Object.keys(ICONS) while it
+// is being built, which is module-evaluation time, not call time.
+// ponytail: swap for a real icon package the day someone needs one that is not listed.
+export const ICONS = {
+  whistle: 'M3 12a6 6 0 1 0 12 0 6 6 0 0 0-12 0M15 9h6M15 12h4M9 12h.01',
+  basketball: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18',
+  clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l3 2',
+  calendar: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4',
+  check: 'M4 12.5 9 17.5 20 6.5',
+  star: 'M12 3l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.8l6.5-.9z',
+  trophy: 'M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M10 19h4M12 14v5',
+  target: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 11.5a.5.5 0 1 0 0 1 .5.5 0 0 0 0-1',
+  phone: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2',
+  mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
+  pin: 'M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11M12 8a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5',
+  arrowRight: 'M4 12h15M13 6l6 6-6 6'
+};
+
 // Canvas elements reference the design system's own tokens rather than defining a
 // parallel set. Change --fast-red in tokens.css and every canvas element using "Brand
 // red" moves with it, which is the whole point of a brand kit.
@@ -125,7 +157,7 @@ export const ELEMENT_TYPES = {
     // In the phone auto-stack a box goes to height:auto. An image would then have no
     // height of its own to fill, so it keeps the proportions it was drawn at instead.
     stackBehaviour: 'aspect',
-    defaults: { key: null, alt: '', fit: 'cover', focalX: 50, focalY: 50, radius: 0, priority: false },
+    defaults: { key: null, alt: '', fit: 'cover', focalX: 50, focalY: 50, radius: 0, shadow: 'none', priority: false },
     fields: [
       f.image('key', 'Photo'),
       f.text('alt', 'Alt text', { required: true, help: 'Describes the photo for screen readers and search. Required — a photo without it cannot be saved.' }),
@@ -133,6 +165,7 @@ export const ELEMENT_TYPES = {
       f.number('focalX', 'Focal point across', { unit: '%', min: 0, max: 100 }),
       f.number('focalY', 'Focal point down', { unit: '%', min: 0, max: 100 }),
       f.number('radius', 'Corner radius', { unit: 'px', min: 0, max: 200 }),
+      f.select('shadow', 'Shadow', Object.keys(SHADOWS)),
       // Every canvas image used to be lazy, including one sitting at the top of the
       // page. A lazy hero is a measurable LCP hit, because the browser waits to find
       // out it was needed all along. The hand-built homepage hero has always been
@@ -155,6 +188,7 @@ export const ELEMENT_TYPES = {
       return {
         'border-radius': (props.radius || 0) + 'px',
         overflow: 'hidden',
+        'box-shadow': SHADOWS[props.shadow] || undefined,
         '--cv-fit': props.fit || 'cover',
         '--cv-pos': (props.focalX ?? 50) + '% ' + (props.focalY ?? 50) + '%'
       };
@@ -167,14 +201,15 @@ export const ELEMENT_TYPES = {
     // A shape renders no content at all, so height:auto collapses it to nothing and
     // the element silently vanishes on phones. It keeps its drawn height in pixels.
     stackBehaviour: 'fixed-height',
-    defaults: { shape: 'rect', fill: '--fast-red', radius: 0, strokeWidth: 0, stroke: '--bone', opacity: 1 },
+    defaults: { shape: 'rect', fill: '--fast-red', radius: 0, strokeWidth: 0, stroke: '--bone', opacity: 1, shadow: 'none' },
     fields: [
       f.select('shape', 'Shape', ['rect', 'ellipse', 'line']),
       f.color('fill', 'Fill'),
       f.number('radius', 'Corner radius', { unit: 'px', min: 0, max: 400 }),
       f.number('strokeWidth', 'Border width', { unit: 'px', min: 0, max: 40 }),
       f.color('stroke', 'Border colour'),
-      f.number('opacity', 'Opacity', { step: 0.05, min: 0, max: 1 })
+      f.number('opacity', 'Opacity', { step: 0.05, min: 0, max: 1 }),
+      f.select('shadow', 'Shadow', Object.keys(SHADOWS))
     ],
     render() {
       return '';
@@ -182,7 +217,8 @@ export const ELEMENT_TYPES = {
     css(props) {
       const out = {
         background: colorValue(props.fill),
-        opacity: String(props.opacity ?? 1)
+        opacity: String(props.opacity ?? 1),
+        'box-shadow': SHADOWS[props.shadow] || undefined
       };
       if (props.shape === 'ellipse') out['border-radius'] = '50%';
       else if (props.shape === 'line') { out.background = 'transparent'; out['border-top'] = (props.strokeWidth || 2) + 'px solid ' + colorValue(props.stroke); }
@@ -191,6 +227,49 @@ export const ELEMENT_TYPES = {
         out.border = props.strokeWidth + 'px solid ' + colorValue(props.stroke);
       }
       return out;
+    }
+  },
+
+  icon: {
+    label: 'Icon',
+    icon: 'star',
+    stackBehaviour: 'fixed-height',
+    defaults: { name: 'basketball', color: '--fast-red', stroke: 2.2 },
+    fields: [
+      f.select('name', 'Icon', Object.keys(ICONS)),
+      f.color('color', 'Colour'),
+      f.number('stroke', 'Line weight', { step: 0.2, min: 0.5, max: 6 })
+    ],
+    render(props) {
+      const path = ICONS[props.name] || ICONS.basketball;
+      // currentColor so the CSS below is the single place the colour is decided.
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' +
+        (Number(props.stroke) || 2.2) + '" stroke-linecap="round" stroke-linejoin="round" ' +
+        'aria-hidden="true" focusable="false"><path d="' + escapeHtml(path) + '"/></svg>';
+    },
+    css(props) {
+      return { color: colorValue(props.color) };
+    }
+  },
+
+  divider: {
+    label: 'Divider',
+    icon: 'minus',
+    stackBehaviour: 'fixed-height',
+    defaults: { color: '--line-dark', thickness: 1, style: 'solid' },
+    fields: [
+      f.color('color', 'Colour'),
+      f.number('thickness', 'Thickness', { unit: 'px', min: 1, max: 12 }),
+      f.select('style', 'Style', ['solid', 'dashed', 'dotted'])
+    ],
+    render() {
+      return '';
+    },
+    css(props) {
+      return {
+        'border-top': (props.thickness || 1) + 'px ' + (props.style || 'solid') + ' ' + colorValue(props.color),
+        background: 'transparent'
+      };
     }
   },
 
