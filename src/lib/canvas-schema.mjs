@@ -164,7 +164,7 @@ export const ELEMENT_TYPES = {
       f.select('fit', 'Fit', ['cover', 'contain']),
       f.number('focalX', 'Focal point across', { unit: '%', min: 0, max: 100 }),
       f.number('focalY', 'Focal point down', { unit: '%', min: 0, max: 100 }),
-      f.number('radius', 'Corner radius', { unit: 'px', min: 0, max: 200 }),
+      f.text('radius', 'Corner radius', { help: 'One number rounds all four corners. Four numbers round them clockwise from the top left, e.g. 18 18 0 0.' }),
       f.select('shadow', 'Shadow', Object.keys(SHADOWS)),
       // Every canvas image used to be lazy, including one sitting at the top of the
       // page. A lazy hero is a measurable LCP hit, because the browser waits to find
@@ -186,7 +186,7 @@ export const ELEMENT_TYPES = {
     },
     css(props) {
       return {
-        'border-radius': (props.radius || 0) + 'px',
+        'border-radius': radiusValue(props.radius),
         overflow: 'hidden',
         'box-shadow': SHADOWS[props.shadow] || undefined,
         '--cv-fit': props.fit || 'cover',
@@ -205,7 +205,7 @@ export const ELEMENT_TYPES = {
     fields: [
       f.select('shape', 'Shape', ['rect', 'ellipse', 'line']),
       f.color('fill', 'Fill'),
-      f.number('radius', 'Corner radius', { unit: 'px', min: 0, max: 400 }),
+      f.text('radius', 'Corner radius', { help: 'One number rounds all four corners. Four numbers round them clockwise from the top left, e.g. 18 18 0 0.' }),
       f.number('strokeWidth', 'Border width', { unit: 'px', min: 0, max: 40 }),
       f.color('stroke', 'Border colour'),
       f.number('opacity', 'Opacity', { step: 0.05, min: 0, max: 1 }),
@@ -222,7 +222,7 @@ export const ELEMENT_TYPES = {
       };
       if (props.shape === 'ellipse') out['border-radius'] = '50%';
       else if (props.shape === 'line') { out.background = 'transparent'; out['border-top'] = (props.strokeWidth || 2) + 'px solid ' + colorValue(props.stroke); }
-      else out['border-radius'] = (props.radius || 0) + 'px';
+      else out['border-radius'] = radiusValue(props.radius);
       if (props.shape !== 'line' && props.strokeWidth > 0) {
         out.border = props.strokeWidth + 'px solid ' + colorValue(props.stroke);
       }
@@ -301,6 +301,22 @@ export const ELEMENT_TYPES = {
     }
   }
 };
+
+// Corner radius as CSS shorthand: "18" rounds all four, "18 18 0 0" rounds the top two.
+// One field instead of four numeric inputs cluttering the panel forever for something
+// the usage research puts near the bottom — and it is a familiar idiom rather than an
+// invented one. Sanitised hard, because this is free text reaching a stylesheet.
+export function radiusValue(v) {
+  if (v === null || v === undefined || v === '') return undefined;
+  const parts = String(v).trim().split(/[\s,]+/).slice(0, 4)
+    .map((n) => Number(n))
+    .filter((n) => Number.isFinite(n))
+    // Clamped, not dropped. Typing 9999 should give you the biggest radius available,
+    // not silently remove the rounding you already had.
+    .map((n) => Math.max(0, Math.min(500, n)));
+  if (!parts.length) return undefined;
+  return parts.map((n) => n + 'px').join(' ');
+}
 
 export function elementDefaults(type) {
   const def = ELEMENT_TYPES[type];

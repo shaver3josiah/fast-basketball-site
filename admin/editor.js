@@ -86,8 +86,17 @@
 
   // Snapshot before mutating, not after. Undo restores the state you were looking at
   // when you made the change, which is what a person means by undo.
+  //
+  // Snapshots BOTH documents. The canvas lives in site.json and the hand-built sections
+  // live in content.json, and undo used to restore only the first — so pressing Ctrl+Z
+  // while editing a hand-built section left the text untouched and silently reverted an
+  // unrelated canvas change instead. Worse than not undoing.
+  function snapshot() {
+    return { site: clone(state.site), content: clone(state.content) };
+  }
+
   function pushHistory() {
-    state.history.push(clone(state.site));
+    state.history.push(snapshot());
     if (state.history.length > HISTORY_MAX) state.history.shift();
     state.future.length = 0;
     updateHistoryButtons();
@@ -98,17 +107,23 @@
     $('redoBtn').disabled = state.future.length === 0;
   }
 
+  function restore(snap) {
+    state.site = snap.site;
+    state.content = snap.content;
+    state.images = snap.content.images || {};
+  }
+
   function undo() {
     if (!state.history.length) return;
-    state.future.push(clone(state.site));
-    state.site = state.history.pop();
+    state.future.push(snapshot());
+    restore(state.history.pop());
     afterTimeTravel();
   }
 
   function redo() {
     if (!state.future.length) return;
-    state.history.push(clone(state.site));
-    state.site = state.future.pop();
+    state.history.push(snapshot());
+    restore(state.future.pop());
     afterTimeTravel();
   }
 
@@ -474,17 +489,40 @@
     renderAll();
   }
 
+  // Even GAPS, not even origins. Spacing the origins evenly is only correct when every
+  // element is the same size — with mixed widths it produced overlapping elements and
+  // pushed the widest one to 109% of the section, off-canvas, without an error.
   function distribute(axis) {
     var els = ((currentSection() && currentSection().elements) || []).filter(function (e) { return !e.locked; });
     if (els.length < 3) { toast('Distributing needs at least three unlocked elements.'); return; }
-    var key = axis === 'h' ? 'x' : 'y';
-    var sorted = els.slice().sort(function (a, b) { return a.box.desktop[key] - b.box.desktop[key]; });
-    var first = sorted[0].box.desktop[key];
-    var last = sorted[sorted.length - 1].box.desktop[key];
-    var step = (last - first) / (sorted.length - 1);
+
+    var pos = axis === 'h' ? 'x' : 'y';
+    var dim = axis === 'h' ? 'w' : 'h';
+    var measureOf = function (el) {
+      var v = el.box.desktop[dim];
+      if (v !== null && v !== undefined) return v;
+      // Text and buttons have no stored height; only the frame knows the laid-out size.
+      var m = (frameWin && frameWin.CanvasFrame && frameWin.CanvasFrame.measure)
+        ? frameWin.CanvasFrame.measure(el.id) : null;
+      return m ? m[dim] : 0;
+    };
+
+    var sorted = els.slice().sort(function (a, b) { return a.box.desktop[pos] - b.box.desktop[pos]; });
+    var sizes = sorted.map(measureOf);
+    var startEdge = sorted[0].box.desktop[pos];
+    var endEdge = sorted[sorted.length - 1].box.desktop[pos] + sizes[sizes.length - 1];
+    var occupied = sizes.reduce(function (n, s) { return n + s; }, 0);
+    var gap = (endEdge - startEdge - occupied) / (sorted.length - 1);
+
+    if (gap < 0) { toast('Those elements are too large to space out along that axis.'); return; }
+
     pushHistory();
+    var cursor = startEdge;
     sorted.forEach(function (el, i) {
-      el.box.desktop[key] = Math.round((first + step * i) * 1000) / 1000;
+      // Clamped so nothing can be pushed off the canvas by the operation itself.
+      var v = Math.max(0, Math.min(100 - sizes[i], cursor));
+      el.box.desktop[pos] = Math.round(v * 1000) / 1000;
+      cursor += sizes[i] + gap;
     });
     markDirty();
     renderAll();
@@ -527,13 +565,33 @@
     if (!sec.elements) sec.elements = [];
     var def = SCHEMA.types[type];
     pushHistory();
+
+    // Height comes from the type's own stackBehaviour, not a hardcoded list of two
+    // types. icon and divider are both 'fixed-height' but were being born with h:null,
+    // so their fixed-height stack path never ran and a fresh icon rendered as a
+    // full-width square. Same test the geometry grid already uses for `needsHeight`.
+    var needsHeight = def.stackBehaviour === 'fixed-height' || def.stackBehaviour === 'aspect';
+    var h = needsHeight ? (type === 'divider' ? 0.4 : 12) : null;
+
+    // Cascade, so adding six elements is six visible elements rather than one pile.
+    var n = (sec.elements || []).length;
     var el = {
       id: newId(type),
       type: type,
       name: def.label,
       z: nextZ(sec),
       props: clone(def.defaults),
-      box: { desktop: { x: 20, y: 40, w: 30, h: type === 'shape' || type === 'image' ? 12 : null, rot: 0 }, tablet: null, mobile: null }
+      box: {
+        desktop: {
+          x: Math.min(60, 20 + (n % 8) * 2),
+          y: Math.min(70, 40 + (n % 8) * 2),
+          w: 30,
+          h: h,
+          rot: 0
+        },
+        tablet: null,
+        mobile: null
+      }
     };
     // An image with no photo yet cannot pass validation, so give it the first real one
     // rather than creating an element that is born invalid.
@@ -709,11 +767,13 @@
   // always read from — the same store the existing content admin writes. No new data
   // model, no conversion, no risk to a design that took four review rounds to settle.
   function renderLegacyField(key, kind) {
-    state.activeField = key;
+    state.activeField = { key: key, kind: kind };
     $('inspectorEmpty').hidden = true;
     $('inspector').hidden = false;
     $('inspType').textContent = (SCHEMA.legacySections.find(function (s) { return s.id === state.legacyId; }) || {}).label || 'Section';
     $('deleteBtn').hidden = true;
+    // Neither delete nor duplicate means anything for a hand-built section's fields.
+    $('duplicateBtn').hidden = true;
     $('geoGrid').innerHTML = '';
 
     var box = $('inspFields');
@@ -754,11 +814,15 @@
     input.id = l.htmlFor;
     input.value = value;
     if (primary) input.dataset.primary = 'true';
+    // One snapshot per burst of typing, not one per keystroke — same coalescing the
+    // canvas prop fields use, so a sentence is one undo rather than forty.
     var t = null;
+    var pending = false;
     input.addEventListener('input', function () {
+      if (!pending) { pushHistory(); pending = true; }
       onInput(input.value);
       clearTimeout(t);
-      t = setTimeout(renderCanvas, 420);
+      t = setTimeout(function () { pending = false; renderCanvas(); }, 420);
     });
     wrap.appendChild(l);
     wrap.appendChild(input);
@@ -770,6 +834,10 @@
       if (!state.activeField) {
         $('inspectorEmpty').hidden = false;
         $('inspector').hidden = true;
+      } else {
+        // Re-read the field from state so an undo shows the restored text rather than
+        // leaving the old value sitting in the input.
+        renderLegacyField(state.activeField.key, state.activeField.kind);
       }
       return;
     }
@@ -982,7 +1050,12 @@
     select.addEventListener('change', function () {
       pushHistory();
       el.props.key = select.value;
-      if (!el.props.alt && state.images[select.value]) el.props.alt = state.images[select.value].alt || '';
+      // Take the NEW photo's alt, not "keep the old one if present". Swapping a
+      // net-cutting shot for a portrait used to leave the description of the net —
+      // wrong for every screen reader and every search engine, and invisible on screen.
+      // If the new photo has no alt of its own, blank it so the required-field error
+      // fires rather than shipping a lie.
+      el.props.alt = (state.images[select.value] && state.images[select.value].alt) || '';
       markDirty();
       renderInspector();
       queueCanvas();

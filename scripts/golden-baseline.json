@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-08-08T13:58:57.774Z",
+  "recorded": "2026-08-08T15:59:30.587Z",
   "files": {
     "404.html": {
       "sha": "26e229491d142905",
@@ -18,24 +18,24 @@
       "bytes": 4237
     },
     "admin/canvas-frame.js": {
-      "sha": "25830b0b2262ceb0",
-      "bytes": 13027
+      "sha": "43d3682ea8ddbc64",
+      "bytes": 13832
     },
     "admin/canvas-schema.js": {
-      "sha": "5323a76668898100",
-      "bytes": 9137
+      "sha": "2f71baec6f83d8d7",
+      "bytes": 11401
     },
     "admin/editor.css": {
-      "sha": "569d10cd3c05619a",
-      "bytes": 14468
+      "sha": "e8ff19743ed08234",
+      "bytes": 16515
     },
     "admin/editor.html": {
-      "sha": "9995770db3405685",
-      "bytes": 4361
+      "sha": "23303ff9d4854338",
+      "bytes": 5851
     },
     "admin/editor.js": {
-      "sha": "0e5a6db211868345",
-      "bytes": 36040
+      "sha": "76b92ed8273a2d5f",
+      "bytes": 49646
     },
     "admin/index.html": {
       "sha": "6db97fce8837c6fa",
@@ -158,7 +158,7 @@
       "bytes": 41694
     },
     "styles/canvas-generated.css": {
-      "sha": "df7e32734103074f",
+      "sha": "fb8850079ed14d11",
       "bytes": 1726
     },
     "styles/canvas.css": {
