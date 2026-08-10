@@ -8,6 +8,11 @@ import { faqPage, jsonLdScript, breadcrumbList, businessEntity } from './lib/str
 // of this order — the drift that has already bitten twice in this codebase.
 export const SECTION_IDS = ['receipts', 'programs', 'method', 'coach', 'nights', 'playbook', 'resources', 'areas', 'contact'];
 
+// Single source for the footer's editable keys: buildFooter reads these with fallbacks,
+// and build.mjs's footer pseudo-section reports the same list as its hooks, so the two
+// can never drift into naming a field the other does not know about.
+export const FOOTER_TEXT_KEYS = ['ft.tagline', 'ft.col1h', 'ft.col2h', 'ft.col3h', 'ft.bot', 'ft.city', 'ft.mob1', 'ft.mob2'];
+
 const IMAGE_RENDER_RULES = {
   'hero.nets': { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 760px) 88vw, 460px' },
   'rcp.trophy': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 760px) 45vw, 280px' },
@@ -25,6 +30,36 @@ const FAQ_PAIRS = [
   { question: 'Is the First Look session really free?', answer: 'Yes. It is a full evaluation. You leave with a written summary of strengths and gaps whether or not you book anything after.' },
   { question: 'Do you train girls teams and players?', answer: 'Yes. Every program listed is open to any player. Skill work does not change by gender.' }
 ];
+
+// Areas tiles (areas.html) name themselves area.1.name … area.5.name. The footer's Areas
+// column and the contact form's Area <select> both read the SAME keys — one place a
+// service area is renamed, not two — falling back to AREA_SERVED (in its existing order)
+// when a slot is absent so an un-seeded content.json renders exactly what it always has.
+// `count` caps how many slots the caller wants; the footer has only ever shown 4.
+function deriveAreaNames(content, count) {
+  const text = (content && content.text) || {};
+  const names = [];
+  for (let i = 1; i <= count; i++) {
+    names.push(text['area.' + i + '.name'] || AREA_SERVED[i - 1]);
+  }
+  return names;
+}
+
+// FAQ_PAIRS is the fallback, per-pair: faq.N.q / faq.N.a override individually so a
+// partially-filled-in FAQ (some questions edited, some not) still renders sensibly
+// instead of falling back to nothing the moment one pair is touched.
+// Exported for render.test.mjs — the JSON-LD it feeds is otherwise only reachable
+// through assembleHomepage, which needs a full section/prelude fixture to call at all.
+export function deriveFaqPairs(content) {
+  const text = (content && content.text) || {};
+  return FAQ_PAIRS.map((pair, i) => {
+    const n = i + 1;
+    return {
+      question: text['faq.' + n + '.q'] || pair.question,
+      answer: text['faq.' + n + '.a'] || pair.answer
+    };
+  });
+}
 
 export function loadData(root) {
   const dataDir = resolve(root, 'src/data');
@@ -81,12 +116,60 @@ export function applyTextEdits(html, textMap) {
   let out = html;
   for (const key of Object.keys(textMap)) {
     const marker = 'data-edit="' + key + '"';
-    const markerIndex = out.indexOf(marker);
-    if (markerIndex === -1) continue;
-    const tagOpenEnd = out.indexOf('>', markerIndex);
-    const closeStart = out.indexOf('</', tagOpenEnd);
-    if (tagOpenEnd === -1 || closeStart === -1) continue;
-    out = out.slice(0, tagOpenEnd + 1) + escapeHtml(textMap[key]) + out.slice(closeStart);
+    const replacement = escapeHtml(textMap[key]);
+    let searchFrom = 0;
+    // Every occurrence of this key gets substituted, not just the first — the ticker
+    // repeats its items twice in the DOM for the marquee loop, and both copies have to
+    // move together or the loop visibly seams.
+    while (true) {
+      const markerIndex = out.indexOf(marker, searchFrom);
+      if (markerIndex === -1) break;
+      const tagOpenEnd = out.indexOf('>', markerIndex);
+      const closeStart = out.indexOf('</', tagOpenEnd);
+      if (tagOpenEnd === -1 || closeStart === -1) { searchFrom = markerIndex + marker.length; continue; }
+      out = out.slice(0, tagOpenEnd + 1) + replacement + out.slice(closeStart);
+      // Resume scanning after the text we just spliced in (not from 0), so the next
+      // occurrence is found without ever re-matching this one — the loop always moves
+      // forward and can never spin forever.
+      searchFrom = tagOpenEnd + 1 + replacement.length;
+    }
+  }
+  return out;
+}
+
+// Attribute-safe: escapeHtml already covers & < >, and an attribute value also needs
+// its own delimiter escaped or a value containing a literal " would close the
+// attribute early and spill into the markup.
+export function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;');
+}
+
+// data-edit-attr="attrname:key" substitutes one attribute's value on the same element —
+// used for things like a form placeholder, where the editable text is not the element's
+// content. Every marker is located up front (matchAll over the ORIGINAL, unmodified
+// html), then splices are applied last-to-first: attrname="..." can sit before or after
+// the marker in the tag, and processing back to front means a splice earlier in the tag
+// never shifts a marker position this loop has not reached yet, so no offset bookkeeping
+// is needed and the loop is trivially finite (one pass over a fixed list of matches).
+export function applyAttrEdits(html, textMap) {
+  const markers = [...html.matchAll(/data-edit-attr="([^":]+):([^"]+)"/g)];
+  let out = html;
+  for (let i = markers.length - 1; i >= 0; i--) {
+    const [, attrName, key] = markers[i];
+    // Only substitute when the key exists in the map — an unedited attr-hook must keep
+    // its template default rather than being blanked out.
+    if (!(key in textMap)) continue;
+    const markerStart = markers[i].index;
+    const tagStart = out.lastIndexOf('<', markerStart);
+    const tagEnd = out.indexOf('>', markerStart);
+    if (tagStart === -1 || tagEnd === -1) continue;
+    const attrMarker = ' ' + attrName + '="';
+    const attrStart = out.indexOf(attrMarker, tagStart);
+    if (attrStart === -1 || attrStart > tagEnd) continue;
+    const valueStart = attrStart + attrMarker.length;
+    const valueEnd = out.indexOf('"', valueStart);
+    if (valueEnd === -1 || valueEnd > tagEnd) continue;
+    out = out.slice(0, valueStart) + escapeAttr(textMap[key]) + out.slice(valueEnd);
   }
   return out;
 }
@@ -173,6 +256,15 @@ export function fixContactForm(html) {
   return out;
 }
 
+// The Area <select> lives in the contact template, which is out of bounds for this
+// change (a leaf hook can't drive an <option> list). Rewriting it at build time, the
+// same way fixPlaybookForm rewrites #pbPos/#pbFocus below, keeps one source — area.N.name
+// — for the tiles, the footer and this form instead of a fourth hand-typed copy.
+export function fixContactAreaSelect(html, content) {
+  const options = deriveAreaNames(content, 5).map((name) => '<option>' + escapeHtml(name) + '</option>').join('') + '<option>Other</option>';
+  return html.replace(/<select id="cArea" name="area">[\s\S]*?<\/select>/, '<select id="cArea" name="area">' + options + '</select>');
+}
+
 export function fixPlaybookForm(html, playbookTemplates) {
   let out = html.replace(
     '<form id="pbForm" novalidate>',
@@ -226,6 +318,47 @@ function heroPreload(content, responsiveManifest) {
   return '<link rel="preload" as="image" href="' + fallback + '" imagesrcset="' + jpegSrcset + '" imagesizes="' + rules.sizes + '" fetchpriority="high">';
 }
 
+// Motion settings ride content.json's top-level `motion` object (owner-editable through
+// the admin panel). Every field defaults to "fully on" so an un-seeded content.json
+// renders exactly the animation the site always has — defaults must be inert.
+const MOTION_DEFAULTS = { enabled: true, speed: 1, intro: true, ticker: true, tickerSeconds: 38, reveals: true, countUp: true, nightAmbient: true };
+
+function deriveMotion(content) {
+  const m = (content && content.motion) || {};
+  return {
+    enabled: m.enabled !== false,
+    speed: typeof m.speed === 'number' ? m.speed : MOTION_DEFAULTS.speed,
+    intro: m.intro !== false,
+    ticker: m.ticker !== false,
+    tickerSeconds: typeof m.tickerSeconds === 'number' ? m.tickerSeconds : MOTION_DEFAULTS.tickerSeconds,
+    reveals: m.reveals !== false,
+    countUp: m.countUp !== false,
+    nightAmbient: m.nightAmbient !== false
+  };
+}
+
+// Attributes are only emitted for a system that is actually OFF. At the default (every
+// system on) this returns '', so a page's <html> tag is untouched and the golden diff
+// stays limited to the style/script tags below.
+function motionHtmlAttrs(motion) {
+  let attrs = '';
+  if (!motion.enabled) attrs += ' data-motion="off"';
+  if (!motion.intro) attrs += ' data-intro="off"';
+  if (!motion.ticker) attrs += ' data-ticker="off"';
+  if (!motion.reveals) attrs += ' data-reveals="off"';
+  if (!motion.nightAmbient) attrs += ' data-night="off"';
+  return attrs;
+}
+
+// The motion object is owner data, not visitor data, but it still reaches a <script>
+// tag verbatim — JSON.stringify already quotes everything, so the only character that
+// could break out of the tag is a literal "<" (as in "</script>"), which < defuses
+// without touching the JSON's meaning.
+function motionScriptTag(motion) {
+  const json = JSON.stringify(motion).replace(/</g, '\\u003c');
+  return '<script>window.__FB_MOTION=' + json + ';</script>';
+}
+
 // robots and extraStyles both default to today's behaviour so no existing page's
 // output moves. Canvas pages are the only callers that pass them: draft pages set
 // robots to noindex, and only canvas pages pull in the two canvas stylesheets, which
@@ -233,7 +366,8 @@ function heroPreload(content, responsiveManifest) {
 export function buildHead({ title, description, canonicalPath, ogImage, includeHeroPreload, content, responsiveManifest, jsonLd = [], robots = 'index, follow', extraStyles = [] }) {
   const canonical = absoluteUrl(canonicalPath);
   const ogImagePath = ogImage ? absoluteUrl(ogImage) : absoluteUrl('/brand/og-image-1200x630.png');
-  let head = '<!DOCTYPE html>\n<html lang="en">\n<head>\n';
+  const motion = deriveMotion(content);
+  let head = '<!DOCTYPE html>\n<html lang="en"' + motionHtmlAttrs(motion) + '>\n<head>\n';
   head += '<meta charset="UTF-8">\n';
   head += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
   head += '<title>' + escapeHtml(title) + '</title>\n';
@@ -255,6 +389,12 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   head += fontPreloadLinks() + '\n';
   head += stylesheetLinks() + extraStyles.map((href) => '<link rel="stylesheet" href="' + asset(href) + '">').join('') + '\n';
   head += themeScript() + '\n';
+  // Emitted on every page, at every setting: the CSS vars have to exist before any
+  // animation reads them, and the script has to run before main.js (deferred, so it
+  // always executes after every plain <script> in <head>) so window.__FB_MOTION is
+  // never read as undefined.
+  head += '<style id="fb-motion">:root{--motion-speed:' + motion.speed + ';--t-ticker:' + motion.tickerSeconds + 's}</style>\n';
+  head += motionScriptTag(motion) + '\n';
   // The second selector is not redundant: .rcp-c.rise:not(.in) .rcp-shot img and
   // .coach-img.rise:not(.in) img hide the DESCENDANT image, so unhiding .rise alone
   // left the resume photos, the portrait and the badge invisible without JS.
@@ -287,13 +427,16 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   const bodyMarkup = prelude.slice(bodyStart);
 
   // One string for the meta description and the entity description, so the two
-  // cannot describe the business differently.
+  // cannot describe the business differently. meta.desc can override the page's own
+  // description, but the JSON-LD business entity keeps this exact constant — the
+  // contract only asks the <title>/meta description/og tags to read from content.text.
   const HOMEPAGE_DESCRIPTION = 'Private basketball training in north Broward County with Coach Blake Kingsley, on staff for two championship programs in two years including the 2025 Horizon League champion Robert Morris Colonials. Serving Coral Springs, Parkland, Coconut Creek, Margate and Tamarac.';
+  const HOMEPAGE_TITLE = 'Fast Basketball | Private Basketball Training in Coral Springs, FL | Coach Blake Kingsley';
 
   let page = '';
   page += buildHead({
-    title: 'Fast Basketball | Private Basketball Training in Coral Springs, FL | Coach Blake Kingsley',
-    description: HOMEPAGE_DESCRIPTION,
+    title: content.text['meta.title'] || HOMEPAGE_TITLE,
+    description: content.text['meta.desc'] || HOMEPAGE_DESCRIPTION,
     canonicalPath: '/',
     includeHeroPreload: true,
     content,
@@ -302,7 +445,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
       // The canonical business entity. It lived in _prelude.html's <head>, which the
       // build never emits, so the homepage shipped no business identity at all.
       businessEntity({ description: HOMEPAGE_DESCRIPTION, email: 'coach@kingfastbasketball.com', suburbs }),
-      faqPage(FAQ_PAIRS),
+      faqPage(deriveFaqPairs(content)),
       breadcrumbList([{ name: 'Home', path: '/' }])
     ]
   });
@@ -316,12 +459,14 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
     }
   }
   body = applyTextEdits(body, content.text);
+  body = applyAttrEdits(body, content.text);
   body = applyImageEdits(body, content.images, responsiveManifest);
   body = fixAreaLinks(body);
   body = fixContactForm(body);
+  body = fixContactAreaSelect(body, content);
   body = injectResumeExtras(body, content.resumeExtra, responsiveManifest);
   if (playbookTemplates) body = fixPlaybookForm(body, playbookTemplates);
-  body += buildFooter({ anchors: true });
+  body += buildFooter({ content, anchors: true });
   // night-court.js first: it is a module, so it is deferred anyway, and main.js
   // reaches into it via window.fbNiteMade once both have run.
   body += nightCourtScript();
@@ -334,20 +479,33 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   return page + body;
 }
 
-export function buildFooter({ anchors = false } = {}) {
+export function buildFooter({ content, anchors = false } = {}) {
   const contactHref = anchors ? '#contact' : '/contact';
   const playbookHref = anchors ? '#playbook' : '/playbook';
+  const text = (content && content.text) || {};
+  const tagline = escapeHtml(text['ft.tagline'] || 'Private basketball training in north Broward. Built by a college coach for players chasing the next level.');
+  const col1h = escapeHtml(text['ft.col1h'] || 'Training');
+  const col2h = escapeHtml(text['ft.col2h'] || 'Areas');
+  const col3h = escapeHtml(text['ft.col3h'] || 'More');
+  const bot = escapeHtml(text['ft.bot'] || 'Fast Basketball. Elevate to Execute.');
+  const city = escapeHtml(text['ft.city'] || 'Coral Springs, Florida');
+  const mob1 = escapeHtml(text['ft.mob1'] || 'Free First Look');
+  const mob2 = escapeHtml(text['ft.mob2'] || 'Free Playbook');
+  const areaNames = deriveAreaNames(content, 4);
   return '<footer class="ft">\n' +
     '<div class="shell">\n' +
     '<div class="ft-top">\n' +
     '<div><a href="/" class="brand ft-brand" aria-label="Fast Basketball home">' +
     '<img class="only-dark" src="/brand/logo-white.svg" alt="Fast Basketball" width="250" height="106" loading="lazy" decoding="async">' +
     '<img class="only-light" src="/brand/logo.svg" alt="Fast Basketball" width="250" height="106" loading="lazy" decoding="async"></a>' +
-    '<p style="color:#7E7E8A;font-size:.9rem;max-width:32ch;">Private basketball training in north Broward. Built by a college coach for players chasing the next level.</p></div>\n' +
+    '<p style="color:#7E7E8A;font-size:.9rem;max-width:32ch;" data-edit="ft.tagline">' + tagline + '</p></div>\n' +
     '<div class="ft-nav">\n' +
-    '<div class="ft-col"><h3>Training</h3>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
-    '<div class="ft-col"><h3>Areas</h3>' + AREA_SERVED.slice(0, 4).map((name) => '<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
-    '<div class="ft-col"><h3>More</h3><a href="/#receipts">The Résumé</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
+    // Training stays PROGRAM_PAGES, not an owner-editable derivation: these labels are
+    // the real <title>/H1 of the four /training/<slug> pages this column links to, so
+    // editing them here without renaming those pages would make the footer lie.
+    '<div class="ft-col"><h3 data-edit="ft.col1h">' + col1h + '</h3>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
+    '<div class="ft-col"><h3 data-edit="ft.col2h">' + col2h + '</h3>' + areaNames.map((name) => '<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
+    '<div class="ft-col"><h3 data-edit="ft.col3h">' + col3h + '</h3><a href="/#receipts">The Résumé</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
     '</div>\n</div>\n' +
     // OWNER NOTE: the old line here claimed copyright and "all rights reserved".
     // Fast Basketball is pre-launch with no verified entity and no registered marks,
@@ -355,11 +513,11 @@ export function buildFooter({ anchors = false } = {}) {
     // put back a ©, a ™, or "all rights reserved" until a Florida attorney says so.
     // The Privacy and Terms pages are a good-faith starting point, not legal advice,
     // and should be reviewed by a Florida attorney before launch.
-    '<div class="ft-bot"><span>Fast Basketball. Elevate to Execute. <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></span><span>Coral Springs, Florida</span></div>\n' +
+    '<div class="ft-bot"><span><span data-edit="ft.bot">' + bot + '</span> <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></span><span data-edit="ft.city">' + city + '</span></div>\n' +
     '</div>\n</footer>\n' +
     '<div class="mob-bar" id="mobBar">\n' +
-    '<a href="' + contactHref + '" class="btn btn-primary">Free First Look</a>\n' +
-    '<a href="' + playbookHref + '" class="btn btn-ghost">Free Playbook</a>\n' +
+    '<a href="' + contactHref + '" class="btn btn-primary" data-edit="ft.mob1">' + mob1 + '</a>\n' +
+    '<a href="' + playbookHref + '" class="btn btn-ghost" data-edit="ft.mob2">' + mob2 + '</a>\n' +
     '</div>\n' +
     '<div class="toast" id="toast" role="status" aria-live="polite"></div>\n';
 }
@@ -379,7 +537,7 @@ export function buildSimplePage({ title, description, canonicalPath, bodyHtml, c
   page += '<body>\n';
   page += buildNav(prelude);
   page += bodyHtml;
-  page += buildFooter();
+  page += buildFooter({ content });
   page += scriptsBlock();
   for (const src of extraScripts) page += '<script src="' + asset(src) + '" defer></script>\n';
   page += '</body>\n</html>\n';

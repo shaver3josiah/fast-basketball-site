@@ -75,7 +75,7 @@ export function renderCoachPage({ content, responsiveManifest, prelude }) {
   page += '<body>\n';
   page += buildNav(prelude);
   page += body;
-  page += buildFooter();
+  page += buildFooter({ content });
   page += scriptsBlock();
   page += '</body>\n</html>\n';
   return page;

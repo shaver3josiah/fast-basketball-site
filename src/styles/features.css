@@ -62,6 +62,11 @@
   .nite-stars,.nite-stars.s2{animation:none;opacity:.7;}
   .nball.idle{animation:none;}
 }
+/* html[data-motion="off"] / html[data-night="off"] twin of the block above. */
+html[data-motion="off"] .nite-stars,html[data-motion="off"] .nite-stars.s2,
+html[data-night="off"] .nite-stars,html[data-night="off"] .nite-stars.s2{animation:none;opacity:.7;}
+html[data-motion="off"] .nball.idle,
+html[data-night="off"] .nball.idle{animation:none;}
 
 /* ---------- THE LOCKER (resource cards) ---------- */
 .res{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}

@@ -107,7 +107,7 @@ nav.eyebrow a{min-width:44px;justify-content:center;}
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;
 }
-#intro.done{animation:introVeil .62s var(--ease-launch) forwards;}
+#intro.done{animation:introVeil calc(.62s / var(--motion-speed,1)) var(--ease-launch) forwards;}
 @keyframes introVeil{to{opacity:0;visibility:hidden;}}
 .intro-glow{
   position:absolute;width:120vmax;height:120vmax;border-radius:50%;
@@ -277,8 +277,9 @@ nav.eyebrow a{min-width:44px;justify-content:center;}
   background:var(--fast-red);padding:16px 0;overflow:hidden;
   border-top:1px solid rgba(0,0,0,.2);border-bottom:1px solid rgba(0,0,0,.2);
 }
-.ticker-track{display:flex;gap:44px;width:max-content;animation:tick 38s linear infinite;}
+.ticker-track{display:flex;gap:44px;width:max-content;animation:tick var(--t-ticker,38s) linear infinite;}
 .ticker:hover .ticker-track{animation-play-state:paused;}
+html[data-ticker="off"] .ticker-track{animation-play-state:paused;}
 @keyframes tick{to{transform:translateX(-50%);}}
 .ticker-i{
   font-family:var(--font-display);font-size:1.12rem;letter-spacing:.05em;
@@ -288,17 +289,17 @@ nav.eyebrow a{min-width:44px;justify-content:center;}
 
 /* ---------- REVEALS ---------- */
 .zr{opacity:0;transform:translateY(34px) scale(.985);filter:blur(4px);}
-.zr.in{animation:zrIn .92s linear forwards;}
+.zr.in{animation:zrIn calc(.92s / var(--motion-speed,1)) linear forwards;}
 @keyframes zrIn{
   0%{opacity:0;transform:translateY(34px) scale(.985);filter:blur(4px);animation-timing-function:var(--ease-launch);}
   28%{opacity:1;transform:translateY(22px) scale(.99);filter:blur(0);animation-timing-function:var(--ease-rush);}
   100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0);}
 }
-.rise{opacity:0;transform:translateY(30px);transition:opacity .62s var(--ease-rush),transform .62s var(--ease-rush);}
+.rise{opacity:0;transform:translateY(30px);transition:opacity calc(.62s / var(--motion-speed,1)) var(--ease-rush),transform calc(.62s / var(--motion-speed,1)) var(--ease-rush);}
 .rise.in{opacity:1;transform:none;}
-.stg>*{transition-delay:calc(var(--i,0)*90ms);}
-.mth.stg>*{transition-duration:.5s;transition-delay:calc(var(--i,0)*130ms);}
-.areas.stg>*{transition-duration:.42s;transition-delay:calc(var(--i,0)*110ms);}
+.stg>*{transition-delay:calc(var(--i,0)*90ms/var(--motion-speed,1));}
+.mth.stg>*{transition-duration:calc(.5s/var(--motion-speed,1));transition-delay:calc(var(--i,0)*130ms/var(--motion-speed,1));}
+.areas.stg>*{transition-duration:calc(.42s/var(--motion-speed,1));transition-delay:calc(var(--i,0)*110ms/var(--motion-speed,1));}
 @keyframes phFlash{
   0%{opacity:0;transform:scale(1.12);filter:brightness(1.9) saturate(.35) contrast(1.15);animation-timing-function:var(--ease-launch);}
   22%{opacity:1;filter:brightness(1.35) saturate(.65) contrast(1.1);animation-timing-function:var(--ease-rush);}
@@ -449,7 +450,7 @@ nav.eyebrow a{min-width:44px;justify-content:center;}
 .score{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
 .score-c{background:rgba(0,0,0,.19);border:1px solid rgba(255,255,255,.2);border-radius:13px;padding:30px 22px;text-align:center;}
 .score-n{font-family:var(--font-num);font-size:clamp(2.8rem,6vw,var(--step-5));line-height:.86;display:block;letter-spacing:.03em;}
-.score-n.stamp{animation:numStamp .5s var(--ease-rush);}
+.score-n.stamp{animation:numStamp calc(.5s / var(--motion-speed,1)) var(--ease-rush);}
 @keyframes numStamp{0%{transform:scale(1.16);filter:brightness(1.7);}100%{transform:scale(1);filter:none;}}
 .score-l{font-family:var(--font-eyebrow);font-size:.76rem;letter-spacing:.18em;text-transform:uppercase;}
 .score-src{margin-top:24px;font-size:.83rem;max-width:72ch;}
@@ -529,11 +530,11 @@ nav.eyebrow a{min-width:44px;justify-content:center;}
 }
 .faq-q:hover{color:var(--red-deep);}
 .faq-q::after{content:"";position:absolute;right:6px;top:50%;width:13px;height:2px;background:var(--fast-red);}
-.faq-q::before{content:"";position:absolute;right:11.5px;top:50%;width:2px;height:13px;background:var(--fast-red);transform:translateY(-50%);transition:transform .35s var(--ease-rush);}
+.faq-q::before{content:"";position:absolute;right:11.5px;top:50%;width:2px;height:13px;background:var(--fast-red);transform:translateY(-50%);transition:transform calc(.35s / var(--motion-speed,1)) var(--ease-rush);}
 .faq-i.open .faq-q::before{transform:translateY(-50%) rotate(90deg) scaleX(0);}
 /* max-height (not grid-template-rows:0fr->1fr) so the transition actually resolves:
    an indefinite-height 1fr track never settles to a real pixel value to animate to. */
-.faq-a{max-height:0;overflow:hidden;transition:max-height .45s var(--ease-rush);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height calc(.45s / var(--motion-speed,1)) var(--ease-rush);}
 .faq-a p{margin:0 0 26px;color:#54545F;max-width:70ch;}
 .faq-i.open .faq-a{max-height:600px;}
 
@@ -690,6 +691,17 @@ body.adm-live [data-img]{outline:2px dashed rgba(230,12,32,.6);outline-offset:2p
   .coach-img .coach-badge{opacity:1 !important;transform:none !important;}
   #intro{display:none !important;}
 }
+/* Manual kill switch (data-motion) + per-system toggles (data-reveals/data-intro) —
+   twins of the reduced-motion block above. Keep edits to either side mirrored. */
+html[data-motion="off"] *,html[data-motion="off"] *::before,html[data-motion="off"] *::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;transition-delay:0ms !important;animation-delay:0ms !important;}
+html[data-motion="off"] .zr,html[data-motion="off"] .rise,
+html[data-reveals="off"] .zr,html[data-reveals="off"] .rise{opacity:1 !important;transform:none !important;filter:none !important;}
+html[data-motion="off"] .rcp-c.rise .rcp-shot img,html[data-motion="off"] .coach-img.rise img,
+html[data-reveals="off"] .rcp-c.rise .rcp-shot img,html[data-reveals="off"] .coach-img.rise img{opacity:1 !important;animation:none !important;}
+html[data-motion="off"] .coach-img .coach-badge,
+html[data-reveals="off"] .coach-img .coach-badge{opacity:1 !important;transform:none !important;}
+html[data-motion="off"] #intro,
+html[data-intro="off"] #intro{display:none !important;}
 
 /* ---------- ANIMATED LOCKUP (.alogo) ----------
    Ported verbatim from the design system (styles/components.css `.alogo`).

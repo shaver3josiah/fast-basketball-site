@@ -1,77 +1,77 @@
 <section class="band band-light" id="programs">
   <div class="shell">
     <div class="head">
-      <div class="eyebrow">Training Programs</div>
-      <h2>Pick the program that fits your player.</h2>
-      <p class="lede">Start with a First Look. You will find out exactly where your player stands right now and what it will take to get where they want to go.</p>
+      <div class="eyebrow" data-edit="prog.eyebrow">Training Programs</div>
+      <h2 data-edit="prog.h2">Pick the program that fits your player.</h2>
+      <p class="lede" data-edit="prog.lede">Start with a First Look. You will find out exactly where your player stands right now and what it will take to get where they want to go.</p>
     </div>
     <!-- Stagger dropped: these four are parallel options, not a sequence. Making the reader
          wait 270ms for the fourth card implied an order that does not exist. -->
     <div class="prog">
       <div class="prog-c">
-        <span class="prog-tag">Start Here</span>
+        <span class="prog-tag" data-edit="prog.1.tag">Start Here</span>
         <div class="prog-top">
-          <h3>First Look Session</h3>
-          <div class="prog-price">Free<small>60 Minutes</small></div>
+          <h3 data-edit="prog.1.title">First Look Session</h3>
+          <div class="prog-price"><span data-edit="prog.1.price">Free</span><small data-edit="prog.1.unit">60 Minutes</small></div>
         </div>
         <p data-edit="prog.1">Sixty minutes on court, zero dollars. A full evaluation with no pitch and no pressure, and your family leaves holding the plan in writing.</p>
         <ul class="prog-list">
-          <li>Full movement and shooting form screen</li>
-          <li>Live one on one reads against Coach Blake</li>
-          <li>Written strengths and gaps report, yours to keep</li>
-          <li>Next step: you get open slots within one business day</li>
+          <li data-edit="prog.1.li1">Full movement and shooting form screen</li>
+          <li data-edit="prog.1.li2">Live one on one reads against Coach Blake</li>
+          <li data-edit="prog.1.li3">Written strengths and gaps report, yours to keep</li>
+          <li data-edit="prog.1.li4">Next step: you get open slots within one business day</li>
         </ul>
-        <a href="#contact" class="btn btn-primary" data-program="First Look Session">Claim a Free Slot</a>
-        <p class="trust-line">No obligation. The report is yours either way.</p>
+        <a href="#contact" class="btn btn-primary" data-program="First Look Session" data-edit="prog.1.cta">Claim a Free Slot</a>
+        <p class="trust-line" data-edit="prog.1.trust">No obligation. The report is yours either way.</p>
       </div>
 
       <div class="prog-c flag">
-        <span class="prog-tag">Most Booked</span>
+        <span class="prog-tag" data-edit="prog.2.tag">Most Booked</span>
         <div class="prog-top">
-          <h3>Private One on One</h3>
+          <h3 data-edit="prog.2.title">Private One on One</h3>
           <!-- .prog-price is white-space:nowrap and <small> inherits it. Keep the <small>
                at roughly this length: a longer string widens the card past 375px and
                pushes the <h3> from two lines to three. -->
-          <div class="prog-price">$75<small>Per 60 Min</small></div>
+          <div class="prog-price"><span data-edit="prog.2.price">$75</span><small data-edit="prog.2.unit">Per 60 Min</small></div>
         </div>
         <p data-edit="prog.2">Full session, full attention. Built around the exact three things standing between you and the next level this season.</p>
         <ul class="prog-list">
-          <li>Custom plan updated every four sessions</li>
-          <li>Footwork, handle, and finishing blocks</li>
-          <li>Shot chart and progress log</li>
-          <li>Packages of 5 and 10 available, 10 sessions $675 ($67.50 a session)</li>
+          <li data-edit="prog.2.li1">Custom plan updated every four sessions</li>
+          <li data-edit="prog.2.li2">Footwork, handle, and finishing blocks</li>
+          <li data-edit="prog.2.li3">Shot chart and progress log</li>
+          <li data-edit="prog.2.li4">Packages of 5 and 10 available, 10 sessions $675 ($67.50 a session)</li>
         </ul>
-        <a href="#contact" class="btn btn-ghost" data-program="Private One on One">Check Availability</a>
+        <a href="#contact" class="btn btn-ghost" data-program="Private One on One" data-edit="prog.2.cta">Check Availability</a>
       </div>
 
       <div class="prog-c">
         <div class="prog-top">
-          <h3>Small Group</h3>
-          <div class="prog-price">$45<small>Per Player</small></div>
+          <h3 data-edit="prog.3.title">Small Group</h3>
+          <div class="prog-price"><span data-edit="prog.3.price">$45</span><small data-edit="prog.3.unit">Per Player</small></div>
         </div>
         <p data-edit="prog.3">Two to four players at a similar level, going at each other. Competitive reps, real defense, nowhere to hide.</p>
         <ul class="prog-list">
-          <li>Level matched groups only</li>
-          <li>Live one on one and two on two</li>
-          <li>Great for teammates and siblings</li>
-          <li>Weekly recurring slots</li>
+          <li data-edit="prog.3.li1">Level matched groups only</li>
+          <li data-edit="prog.3.li2">Live one on one and two on two</li>
+          <li data-edit="prog.3.li3">Great for teammates and siblings</li>
+          <li data-edit="prog.3.li4">Weekly recurring slots</li>
         </ul>
-        <a href="#contact" class="btn btn-ghost" data-program="Small Group">Join a Group</a>
+        <a href="#contact" class="btn btn-ghost" data-program="Small Group" data-edit="prog.3.cta">Join a Group</a>
       </div>
 
       <div class="prog-c">
         <div class="prog-top">
-          <h3>College Track Program</h3>
-          <div class="prog-price">$349<small>Per Month</small></div>
+          <h3 data-edit="prog.4.title">College Track Program</h3>
+          <div class="prog-price"><span data-edit="prog.4.price">$349</span><small data-edit="prog.4.unit">Per Month</small></div>
         </div>
         <p data-edit="prog.4">A twelve week block for juniors and seniors who are serious about hearing from college programs. Guided by a coach who was just recruiting at that level.</p>
         <ul class="prog-list">
-          <li>Two private sessions per week</li>
-          <li>Monthly film review session</li>
-          <li>Highlight reel guidance</li>
-          <li>Recruiting profile and outreach help</li>
+          <li data-edit="prog.4.li1">Two private sessions per week</li>
+          <li data-edit="prog.4.li2">Monthly film review session</li>
+          <li data-edit="prog.4.li3">Highlight reel guidance</li>
+          <li data-edit="prog.4.li4">Recruiting profile and outreach help</li>
         </ul>
-        <a href="#contact" class="btn btn-ghost" data-program="College Track Program">Apply for a Spot</a>
+        <a href="#contact" class="btn btn-ghost" data-program="College Track Program" data-edit="prog.4.cta">Apply for a Spot</a>
       </div>
     </div>
   </div>

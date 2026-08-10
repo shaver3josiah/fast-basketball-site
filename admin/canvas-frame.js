@@ -18,6 +18,9 @@
   var section = null;
   var selectedId = null;
   var startPct = null;
+  // The one [data-edit] leaf currently in inline-edit mode (legacy mode only), or null.
+  // Kept outside the DOM so Escape can restore exactly the text editing began with.
+  var inlineState = null;
 
   var api = {
     onEvent: function () {},
@@ -108,23 +111,150 @@
   // data-edit / data-img are hooks the site's own templates have always carried and the
   // build already substitutes through. Nothing is added to the markup here beyond a
   // class and a tabindex, both of which live only in this frame.
+  //
+  // data-edit leaves additionally go into inline-edit mode on click/Enter — typing
+  // directly on the canvas rather than only in a sidebar field. data-img stays
+  // inspector-only: there is no "edit an image inline", only "swap it".
   function markLegacyFields() {
     Array.prototype.forEach.call(stage.querySelectorAll('[data-edit],[data-img]'), function (node) {
       var key = node.getAttribute('data-edit') || node.getAttribute('data-img');
       var kind = node.hasAttribute('data-img') ? 'image' : 'text';
-      node.classList.add('is-field');
+      node.classList.add('is-field', kind === 'text' ? 'is-field-text' : 'is-field-img');
+      node.tabIndex = 0;
+      node.setAttribute('role', 'button');
+      node.setAttribute('aria-label', (kind === 'text' ? 'Edit ' : 'Change photo: ') + key);
+
+      node.addEventListener('click', function (e) {
+        // A click on the node ALREADY being inline-edited is the owner placing the
+        // caret somewhere else in the same field, not a fresh activation — let the
+        // browser's own click-to-place-caret behaviour run instead of restarting.
+        if (inlineState && inlineState.node === node) return;
+        e.preventDefault();
+        e.stopPropagation();
+        emit('field', { key: key, kind: kind });
+        if (kind === 'text') startInlineEdit(node, e);
+      });
+
+      // Bound ONCE here rather than added/removed per edit session: attaching a
+      // keydown listener to a node from inside that same node's keydown handler risks
+      // the new listener firing for the event still being dispatched (engines disagree
+      // on this), so isContentEditable is checked live instead of swapping which
+      // listeners exist.
+      node.addEventListener('keydown', function (e) {
+        if (kind === 'text' && node.isContentEditable) {
+          if (e.key === 'Enter') { e.preventDefault(); node.blur(); }
+          else if (e.key === 'Escape') {
+            e.preventDefault();
+            var restored = inlineState.original;
+            node.textContent = restored;
+            endInlineEdit(node);
+            emit('fieldCommit', { key: key, value: restored });
+            node.blur();
+          }
+          return;
+        }
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          emit('field', { key: key, kind: kind });
+          if (kind === 'text') startInlineEdit(node, null);
+        }
+      });
+
+      if (kind === 'text') {
+        node.addEventListener('input', function () {
+          if (!node.isContentEditable) return;
+          emit('fieldInput', { key: key, value: node.textContent });
+        });
+        // Blur commits AND removes contenteditable, so this is also where Enter lands
+        // (Enter just calls node.blur() above) — one commit path, not two.
+        node.addEventListener('blur', function () {
+          if (!node.isContentEditable) return;
+          var value = node.textContent;
+          endInlineEdit(node);
+          emit('fieldCommit', { key: key, value: value });
+        });
+      }
+    });
+
+    // data-edit-attr hooks a form placeholder, not a text node — there is nothing to
+    // place a caret into, so these open the inspector like an image does rather than
+    // going inline.
+    Array.prototype.forEach.call(stage.querySelectorAll('[data-edit-attr]'), function (node) {
+      var raw = node.getAttribute('data-edit-attr') || '';
+      var key = raw.slice(raw.indexOf(':') + 1) || raw;
+      node.classList.add('is-field', 'is-field-attr');
       node.tabIndex = 0;
       node.setAttribute('role', 'button');
       node.setAttribute('aria-label', 'Edit ' + key);
       node.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        emit('field', { key: key, kind: kind });
+        emit('field', { key: key, kind: 'text' });
       });
       node.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); emit('field', { key: key, kind: kind }); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); emit('field', { key: key, kind: 'text' }); }
       });
     });
+  }
+
+  // contenteditable=plaintext-only strips pasted formatting and keeps rich markup out
+  // of a data-edit leaf; not every engine implements it, so fall back to the plain
+  // 'true' mode rather than leaving the node dead where it is unsupported.
+  function setEditable(node, on) {
+    if (!on) { node.removeAttribute('contenteditable'); return; }
+    node.contentEditable = 'plaintext-only';
+    if (!node.isContentEditable) node.contentEditable = 'true';
+  }
+
+  // Lands the caret where the owner actually clicked rather than always at the end —
+  // caretRangeFromPoint (Blink/WebKit) and caretPositionFromPoint (Firefox) cover the
+  // click case; a keyboard-triggered edit (Enter, no coordinates) falls back to the end.
+  function placeCaret(node, clickEvent) {
+    var range = null;
+    if (clickEvent && document.caretRangeFromPoint) {
+      range = document.caretRangeFromPoint(clickEvent.clientX, clickEvent.clientY);
+    } else if (clickEvent && document.caretPositionFromPoint) {
+      var pos = document.caretPositionFromPoint(clickEvent.clientX, clickEvent.clientY);
+      if (pos) { range = document.createRange(); range.setStart(pos.offsetNode, pos.offset); range.collapse(true); }
+    }
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(node);
+      range.collapse(false);
+    }
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function startInlineEdit(node, clickEvent) {
+    inlineState = { node: node, original: node.textContent };
+    node.classList.add('is-active');
+    setEditable(node, true);
+    node.focus();
+    placeCaret(node, clickEvent);
+  }
+
+  function endInlineEdit(node) {
+    node.classList.remove('is-active');
+    setEditable(node, false);
+    inlineState = null;
+  }
+
+  // Which cursor a hook shows, and whether hovering tints its background, depends on
+  // kind — the static styling in canvas-frame.html treats every [data-edit]/[data-img]
+  // alike. Added here instead of there, since kind-specific and edit-state styling is
+  // this script's job, and appending once at init beats re-appending a fresh <style>
+  // on every markLegacyFields() call (once per legacy render).
+  function injectFieldStyles() {
+    var style = document.createElement('style');
+    style.textContent =
+      '.is-legacy .is-field-text { cursor: text; }' +
+      '.is-legacy .is-field-img, .is-legacy .is-field-attr { cursor: pointer; }' +
+      '.is-legacy .is-field-img:hover, .is-legacy .is-field-img:focus-visible,' +
+      '.is-legacy .is-field-attr:hover, .is-legacy .is-field-attr:focus-visible { background: transparent; }' +
+      '.is-legacy [contenteditable] { cursor: text; outline: 2px solid var(--fast-red); outline-offset: 3px; background: rgba(212, 13, 31, 0.06); }';
+    document.head.appendChild(style);
   }
 
   function applyLockClasses() {
@@ -324,6 +454,7 @@
 
   // Once, at init. #stage outlives every load, so the listeners bound to it do too.
   wireHitTesting();
+  injectFieldStyles();
 
   emit('ready', {});
 })();

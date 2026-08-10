@@ -704,3 +704,26 @@ input:focus, textarea:focus, select:focus {
 .ed-crop-handle.se { bottom: -6px; right: -6px; cursor: nwse-resize; }
 
 .ed-modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ---------------------------------------------------------------- site panel */
+
+/* The panel IS the grid, rather than an inner .ed-fields wrapper — .ed-fields carries
+   its own 14px padding for the inspector's dark-on-white fields, and nesting it inside
+   .ed-panel's already-14px padding would double it up for no reason. */
+#sitePanel { display: grid; gap: 10px; }
+#sitePanel h3.ed-panel-h { margin-top: 4px; }
+
+input[type="range"] { width: 100%; }
+
+/* ---------------------------------------------------------------- revert section */
+
+.ed-insp-revert { padding: 10px 14px; border-bottom: 1px solid var(--ed-line); display: grid; gap: 4px; }
+
+/* Informational, not a build-blocking problem — same bar showBlockingErrors uses,
+   toned down so it does not read as urgent the way the red error state does. */
+.ed-alert[data-tone="info"] {
+  background: var(--ed-rail);
+  border-bottom-color: var(--ed-line);
+  color: var(--ed-ink-2);
+  font-weight: 500;
+}

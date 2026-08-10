@@ -110,6 +110,37 @@ Still open, and deliberately so:
   with zero raw hex, and changing a token moves every consumer — but the only way to
   change a token today is to edit `tokens.css` by hand.
 
+### 10 Aug — everything editable
+**Goal: every text blob, picture, and animation editable, at Wix-grade interaction.**
+Rubric written first, graded after: **69.5/72, all five hard gates green** (EDITABILITY-RUBRIC.md).
+
+Coverage went from 26 editable text runs (7%) to 339 of 345 (98%): 327 hooks across
+every template, the footer and hero/nav/ticker as first-class editor sections, form
+placeholders via a new attribute-editing mechanism, meta title/description in a Site
+panel. Click any text on the canvas and type in place — caret in the element, sidebar
+in sync, Escape restores, Revert Section undoes a whole section. Photos were already
+covered by the media library; the coach portrait and every other slot now swap from
+inside their sections too.
+
+Animations got an owner-facing motion panel: master kill switch, speed multiplier
+(measured: 2× halves every reveal/FAQ/intro duration, computed live), and independent
+toggles for intro, ticker, reveals, count-up, and Night Court ambience — all persisted
+in content.json, all previewing live inside the editor canvas, and none of it able to
+override a visitor's reduced-motion preference.
+
+The mechanism stayed lazy: library photos and editable text are ordinary content.json
+keys; ~300 of them were seeded by script from the templates' own text (idempotent,
+escape-round-trip proven), so the built site is byte-identical at defaults — proven by
+building both trees and comparing after stripping only the hook attributes and the two
+emitted motion tags. One drift bug surfaced and died on the way: the FAQ structured
+data was a hand-copy of the visible FAQ and had already diverged; it now derives from
+the same keys, as do the area names (tile + contact select + footer column from one
+edit) and the footer text.
+
+Deliberately not built: adding/removing cards (fixed-count editing only), link targets,
+brand-mark swapping, per-section motion overrides. Each is named in the rubric's known
+limits with its reason.
+
 ### Next — Phase 3, safe to hand over
 **Goal: the owner can use it unsupervised without breaking anything.**
 Estimate: **3–4 sessions**

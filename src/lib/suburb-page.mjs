@@ -113,7 +113,7 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   page += '<body>\n';
   page += buildNav(prelude);
   page += body;
-  page += buildFooter();
+  page += buildFooter({ content });
   page += scriptsBlock();
   page += '</body>\n</html>\n';
   return page;

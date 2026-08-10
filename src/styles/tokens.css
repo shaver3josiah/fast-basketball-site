@@ -40,7 +40,9 @@
 --ease-intro:cubic-bezier(0.33,0,0.12,1);    /* EA-cadence intro zoom */
 /* durations */
 --t-fast:.22s;--t-hover:.3s;--t-press:.28s;--t-lift:.4s;--t-accent:.5s;
---t-reveal:.78s;--t-line:.95s;--t-zoom:1.15s;--t-photo:1.2s;--t-intro:3.1s;--t-ticker:38s;
+--t-reveal:.78s;--t-line:.95s;--t-zoom:1.15s;--t-photo:1.2s;--t-intro:3.1s;
+/* --t-ticker is now live: consumed directly by .ticker-track's animation (base.css) — no longer orphaned. */
+--t-ticker:38s;
 --stagger:90ms;
 
 /* layout */

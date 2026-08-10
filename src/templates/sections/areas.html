@@ -1,20 +1,20 @@
 <section class="band band-light" id="areas">
   <div class="shell">
     <div class="head">
-      <div class="eyebrow">Service Areas</div>
-      <h2>Basketball training across north Broward.</h2>
-      <p class="lede">Sessions run at city parks and community courts across these five cities. Each area below gets its own page with the local schools, the courts we use, and what the schedule there actually looks like.</p>
+      <div class="eyebrow" data-edit="area.eyebrow">Service Areas</div>
+      <h2 data-edit="area.h2">Basketball training across north Broward.</h2>
+      <p class="lede" data-edit="area.lede">Sessions run at city parks and community courts across these five cities. Each area below gets its own page with the local schools, the courts we use, and what the schedule there actually looks like.</p>
     </div>
     <!-- Stagger dropped: a cascade on what is really a link list signalled nothing.
          Nothing here is ordered. The tiles have hover motion. Names and tiers must match
          src/data/suburbs.json and AREA_SERVED: fixAreaLinks in src/render.mjs rewrites each
          href by matching the <b> text, so a tile that is not a suburb record stays on #contact. -->
     <div class="areas">
-      <a href="#contact" class="area"><b>Coral Springs</b><span>Tier 1</span></a>
-      <a href="#contact" class="area"><b>Parkland</b><span>Tier 1</span></a>
-      <a href="#contact" class="area"><b>Coconut Creek</b><span>Tier 1</span></a>
-      <a href="#contact" class="area"><b>Margate</b><span>Tier 2</span></a>
-      <a href="#contact" class="area"><b>Tamarac</b><span>Tier 2</span></a>
+      <a href="#contact" class="area"><b data-edit="area.1.name">Coral Springs</b><span data-edit="area.1.tier">Tier 1</span></a>
+      <a href="#contact" class="area"><b data-edit="area.2.name">Parkland</b><span data-edit="area.2.tier">Tier 1</span></a>
+      <a href="#contact" class="area"><b data-edit="area.3.name">Coconut Creek</b><span data-edit="area.3.tier">Tier 1</span></a>
+      <a href="#contact" class="area"><b data-edit="area.4.name">Margate</b><span data-edit="area.4.tier">Tier 2</span></a>
+      <a href="#contact" class="area"><b data-edit="area.5.name">Tamarac</b><span data-edit="area.5.tier">Tier 2</span></a>
     </div>
   </div>
 </section>
@@ -27,13 +27,13 @@
 <section class="band band-ink">
   <div class="shell">
     <div class="head">
-      <div class="eyebrow">What Families Say</div>
-      <h2>They came to get better.</h2>
-      <p class="lede">First families are in the gym right now. Verified Google reviews land here as they come in.</p>
+      <div class="eyebrow" data-edit="fam.eyebrow">What Families Say</div>
+      <h2 data-edit="fam.h2">They came to get better.</h2>
+      <p class="lede" data-edit="fam.lede">First families are in the gym right now. Verified Google reviews land here as they come in.</p>
     </div>
     <div class="gbp" style="max-width:62ch;">
-      <b>Google Reviews</b>
-      <p>The Business Profile is in verification. Until it clears we are not printing quotes you cannot go and check for yourself. Ask at your First Look and we will put you in touch with families already training with us.</p>
+      <b data-edit="fam.source">Google Reviews</b>
+      <p data-edit="fam.body">The Business Profile is in verification. Until it clears we are not printing quotes you cannot go and check for yourself. Ask at your First Look and we will put you in touch with families already training with us.</p>
     </div>
   </div>
 </section>
@@ -42,33 +42,33 @@
 <section class="band band-light">
   <div class="shell">
     <div class="head" style="text-align:center;margin:0 auto 48px;">
-      <div class="eyebrow" style="justify-content:center;">Questions</div>
-      <h2>Straight answers.</h2>
+      <div class="eyebrow" style="justify-content:center;" data-edit="faq.eyebrow">Questions</div>
+      <h2 data-edit="faq.h2">Straight answers.</h2>
     </div>
     <div class="faq">
       <div class="faq-i">
-        <button class="faq-q">What ages do you train?</button>
-        <div class="faq-a"><p>Players from roughly 11 through 18, from first year middle school through senior year. Younger players get more habit building, older players get more decision work and recruiting support.</p></div>
+        <button class="faq-q" data-edit="faq.1.q">What ages do you train?</button>
+        <div class="faq-a"><p data-edit="faq.1.a">Players from roughly 11 through 18, from first year middle school through senior year. Younger players get more habit building, older players get more decision work and recruiting support.</p></div>
       </div>
       <div class="faq-i">
-        <button class="faq-q">Where do sessions actually happen?</button>
-        <div class="faq-a"><p>City parks and partner courts across north Broward County. When you book, you get the exact location for your area. If you have access to a court through a school or community center, we can often train there.</p></div>
+        <button class="faq-q" data-edit="faq.2.q">Where do sessions actually happen?</button>
+        <div class="faq-a"><p data-edit="faq.2.a">City parks and partner courts across north Broward County. When you book, you get the exact location for your area. If you have access to a court through a school or community center, we can often train there.</p></div>
       </div>
       <div class="faq-i">
-        <button class="faq-q">How fast will we see a difference?</button>
-        <div class="faq-a"><p>Form changes show up in two to three weeks. Game changes usually take six to eight, because a skill has to survive speed, contact, and fatigue before it shows up on a Friday night.</p></div>
+        <button class="faq-q" data-edit="faq.3.q">How fast will we see a difference?</button>
+        <div class="faq-a"><p data-edit="faq.3.a">Form changes show up in two to three weeks. Game changes usually take six to eight, because a skill has to survive speed, contact, and fatigue before it shows up on a Friday night.</p></div>
       </div>
       <div class="faq-i">
-        <button class="faq-q">Do you help with college recruiting?</button>
-        <div class="faq-a"><p>Yes, inside the College Track Program. Coach Blake spent the last two seasons on college staffs at the NJCAA and NCAA Division I levels, so he has evaluated high school film from the recruiting side. That includes film review, highlight reel guidance, and help building and sending a recruiting profile.</p></div>
+        <button class="faq-q" data-edit="faq.4.q">Do you help with college recruiting?</button>
+        <div class="faq-a"><p data-edit="faq.4.a">Yes, inside the College Track Program. Coach Blake spent the last two seasons on college staffs at the NJCAA and NCAA Division I levels, so he has evaluated high school film from the recruiting side. That includes film review, highlight reel guidance, and help building and sending a recruiting profile.</p></div>
       </div>
       <div class="faq-i">
-        <button class="faq-q">Is the First Look session really free?</button>
-        <div class="faq-a"><p>Yes. It is a full evaluation. You leave with a written summary of strengths and gaps whether or not you book anything after.</p></div>
+        <button class="faq-q" data-edit="faq.5.q">Is the First Look session really free?</button>
+        <div class="faq-a"><p data-edit="faq.5.a">Yes. It is a full evaluation. You leave with a written summary of strengths and gaps whether or not you book anything after.</p></div>
       </div>
       <div class="faq-i">
-        <button class="faq-q">Do you train girls teams and players?</button>
-        <div class="faq-a"><p>Yes. Every program listed is open to any player. Skill work does not change by gender.</p></div>
+        <button class="faq-q" data-edit="faq.6.q">Do you train girls teams and players?</button>
+        <div class="faq-a"><p data-edit="faq.6.a">Yes. Every program listed is open to any player. Skill work does not change by gender.</p></div>
       </div>
     </div>
   </div>

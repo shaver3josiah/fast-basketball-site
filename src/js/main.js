@@ -1,6 +1,7 @@
 (function(){
   'use strict';
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var M = window.__FB_MOTION || {}; /* B emits this before main.js; guard for old cached pages */
 
   /* Intro: the lockup build is pure CSS (.alogo choreography in base.css).
      JS only owns dismissal — timeout, Skip, Escape, reduced-motion, and
@@ -16,9 +17,11 @@
     try { sessionStorage.setItem('fb_intro_seen', '1'); } catch(e){}
     setTimeout(function(){ intro.style.display = 'none'; }, 700); /* kept in the DOM for the swish replay */
   }
+  /* Settings-driven skip: same early-exit path as reduced-motion/session-seen. */
+  var introOff = M.intro === false || document.documentElement.getAttribute('data-intro') === 'off';
   if(intro){
     var introMs = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--t-intro')) || 2.5) * 1000;
-    if(reduced || introSeen){ endIntro(); } else { setTimeout(endIntro, introMs); }
+    if(reduced || introSeen || introOff){ endIntro(); } else { setTimeout(endIntro, introMs); }
     var skip = document.getElementById('skipIntro');
     if(skip) skip.addEventListener('click', endIntro);
   }
@@ -30,7 +33,7 @@
       if(t) window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - 90, behavior: 'auto' });
       else location.hash = '#contact';
     };
-    if(reduced || !intro || !document.body.contains(intro)){ setTimeout(dest, 900); return; }
+    if(reduced || introOff || !intro || !document.body.contains(intro)){ setTimeout(dest, 900); return; }
     setTimeout(function(){
       intro.style.display = '';
       delete intro.dataset.done;
@@ -53,7 +56,7 @@
     brandEl.setAttribute('title', 'Double-click to replay the intro');
     brandEl.addEventListener('dblclick', function(e){
       e.preventDefault();
-      if(reduced) return;
+      if(reduced || introOff) return;
       intro.style.display = '';
       delete intro.dataset.done;
       intro.classList.remove('done');
@@ -103,21 +106,28 @@
     closeMenu();
   });
 
-  var io = new IntersectionObserver(function(entries){
-    entries.forEach(function(en){
-      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
-    });
-  }, {threshold:0.14, rootMargin:'0px 0px -60px 0px'});
-  document.querySelectorAll('.zr, .rise').forEach(function(el){ io.observe(el); });
-  /* Safety net: if the observer never fires (blocked API, odd layout), force reveal anyway. */
-  setTimeout(function(){
-    document.querySelectorAll('.zr:not(.in), .rise:not(.in)').forEach(function(el){ el.classList.add('in'); });
-  }, 3000);
+  if(M.reveals === false){
+    /* Setting disabled: same outcome as the safety net below, applied immediately
+       instead of observed — no IntersectionObserver needed. */
+    document.querySelectorAll('.zr, .rise').forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, {threshold:0.14, rootMargin:'0px 0px -60px 0px'});
+    document.querySelectorAll('.zr, .rise').forEach(function(el){ io.observe(el); });
+    /* Safety net: if the observer never fires (blocked API, odd layout), force reveal anyway. */
+    setTimeout(function(){
+      document.querySelectorAll('.zr:not(.in), .rise:not(.in)').forEach(function(el){ el.classList.add('in'); });
+    }, 3000);
+  }
 
   /* Scoreboard counters: DOM ships the real resting number (works with no JS /
      reduced motion). On intersect we read that number, drop to 0, then count
      back up — staggered 160ms in document order, stamp on land. */
   var counters = Array.prototype.slice.call(document.querySelectorAll('[data-count]'));
+  var speed = M.speed || 1;
   var cio = new IntersectionObserver(function(entries){
     entries.forEach(function(en){
       if(!en.isIntersecting) return;
@@ -125,9 +135,9 @@
       var target = parseInt(el.textContent, 10);
       if(isNaN(target)) target = parseInt(el.dataset.count, 10) || 0;
       cio.unobserve(el);
-      if(reduced) return;
+      if(reduced || M.countUp === false) return;
       el.textContent = '0';
-      var delay = counters.indexOf(el) * 160, start = null, dur = 1400;
+      var delay = counters.indexOf(el) * (160 / speed), start = null, dur = 1400 / speed;
       function step(ts){
         if(!start) start = ts;
         var p = Math.min((ts - start) / dur, 1);

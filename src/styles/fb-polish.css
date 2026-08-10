@@ -556,6 +556,9 @@ html:not(.fb-light) .only-light{display:none;}
 @media(prefers-reduced-motion:reduce){
   .net.sway,.net.sway .net-cord,.net.sway .net-ring,.rim.hit::after{animation:none;}
 }
+/* html[data-motion="off"] / html[data-night="off"] twin of the block above. */
+html[data-motion="off"] .net.sway,html[data-motion="off"] .net.sway .net-cord,html[data-motion="off"] .net.sway .net-ring,html[data-motion="off"] .rim.hit::after,
+html[data-night="off"] .net.sway,html[data-night="off"] .net.sway .net-cord,html[data-night="off"] .net.sway .net-ring,html[data-night="off"] .rim.hit::after{animation:none;}
 
 /* 23. WCAG on the court-card caption: the "Horizon League Champions" label ran
        --red-hot on the near-black pill — 3.6:1 at 11px bold, under the 4.5:1
@@ -568,20 +571,24 @@ html:not(.fb-light) .only-light{display:none;}
        second "hang" gust is cut — with no hang left to fill, it was only ever
        there to keep 1.4-2.3s alive. Retimed in CSS, not with a playbackRate
        hack, so the shipped site's --t-intro dismissal matches exactly. */
-:root{--t-intro:.95s;}
-.alogo.play .al-cres{animation:alSwoosh .40s var(--ease-whip) .18s both;}
-.alogo.play .al-f {animation:alLetterHit .34s var(--ease-recoil) .06s both;}
-.alogo.play .al-a {animation:alLetterHit .34s var(--ease-recoil) .09s both;}
-.alogo.play .al-st{animation:alLetterHit .34s var(--ease-recoil) .12s both;}
+/* Speed-routed: --t-intro is read live by main.js (getComputedStyle) so the JS
+   dismissal timer follows automatically. The letter/stage sub-animations below
+   (572-584) are scaled the same way so the build/exit choreography never runs
+   longer than the dismissal timer that cuts it off at high speed multipliers. */
+:root{--t-intro:calc(.95s / var(--motion-speed,1));}
+.alogo.play .al-cres{animation:alSwoosh calc(.40s / var(--motion-speed,1)) var(--ease-whip) calc(.18s / var(--motion-speed,1)) both;}
+.alogo.play .al-f {animation:alLetterHit calc(.34s / var(--motion-speed,1)) var(--ease-recoil) calc(.06s / var(--motion-speed,1)) both;}
+.alogo.play .al-a {animation:alLetterHit calc(.34s / var(--motion-speed,1)) var(--ease-recoil) calc(.09s / var(--motion-speed,1)) both;}
+.alogo.play .al-st{animation:alLetterHit calc(.34s / var(--motion-speed,1)) var(--ease-recoil) calc(.12s / var(--motion-speed,1)) both;}
 .alogo.play .al-ln{
-  animation:alLineOut .29s var(--ease-whip) both,alGustA .30s ease-in-out;
-  animation-delay:calc(.10s + var(--i,0)*.021s),calc(.52s + var(--i,0)*.018s);
+  animation:alLineOut calc(.29s / var(--motion-speed,1)) var(--ease-whip) both,alGustA calc(.30s / var(--motion-speed,1)) ease-in-out;
+  animation-delay:calc((.10s + var(--i,0)*.021s) / var(--motion-speed,1)),calc((.52s + var(--i,0)*.018s) / var(--motion-speed,1));
 }
-.alogo.play .al-notch{animation:alNotchHit .24s var(--ease-recoil) .16s both;}
-.alogo.play .al-rule{animation:alRuleOut .27s var(--ease-whip) .35s both;}
-.alogo.play .al-wl{animation:alWordUp .25s var(--ease-recoil) both;animation-delay:calc(.37s + var(--i,0)*.016s);}
-.intro-mark{animation:introBuild .68s var(--ease-strike) both,introBreathe 3.6s ease-in-out .68s infinite;}
-#intro.done .intro-mark{animation:introOut .48s var(--ease-launch) both;}
+.alogo.play .al-notch{animation:alNotchHit calc(.24s / var(--motion-speed,1)) var(--ease-recoil) calc(.16s / var(--motion-speed,1)) both;}
+.alogo.play .al-rule{animation:alRuleOut calc(.27s / var(--motion-speed,1)) var(--ease-whip) calc(.35s / var(--motion-speed,1)) both;}
+.alogo.play .al-wl{animation:alWordUp calc(.25s / var(--motion-speed,1)) var(--ease-recoil) both;animation-delay:calc((.37s + var(--i,0)*.016s) / var(--motion-speed,1));}
+.intro-mark{animation:introBuild calc(.68s / var(--motion-speed,1)) var(--ease-strike) both,introBreathe calc(3.6s / var(--motion-speed,1)) ease-in-out calc(.68s / var(--motion-speed,1)) infinite;}
+#intro.done .intro-mark{animation:introOut calc(.48s / var(--motion-speed,1)) var(--ease-launch) both;}
 
 /* 25. THE COURT-CARD CAPTION FAILED ON BOTH COUNTS. The label is an
        inline-block pill inside a 1.05 line-height Anton block, so the headline

@@ -9,9 +9,9 @@
   </style>
   <div class="shell">
     <div class="head">
-      <div class="eyebrow">The Locker</div>
-      <h2>The work does not stop at the buzzer.</h2>
-      <p class="lede">Workout blocks, drill packs, and film guides Coach Blake actually assigns. The free ones only need a parent's inbox to send them to. The rest unlock with that same email — one login, no passwords.</p>
+      <div class="eyebrow" data-edit="lkr.eyebrow">The Locker</div>
+      <h2 data-edit="lkr.h2">The work does not stop at the buzzer.</h2>
+      <p class="lede" data-edit="lkr.lede">Workout blocks, drill packs, and film guides Coach Blake actually assigns. The free ones only need a parent's inbox to send them to. The rest unlock with that same email — one login, no passwords.</p>
     </div>
     <!-- LOCKER STATE. The three states locker.js actually has are Free / Locked / Unlocked, and the
          button must match: "Get it by email" (free, no email on file yet), "Unlock with email"
@@ -30,65 +30,65 @@
     <div class="res">
       <article class="res-c openres" data-resource-id="1" data-locked="false" data-position="point-guard" data-focus="ball-handling">
         <div class="res-top">
-          <span class="res-meta">4-Week Block · Web + Inbox</span>
-          <span class="res-open">Free</span>
+          <span class="res-meta" data-edit="lkr.1.meta">4-Week Block · Web + Inbox</span>
+          <span class="res-open" data-edit="lkr.1.badge">Free</span>
         </div>
-        <h3>4-Week Guard Handle Block</h3>
-        <p>Daily handle ladders with rep counts and a week-four retest.</p>
-        <button type="button" class="res-get" data-action="download">Get it by email</button>
+        <h3 data-edit="lkr.1.title">4-Week Guard Handle Block</h3>
+        <p data-edit="lkr.1.body">Daily handle ladders with rep counts and a week-four retest.</p>
+        <button type="button" class="res-get" data-action="download" data-edit="lkr.1.cta">Get it by email</button>
       </article>
 
       <article class="res-c openres" data-resource-id="2" data-locked="false" data-position="shooting-guard" data-focus="shooting-consistency">
         <div class="res-top">
-          <span class="res-meta">4-Week Block · Web + Inbox</span>
-          <span class="res-open">Free</span>
+          <span class="res-meta" data-edit="lkr.2.meta">4-Week Block · Web + Inbox</span>
+          <span class="res-open" data-edit="lkr.2.badge">Free</span>
         </div>
-        <h3>Shooting Consistency Reset</h3>
-        <p>Daily shooting reps and cues to fix a flat or drifting shot, built into a four week block.</p>
-        <button type="button" class="res-get" data-action="download">Get it by email</button>
+        <h3 data-edit="lkr.2.title">Shooting Consistency Reset</h3>
+        <p data-edit="lkr.2.body">Daily shooting reps and cues to fix a flat or drifting shot, built into a four week block.</p>
+        <button type="button" class="res-get" data-action="download" data-edit="lkr.2.cta">Get it by email</button>
       </article>
 
       <article class="res-c" data-resource-id="3" data-locked="true" data-position="power-forward" data-focus="finishing-through-contact">
         <div class="res-top">
-          <span class="res-meta">4-Week Block · Web + Inbox</span>
-          <span class="res-lock"><i class="lk"></i>Locked</span>
+          <span class="res-meta" data-edit="lkr.3.meta">4-Week Block · Web + Inbox</span>
+          <span class="res-lock"><i class="lk"></i><span data-edit="lkr.3.badge">Locked</span></span>
         </div>
-        <h3>Finishing Through Contact Pack</h3>
-        <p>Angles, off-foot finishes, and pad-pressure progressions.</p>
-        <button type="button" class="res-get" data-action="unlock">Unlock with email</button>
+        <h3 data-edit="lkr.3.title">Finishing Through Contact Pack</h3>
+        <p data-edit="lkr.3.body">Angles, off-foot finishes, and pad-pressure progressions.</p>
+        <button type="button" class="res-get" data-action="unlock" data-edit="lkr.3.cta">Unlock with email</button>
       </article>
 
       <article class="res-c" data-resource-id="4" data-locked="true" data-position="wing" data-focus="defensive-footwork">
         <div class="res-top">
-          <span class="res-meta">4-Week Block · Web + Inbox</span>
-          <span class="res-lock"><i class="lk"></i>Locked</span>
+          <span class="res-meta" data-edit="lkr.4.meta">4-Week Block · Web + Inbox</span>
+          <span class="res-lock"><i class="lk"></i><span data-edit="lkr.4.badge">Locked</span></span>
         </div>
-        <h3>Defensive Footwork Ladder</h3>
-        <p>Closeouts, slides, and hip turns, loaded week by week.</p>
-        <button type="button" class="res-get" data-action="unlock">Unlock with email</button>
+        <h3 data-edit="lkr.4.title">Defensive Footwork Ladder</h3>
+        <p data-edit="lkr.4.body">Closeouts, slides, and hip turns, loaded week by week.</p>
+        <button type="button" class="res-get" data-action="unlock" data-edit="lkr.4.cta">Unlock with email</button>
       </article>
 
       <article class="res-c" data-resource-id="5" data-locked="true" data-comingsoon="true">
         <div class="res-top">
-          <span class="res-meta">5 Sessions</span>
-          <span class="res-lock">Coming Soon</span>
+          <span class="res-meta" data-edit="lkr.5.meta">5 Sessions</span>
+          <span class="res-lock" data-edit="lkr.5.badge">Coming Soon</span>
         </div>
-        <h3>Game IQ Film Series</h3>
-        <p>Reads Coach Blake graded from the college side of the table.</p>
-        <button type="button" class="res-get" disabled aria-disabled="true">Coming Soon</button>
+        <h3 data-edit="lkr.5.title">Game IQ Film Series</h3>
+        <p data-edit="lkr.5.body">Reads Coach Blake graded from the college side of the table.</p>
+        <button type="button" class="res-get" disabled aria-disabled="true" data-edit="lkr.5.cta">Coming Soon</button>
       </article>
 
       <article class="res-c" data-resource-id="6" data-locked="true" data-comingsoon="true">
         <div class="res-top">
-          <span class="res-meta">6 Weeks · Web + Inbox</span>
-          <span class="res-lock">Coming Soon</span>
+          <span class="res-meta" data-edit="lkr.6.meta">6 Weeks · Web + Inbox</span>
+          <span class="res-lock" data-edit="lkr.6.badge">Coming Soon</span>
         </div>
-        <h3>Off-Season Strength Primer</h3>
-        <p>Bodyweight-first strength for players without a weight room.</p>
-        <button type="button" class="res-get" disabled aria-disabled="true">Coming Soon</button>
+        <h3 data-edit="lkr.6.title">Off-Season Strength Primer</h3>
+        <p data-edit="lkr.6.body">Bodyweight-first strength for players without a weight room.</p>
+        <button type="button" class="res-get" disabled aria-disabled="true" data-edit="lkr.6.cta">Coming Soon</button>
       </article>
     </div>
-    <p class="rcp-note" id="lockerNote">Already unlocked before? <a href="#resources" id="lockerLoginLink">Log back in</a> with the same email. Everything stays on this device.</p>
+    <p class="rcp-note" id="lockerNote"><span data-edit="lkr.note1">Already unlocked before? </span><a href="#resources" id="lockerLoginLink" data-edit="lkr.notelink">Log back in</a><span data-edit="lkr.note2"> with the same email. Everything stays on this device.</span></p>
   </div>
 
   <div class="modal-ovl" id="lockerOverlay" hidden>
@@ -96,9 +96,9 @@
       <button type="button" class="modal-x" id="lockerModalClose" aria-label="Close"></button>
 
       <div data-panel="form">
-        <div class="eyebrow">Unlock The Locker</div>
-        <h3 style="margin:14px 0 8px;">Email in. Plans out.</h3>
-        <p class="modal-p">No password, no account setup. Parents and guardians: add your email and every locked plan on this page unlocks on this device. Players, this is the part to hand to a parent.</p>
+        <div class="eyebrow" data-edit="lkr.modal.eyebrow">Unlock The Locker</div>
+        <h3 style="margin:14px 0 8px;" data-edit="lkr.modal.h3">Email in. Plans out.</h3>
+        <p class="modal-p" data-edit="lkr.modal.body">No password, no account setup. Parents and guardians: add your email and every locked plan on this page unlocks on this device. Players, this is the part to hand to a parent.</p>
         <!-- OWNER, PLEASE READ. NOT LEGAL ADVICE. The parent-or-guardian confirmation and the
              privacy/terms links below are a good-faith starting point written by a non-lawyer, to
              cut the risk of collecting a child's email address with no adult involved. They are not
@@ -106,8 +106,8 @@
              and the terms before launch. Parents never see this note; it is a source comment. -->
         <form id="lockerLoginForm" novalidate>
           <div class="fld">
-            <label for="lockerEmail">Parent or Guardian Email</label>
-            <input type="email" id="lockerEmail" name="email" placeholder="you@email.com" autocomplete="email" required>
+            <label for="lockerEmail" data-edit="lkr.modal.lbl">Parent or Guardian Email</label>
+            <input type="email" id="lockerEmail" name="email" placeholder="you@email.com" data-edit-attr="placeholder:lkr.modal.ph" autocomplete="email" required>
           </div>
           <!-- Parent gate. .fld wrapper is deliberate: locker.js finds the error slot with
                input.closest('.fld'). Inline styles only (src/styles/ is frozen this round) — see the
@@ -115,28 +115,28 @@
           <div class="fld">
             <label for="lockerGuardian" style="display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;">
               <input type="checkbox" id="lockerGuardian" name="guardian-confirmed" value="yes" required style="width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;">
-              <span>I'm the player's parent or guardian, or I'm 18 or older, and this is my own email address.</span>
+              <span data-edit="lkr.modal.consent">I'm the player's parent or guardian, or I'm 18 or older, and this is my own email address.</span>
             </label>
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;">Unlock The Locker</button>
+          <button type="submit" class="btn btn-primary" style="width:100%;" data-edit="lkr.modal.submit">Unlock The Locker</button>
         </form>
-        <p class="pb-note">Same list as the playbook. One short follow up, nothing else.</p>
-        <p class="pb-note" style="margin-top:4px;">What we do with it: <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Privacy</a> and <a href="/terms" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Terms</a>.</p>
+        <p class="pb-note" data-edit="lkr.modal.note1">Same list as the playbook. One short follow up, nothing else.</p>
+        <p class="pb-note" style="margin-top:4px;"><span data-edit="lkr.modal.note2a">What we do with it: </span><a href="/privacy" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Privacy</a><span data-edit="lkr.modal.note2b"> and </span><a href="/terms" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Terms</a><span data-edit="lkr.modal.note2c">.</span></p>
       </div>
 
       <div data-panel="sent" hidden>
-        <div class="eyebrow">One Second</div>
-        <h3 style="margin:14px 0 8px;">Unlocking...</h3>
-        <p class="modal-p">Signing you in and queuing a copy to your inbox.</p>
+        <div class="eyebrow" data-edit="lkr.sent.eyebrow">One Second</div>
+        <h3 style="margin:14px 0 8px;" data-edit="lkr.sent.h3">Unlocking...</h3>
+        <p class="modal-p" data-edit="lkr.sent.body">Signing you in and queuing a copy to your inbox.</p>
       </div>
 
       <div data-panel="in" hidden>
-        <div class="eyebrow">My Locker</div>
-        <h3 style="margin:14px 0 8px;">You are in.</h3>
-        <p class="modal-p">Signed in as <b style="color:var(--bone);" id="lockerUserEmail"></b>. Every locked plan on this page is open, and downloads land in your inbox too.</p>
+        <div class="eyebrow" data-edit="lkr.in.eyebrow">My Locker</div>
+        <h3 style="margin:14px 0 8px;" data-edit="lkr.in.h3">You are in.</h3>
+        <p class="modal-p"><span data-edit="lkr.in.body1">Signed in as </span><b style="color:var(--bone);" id="lockerUserEmail"></b><span data-edit="lkr.in.body2">. Every locked plan on this page is open, and downloads land in your inbox too.</span></p>
         <div class="modal-row">
-          <button type="button" class="btn btn-ghost" id="lockerLogoutBtn">Log Out</button>
-          <a href="#resources" class="btn btn-primary" id="lockerGotoBtn">Go to the Locker</a>
+          <button type="button" class="btn btn-ghost" id="lockerLogoutBtn" data-edit="lkr.in.logout">Log Out</button>
+          <a href="#resources" class="btn btn-primary" id="lockerGotoBtn" data-edit="lkr.in.goto">Go to the Locker</a>
         </div>
       </div>
     </div>

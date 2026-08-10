@@ -28,6 +28,9 @@
     mode: 'canvas',
     legacyId: null,
     activeField: null,
+    // Values of the open legacy section's hook keys, taken the moment it was opened —
+    // not part of undo history, just a baseline "Revert section" restores to.
+    legacySnapshot: null,
     content: { text: {}, images: {} },
     local: true,
     hasDraft: false,
@@ -39,6 +42,11 @@
   var frame = document.getElementById('canvasFrame');
   var frameWin = null;
   var renderTimer = null;
+  // True while an inline canvas edit (typing directly into a [data-edit] leaf) is in
+  // progress. The sidebar field's own 420ms debounce checks this so a mid-typing tick
+  // cannot fire the full re-render that would destroy the caret it is typing into —
+  // that re-render happens once instead, on the frame's fieldCommit.
+  var inlineEditing = false;
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -326,6 +334,7 @@
           state.mode = 'legacy';
           state.legacyId = sec.id;
           state.selectedId = null;
+          state.legacySnapshot = snapshotLegacySection(sec);
           renderAll();
         });
       }
@@ -1047,7 +1056,7 @@
         if (out.error) { toast(out.error, 'error'); return; }
         frameWin.CanvasFrame.onEvent = handleFrameEvent;
         frameWin.CanvasFrame.load({ html: out.html, css: '', section: null, legacy: true });
-        showBlockingErrors([]);
+        updateStageNotice([]);
       }).catch(function (err) {
         console.error('[legacy render]', err);
         toast('Could not draw that section: ' + (err && err.message ? err.message : 'unknown error'), 'error');
@@ -1072,7 +1081,7 @@
       // parent is authoritative; a silent push cannot echo back as a 'select' and so
       // cannot rebuild the inspector while the owner is typing in it.
       frameWin.CanvasFrame.select(state.selectedId, true);
-      showBlockingErrors(out.errors);
+      updateStageNotice(out.errors);
     }).catch(function (err) {
       // Log the real thing. This catch spans the whole chain, so a TypeError inside
       // the render path used to surface as "is the dev server still running?", which
@@ -1082,18 +1091,34 @@
     });
   }
 
-  // These are the same checks that will FAIL THE BUILD. Surfacing them while the
+  // Errors are the same checks that will FAIL THE BUILD. Surfacing them while the
   // element is still half-built is the difference between a warning you can act on and
   // a build error later with no context — but only if they are actually visible. They
   // used to be written into the inspector's field list, which is hidden whenever
   // nothing is selected, so a section-level error was shown only by accident.
-  function showBlockingErrors(errors) {
+  //
+  // Absent an error, the footer gets an honest-limits note instead: its Training column
+  // is not one of the section's hooks — B derives it from the real training pages — so
+  // an owner clicking around the footer's fields should not have to guess why that
+  // column never showed up as an editable one.
+  function updateStageNotice(errors) {
     var bar = $('sectionAlert');
-    if (!errors || !errors.length) { bar.hidden = true; bar.textContent = ''; return; }
-    bar.textContent = errors.length === 1
-      ? errors[0]
-      : errors[0] + '  (+' + (errors.length - 1) + ' more)';
-    bar.hidden = false;
+    if (errors && errors.length) {
+      bar.dataset.tone = 'error';
+      bar.textContent = errors.length === 1
+        ? errors[0]
+        : errors[0] + '  (+' + (errors.length - 1) + ' more)';
+      bar.hidden = false;
+      return;
+    }
+    if (state.mode === 'legacy' && state.legacyId === 'footer') {
+      bar.dataset.tone = 'info';
+      bar.textContent = 'The Training column lists the real training pages and follows them automatically — it is not edited here.';
+      bar.hidden = false;
+      return;
+    }
+    bar.hidden = true;
+    bar.textContent = '';
   }
 
   var renderQueued = false;
@@ -1136,6 +1161,20 @@
       // re-render, because the frame already moved the node moveable is holding.
     } else if (e.type === 'field') {
       renderLegacyField(e.key, e.kind);
+    } else if (e.type === 'fieldInput') {
+      // Per keystroke: sync the model and the sidebar so nothing is lost if the owner
+      // clicks away without ever blurring, but no re-render — the canvas node already
+      // shows what was typed, and replacing it mid-edit would take the caret with it.
+      inlineEditing = true;
+      state.content.text[e.key] = e.value;
+      markDirty();
+      syncFieldRowValue(e.key, e.value);
+    } else if (e.type === 'fieldCommit') {
+      inlineEditing = false;
+      state.content.text[e.key] = e.value;
+      markDirty();
+      syncFieldRowValue(e.key, e.value);
+      renderCanvas();
     } else if (e.type === 'delete') {
       deleteElement();
     } else if (e.type === 'shortcut') {
@@ -1150,6 +1189,39 @@
   }
 
   // ------------------------------------------------------------------ inspector
+
+  // A hook's current value lives in state.content.images if it is a data-img key,
+  // otherwise in state.content.text — the hooks array itself is just key strings, with
+  // no kind attached, so whichever store actually has the key IS the kind.
+  function snapshotLegacySection(sec) {
+    var snap = {};
+    (sec.hooks || []).forEach(function (key) {
+      if (state.content.images && Object.prototype.hasOwnProperty.call(state.content.images, key)) {
+        snap[key] = { store: 'images', value: clone(state.content.images[key]) };
+      } else {
+        snap[key] = { store: 'text', value: (state.content.text || {})[key] };
+      }
+    });
+    return snap;
+  }
+
+  // Confirmed, like deleteMedia — window.confirm rather than a hand-built dialog, since
+  // it is keyboard-operable for free and this discards every unsaved edit to the
+  // section, not just one field.
+  function revertSection() {
+    if (!state.legacySnapshot) return;
+    if (!window.confirm('Revert this section to how it was when you opened it? Unsaved edits to it will be lost.')) return;
+    pushHistory();
+    Object.keys(state.legacySnapshot).forEach(function (key) {
+      var entry = state.legacySnapshot[key];
+      if (entry.store === 'images') state.content.images[key] = clone(entry.value);
+      else state.content.text[key] = entry.value;
+    });
+    markDirty();
+    renderInspector();
+    renderCanvas();
+    toast('Section reverted. Ctrl+Z undoes it.');
+  }
 
   // Editing a hand-built section edits content.json, which is what those templates have
   // always read from — the same store the existing content admin writes. No new data
@@ -1216,6 +1288,15 @@
     }, true, true));
   }
 
+  // Reflects an inline canvas edit into the sidebar field for the same key, if that
+  // field is the one currently open — direct property assignment, not a rebuild, so it
+  // never fires the input event that would restart this same field's own debounce.
+  function syncFieldRowValue(key, value) {
+    if (!state.activeField || state.activeField.key !== key) return;
+    var input = $('inspFields').querySelector('textarea, input[type="text"]');
+    if (input && document.activeElement !== input) input.value = value;
+  }
+
   function fieldRow(label, value, onInput, primary, multiline) {
     var wrap = document.createElement('div');
     wrap.className = 'ed-field';
@@ -1235,7 +1316,9 @@
       if (!pending) { pushHistory(); pending = true; }
       onInput(input.value);
       clearTimeout(t);
-      t = setTimeout(function () { pending = false; renderCanvas(); }, 420);
+      // Suppressed while an inline canvas edit owns this same tick — that edit's own
+      // commit already queues the one re-render this field's change needs.
+      t = setTimeout(function () { pending = false; if (!inlineEditing) renderCanvas(); }, 420);
     });
     wrap.appendChild(l);
     wrap.appendChild(input);
@@ -1243,6 +1326,8 @@
   }
 
   function renderInspector() {
+    // Section-level, so it shows whether or not a field within the section is selected.
+    $('revertBar').hidden = !(state.mode === 'legacy' && state.legacySnapshot);
     if (state.mode === 'legacy') {
       if (!state.activeField) {
         $('inspectorEmpty').hidden = false;
@@ -1573,6 +1658,69 @@
     });
   }
 
+  // ------------------------------------------------------------------ site
+
+  // Mirrors the defaults render.mjs falls back to when content.json has no `motion`
+  // object at all — same numbers, so a fresh site and an explicitly-default one look
+  // identical in this panel.
+  var MOTION_DEFAULTS = {
+    enabled: true, speed: 1, intro: true, ticker: true, tickerSeconds: 38,
+    reveals: true, countUp: true, nightAmbient: true
+  };
+
+  // Read-only view, defaults included — does NOT write state.content.motion, so opening
+  // the panel and looking at it is not itself an edit. setMotion() is what materialises
+  // the object, and only on an actual change.
+  function motion() { return state.content.motion || MOTION_DEFAULTS; }
+
+  function setMotion(key, value) {
+    if (!state.content.motion) state.content.motion = clone(MOTION_DEFAULTS);
+    state.content.motion[key] = value;
+    markDirty();
+    applyMotionPreview();
+  }
+
+  // The intro overlay and the scoreboard count-up are real page load events (an
+  // overlay that plays once, a counter racing on scroll-into-view) that this canvas
+  // never runs, so there is nothing for those two settings to preview here — everything
+  // else (ticker, reveals, night ambience, speed) is CSS state on <html> and takes
+  // effect the instant it is set, same as on the published page.
+  function applyMotionPreview() {
+    if (!frameWin || !frameWin.document) return;
+    var docEl = frameWin.document.documentElement;
+    var m = motion();
+    var setOff = function (attr, off) { if (off) docEl.setAttribute(attr, 'off'); else docEl.removeAttribute(attr); };
+    setOff('data-motion', m.enabled === false);
+    setOff('data-intro', m.intro === false);
+    setOff('data-ticker', m.ticker === false);
+    setOff('data-reveals', m.reveals === false);
+    setOff('data-night', m.nightAmbient === false);
+    docEl.style.setProperty('--motion-speed', String(m.speed || 1));
+    docEl.style.setProperty('--t-ticker', String(m.tickerSeconds || 38) + 's');
+  }
+
+  function renderSite() {
+    var m = motion();
+
+    // Skip an input currently focused, same reasoning as the legacy field rows: a
+    // renderAll() triggered by something else entirely (undo, switching pages) must not
+    // yank the caret out from under whoever is mid-keystroke here.
+    var title = $('siteTitle');
+    var desc = $('siteDesc');
+    if (document.activeElement !== title) title.value = (state.content.text || {})['meta.title'] || '';
+    if (document.activeElement !== desc) desc.value = (state.content.text || {})['meta.desc'] || '';
+
+    $('motionEnabled').checked = m.enabled !== false;
+    $('motionSpeed').value = m.speed || 1;
+    $('motionSpeedVal').textContent = (m.speed || 1) + 'x';
+    $('motionIntro').checked = m.intro !== false;
+    $('motionTicker').checked = m.ticker !== false;
+    if (document.activeElement !== $('motionTickerSeconds')) $('motionTickerSeconds').value = m.tickerSeconds || 38;
+    $('motionReveals').checked = m.reveals !== false;
+    $('motionCountUp').checked = m.countUp !== false;
+    $('motionNight').checked = m.nightAmbient !== false;
+  }
+
   // ------------------------------------------------------------------ wiring
 
   // The artboard stays at DESIGN_WIDTH and the view zooms, rather than the artboard
@@ -1615,10 +1763,12 @@
     renderSections();
     renderLayers();
     renderMedia();
+    renderSite();
     fitCanvas();
     $('crumb').textContent = currentPage().path + '  ·  ' + (currentSection() ? currentSection().name : 'no section');
     renderInspector();
     renderCanvas();
+    applyMotionPreview();
   }
 
   $('saveBtn').addEventListener('click', save);
@@ -1627,6 +1777,32 @@
   $('redoBtn').addEventListener('click', redo);
   $('deleteBtn').addEventListener('click', deleteElement);
   $('duplicateBtn').addEventListener('click', duplicateElement);
+  $('revertSectionBtn').addEventListener('click', revertSection);
+
+  $('siteTitle').addEventListener('input', function () {
+    state.content.text['meta.title'] = $('siteTitle').value;
+    markDirty();
+  });
+  $('siteDesc').addEventListener('input', function () {
+    state.content.text['meta.desc'] = $('siteDesc').value;
+    markDirty();
+  });
+  $('motionEnabled').addEventListener('change', function () { setMotion('enabled', $('motionEnabled').checked); });
+  $('motionSpeed').addEventListener('input', function () {
+    var v = Number($('motionSpeed').value);
+    $('motionSpeedVal').textContent = v + 'x';
+    setMotion('speed', v);
+  });
+  $('motionIntro').addEventListener('change', function () { setMotion('intro', $('motionIntro').checked); });
+  $('motionTicker').addEventListener('change', function () { setMotion('ticker', $('motionTicker').checked); });
+  $('motionTickerSeconds').addEventListener('change', function () {
+    var v = clamp(Math.round(Number($('motionTickerSeconds').value) || 38), 10, 120);
+    $('motionTickerSeconds').value = v;
+    setMotion('tickerSeconds', v);
+  });
+  $('motionReveals').addEventListener('change', function () { setMotion('reveals', $('motionReveals').checked); });
+  $('motionCountUp').addEventListener('change', function () { setMotion('countUp', $('motionCountUp').checked); });
+  $('motionNight').addEventListener('change', function () { setMotion('nightAmbient', $('motionNight').checked); });
 
   $('mediaAddBtn').addEventListener('click', function () { $('mediaFile').click(); });
   $('mediaFile').addEventListener('change', function () {
@@ -1711,6 +1887,10 @@
     frameWin = frame.contentWindow;
     if (frameWin.CanvasFrame) frameWin.CanvasFrame.onEvent = handleFrameEvent;
     if (state.site) { fitCanvas(); renderCanvas(); }
+    // documentElement survives every load() (only #stage is replaced), so this is the
+    // one place the preview attributes need setting outside of an actual motion change —
+    // everywhere else they'd already be sitting on the same, still-live <html>.
+    applyMotionPreview();
   }
 
   frame.addEventListener('load', onFrameReady);

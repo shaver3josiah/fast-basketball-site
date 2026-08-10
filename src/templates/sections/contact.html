@@ -1,21 +1,21 @@
 <section class="band band-dark" id="contact">
   <div class="shell ct">
     <div class="ct-side">
-      <div class="eyebrow rise">Book a Session</div>
-      <h2 class="zr">Start with a <br><span class="hollow">First Look.</span></h2>
+      <div class="eyebrow rise" data-edit="ct.eyebrow">Book a Session</div>
+      <h2 class="zr"><span data-edit="ct.h2a">Start with a </span><br><span class="hollow" data-edit="ct.h2b">First Look.</span></h2>
       <p class="lede rise" data-edit="ct.lede">Send the form or email directly. You will hear back within one business day with open slots for your area.</p>
       <div class="ct-rows rise">
         <!-- PHONE ROW REMOVED: there is no published number yet, and a fake one is worse than none.
              To restore, paste the line below with the real number and set "ct.phone" in src/data/content.json to match:
              <div class="ct-r"><b>Phone</b><a href="tel:+1954XXXXXXX" data-edit="ct.phone">(954) XXX-XXXX</a></div> -->
-        <div class="ct-r"><b>Email</b><a href="mailto:coach@kingfastbasketball.com" data-edit="ct.email">coach@kingfastbasketball.com</a></div>
-        <div class="ct-r"><b>Instagram</b><span data-edit="ct.ig">@blakekingsleyjr</span></div>
-        <div class="ct-r"><b>Service Area</b><span data-edit="ct.area">North Broward County, Florida</span></div>
+        <div class="ct-r"><b data-edit="ct.row.email">Email</b><a href="mailto:coach@kingfastbasketball.com" data-edit="ct.email">coach@kingfastbasketball.com</a></div>
+        <div class="ct-r"><b data-edit="ct.row.ig">Instagram</b><span data-edit="ct.ig">@blakekingsleyjr</span></div>
+        <div class="ct-r"><b data-edit="ct.row.area">Service Area</b><span data-edit="ct.area">North Broward County, Florida</span></div>
       </div>
       <!-- Once the Business Profile clears verification: embed the review widget and the map here, and add a Leave a Review link. -->
       <div class="gbp rise">
-        <b>Google Reviews</b>
-        <p>The Google Business Profile is in verification right now. Once it clears, parent reviews land right here. Until then, ask at your First Look and we will put you in touch with families already training with us.</p>
+        <b data-edit="ct.rev.source">Google Reviews</b>
+        <p data-edit="ct.rev.body">The Google Business Profile is in verification right now. Once it clears, parent reviews land right here. Until then, ask at your First Look and we will put you in touch with families already training with us.</p>
       </div>
     </div>
     <div class="pb-form rise">
@@ -27,21 +27,21 @@
            The exact string on the next line is matched by fixContactForm in src/render.mjs to
            inject the Netlify attributes and honeypot — do not edit it. -->
       <form id="ctForm" novalidate>
-        <p class="pb-note" style="margin:0 0 18px;">Parents and guardians, send this one yourself. Coach Blake replies to you, and nothing gets booked until you say yes to a time.</p>
+        <p class="pb-note" style="margin:0 0 18px;" data-edit="ct.gatenote">Parents and guardians, send this one yourself. Coach Blake replies to you, and nothing gets booked until you say yes to a time.</p>
         <div class="fld-row">
-          <div class="fld"><label for="cName">Parent or Guardian Name</label><input type="text" id="cName" name="name" autocomplete="name" placeholder="Your name" required></div>
-          <div class="fld"><label for="cPhone">Your Phone</label><input type="tel" id="cPhone" name="phone" autocomplete="tel" placeholder="(954) 555 0100"></div>
+          <div class="fld"><label for="cName" data-edit="ct.lbl.name">Parent or Guardian Name</label><input type="text" id="cName" name="name" autocomplete="name" placeholder="Your name" data-edit-attr="placeholder:ct.ph.name" required></div>
+          <div class="fld"><label for="cPhone" data-edit="ct.lbl.phone">Your Phone</label><input type="tel" id="cPhone" name="phone" autocomplete="tel" placeholder="(954) 555 0100" data-edit-attr="placeholder:ct.ph.phone"></div>
         </div>
-        <div class="fld"><label for="cEmail">Parent or Guardian Email</label><input type="email" id="cEmail" name="email" autocomplete="email" placeholder="you@email.com" required></div>
+        <div class="fld"><label for="cEmail" data-edit="ct.lbl.email">Parent or Guardian Email</label><input type="email" id="cEmail" name="email" autocomplete="email" placeholder="you@email.com" data-edit-attr="placeholder:ct.ph.email" required></div>
         <div class="fld">
-          <label for="cArea">Area</label>
+          <label for="cArea" data-edit="ct.lbl.area">Area</label>
           <select id="cArea" name="area">
             <option>Coral Springs</option><option>Parkland</option><option>Coconut Creek</option>
             <option>Margate</option><option>Tamarac</option>
             <option>Other</option>
           </select>
         </div>
-        <div class="fld"><label for="cMsg">Tell us about the player</label><textarea id="cMsg" name="message" placeholder="Grade, position, current team, and where they want to be playing in two years."></textarea></div>
+        <div class="fld"><label for="cMsg" data-edit="ct.lbl.msg">Tell us about the player</label><textarea id="cMsg" name="message" placeholder="Grade, position, current team, and where they want to be playing in two years." data-edit-attr="placeholder:ct.ph.msg"></textarea></div>
         <input type="hidden" name="program" id="cProgram" value="">
         <p class="trust-line" id="ctProgramLine" style="display:none;"></p>
         <!-- Parent gate. .fld wrapper is deliberate: contact-form.js finds the error slot with
@@ -50,13 +50,13 @@
         <div class="fld">
           <label for="ctGuardian" style="display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;">
             <input type="checkbox" id="ctGuardian" name="guardian-confirmed" value="yes" required style="width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;">
-            <span>I'm the player's parent or guardian, or I'm 18 or older, and these are my own contact details.</span>
+            <span data-edit="ct.consent">I'm the player's parent or guardian, or I'm 18 or older, and these are my own contact details.</span>
           </label>
         </div>
         <p class="f-err" id="ctErr" role="alert" style="display:none;margin:0 0 12px;"></p>
-        <button type="submit" class="btn btn-primary" style="width:100%;">Send and Get Slots</button>
-        <p class="trust-line">You hear back within one business day with open slots. No obligation, and the first session is free.</p>
-        <p class="pb-note" style="margin-top:4px;">What we do with it: <a href="/privacy" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Privacy</a> and <a href="/terms" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;">Terms</a>.</p>
+        <button type="submit" class="btn btn-primary" style="width:100%;" data-edit="ct.submit">Send and Get Slots</button>
+        <p class="trust-line" data-edit="ct.trust">You hear back within one business day with open slots. No obligation, and the first session is free.</p>
+        <p class="pb-note" style="margin-top:4px;"><span data-edit="ct.note1">What we do with it: </span><a href="/privacy" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;" data-edit="ct.notelink1">Privacy</a><span data-edit="ct.note2"> and </span><a href="/terms" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;" data-edit="ct.notelink2">Terms</a><span data-edit="ct.note3">.</span></p>
       </form>
       <div class="pb-out" id="ctDone" tabindex="-1">
         <!-- aria-level rather than a real level 2 tag: base.css styles this through the
@@ -64,9 +64,9 @@
              ours to change. Level 2 reads correctly on both pages, under the h1 on /contact/
              and alongside the section headings on the homepage. Left at level 4 it skipped
              straight down from the /contact/ h1. -->
-        <h2>Got it. Message received.</h2>
-        <p>Coach Blake reads these himself. You will hear back within one business day with open slots for your area, and nothing happens until you say yes to a time.</p>
-        <p>If it has not landed by then, check your spam folder for <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a>, then email us directly and we will sort it out.</p>
+        <h2 data-edit="ct.done.h2">Got it. Message received.</h2>
+        <p data-edit="ct.done.p1">Coach Blake reads these himself. You will hear back within one business day with open slots for your area, and nothing happens until you say yes to a time.</p>
+        <p><span data-edit="ct.done.p2a">If it has not landed by then, check your spam folder for </span><a href="mailto:coach@kingfastbasketball.com" data-edit="ct.email">coach@kingfastbasketball.com</a><span data-edit="ct.done.p2b">, then email us directly and we will sort it out.</span></p>
       </div>
     </div>
   </div>
