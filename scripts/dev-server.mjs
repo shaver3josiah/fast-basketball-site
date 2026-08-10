@@ -177,9 +177,15 @@ async function callFunction(name, req, res) {
     body: req.method === 'GET' || req.method === 'HEAD' ? undefined : body
   });
 
+  // Netlify always passes a context as the second argument, so a handler that reads
+  // context.ip (playbook.mjs does, for its rate limit) threw here on every local request
+  // while working perfectly in production. Passing one keeps the promise this server is
+  // built on: the same handler code runs in both places, unmocked.
+  const context = { ip: (req.socket && req.socket.remoteAddress) || '127.0.0.1' };
+
   let response;
   try {
-    response = await mod.default(request);
+    response = await mod.default(request, context);
   } catch (err) {
     console.error('[fn ' + name + '] ' + err.stack);
     // status is set by store.mjs on a write conflict; anything else is a real 500.
