@@ -121,16 +121,27 @@ Estimate: **3–4 sessions**
 - Page management: create, duplicate, delete, slug, per-page SEO, nav and footer.
 - Leads: CSV export and per-lead status.
 
-### Then — go live
+### Go live — code side done, 8 Aug
 **Goal: the site is public and the owner is editing it.**
-Estimate: **1 session, plus owner steps**
 
-Netlify wiring is now safe because the publish split exists. The runbooks are already
-written: `phase-c/P10-netlify-deployment-guide.md`, `P11-domain-dns-runbook.md`,
-`P12-gbp-local-seo-launch.md`.
+`main` was 18 commits behind and would have deployed the 5 August site with no editor and
+no media library at all. It has been fast-forwarded to the current work and pushed, builds
+clean, and matches the golden baseline. The site will launch **indexable** —
+`ROBOTS_ALLOW = "true"` in the production context, a deliberate choice.
 
-**Blocked on you, not on code:** the domain purchase, and the environment variables
-(`ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `GITHUB_TOKEN`, `GITHUB_REPO`, `SITE_URL`).
+The checklist is `LAUNCH.md`, which supersedes `phase-c/P10-netlify-deployment-guide.md`
+wherever they disagree. P10 was audited at 92.5/100 against the 4 August site and five
+parts of it are now wrong — most importantly its whole Netlify Identity section, which
+describes an auth model this site does not use, and its variable table, which omits the
+four variables everything now depends on.
+
+**Blocked on you, not on code**, and not delegable: creating the Netlify site, entering the
+environment variables (they are secrets), buying the domain, and pointing DNS. `LAUNCH.md`
+has the exact steps and the five-minute verification pass that proves it worked.
+
+One reconciliation waiting on you: `phase-c/P11` recommends `fastbasketballmiami.com`, but
+the business moved to north Broward the day after P11 was written, and the code has settled
+on `kingfastbasketball.com`. Buy that, or change the code before buying something else.
 
 ---
 

@@ -59,9 +59,9 @@ Set these in the Netlify dashboard under Site configuration, Environment variabl
 | `ADMIN_PASSWORD` | The single password that unlocks /admin. |
 | `ADMIN_SESSION_SECRET` | A long random string used to sign the admin login cookie. Generate once, never reuse elsewhere. |
 | `GITHUB_TOKEN` | A fine-grained GitHub personal access token, write access to this one repository only. Lets the admin panel commit content and photo changes. |
-| `GITHUB_REPO` | The repository in `owner/name` form, for example `blakekingsley/fast-basketball`. |
-| `GITHUB_BRANCH` | The branch the site deploys from. Defaults to `main` if not set. |
-| `NETLIFY_BUILD_HOOK_URL` | Optional. A Netlify build hook URL. If set, the admin panel calls it after every save as a backup trigger, in case GitHub-triggered auto deploys are ever turned off. |
+| `GITHUB_REPO` | The repository in `owner/name` form. For this site: `shaver3josiah/fast-basketball-site`. |
+| `GITHUB_BRANCH` | The branch the site deploys from. Defaults to `main` if not set, which is the branch this site deploys from, so it can normally be left unset. |
+| `NETLIFY_BUILD_HOOK_URL` | Optional, and deliberately narrow. Only `admin-content.mjs` (hand-built section saves) and the add-a-resume-card path in `admin-upload.mjs` call it. The canvas editor and the media library never do — they stage their work and commit once on Publish, which is what keeps a batch of edits down to one deploy. Setting this makes those two older paths trigger a build immediately. |
 | `RESEND_API_KEY` | API key for the Resend transactional email service, used to email the generated playbook. |
 | `PLAYBOOK_FROM_EMAIL` | The from address playbook emails are sent from, for example `playbook@kingfastbasketball.com`. Must be a verified sender in Resend. |
 
