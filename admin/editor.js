@@ -677,13 +677,68 @@
   var cropState = null;
   var cropDragging = null;
   var CROP_MIN = 24;
+  // Which legacy image key the picker sheet's + Add photo tile is uploading for. Read
+  // once, by the hidden file input's own change handler, at the moment a file is chosen.
+  var photoPickerAssignKey = null;
 
   function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
-  function queueUploads(fileList) {
+  // The sheet a legacy photo field's "Replace photo" button opens: + Add photo first,
+  // then every photo already available at ~90px with alt as the label.
+  function openPhotoPicker(key) {
+    photoPickerAssignKey = key;
+    var grid = $('photoPickerGrid');
+    grid.innerHTML = '';
+
+    var addTile = document.createElement('button');
+    addTile.type = 'button';
+    addTile.className = 'ed-thumb ed-thumb-add';
+    addTile.textContent = '＋ Add photo';
+    addTile.title = 'Upload a new photo and use it here';
+    addTile.addEventListener('click', function () {
+      closePhotoPicker();
+      $('photoPickerFile').click();
+    });
+    grid.appendChild(addTile);
+
+    var images = pickerImages();
+    var keys = Object.keys(images);
+    var rest = thumbPicker(images, keys, key, function (pickedKey) {
+      var chosen = images[pickedKey];
+      if (!chosen) return;
+      // Swapping a photo is exactly the kind of change someone undoes, and snapshot()
+      // already clones content.images — this path just never recorded one, so Undo
+      // silently skipped past the swap to whatever was changed before it.
+      pushHistory();
+      state.content.images[key] = Object.assign({}, state.content.images[key], {
+        src: chosen.src,
+        width: chosen.width,
+        height: chosen.height,
+        alt: chosen.alt || ''
+      });
+      markDirty();
+      closePhotoPicker();
+      renderInspector();
+      renderCanvas();
+    });
+    while (rest.firstChild) grid.appendChild(rest.firstChild);
+
+    $('photoPicker').hidden = false;
+    addTile.focus();
+  }
+
+  function closePhotoPicker() {
+    $('photoPicker').hidden = true;
+  }
+
+  // assignKey is set when the upload started from a legacy photo field's + Add photo
+  // tile or a canvas drop, so the crop confirm step knows to apply the result there
+  // immediately rather than only adding it to the library. Plain uploads (the Photos
+  // panel's Add photos button, its drop zone) pass none.
+  function queueUploads(fileList, assignKey) {
     var files = Array.prototype.filter.call(fileList, function (f) { return ACCEPTED_MEDIA_MIME[f.type]; });
     if (!files.length) { toast('Choose a JPEG, PNG or WEBP photo.', 'error'); return; }
-    uploadQueue = uploadQueue.concat(files);
+    uploadQueue = uploadQueue.concat(files.map(function (f) { return { file: f, assignKey: assignKey || null }; }));
     if (!cropState) startNextCrop();
   }
 
@@ -693,12 +748,12 @@
       cropState = null;
       return;
     }
-    var file = uploadQueue.shift();
-    openCropModal(file, URL.createObjectURL(file));
+    var next = uploadQueue.shift();
+    openCropModal(next.file, URL.createObjectURL(next.file), next.assignKey);
   }
 
-  function openCropModal(file, url) {
-    cropState = { file: file, url: url };
+  function openCropModal(file, url, assignKey) {
+    cropState = { file: file, url: url, assignKey: assignKey || null };
     $('mediaModal').hidden = false;
 
     var wrap = $('cropWrap');
@@ -1056,6 +1111,11 @@
         if (out.error) { toast(out.error, 'error'); return; }
         frameWin.CanvasFrame.onEvent = handleFrameEvent;
         frameWin.CanvasFrame.load({ html: out.html, css: '', section: null, legacy: true });
+        // Measured AFTER load(), not before: the frame's own scrollHeight already
+        // accounts for whatever the real templates and their CSS actually laid out, so
+        // there is nothing here to get subtly wrong.
+        legacyFrameHeight = measureLegacyHeight();
+        fitCanvas();
         updateStageNotice([]);
       }).catch(function (err) {
         console.error('[legacy render]', err);
@@ -1160,7 +1220,11 @@
       // rebuild here would blow away focus for anyone mid-edit. And no canvas
       // re-render, because the frame already moved the node moveable is holding.
     } else if (e.type === 'field') {
-      renderLegacyField(e.key, e.kind);
+      renderLegacyField(e.key, e.kind, e.groupId, e.gi, e.excludedReason);
+    } else if (e.type === 'dropImage') {
+      // Same targeted crop flow as the picker sheet's + Add photo tile — a file dropped
+      // straight onto the photo it is replacing skips the sheet entirely.
+      queueUploads([e.file], e.key);
     } else if (e.type === 'fieldInput') {
       // Per keystroke: sync the model and the sidebar so nothing is lost if the owner
       // clicks away without ever blurring, but no re-render — the canvas node already
@@ -1189,6 +1253,119 @@
   }
 
   // ------------------------------------------------------------------ inspector
+
+  // A fixed, tiny projection of the registry in src/lib/content-groups.mjs — a Node ESM
+  // module the browser cannot import. The contract fixes these seven groups, so a small
+  // hardcoded table here is the whole fix; nothing computes label or count from the DOM.
+  // Comes from the build, which generates it from the same CONTENT_GROUPS registry that
+  // does the reordering — so a group whose size changes cannot leave this panel counting
+  // to the old number. The literal below is only a floor for an editor loaded against a
+  // schema built before groupInfo existed.
+  var GROUP_INFO = (SCHEMA && SCHEMA.groupInfo) || {
+    rcp:  { label: 'Résumé card',     count: 4 },
+    prog: { label: 'Program card',    count: 4 },
+    cred: { label: 'Credential',      count: 4 },
+    sb:   { label: 'Scoreboard tile', count: 4 },
+    lkr:  { label: 'Locker card',     count: 6 },
+    area: { label: 'Area tile',       count: 5 },
+    faq:  { label: 'FAQ item',        count: 6 }
+  };
+
+  // Same rule applyGroupOrder uses at build time: an order array only counts if it is an
+  // actual permutation of 0..count-1, or a stale/short/duplicated array would either
+  // throw here or silently disagree with what the build ships.
+  function isValidOrder(arr, count) {
+    if (!Array.isArray(arr) || arr.length !== count) return false;
+    var seen = {};
+    for (var i = 0; i < arr.length; i++) {
+      var v = arr[i];
+      if (typeof v !== 'number' || v < 0 || v >= count || seen[v]) return false;
+      seen[v] = true;
+    }
+    return true;
+  }
+
+  function groupOrder(groupId, count) {
+    var order = state.content.order && state.content.order[groupId];
+    if (isValidOrder(order, count)) return order.slice();
+    var natural = [];
+    for (var i = 0; i < count; i++) natural.push(i);
+    return natural;
+  }
+
+  // Swaps this item with its neighbour in the VISUAL order, initialising order[groupId]
+  // to natural order on the first move a group ever gets — same lazy-materialisation
+  // the motion panel already uses for state.content.motion.
+  function moveGroupItem(groupId, gi, dir) {
+    var info = GROUP_INFO[groupId];
+    if (!info) return;
+    var order = groupOrder(groupId, info.count);
+    var idx = order.indexOf(gi);
+    var j = idx + dir;
+    if (idx < 0 || j < 0 || j >= order.length) return;
+    pushHistory();
+    var tmp = order[idx];
+    order[idx] = order[j];
+    order[j] = tmp;
+    if (!state.content.order) state.content.order = {};
+    state.content.order[groupId] = order;
+    markDirty();
+    // Re-render the panel synchronously (same key stays selected, position/labels move)
+    // and the canvas asynchronously (the real reordered HTML comes from the server).
+    renderInspector();
+    renderCanvas();
+  }
+
+  // Replaces the empty POSITION box for a legacy selection: either the honest "N of M"
+  // plus Move earlier/later, or one plain sentence when there is nothing to reorder.
+  // Canvas selections never call this — renderGeometry keeps the x/y/w/h grid.
+  function renderLayoutPanel(field) {
+    var grid = $('geoGrid');
+    grid.classList.add('is-layout');
+    grid.innerHTML = '';
+    $('geoHeading').textContent = 'Layout';
+
+    var info = field && field.groupId ? GROUP_INFO[field.groupId] : null;
+    if (info) {
+      var order = groupOrder(field.groupId, info.count);
+      var idx = order.indexOf(field.gi);
+      if (idx < 0) idx = 0; // a stale/unknown gi behaves as first rather than throwing
+
+      var status = document.createElement('p');
+      status.className = 'ed-layout-status';
+      status.textContent = info.label + ' ' + (idx + 1) + ' of ' + info.count;
+      grid.appendChild(status);
+
+      var row = document.createElement('div');
+      row.className = 'ed-layout-row';
+      var earlier = document.createElement('button');
+      earlier.type = 'button';
+      earlier.className = 'ed-btn';
+      earlier.textContent = 'Move earlier';
+      earlier.disabled = idx === 0;
+      earlier.addEventListener('click', function () { moveGroupItem(field.groupId, field.gi, -1); });
+      var later = document.createElement('button');
+      later.type = 'button';
+      later.className = 'ed-btn';
+      later.textContent = 'Move later';
+      later.disabled = idx === order.length - 1;
+      later.addEventListener('click', function () { moveGroupItem(field.groupId, field.gi, 1); });
+      row.appendChild(earlier);
+      row.appendChild(later);
+      grid.appendChild(row);
+    } else {
+      var line = document.createElement('p');
+      line.className = 'ed-field-help';
+      line.textContent = 'This part of the page is laid out by the design and moves with the section.'
+        + (field && field.excludedReason ? ' ' + field.excludedReason : '');
+      grid.appendChild(line);
+    }
+
+    var reflow = document.createElement('p');
+    reflow.className = 'ed-field-help';
+    reflow.textContent = 'Sections reflow on phones, so items move in order rather than to a fixed spot.';
+    grid.appendChild(reflow);
+  }
 
   // A hook's current value lives in state.content.images if it is a data-img key,
   // otherwise in state.content.text — the hooks array itself is just key strings, with
@@ -1226,21 +1403,45 @@
   // Editing a hand-built section edits content.json, which is what those templates have
   // always read from — the same store the existing content admin writes. No new data
   // model, no conversion, no risk to a design that took four review rounds to settle.
-  function renderLegacyField(key, kind) {
-    state.activeField = { key: key, kind: kind };
+  function renderLegacyField(key, kind, groupId, gi, excludedReason) {
+    state.activeField = { key: key, kind: kind, groupId: groupId, gi: gi, excludedReason: excludedReason };
     $('inspectorEmpty').hidden = true;
     $('inspector').hidden = false;
     $('inspType').textContent = (SCHEMA.legacySections.find(function (s) { return s.id === state.legacyId; }) || {}).label || 'Section';
     $('deleteBtn').hidden = true;
     // Neither delete nor duplicate means anything for a hand-built section's fields.
     $('duplicateBtn').hidden = true;
-    $('geoGrid').innerHTML = '';
+
+    renderLayoutPanel(state.activeField);
 
     var box = $('inspFields');
     box.innerHTML = '';
 
     if (kind === 'image') {
       var img = (state.content.images || {})[key] || {};
+
+      // Large preview with its alt beneath it, not a 48px thumb — the "which photo is
+      // this even" question a tiny thumbnail could not answer on its own.
+      var preview = document.createElement('div');
+      preview.className = 'ed-photo-preview';
+      if (img.src) {
+        var photoImg = document.createElement('img');
+        photoImg.src = img.src;
+        photoImg.alt = '';
+        preview.appendChild(photoImg);
+      }
+      var altLine = document.createElement('p');
+      altLine.className = 'ed-photo-alt';
+      altLine.textContent = img.alt || 'No alt text yet.';
+      preview.appendChild(altLine);
+      var replaceBtn = document.createElement('button');
+      replaceBtn.type = 'button';
+      replaceBtn.className = 'ed-btn';
+      replaceBtn.textContent = 'Replace photo';
+      replaceBtn.addEventListener('click', function () { openPhotoPicker(key); });
+      preview.appendChild(replaceBtn);
+      box.appendChild(preview);
+
       box.appendChild(fieldRow('Alt text', img.alt || '', function (v) {
         state.content.images[key].alt = v;
         markDirty();
@@ -1249,35 +1450,6 @@
         state.content.images[key].caption = v || null;
         markDirty();
       }));
-
-      var picWrap = document.createElement('div');
-      picWrap.className = 'ed-field';
-      var picLabel = document.createElement('span');
-      picLabel.id = 'lbl_legacyPhoto';
-      picLabel.textContent = 'Photo';
-      picWrap.appendChild(picLabel);
-
-      // Published photos only — this field writes straight into the fixed slot's
-      // `src` on Save with no draft/publish gate, unlike a canvas element's props.key.
-      // A staged upload's src is a temporary blob URL that stops resolving the moment
-      // Publish clears the staging area, so it is not stable enough to point a fixed
-      // slot at.
-      var picGrid = thumbPicker(state.images, Object.keys(state.images), key, function (newKey) {
-        var chosen = state.images[newKey];
-        if (!chosen) return;
-        state.content.images[key] = Object.assign({}, state.content.images[key], {
-          src: chosen.src,
-          width: chosen.width,
-          height: chosen.height,
-          alt: chosen.alt || ''
-        });
-        markDirty();
-        renderLegacyField(key, kind);
-        renderCanvas();
-      });
-      picGrid.setAttribute('aria-labelledby', 'lbl_legacyPhoto');
-      picWrap.appendChild(picGrid);
-      box.appendChild(picWrap);
       return;
     }
 
@@ -1335,7 +1507,8 @@
       } else {
         // Re-read the field from state so an undo shows the restored text rather than
         // leaving the old value sitting in the input.
-        renderLegacyField(state.activeField.key, state.activeField.kind);
+        renderLegacyField(state.activeField.key, state.activeField.kind, state.activeField.groupId,
+          state.activeField.gi, state.activeField.excludedReason);
       }
       return;
     }
@@ -1552,6 +1725,10 @@
 
   function renderGeometry(el) {
     var grid = $('geoGrid');
+    // Undo whatever the legacy Layout panel left behind — canvas selections keep the
+    // x/y/w/h/rotation grid exactly as it was.
+    grid.classList.remove('is-layout');
+    $('geoHeading').textContent = 'Position';
     grid.innerHTML = '';
     var box = el.box.desktop;
     [
@@ -1727,11 +1904,26 @@
   // shrinking to the pane. A 1440px canvas squeezed into an 800px pane would render
   // below the 1000px auto-stack breakpoint, so the editor would silently be showing —
   // and letting you drag — the stacked layout under a label that says Desktop.
+  // designHeight only exists on canvas sections. A hand-built one has no such number in
+  // the document, so it fell back to a flat 720px and clipped anything taller — the
+  // measured real height (see measureLegacyHeight, set on every legacy render) stands in
+  // for it instead.
+  var legacyFrameHeight = 720;
+
+  function measureLegacyHeight() {
+    try {
+      var h = frameWin.document.body.scrollHeight;
+      return h > 0 ? h : 720;
+    } catch (err) {
+      return 720;
+    }
+  }
+
   function fitCanvas() {
     var wrap = $('frameWrap');
     var scaler = $('frameScaler');
     var section = currentSection();
-    var designHeight = (section && section.designHeight) || 720;
+    var designHeight = state.mode === 'legacy' ? legacyFrameHeight : ((section && section.designHeight) || 720);
     frame.style.height = designHeight + 'px';
 
     var available = wrap.clientWidth - 40;
@@ -1838,6 +2030,7 @@
     var dataUrl = renderCroppedImage();
     var filename = cropState.file.name;
     var url = cropState.url;
+    var assignKey = cropState.assignKey;
     $('cropConfirm').disabled = true;
     api('admin-media', {
       method: 'POST',
@@ -1852,7 +2045,27 @@
         return;
       }
       URL.revokeObjectURL(url);
-      toast('Uploaded.');
+      // The whole point of + Add photo and canvas drop: no second trip to the Photos
+      // panel to point the field at what was just uploaded. Same fields the existing
+      // "pick an existing photo" swap already copies — including alt, which takes the
+      // NEW photo's, the same deliberate choice that swap makes.
+      if (assignKey && r.data.item) {
+        if (!state.content.images) state.content.images = {};
+        // Same reason as the picker swap: an upload that retargets a field is undoable.
+        // The uploaded photo stays in the library either way — undo puts the field back,
+        // it does not delete what was uploaded.
+        pushHistory();
+        state.content.images[assignKey] = Object.assign({}, state.content.images[assignKey], {
+          src: r.data.item.src,
+          width: r.data.item.width,
+          height: r.data.item.height,
+          alt: r.data.item.alt || ''
+        });
+        markDirty();
+        if (state.activeField && state.activeField.key === assignKey) renderInspector();
+        renderCanvas();
+      }
+      toast(assignKey ? 'Uploaded and applied.' : 'Uploaded.');
       loadMedia();
       startNextCrop();
     }).catch(function () {
@@ -1866,6 +2079,15 @@
   // or closing it would need a mouse.
   $('mediaModal').addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { e.preventDefault(); $('cropCancel').click(); }
+  });
+
+  $('photoPickerClose').addEventListener('click', closePhotoPicker);
+  $('photoPicker').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { e.preventDefault(); closePhotoPicker(); }
+  });
+  $('photoPickerFile').addEventListener('change', function () {
+    if (this.files[0]) queueUploads([this.files[0]], photoPickerAssignKey);
+    this.value = '';
   });
 
   document.addEventListener('keydown', function (e) {

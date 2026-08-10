@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { verifyRequestSession } from './lib/auth.mjs';
 import { compileSection, scalePx } from '../../src/lib/canvas-compile.mjs';
-import { renderImage, loadSections, applyTextEdits, applyAttrEdits, applyImageEdits, buildFooter } from '../../src/render.mjs';
+import { renderImage, loadSections, applyTextEdits, applyAttrEdits, applyImageEdits, applyGroupOrder, buildFooter } from '../../src/render.mjs';
 import { validateSite } from '../../src/lib/site-schema.mjs';
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
@@ -70,6 +70,9 @@ export default async (request) => {
     let html = applyTextEdits(raw, content.text);
     html = applyAttrEdits(html, content.text);
     html = applyImageEdits(html, content.images, manifest);
+    // Last, same as every build path — so the editor's preview reorders exactly like the
+    // real build and the owner never sees a lying canvas.
+    html = applyGroupOrder(html, content.order);
     return json({ html, css: '', errors: [], warnings: [], legacy: true });
   }
 

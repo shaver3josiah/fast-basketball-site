@@ -180,7 +180,7 @@
         </header>
         <div class="ed-fields" id="inspFields"></div>
         <div class="ed-insp-geo">
-          <h3 class="ed-panel-h">Position</h3>
+          <h3 class="ed-panel-h" id="geoHeading">Position</h3>
           <div class="ed-geo-grid" id="geoGrid"></div>
         </div>
       </div>
@@ -204,6 +204,20 @@
     <div class="ed-modal-actions">
       <button type="button" class="ed-btn" id="cropCancel">Cancel</button>
       <button type="button" class="ed-btn ed-btn-primary" id="cropConfirm" disabled>Use this photo</button>
+    </div>
+  </div>
+</div>
+
+<!-- The picker sheet a legacy image field's "Replace photo" button opens. First tile is
+     always Add photo so uploading never means leaving this sheet for the Photos panel;
+     the rest are every photo already available, same pool the canvas image field offers. -->
+<div class="ed-modal-backdrop" id="photoPicker" hidden>
+  <div class="ed-modal ed-modal-wide" role="dialog" aria-modal="true" aria-labelledby="photoPickerTitle">
+    <h2 id="photoPickerTitle" class="ed-panel-h">Choose a photo</h2>
+    <div class="ed-thumbgrid ed-thumbgrid-lg" id="photoPickerGrid" role="group" aria-labelledby="photoPickerTitle"></div>
+    <input type="file" id="photoPickerFile" accept="image/jpeg,image/png,image/webp" hidden>
+    <div class="ed-modal-actions">
+      <button type="button" class="ed-btn" id="photoPickerClose">Close</button>
     </div>
   </div>
 </div>

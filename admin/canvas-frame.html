@@ -28,6 +28,11 @@
      rotate handles room to paint: plain overflow:hidden sheared them off for any
      element sitting on the artboard edge, which is exactly where you need them. */
   html, body { margin: 0; padding: 0; background: var(--court-black); overflow: clip; overflow-clip-margin: 48px; }
+  /* A canvas section's box is guaranteed by the compiler, so clip stays — no scrollbar
+     should ever exist there (see above). A hand-built section has no such guarantee:
+     the frame is sized to its measured height from the parent, but should that
+     measurement ever be wrong, a scrollbar beats silently clipping content again. */
+  html.is-legacy, body.is-legacy { overflow: auto; }
   /* The compiled section's own generated rules land here at runtime. */
 </style>
 <style id="sectionCss"></style>
@@ -52,6 +57,8 @@
     background: rgba(37, 224, 208, 0.08);
   }
   .is-legacy .is-field.is-active { outline: 2px solid var(--fast-red); }
+  /* Dragging a photo file over the slot it would replace. */
+  .is-legacy .is-field-img.is-drop-target { outline: 3px dashed var(--fast-red); background: rgba(212, 13, 31, 0.12); }
   /* Keyboard focus needs its own affordance — hover outline never fires for a tabber. */
   .is-editing .cv-el:focus-visible { outline: 3px solid var(--miami-teal); outline-offset: 3px; }
 

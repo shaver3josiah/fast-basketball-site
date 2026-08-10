@@ -727,3 +727,53 @@ input[type="range"] { width: 100%; }
   color: var(--ed-ink-2);
   font-weight: 500;
 }
+
+/* ---------------------------------------------------------------- layout panel */
+
+/* Legacy selections repurpose the same box canvas geometry uses (see #geoGrid), but
+   the content is prose and two buttons, not four side-by-side number inputs. */
+.ed-geo-grid.is-layout { grid-template-columns: 1fr; gap: 8px; }
+
+.ed-layout-status { margin: 0; font-size: 0.8125rem; font-weight: 600; color: var(--ed-ink); }
+
+.ed-layout-row { display: flex; gap: 6px; }
+.ed-layout-row .ed-btn { flex: 1; }
+
+/* ---------------------------------------------------------------- legacy photo field */
+
+.ed-photo-preview { display: grid; gap: 8px; justify-items: start; }
+
+.ed-photo-preview img {
+  width: 160px;
+  display: block;
+  border-radius: var(--ed-r);
+  border: 1px solid var(--ed-line-strong);
+  background: var(--ed-bg);
+}
+
+.ed-photo-alt { margin: 0; font-size: 0.75rem; color: var(--ed-ink-3); max-width: 200px; }
+
+/* The picker sheet's first tile, always. Dashed and accent-tinted so it reads as an
+   action rather than another photo. */
+.ed-thumb-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  line-height: 1.2;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ed-accent);
+  border-style: dashed;
+  border-color: var(--ed-accent);
+  background: var(--ed-accent-soft);
+}
+
+.ed-thumb-add:hover { background: #FDEBEC; }
+
+/* Fixed 90px tiles in the sheet, not the sidebar's cramped 3-column squeeze — the sheet
+   has room, so every photo gets a size an alt tooltip is worth reading over. */
+.ed-thumbgrid-lg { grid-template-columns: repeat(auto-fill, 90px); max-height: 420px; }
+
+.ed-modal.ed-modal-wide { width: min(640px, calc(100vw - 32px)); }

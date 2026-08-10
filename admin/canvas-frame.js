@@ -71,8 +71,18 @@
     section = payload.section;
     sectionCss.textContent = payload.css || '';
     stage.innerHTML = payload.html || '';
+    // Lazy images below the fold never fire their network request while the section
+    // sits inside a clipped, scaled-down iframe the browser never considers "on
+    // screen" — eager forces the fetch immediately so the owner actually sees them
+    // (confirmed live: naturalWidth 0, complete false, until this ran).
+    Array.prototype.forEach.call(stage.querySelectorAll('img[loading="lazy"]'), function (img) {
+      img.loading = 'eager';
+    });
     document.body.classList.add('is-editing');
     document.body.classList.toggle('is-legacy', !!payload.legacy);
+    // Also on <html>: overflow:clip on the OUTER box still clips a tall child even if
+    // the inner one is allowed to scroll, and the class only ever lived on body.
+    document.documentElement.classList.toggle('is-legacy', !!payload.legacy);
 
     // A hand-built section is real page markup, not a canvas: there are no boxes to
     // drag, only the fields the templates already expose. So moveable stays out of it
@@ -108,6 +118,41 @@
   }
   api.measure = measure;
 
+  // The four legacy groupings the contract deliberately leaves out of the reorder
+  // registry (numbered steps, an escalating badge size, hardcoded week labels, a
+  // marquee that hand-duplicates its items) carry no data-group marker at all — P's
+  // marking pass only touches the registry's own groups — so they are told apart here
+  // by the item class their own templates already use, purely to explain why in one
+  // clause instead of showing the generic "not reorderable" line.
+  var EXCLUDED_GROUP_CLASSES = [
+    { cls: 'mth-s',    reason: 'Method steps are numbered, so their order is fixed.' },
+    { cls: 'aud-c',    reason: 'These tiles get a bigger badge by position, so their order is fixed.' },
+    { cls: 'pbs-row',  reason: 'These sample rows are labelled Week 1 through 4, so their order is fixed.' },
+    { cls: 'ticker-i', reason: 'The ticker repeats every item to loop, so it is not reordered here.' }
+  ];
+
+  // Walks up from the clicked/activated node (inclusive) to the nearest element P's
+  // render pass marked with data-group/data-gi, or to one of the four excluded item
+  // classes above. Returns null for a field that belongs to neither — most fields,
+  // most sections — so the parent shows the plain "not reorderable" sentence.
+  function groupInfoFor(node) {
+    var n = node;
+    while (n && n !== stage) {
+      if (n.hasAttribute && n.hasAttribute('data-group')) {
+        return { groupId: n.getAttribute('data-group'), gi: Number(n.getAttribute('data-gi')) };
+      }
+      if (n.classList) {
+        for (var i = 0; i < EXCLUDED_GROUP_CLASSES.length; i++) {
+          if (n.classList.contains(EXCLUDED_GROUP_CLASSES[i].cls)) {
+            return { excludedReason: EXCLUDED_GROUP_CLASSES[i].reason };
+          }
+        }
+      }
+      n = n.parentNode;
+    }
+    return null;
+  }
+
   // data-edit / data-img are hooks the site's own templates have always carried and the
   // build already substitutes through. Nothing is added to the markup here beyond a
   // class and a tabindex, both of which live only in this frame.
@@ -131,7 +176,7 @@
         if (inlineState && inlineState.node === node) return;
         e.preventDefault();
         e.stopPropagation();
-        emit('field', { key: key, kind: kind });
+        emit('field', Object.assign({ key: key, kind: kind }, groupInfoFor(node)));
         if (kind === 'text') startInlineEdit(node, e);
       });
 
@@ -155,10 +200,26 @@
         }
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          emit('field', { key: key, kind: kind });
+          emit('field', Object.assign({ key: key, kind: kind }, groupInfoFor(node)));
           if (kind === 'text') startInlineEdit(node, null);
         }
       });
+
+      if (kind === 'image') {
+        // dragover must preventDefault or the browser treats the drop as "open this
+        // file", navigating the iframe away from the editor entirely.
+        node.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          node.classList.add('is-drop-target');
+        });
+        node.addEventListener('dragleave', function () { node.classList.remove('is-drop-target'); });
+        node.addEventListener('drop', function (e) {
+          e.preventDefault();
+          node.classList.remove('is-drop-target');
+          var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+          if (file) emit('dropImage', { key: key, file: file });
+        });
+      }
 
       if (kind === 'text') {
         node.addEventListener('input', function () {
@@ -451,6 +512,13 @@
   });
 
   window.addEventListener('resize', function () { if (moveable) moveable.updateRect(); });
+
+  // Belt and suspenders beyond the per-node dragover/drop handlers in markLegacyFields:
+  // a drop that lands anywhere else in the document (a gap between fields, an
+  // unmarked element) would otherwise still trigger the browser's default "open this
+  // file", navigating the iframe away from the editor entirely.
+  document.addEventListener('dragover', function (e) { e.preventDefault(); });
+  document.addEventListener('drop', function (e) { e.preventDefault(); });
 
   // Once, at init. #stage outlives every load, so the listeners bound to it do too.
   wireHitTesting();
