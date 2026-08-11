@@ -1795,8 +1795,15 @@
           return;
         }
         state.dirty = false;
-        setStatus('Saved — rebuilding', 'saved');
-        toast('Saved. The site is rebuilding.');
+        // Hosted, a content save is now a draft like a canvas save, so saying "rebuilding"
+        // would promise a live change that has not happened. Locally it really is live.
+        if (r.data.draft) {
+          setStatus('Saved as draft', 'saved');
+          toast('Saved. Press Publish to put it on the site.');
+        } else {
+          setStatus('Saved — rebuilding', 'saved');
+          toast('Saved. The site is rebuilding.');
+        }
       }).catch(function () {
         setStatus('Not saved', 'dirty');
         btn.disabled = false;

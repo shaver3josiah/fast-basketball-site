@@ -29,8 +29,9 @@ export default async (request) => {
   }
 
   const draft = await getDraft(SITE_PATH);
+  const contentDraft = await getDraft(CONTENT_PATH);
   const mediaIndex = await getMediaIndex();
-  if (!draft && mediaIndex.length === 0) {
+  if (!draft && !contentDraft && mediaIndex.length === 0) {
     return json({ error: 'Nothing to publish. Save a change or upload a photo first.' }, 409);
   }
 
@@ -52,9 +53,16 @@ export default async (request) => {
     messageParts.push('canvas');
   }
 
-  if (mediaIndex.length > 0) {
-    const { content } = await getFile(CONTENT_PATH);
-    const contentData = JSON.parse(content);
+  if (contentDraft || mediaIndex.length > 0) {
+    // The content draft is the base when there is one — it holds every text edit, the
+    // motion settings and the group order. Staged photos merge ON TOP of it, because a
+    // photo uploaded after the last text save must not be rolled back by it.
+    let contentData;
+    try {
+      contentData = JSON.parse(contentDraft || (await getFile(CONTENT_PATH)).content);
+    } catch {
+      return json({ error: 'The saved draft is not readable. Reload the editor and save again.' }, 422);
+    }
     const { content: merged } = mergeStagedMedia(contentData, mediaIndex);
     merged.version = 1;
     merged.updated = new Date().toISOString();
@@ -63,6 +71,7 @@ export default async (request) => {
     if (contentErrors.length > 0) return json({ error: 'publish rejected', details: contentErrors }, 422);
 
     files.push({ path: CONTENT_PATH, content: JSON.stringify(merged, null, 2) + '\n' });
+    if (contentDraft) messageParts.push('content');
 
     let photoCount = 0;
     for (const record of mediaIndex) {
@@ -74,7 +83,9 @@ export default async (request) => {
       files.push({ path: imagePathFor(record).path, content: Buffer.from(base64, 'base64') });
       photoCount += 1;
     }
-    messageParts.push(photoCount > 0 ? photoCount + ' photo' + (photoCount === 1 ? '' : 's') : 'photo details');
+    if (mediaIndex.length > 0) {
+      messageParts.push(photoCount > 0 ? photoCount + ' photo' + (photoCount === 1 ? '' : 's') : 'photo details');
+    }
   }
 
   try {
@@ -89,6 +100,7 @@ export default async (request) => {
   // Only after the commit succeeded: the draft and the staged blobs are the owner's
   // only copy until then.
   if (draft) await clearDraft(SITE_PATH);
+  if (contentDraft) await clearDraft(CONTENT_PATH);
   if (mediaIndex.length > 0) await clearStagedMedia(mediaIndex);
   await recordPublish();
 

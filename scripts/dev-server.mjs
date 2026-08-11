@@ -158,9 +158,18 @@ async function callFunction(name, req, res) {
   // was the editor and the build disagreeing about what the compiler does.
   //
   // The actual fix is `--watch-path` in package.json's dev script: Node restarts the
-  // whole process when the code under src/lib, src/render.mjs or netlify/ changes,
-  // which is the only way to be certain the graph is fresh. This query still earns its
-  // place for handler-only edits, which do not trip the restart.
+  // whole process when the code under src/lib or netlify/ changes, which is the only way
+  // to be certain the graph is fresh. This query still earns its place for handler-only
+  // edits, which do not trip the restart.
+  //
+  // src/render.mjs USED to be watched too, and had to stop being. --watch-path on a FILE
+  // watches its whole directory on Windows, so every write under src/ — including the
+  // src/data/content.json every admin save writes, and the responsive manifest the build
+  // itself writes — restarted the process and killed the in-flight rebuild. Saving from
+  // the editor never reached the page. The build is a spawned child process (runBuild),
+  // so it always reads the latest render.mjs regardless; only these dynamically imported
+  // handlers can hold a stale copy. After editing render.mjs, restart `npm run dev` to
+  // refresh the editor's preview — the built site was never affected.
   const mod = await import(pathToFileURL(file).href + '?v=' + sourceGeneration);
   if (typeof mod.default !== 'function') {
     res.writeHead(500, { 'Content-Type': 'application/json' });

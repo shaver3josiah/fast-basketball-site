@@ -1,6 +1,6 @@
 import { verifyRequestSession } from './lib/auth.mjs';
 import { getFile, putFile, putBinary, isLocal } from './lib/store.mjs';
-import { getMediaIndex, putMediaIndex, putMediaBlob } from './lib/draft.mjs';
+import { getMediaIndex, putMediaIndex, putMediaBlob, getDraft, putDraft, usesDraft } from './lib/draft.mjs';
 import { readDimensions, sniffMime } from '../../src/lib/image-dimensions.mjs';
 import { IMAGE_KEYS, IMAGE_ASPECT_RULES, IMAGE_LABELS } from '../../src/lib/content-schema.mjs';
 import { extFor, imagePathFor } from './lib/media-merge.mjs';
@@ -69,15 +69,21 @@ export default async (request) => {
   const timestamp = Date.now();
 
   // Resume-extra cards live in contentData.resumeExtra, an array outside content.images
-  // entirely — the staging model below has nowhere to put them, so this path is out of
-  // scope for this change and keeps committing directly exactly as it always has.
+  // entirely, and the media staging model has nowhere to put them — so the bytes are
+  // still committed here rather than staged.
+  //
+  // The JSON is not. content.json now has a draft layer, and committing the published
+  // copy from here would be overwritten by that draft at the next publish, silently
+  // losing the card the owner just added. So the card is appended to the DRAFT when one
+  // is in play, and publish flushes it with everything else.
   if (!IMAGE_KEYS.includes(key)) {
     const filename = key.replace('.', '-') + '-' + timestamp + '.' + ext;
     const imagePath = 'src/images/uploads/' + filename;
     await putBinary(imagePath, buffer, 'admin: upload photo for ' + key);
 
+    const existingDraft = usesDraft ? await getDraft(CONTENT_PATH) : null;
     const { content, sha } = await getFile(CONTENT_PATH);
-    const contentData = JSON.parse(content);
+    const contentData = JSON.parse(existingDraft || content);
     const imageRecord = {
       src: '/images/' + filename,
       alt: alt.trim(),
@@ -90,13 +96,14 @@ export default async (request) => {
     contentData.resumeExtra.push({ id: 'extra-' + timestamp, ...imageRecord });
     contentData.version = 1;
     contentData.updated = new Date().toISOString();
-    await putFile(CONTENT_PATH, JSON.stringify(contentData, null, 2) + '\n', 'admin: attach uploaded photo to content.json', sha);
-
-    const hook = process.env.NETLIFY_BUILD_HOOK_URL;
-    if (hook) {
-      try { await fetch(hook, { method: 'POST' }); } catch (err) { console.error('build hook trigger failed', err.message); }
+    const body = JSON.stringify(contentData, null, 2) + '\n';
+    if (usesDraft) {
+      await putDraft(CONTENT_PATH, body);
+    } else {
+      await putFile(CONTENT_PATH, body, 'admin: attach uploaded photo to content.json', sha);
     }
-    return new Response(JSON.stringify({ ok: true, image: imageRecord }), {
+
+    return new Response(JSON.stringify({ ok: true, image: imageRecord, draft: !!usesDraft }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });

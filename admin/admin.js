@@ -183,7 +183,9 @@
           errorLine.textContent = result.data.error || 'Upload rejected.';
           return;
         }
-        say('Photo uploaded and publishing');
+        // A fixed-slot upload stages like everything else; only Publish puts it live.
+        // The resume-card path still commits directly, so it says so honestly.
+        say(isExtra ? 'Resume card added and publishing.' : 'Photo uploaded. Press Publish to put it on the site.');
         loadAdmin();
       }).catch(function(){
         errorLine.textContent = 'Upload failed. Check your connection and try again.';
@@ -271,10 +273,15 @@
     buildTable(leads);
   }
 
+  // Save and Publish are two buttons because they are two different things now. A save
+  // writes a draft and costs nothing; only Publish commits, and a commit is one of the
+  // twenty production deploys the free Netlify tier allows in a month. This panel used to
+  // have a single button labelled "Publish Changes" that only saved — harmless while
+  // saving committed, a lie the moment it stopped.
   document.getElementById('saveBtn').addEventListener('click', function(){
     var btn = document.getElementById('saveBtn');
     btn.disabled = true;
-    btn.textContent = 'Publishing...';
+    btn.textContent = 'Saving...';
     api('admin-content', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -287,14 +294,42 @@
         return;
       }
       state.dirty = false;
-      document.getElementById('saveStatus').textContent = 'Publishing, live in about a minute';
-      say('Saved. Your changes are publishing now.');
+      if(result.data.draft){
+        document.getElementById('saveStatus').textContent = 'Saved as draft';
+        say('Saved. Press Publish to put it on the site.');
+      } else {
+        document.getElementById('saveStatus').textContent = 'Saved, rebuilding';
+        say('Saved. The site is rebuilding.');
+      }
     }).catch(function(){
       say('Could not reach the server. Nothing was saved.');
     }).finally(function(){
       btn.disabled = false;
-      btn.textContent = 'Publish Changes';
+      btn.textContent = 'Save';
     });
+  });
+
+  document.getElementById('publishBtn').addEventListener('click', function(){
+    var btn = document.getElementById('publishBtn');
+    if(state.dirty && !window.confirm('You have unsaved changes. Publish anyway? Only saved work goes live.')) return;
+    btn.disabled = true;
+    btn.textContent = 'Publishing...';
+    api('admin-publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function(res){
+        return res.json().then(function(data){ return { ok: res.ok, data: data }; });
+      }).then(function(result){
+        if(!result.ok){
+          say(result.data.error || 'Publish failed.');
+          return;
+        }
+        document.getElementById('saveStatus').textContent = result.data.local ? 'Live' : 'Published, rebuilding';
+        say(result.data.message || 'Published.');
+      }).catch(function(){
+        say('Could not reach the server. Nothing was published.');
+      }).finally(function(){
+        btn.disabled = false;
+        btn.textContent = 'Publish';
+      });
   });
 
   document.getElementById('backupBtn').addEventListener('click', function(){

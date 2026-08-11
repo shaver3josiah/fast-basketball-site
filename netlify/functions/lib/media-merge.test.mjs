@@ -86,6 +86,36 @@ const baseContent = () => ({
   assert.equal(out.images['hero.nets'], undefined, 'a deleted key must stay deleted');
 }
 
+{
+  // admin-publish uses the CONTENT DRAFT as the merge base when one exists, then folds
+  // staged photos on top. Both orders of work have to survive: text edited first then a
+  // photo uploaded, or a photo uploaded first then text edited. If the base were the
+  // published file instead of the draft, publishing after a photo upload would quietly
+  // roll back every text edit, motion setting and reorder made since the last publish.
+  const draft = {
+    version: 1,
+    text: { 'hero.eyebrow': 'EDITED IN THE DRAFT', 'mth.1.title': 'Also edited' },
+    images: {
+      'hero.nets': { src: '/images/hero-nets.jpg', alt: 'Hero', width: 760, height: 1027 },
+      'coach.portrait': { src: '/images/coach-portrait.jpg', alt: 'Coach', width: 880, height: 1100 }
+    },
+    motion: { enabled: false, speed: 2 },
+    order: { rcp: [3, 0, 1, 2] }
+  };
+  const staged = [
+    { key: 'lib.new-1700000000009', filename: 'new.jpg', alt: 'A newly uploaded photo', mime: 'image/jpeg', width: 1200, height: 800, uploadedAt: 1700000000009 }
+  ];
+  const { content: out } = mergeStagedMedia(draft, staged);
+
+  assert.equal(out.text['hero.eyebrow'], 'EDITED IN THE DRAFT', 'draft text must survive a photo merge');
+  assert.equal(out.text['mth.1.title'], 'Also edited');
+  assert.deepEqual(out.motion, { enabled: false, speed: 2 }, 'draft motion settings must survive');
+  assert.deepEqual(out.order, { rcp: [3, 0, 1, 2] }, 'draft group order must survive');
+  assert.ok(out.images['lib.new-1700000000009'], 'the staged photo must still land');
+  assert.equal(out.images['hero.nets'].src, '/images/hero-nets.jpg', 'untouched slots stay put');
+  assert.equal(draft.text['hero.eyebrow'], 'EDITED IN THE DRAFT', 'the draft object must not be mutated');
+}
+
 // ---------------------------------------------------------------- findKeyUsage
 
 const siteWithReference = {
