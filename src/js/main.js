@@ -290,6 +290,9 @@
       evdTrig.hidden = true;
       evdPanel.hidden = false;
       evdPanel.classList.add('in');
+      /* The ticker is part of the evidence: it rolls in with the record. */
+      var ticker = document.querySelector('.ticker.wait');
+      if(ticker) ticker.classList.add('on');
     }
     function evdReveal(){
       if(evdDone) return;

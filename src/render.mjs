@@ -605,7 +605,9 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   // .coach-img.rise:not(.in) img hide the DESCENDANT image, so unhiding .rise alone
   // left the resume photos, the portrait and the badge invisible without JS.
   head += '<noscript><style>.zr,.rise{opacity:1 !important;transform:none !important;filter:none !important}'
-    + '.rcp-c .rcp-shot img,.coach-img img,.coach-badge{opacity:1 !important;animation:none !important}</style></noscript>\n';
+    + '.rcp-c .rcp-shot img,.coach-img img,.coach-badge{opacity:1 !important;animation:none !important}'
+    // The Evidence and the ticker are revealed by main.js; without it, show the record outright.
+    + '.evd-trigger{display:none !important}.evd-panel[hidden]{display:block !important}.ticker.wait{display:block !important}</style></noscript>\n';
   for (const data of jsonLd) head += jsonLdScript(data) + '\n';
   head += '</head>\n';
   return head;

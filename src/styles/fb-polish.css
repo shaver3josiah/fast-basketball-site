@@ -715,3 +715,9 @@ html.fb-light .evd-hint{color:var(--text-soft-light);}
 html.fb-light .evd-line{color:var(--text-body-light);}
 html.fb-light .evd-word{filter:none;}
 @media(prefers-reduced-motion:reduce){.evd-ch.go,.evd-p,.evd-panel.in{animation:none;}}
+
+/* ---------- Ticker waits for The Evidence: main.js evdShow() adds .on ---------- */
+.ticker.wait{display:none;}
+.ticker.wait.on{display:block;animation:tickerIn .6s var(--ease-rush);}
+@keyframes tickerIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.ticker.wait.on{animation:none;}}
