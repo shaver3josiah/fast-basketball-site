@@ -70,7 +70,7 @@
 
 [[redirects]]
   from = "/training"
-  to = "/training/first-look"
+  to = "/training/evaluation"
   status = 301
   force = true
 
@@ -82,7 +82,7 @@
 
 [[redirects]]
   from = "/free-session"
-  to = "/training/first-look"
+  to = "/training/evaluation"
   status = 301
   force = true
 

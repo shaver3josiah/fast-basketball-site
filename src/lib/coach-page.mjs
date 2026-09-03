@@ -40,7 +40,7 @@ export function renderResumeCards(content, responsiveManifest) {
 
 export function renderCoachPage({ content, responsiveManifest, prelude }) {
   const title = 'Coach Blake Kingsley | Founder, Fast Basketball';
-  const description = 'Coach Blake Kingsley was on staff for the 2025 Horizon League champion Robert Morris Colonials and the 2024 NJCAA Region 16 champion Moberly Area. Now training players in north Broward County.';
+  const description = 'Coach Blake Kingsley: 2025 Horizon League champion staff at Robert Morris, 2024 NJCAA Region 16 champion staff at Moberly Area. Now coaching in north Broward.';
   const canonicalPath = '/coach-blake-kingsley';
 
   const jsonLd = [
@@ -59,7 +59,7 @@ export function renderCoachPage({ content, responsiveManifest, prelude }) {
   body += '<p>' + escapeHtml(content.text['coach.p1']) + '</p>\n';
   body += '<p>' + escapeHtml(content.text['coach.p2']) + '</p>\n';
   body += '<p>' + escapeHtml(content.text['coach.p3']) + '</p>\n';
-  body += '<a href="/training/first-look" class="btn btn-primary">Book a First Look Session</a>\n';
+  body += '<a href="/training/evaluation" class="btn btn-primary">Book Your Call</a>\n';
   body += '</div>\n</div>\n</header>\n';
 
   body += '<section class="band band-light">\n<div class="shell">\n<div class="eyebrow rise">The Résumé</div>\n<h2 class="zr">The record</h2>\n';

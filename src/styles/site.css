@@ -18,3 +18,17 @@ picture img{width:100%;height:auto;display:block;}
 .credential-block .credential-links a{text-decoration:underline;display:inline-block;padding:14px 0;}
 .coach.suburb-hero{padding-top:calc(var(--nav-h) + 48px);}
 .pb-hp-wrap{display:none;}
+
+/* Interior prose pages (terms, privacy, training, suburb, coach, contact): base.css zeroes h1/h2/p
+   margins and only the homepage's .head h2 restores one, so body copy stacked with no air between a
+   heading and its text. Every interior page opens with main > header; on the homepage that header is
+   the hero, but homepage sections keep their headings inside .head / .coach-body / .ct-side rather
+   than directly under .shell, so these direct-child rules leave the homepage alone. The #coach
+   exclusion protects the homepage coach section, whose h2 carries inline margins. */
+main > header ~ .band > .shell > .eyebrow{margin-bottom:14px;}
+main > header ~ .band > .shell > h2{margin-bottom:18px;}
+main > header ~ .band > .shell > :is(p,ul,ol,table,div:not(.eyebrow)) + h2{margin-top:52px;}
+.suburb-hero ~ .band > .shell > p{margin-bottom:16px;}
+.suburb-hero ~ .band > .shell > p:last-child{margin-bottom:0;}
+main > header .coach-body > .eyebrow,main > header ~ .band:not(#coach) .coach-body > .eyebrow{margin-bottom:14px;}
+main > header .coach-body > h1,main > header ~ .band:not(#coach) .coach-body > h2{margin-bottom:18px;}

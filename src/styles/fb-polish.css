@@ -668,3 +668,29 @@ html[data-night="off"] .net.sway,html[data-night="off"] .net.sway .net-cord,html
 .rcp-shot img[src*="resume-work"]  {transform-origin:64% 40%;}
 .cc-shot img{transform-origin:49% 53%;}
 .coach-img img{transform-origin:50% 16%;}
+
+/* ---------- Pricing grid, fine print, enrollment steps (programs.html / enroll.html) ---------- */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+.price-grid{width:100%;border-collapse:collapse;margin:0 0 22px;font-family:var(--font-body);}
+.price-grid th,.price-grid td{padding:10px 8px 10px 0;text-align:left;border-bottom:1px solid rgba(255,255,255,.09);vertical-align:top;}
+.price-grid thead th{font-family:var(--font-eyebrow);font-weight:700;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:#8A8A96;}
+.price-grid tbody th{font-family:var(--font-eyebrow);font-weight:700;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--bone);}
+.price-grid td b{display:block;font-family:var(--font-num);font-size:1.55rem;line-height:1;color:var(--red-hot);letter-spacing:.02em;}
+.price-grid td span{display:block;font-size:.76rem;color:#AFAFBB;margin-top:3px;}
+.fine-print{margin-top:48px;padding:30px 32px;border:1px solid var(--line-light);border-left:4px solid var(--fast-red);border-radius:var(--r-card-light);background:var(--bone);box-shadow:var(--shadow-light);}
+.fine-print .eyebrow{margin-bottom:16px;}
+.fp-list{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 28px;margin:0 0 18px;padding:0;}
+.fp-list li{font-size:.92rem;color:var(--text-body-light);line-height:1.5;}
+.fp-list b{color:var(--court-black);font-family:var(--font-eyebrow);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.84rem;}
+.fp-note{font-size:.9rem;color:var(--text-soft-light);max-width:70ch;margin:0;}
+.fp-note a{color:var(--red-deep);text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:10px 0;}
+.mth.four{grid-template-columns:repeat(4,1fr);}
+.enr-foot{display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap;margin-top:36px;padding-top:28px;border-top:1px solid var(--line-dark);}
+.enr-bring{max-width:58ch;}
+.enr-bring b{display:block;font-family:var(--font-eyebrow);font-weight:700;font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--red-hot);margin-bottom:8px;}
+.enr-bring p{font-size:.95rem;color:var(--text-body-dark);margin:0;}
+.enr-cta{display:flex;gap:14px;flex-wrap:wrap;}
+@media(max-width:1040px){.mth.four{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.mth.four{grid-template-columns:1fr;}.fine-print{padding:24px 20px;}}
+html.fb-light .enr-foot{border-top-color:var(--line-light);}
+html.fb-light .enr-bring p{color:var(--text-soft-light);}

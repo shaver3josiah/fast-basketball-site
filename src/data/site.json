@@ -133,7 +133,7 @@
               "name": "Primary CTA",
               "z": 5,
               "props": {
-                "label": "Book a Free First Look",
+                "label": "Book Your Call",
                 "href": "/contact",
                 "variant": "primary",
                 "fontSize": 16,

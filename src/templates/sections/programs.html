@@ -1,80 +1,136 @@
 <section class="band band-light" id="programs">
   <div class="shell">
     <div class="head">
-      <div class="eyebrow" data-edit="prog.eyebrow">Training Programs</div>
-      <h2 data-edit="prog.h2">Pick the program that fits your player.</h2>
-      <p class="lede" data-edit="prog.lede">Start with a First Look. You will find out exactly where your player stands right now and what it will take to get where they want to go.</p>
+      <div class="eyebrow" data-edit="prog.eyebrow">Training &amp; Pricing</div>
+      <h2 data-edit="prog.h2">Every price, on the page.</h2>
+      <p class="lede" data-edit="prog.lede">Group training on a 3 or 12 month term, private sessions by the hour, and an evaluation session to start. No quotes over text and no surprises on the enrollment call: what you see here is what Coach Blake charges.</p>
     </div>
-    <!-- Stagger dropped: these four are parallel options, not a sequence. Making the reader
-         wait 270ms for the fourth card implied an order that does not exist. -->
+    <!-- Four parallel options, no stagger. Amounts trace to docs/source-of-truth/fast-basketball-facts.md
+         and must match TRAINING_PAGES in build.mjs, OFFERS in src/lib/site-config.mjs and the /terms page. -->
     <div class="prog">
       <div class="prog-c">
         <span class="prog-tag" data-edit="prog.1.tag">Start Here</span>
         <div class="prog-top">
-          <h3 data-edit="prog.1.title">First Look Session</h3>
-          <div class="prog-price"><span data-edit="prog.1.price">Free</span><small data-edit="prog.1.unit">60 Minutes</small></div>
+          <h3 data-edit="prog.1.title">Evaluation Session</h3>
+          <div class="prog-price"><span data-edit="prog.1.price">$50</span><small data-edit="prog.1.unit">60 Minutes</small></div>
         </div>
-        <p data-edit="prog.1">Sixty minutes on court, zero dollars. A full evaluation with no pitch and no pressure, and your family leaves holding the plan in writing.</p>
+        <p data-edit="prog.1">Sixty minutes on court with Coach Blake. He gets to know your player, watches them move, and finds out where they actually are. It is the step before any commitment, for both sides.</p>
         <ul class="prog-list">
-          <li data-edit="prog.1.li1">Full movement and shooting form screen</li>
-          <li data-edit="prog.1.li2">Live one on one reads against Coach Blake</li>
-          <li data-edit="prog.1.li3">Written strengths and gaps report, yours to keep</li>
-          <li data-edit="prog.1.li4">Next step: you get open slots within one business day</li>
+          <li data-edit="prog.1.li1">$35 when you book within 48 hours of your intro call</li>
+          <li data-edit="prog.1.li2">Movement, handle, and shooting form screen</li>
+          <li data-edit="prog.1.li3">Live reads against a defender</li>
+          <li data-edit="prog.1.li4">Enrollment call within 24 hours: what he saw, and the plan</li>
         </ul>
-        <a href="#contact" class="btn btn-primary" data-program="First Look Session" data-edit="prog.1.cta">Claim a Free Slot</a>
-        <p class="trust-line" data-edit="prog.1.trust">No obligation. The report is yours either way.</p>
+        <a href="#contact" class="btn btn-primary" data-program="Evaluation Session" data-edit="prog.1.cta">Book Your Call</a>
+        <p class="trust-line" data-edit="prog.1.trust">The call is free and takes 15 to 20 minutes. Evaluation slots come out of it.</p>
       </div>
 
       <div class="prog-c flag">
-        <span class="prog-tag" data-edit="prog.2.tag">Most Booked</span>
+        <span class="prog-tag" data-edit="prog.2.tag">Most Popular</span>
         <div class="prog-top">
-          <h3 data-edit="prog.2.title">Private One on One</h3>
-          <!-- .prog-price is white-space:nowrap and <small> inherits it. Keep the <small>
-               at roughly this length: a longer string widens the card past 375px and
-               pushes the <h3> from two lines to three. -->
-          <div class="prog-price"><span data-edit="prog.2.price">$75</span><small data-edit="prog.2.unit">Per 60 Min</small></div>
+          <h3 data-edit="prog.2.title">Group Training Membership</h3>
+          <!-- .prog-price is white-space:nowrap; keep <small> to two short words. -->
+          <div class="prog-price"><span data-edit="prog.2.price">$25&ndash;$40</span><small data-edit="prog.2.unit">Per Session</small></div>
         </div>
-        <p data-edit="prog.2">Full session, full attention. Built around the exact three things standing between you and the next level this season.</p>
+        <p data-edit="prog.2">Weekly 60 minute group sessions with players at a similar level, on a 3 or 12 month term. Three months is the minimum because that is how long a habit takes to hold up in a game.</p>
+        <table class="price-grid">
+          <caption class="sr-only">Group training membership prices by term and frequency</caption>
+          <thead><tr><th scope="col" data-edit="prog.2.th0">Term</th><th scope="col" data-edit="prog.2.th1">1x / week</th><th scope="col" data-edit="prog.2.th2">2x / week</th></tr></thead>
+          <tbody>
+            <tr>
+              <th scope="row" data-edit="prog.2.r1">3 months</th>
+              <td><b data-edit="prog.2.r1c1">$480</b><span data-edit="prog.2.r1c1s">12 sessions, $40 each</span></td>
+              <td><b data-edit="prog.2.r1c2">$840</b><span data-edit="prog.2.r1c2s">24 sessions, $35 each</span></td>
+            </tr>
+            <tr>
+              <th scope="row" data-edit="prog.2.r2">12 months</th>
+              <td><b data-edit="prog.2.r2c1">$1,380</b><span data-edit="prog.2.r2c1s">46 sessions, $30 each</span></td>
+              <td><b data-edit="prog.2.r2c2">$2,300</b><span data-edit="prog.2.r2c2s">92 sessions, $25 each</span></td>
+            </tr>
+          </tbody>
+        </table>
         <ul class="prog-list">
-          <li data-edit="prog.2.li1">Custom plan updated every four sessions</li>
-          <li data-edit="prog.2.li2">Footwork, handle, and finishing blocks</li>
-          <li data-edit="prog.2.li3">Shot chart and progress log</li>
-          <li data-edit="prog.2.li4">Packages of 5 and 10 available, 10 sessions $675 ($67.50 a session)</li>
+          <li data-edit="prog.2.li1">Pay in full, split in two, or monthly auto-billing</li>
+          <li data-edit="prog.2.li2">Journal, homework, and daily check-ins in the members area</li>
+          <li data-edit="prog.2.li3">Weekly game evaluations and quarterly progress reports</li>
+          <li data-edit="prog.2.li4">Rained out? The session moves to Zoom that evening</li>
         </ul>
-        <a href="#contact" class="btn btn-ghost" data-program="Private One on One" data-edit="prog.2.cta">Check Availability</a>
+        <a href="#contact" class="btn btn-primary" data-program="Group Training Membership" data-edit="prog.2.cta">Book Your Call</a>
       </div>
 
       <div class="prog-c">
         <div class="prog-top">
-          <h3 data-edit="prog.3.title">Small Group</h3>
-          <div class="prog-price"><span data-edit="prog.3.price">$45</span><small data-edit="prog.3.unit">Per Player</small></div>
+          <h3 data-edit="prog.3.title">Private One on One</h3>
+          <div class="prog-price"><span data-edit="prog.3.price">$100</span><small data-edit="prog.3.unit">Per Hour</small></div>
         </div>
-        <p data-edit="prog.3">Two to four players at a similar level, going at each other. Competitive reps, real defense, nowhere to hide.</p>
+        <p data-edit="prog.3">The full hour on one player. Built around the two or three things standing between them and the next level this season.</p>
         <ul class="prog-list">
-          <li data-edit="prog.3.li1">Level matched groups only</li>
-          <li data-edit="prog.3.li2">Live one on one and two on two</li>
-          <li data-edit="prog.3.li3">Great for teammates and siblings</li>
-          <li data-edit="prog.3.li4">Weekly recurring slots</li>
+          <li data-edit="prog.3.li1">Footwork, handle, finishing, and shooting blocks</li>
+          <li data-edit="prog.3.li2">Same journal and homework standard as the membership</li>
+          <li data-edit="prog.3.li3">Film review and college coaching advice on request</li>
+          <li data-edit="prog.3.li4">Scheduled directly with Coach Blake</li>
         </ul>
-        <a href="#contact" class="btn btn-ghost" data-program="Small Group" data-edit="prog.3.cta">Join a Group</a>
+        <a href="#contact" class="btn btn-ghost" data-program="Private One on One" data-edit="prog.3.cta">Ask About Availability</a>
       </div>
 
       <div class="prog-c">
         <div class="prog-top">
-          <h3 data-edit="prog.4.title">College Track Program</h3>
-          <div class="prog-price"><span data-edit="prog.4.price">$349</span><small data-edit="prog.4.unit">Per Month</small></div>
+          <h3 data-edit="prog.4.title">Private Small Group</h3>
+          <div class="prog-price"><span data-edit="prog.4.price">$75</span><small data-edit="prog.4.unit">Per Player, Hour</small></div>
         </div>
-        <p data-edit="prog.4">A twelve week block for juniors and seniors who are serious about hearing from college programs. Guided by a coach who was just recruiting at that level.</p>
+        <p data-edit="prog.4">Bring teammates or siblings at a similar level. Competitive reps, real defense, and a coach who sees every one of them.</p>
         <ul class="prog-list">
-          <li data-edit="prog.4.li1">Two private sessions per week</li>
-          <li data-edit="prog.4.li2">Monthly film review session</li>
-          <li data-edit="prog.4.li3">Highlight reel guidance</li>
-          <li data-edit="prog.4.li4">Recruiting profile and outreach help</li>
+          <li data-edit="prog.4.li1">Level matched groups only</li>
+          <li data-edit="prog.4.li2">Live one on one and two on two</li>
+          <li data-edit="prog.4.li3">Great for a team's guards or a family with two players</li>
+          <li data-edit="prog.4.li4">Drop-in sessions at $50 if you cannot commit to a term yet</li>
         </ul>
-        <a href="#contact" class="btn btn-ghost" data-program="College Track Program" data-edit="prog.4.cta">Apply for a Spot</a>
+        <a href="#contact" class="btn btn-ghost" data-program="Private Small Group" data-edit="prog.4.cta">Ask About a Group</a>
+      </div>
+    </div>
+
+    <!-- The fine print, up front. Every line traces to the signed agreement in docs/source-of-truth.
+         Bold labels sit outside the data-edit spans so an owner edit cannot strip the emphasis. -->
+    <div class="fine-print">
+      <div class="eyebrow" data-edit="fp.eyebrow">The Fine Print, Up Front</div>
+      <ul class="fp-list">
+        <li><b data-edit="fp.1b">3 month minimum.</b> <span data-edit="fp.1">Memberships run 3 or 12 months from the day you register.</span></li>
+        <li><b data-edit="fp.2b">All sales are final.</b> <span data-edit="fp.2">No refunds on any program. Sessions can move. Money does not come back.</span></li>
+        <li><b data-edit="fp.3b">24 hours notice</b> <span data-edit="fp.3">to reschedule. Miss a session without notice and it is forfeited, with no private makeup.</span></li>
+        <li><b data-edit="fp.4b">Auto-renews</b> <span data-edit="fp.4">unless you cancel in writing 7 days before the end of a 3 month term, or 60 days before the end of a 12 month term.</span></li>
+        <li><b data-edit="fp.5b">Early exit</b> <span data-edit="fp.5">costs 75% of what is left on the contract.</span></li>
+      </ul>
+      <p class="fp-note"><span data-edit="fp.note1">Read the full </span><a href="/terms" data-edit="fp.link">terms and training agreement</a><span data-edit="fp.note2"> before your enrollment call. If you do not agree with them, do not enroll. Coach Blake would rather lose the sale than the standard.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- AUDIENCE (moved here from receipts.html: it describes who the service is for, so it belongs in the services zone) -->
+<section class="band band-ink">
+  <div class="shell">
+    <div class="head">
+      <div class="eyebrow" data-edit="aud.eyebrow">Who Trains Here</div>
+      <h2 data-edit="aud.h2">Middle school through senior year.</h2>
+      <p class="lede" data-edit="aud.lede">Wherever your player starts, the target is the same: be undeniable when it counts. What changes is how far out we are building from.</p>
+    </div>
+    <div class="aud">
+      <div class="aud-c">
+        <span class="aud-age" data-edit="aud.1.badge">11-13</span>
+        <h3 data-edit="aud.1.title">Middle School Build</h3>
+        <p data-edit="aud.1">Every college player was once a middle schooler with a habit nobody caught. We catch it now, while it is still easy to fix — feet, balance, both hands — so nothing is capping you at sixteen.</p>
+      </div>
+      <div class="aud-c">
+        <span class="aud-age" data-edit="aud.2.badge">14-16</span>
+        <h3 data-edit="aud.2.title">High School Jump</h3>
+        <p data-edit="aud.2">This is the level where players separate. We build the speed, the strength through contact, and the decisions that turn a rotation player into a starter coaches build around.</p>
+      </div>
+      <div class="aud-c">
+        <span class="aud-age" data-edit="aud.3.badge">16-18</span>
+        <h3 data-edit="aud.3.title">College Track</h3>
+        <p data-edit="aud.3">Time to get in front of the right staffs. Coach Blake sat on their side of the recruiting table. He knows what they need to see on your film, he will tell you the truth about the gap, and then he will train you to close it.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- METHOD -->
+<!-- ENROLL -->

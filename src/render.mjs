@@ -1,13 +1,16 @@
 ﻿import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
-import { absoluteUrl, AREA_SERVED, PROGRAM_PAGES } from './lib/site-config.mjs';
+import { absoluteUrl, AREA_SERVED, PROGRAM_PAGES, CONTACT, OFFERS } from './lib/site-config.mjs';
 import { faqPage, jsonLdScript, breadcrumbList, businessEntity } from './lib/structured-data.mjs';
 import { CONTENT_GROUPS } from './lib/content-groups.mjs';
 
 // Exported so the editor can list the hand-built sections without keeping its own copy
 // of this order — the drift that has already bitten twice in this codebase.
-export const SECTION_IDS = ['receipts', 'programs', 'method', 'coach', 'nights', 'playbook', 'resources', 'areas', 'contact'];
+// Homepage order: services + pricing, how to enroll, then background and resources, then the
+// second sign-up. 'nights' stays last on purpose: nights.html now ships as a hidden easter-egg
+// overlay (opened from the footer ball / Konami code in main.js), so its DOM position is moot.
+export const SECTION_IDS = ['programs', 'enroll', 'coach', 'receipts', 'method', 'playbook', 'resources', 'areas', 'contact', 'nights'];
 
 // Single source for the footer's editable keys: buildFooter reads these with fallbacks,
 // and build.mjs's footer pseudo-section reports the same list as its hooks, so the two
@@ -24,12 +27,12 @@ const IMAGE_RENDER_RULES = {
 };
 
 const FAQ_PAIRS = [
-  { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year. Younger players get more habit building, older players get more decision work and recruiting support.' },
-  { question: 'Where do sessions actually happen?', answer: 'City parks and partner courts across north Broward County. When you book, you get the exact location for your area. If you have access to a court through a school or community center, we can often train there.' },
-  { question: 'How fast will we see a difference?', answer: 'Form changes show up in two to three weeks. Game changes usually take six to eight, because a skill has to survive speed, contact, and fatigue before it shows up on a Friday night.' },
-  { question: 'Do you help with college recruiting?', answer: 'Yes, inside the College Track Program. Coach Blake spent the last two seasons on college staffs at the NJCAA and NCAA Division I levels, so he has evaluated high school film from the recruiting side.' },
-  { question: 'Is the First Look session really free?', answer: 'Yes. It is a full evaluation. You leave with a written summary of strengths and gaps whether or not you book anything after.' },
-  { question: 'Do you train girls teams and players?', answer: 'Yes. Every program listed is open to any player. Skill work does not change by gender.' }
+  { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
+  { question: 'Where do sessions actually happen?', answer: 'City parks and partner courts across north Broward County. You get the exact location when you book. If the court is too wet to play, the session moves to Zoom that evening rather than disappearing.' },
+  { question: 'How long is the commitment, and why?', answer: 'Three months minimum, or twelve. Coach Blake asks for three because that is how long it takes a new habit to survive speed, contact, and a Friday night. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 12 month term.' },
+  { question: 'What does the evaluation session cost?', answer: '$50 for sixty minutes on court. Book it within 48 hours of your intro call and it is $35. The call itself is free and takes 15 to 20 minutes.' },
+  { question: 'What happens if we miss a session?', answer: 'Give 24 hours notice and Coach Blake will move it. Miss without notice and the session is forfeited: there are no private makeups and missed sessions do not roll over. All sales are final, so the honest answer is to put every session in the calendar.' },
+  { question: 'Do you help with college recruiting?', answer: 'Yes. Coach Blake spent the last two seasons on college staffs at the NJCAA and NCAA Division I levels, evaluating high school film from the recruiting side. Film review and college coaching advice are available on request alongside any program.' }
 ];
 
 // Areas tiles (areas.html) name themselves area.1.name … area.5.name. The footer's Areas
@@ -574,7 +577,15 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   head += '<meta property="og:description" content="' + escapeHtml(description) + '">\n';
   head += '<meta property="og:url" content="' + canonical + '">\n';
   head += '<meta property="og:image" content="' + ogImagePath + '">\n';
+  head += '<meta property="og:site_name" content="Fast Basketball">\n';
+  head += '<meta property="og:locale" content="en_US">\n';
+  head += '<meta property="og:image:width" content="1200">\n';
+  head += '<meta property="og:image:height" content="630">\n';
+  head += '<meta property="og:image:alt" content="Fast Basketball logo on court black">\n';
   head += '<meta name="twitter:card" content="summary_large_image">\n';
+  head += '<meta name="twitter:title" content="' + escapeHtml(title) + '">\n';
+  head += '<meta name="twitter:description" content="' + escapeHtml(description) + '">\n';
+  head += '<meta name="twitter:image" content="' + ogImagePath + '">\n';
   head += '<meta name="theme-color" content="#0A0A0C">\n';
   head += '<link rel="icon" href="/favicon.ico" sizes="48x48">\n';
   head += '<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png">\n';
@@ -625,8 +636,8 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   // cannot describe the business differently. meta.desc can override the page's own
   // description, but the JSON-LD business entity keeps this exact constant — the
   // contract only asks the <title>/meta description/og tags to read from content.text.
-  const HOMEPAGE_DESCRIPTION = 'Private basketball training in north Broward County with Coach Blake Kingsley, on staff for two championship programs in two years including the 2025 Horizon League champion Robert Morris Colonials. Serving Coral Springs, Parkland, Coconut Creek, Margate and Tamarac.';
-  const HOMEPAGE_TITLE = 'Fast Basketball | Private Basketball Training in Coral Springs, FL | Coach Blake Kingsley';
+  const HOMEPAGE_DESCRIPTION = 'Group and private basketball training in north Broward, FL with Coach Blake Kingsley, fresh off two college championship staffs. Every price on the page.';
+  const HOMEPAGE_TITLE = 'Basketball Training in Coral Springs, FL | Fast Basketball';
 
   let page = '';
   page += buildHead({
@@ -639,7 +650,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
     jsonLd: [
       // The canonical business entity. It lived in _prelude.html's <head>, which the
       // build never emits, so the homepage shipped no business identity at all.
-      businessEntity({ description: HOMEPAGE_DESCRIPTION, email: 'coach@kingfastbasketball.com', suburbs }),
+      businessEntity({ description: HOMEPAGE_DESCRIPTION, email: CONTACT.email, telephone: CONTACT.tel, offers: OFFERS, suburbs }),
       faqPage(deriveFaqPairs(content)),
       breadcrumbList([{ name: 'Home', path: '/' }])
     ]
@@ -677,7 +688,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
 
 export function buildFooter({ content, anchors = false } = {}) {
   const contactHref = anchors ? '#contact' : '/contact';
-  const playbookHref = anchors ? '#playbook' : '/playbook';
+  const pricingHref = anchors ? '#programs' : '/#programs';
   const text = (content && content.text) || {};
   const tagline = escapeHtml(text['ft.tagline'] || 'Private basketball training in north Broward. Built by a college coach for players chasing the next level.');
   const col1h = escapeHtml(text['ft.col1h'] || 'Training');
@@ -685,8 +696,8 @@ export function buildFooter({ content, anchors = false } = {}) {
   const col3h = escapeHtml(text['ft.col3h'] || 'More');
   const bot = escapeHtml(text['ft.bot'] || 'Fast Basketball. Elevate to Execute.');
   const city = escapeHtml(text['ft.city'] || 'Coral Springs, Florida');
-  const mob1 = escapeHtml(text['ft.mob1'] || 'Free First Look');
-  const mob2 = escapeHtml(text['ft.mob2'] || 'Free Playbook');
+  const mob1 = escapeHtml(text['ft.mob1'] || 'Book a Call');
+  const mob2 = escapeHtml(text['ft.mob2'] || 'See Pricing');
   const areaNames = deriveAreaNames(content, 4);
   return '<footer class="ft">\n' +
     '<div class="shell">\n' +
@@ -701,7 +712,7 @@ export function buildFooter({ content, anchors = false } = {}) {
     // editing them here without renaming those pages would make the footer lie.
     '<div class="ft-col"><h3 data-edit="ft.col1h">' + col1h + '</h3>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
     '<div class="ft-col"><h3 data-edit="ft.col2h">' + col2h + '</h3>' + areaNames.map((name) => '<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
-    '<div class="ft-col"><h3 data-edit="ft.col3h">' + col3h + '</h3><a href="/#receipts">The Résumé</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
+    '<div class="ft-col"><h3 data-edit="ft.col3h">' + col3h + '</h3><a href="/#enroll">How to Enroll</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
     '</div>\n</div>\n' +
     // OWNER NOTE: the old line here claimed copyright and "all rights reserved".
     // Fast Basketball is pre-launch with no verified entity and no registered marks,
@@ -709,11 +720,14 @@ export function buildFooter({ content, anchors = false } = {}) {
     // put back a ©, a ™, or "all rights reserved" until a Florida attorney says so.
     // The Privacy and Terms pages are a good-faith starting point, not legal advice,
     // and should be reviewed by a Florida attorney before launch.
-    '<div class="ft-bot"><span><span data-edit="ft.bot">' + bot + '</span> <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></span><span data-edit="ft.city">' + city + '</span></div>\n' +
+    '<div class="ft-bot"><span><span data-edit="ft.bot">' + bot + '</span> <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></span><span data-edit="ft.city">' + city + '</span>' +
+    // Easter egg: a small basketball that opens the Night Court overlay (nights.html + main.js).
+    // Desktop only; features.css hides it below 961px where the slingshot court is not rendered.
+    '<button type="button" class="egg-ball" id="eggBall" aria-label="Open the Night Court" title="Psst. Take a shot."><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20" fill="currentColor"/><g fill="none" stroke="#0A0A0C" stroke-width="2"><path d="M2 22H42M22 2V42M8.5 6.5c7.5 8 7.5 23 0 31M35.5 6.5c-7.5 8-7.5 23 0 31"/></g></svg></button></div>\n' +
     '</div>\n</footer>\n' +
     '<div class="mob-bar" id="mobBar">\n' +
     '<a href="' + contactHref + '" class="btn btn-primary" data-edit="ft.mob1">' + mob1 + '</a>\n' +
-    '<a href="' + playbookHref + '" class="btn btn-ghost" data-edit="ft.mob2">' + mob2 + '</a>\n' +
+    '<a href="' + pricingHref + '" class="btn btn-ghost" data-edit="ft.mob2">' + mob2 + '</a>\n' +
     '</div>\n' +
     '<div class="toast" id="toast" role="status" aria-live="polite"></div>\n';
 }

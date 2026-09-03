@@ -26,8 +26,58 @@
     if(skip) skip.addEventListener('click', endIntro);
   }
 
+  /* Night Court easter egg: hidden overlay opened via the footer ball or the
+     Konami code, closed via its own X, a backdrop click, or Escape (below).
+     Desktop/tablet only — the slingshot court doesn't render under 961px
+     (see .nite-stage's own @media(max-width:960px) rules in features.css),
+     so both triggers stay inert at mobile widths. */
+  var eggOvl = document.getElementById('eggNite');
+  var eggBall = document.getElementById('eggBall');
+  var eggClose = document.getElementById('eggClose');
+  function openEgg(){
+    if(!eggOvl || !eggOvl.hidden || window.innerWidth < 961) return;
+    eggOvl.hidden = false;
+    document.body.classList.add('egg-open');
+    if(eggClose) eggClose.focus();
+    if(window.fbToast) window.fbToast('Night Court unlocked. Sink one.'); /* fbToast is defined further down; look it up live, not at IIFE-start */
+  }
+  function closeEgg(){
+    if(!eggOvl || eggOvl.hidden) return;
+    eggOvl.hidden = true;
+    document.body.classList.remove('egg-open');
+    if(eggBall) eggBall.focus();
+  }
+  if(eggBall){
+    eggBall.addEventListener('click', function(){
+      if(window.innerWidth < 961) return;
+      openEgg();
+    });
+  }
+  if(eggClose) eggClose.addEventListener('click', closeEgg);
+  if(eggOvl){
+    eggOvl.addEventListener('click', function(e){
+      if(e.target === eggOvl) closeEgg();
+    });
+  }
+  /* Konami code, typed anywhere outside a text field: Up Up Down Down Left Right Left Right B A. */
+  var KONAMI = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+  var konamiPos = 0;
+  document.addEventListener('keydown', function(e){
+    var tag = document.activeElement && document.activeElement.tagName;
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if(window.innerWidth < 961) return;
+    var key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if(key === KONAMI[konamiPos]){
+      konamiPos++;
+      if(konamiPos === KONAMI.length){ konamiPos = 0; openEgg(); }
+    } else {
+      konamiPos = (key === KONAMI[0]) ? 1 : 0;
+    }
+  });
+
   /* Slingshot make (js/night-court.js) -> quick 1.25s lockup cut -> contact card. */
   window.fbNiteMade = function(){
+    closeEgg();
     var dest = function(){
       var t = document.querySelector('#contact');
       if(t) window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - 90, behavior: 'auto' });
@@ -104,6 +154,7 @@
     if(e.key !== 'Escape') return;
     endIntro();
     closeMenu();
+    closeEgg();
   });
 
   if(M.reveals === false){

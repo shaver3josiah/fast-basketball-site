@@ -113,3 +113,27 @@ html[data-night="off"] .nball.idle{animation:none;}
 .modal-x::before{transform:rotate(45deg);}
 .modal-x::after{transform:rotate(-45deg);}
 .modal-x:hover::before,.modal-x:hover::after{background:var(--red-hot);}
+
+/* ---------- NIGHT COURT EASTER EGG (footer ball / Konami code, main.js) ---------- */
+/* Same display:grid-vs-UA-[hidden] trap .modal-ovl documents above: the author
+   display:grid would otherwise outrank [hidden]'s UA display:none and the closed
+   overlay would sit on top of the page eating clicks. */
+.egg-ovl{position:fixed;inset:0;z-index:var(--z-drawer);background:rgba(4,4,8,.94);overflow:auto;display:grid;place-items:center;padding:0;}
+.egg-ovl[hidden]{display:none;}
+.egg-ovl .nite{width:100%;padding:56px 0;}
+.egg-x{position:fixed;top:16px;right:16px;z-index:3;width:44px;height:44px;flex-shrink:0;}
+.egg-x::before,.egg-x::after{content:"";position:absolute;top:21px;left:13px;width:18px;height:2px;background:#8C8C99;transition:background .2s;}
+.egg-x::before{transform:rotate(45deg);}
+.egg-x::after{transform:rotate(-45deg);}
+.egg-x:hover::before,.egg-x:hover::after{background:var(--red-hot);}
+.egg-ball{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;color:var(--fast-red);opacity:.55;transition:opacity .2s,transform .2s;}
+.egg-ball svg{width:22px;height:22px;}
+.egg-ball:hover,.egg-ball:focus-visible{opacity:1;animation:eggBounce .6s var(--ease-rush);}
+@keyframes eggBounce{30%{transform:translateY(-5px) rotate(-12deg);}60%{transform:translateY(0) rotate(6deg);}100%{transform:rotate(0);}}
+@media(prefers-reduced-motion:reduce){.egg-ball:hover,.egg-ball:focus-visible{animation:none;}}
+html[data-motion="off"] .egg-ball:hover,html[data-motion="off"] .egg-ball:focus-visible{animation:none;}
+body.egg-open{overflow:hidden;}
+/* The slingshot court only renders at >=961px (see .nite-stage's own @media(max-width:960px)
+   block above, which hides .hoop/.nite-guide/.nball) — hide the trigger so mobile visitors
+   never open an easter egg with no court inside it. */
+@media(max-width:960px){.egg-ball{display:none;}}

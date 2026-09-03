@@ -542,7 +542,7 @@ html[data-ticker="off"] .ticker-track{animation-play-state:paused;}
 .ct{display:grid;grid-template-columns:1fr 1.15fr;gap:56px;align-items:start;}
 .ct>*,.hero-grid>*,.coach>*,.pb>*{min-width:0;}
 .ct-side .eyebrow{margin-bottom:18px;}
-.ct-side h2{margin-bottom:20px;}
+.ct-side h1,.ct-side h2{margin-bottom:20px;}
 .ct-rows{margin-top:32px;}
 .ct-r{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid var(--line-dark);flex-wrap:wrap;}
 .ct-r b{font-family:var(--font-eyebrow);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:#7C7C89;min-width:96px;padding-top:3px;}

@@ -146,12 +146,12 @@ import { AREA_SERVED } from './lib/site-config.mjs';
 
 {
   const FAQ_FALLBACK = [
-    { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year. Younger players get more habit building, older players get more decision work and recruiting support.' },
-    { question: 'Where do sessions actually happen?', answer: 'City parks and partner courts across north Broward County. When you book, you get the exact location for your area. If you have access to a court through a school or community center, we can often train there.' },
-    { question: 'How fast will we see a difference?', answer: 'Form changes show up in two to three weeks. Game changes usually take six to eight, because a skill has to survive speed, contact, and fatigue before it shows up on a Friday night.' },
-    { question: 'Do you help with college recruiting?', answer: 'Yes, inside the College Track Program. Coach Blake spent the last two seasons on college staffs at the NJCAA and NCAA Division I levels, so he has evaluated high school film from the recruiting side.' },
-    { question: 'Is the First Look session really free?', answer: 'Yes. It is a full evaluation. You leave with a written summary of strengths and gaps whether or not you book anything after.' },
-    { question: 'Do you train girls teams and players?', answer: 'Yes. Every program listed is open to any player. Skill work does not change by gender.' }
+    { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
+    { question: 'Where do sessions actually happen?', answer: 'City parks and partner courts across north Broward County. You get the exact location when you book. If the court is too wet to play, the session moves to Zoom that evening rather than disappearing.' },
+    { question: 'How long is the commitment, and why?', answer: 'Three months minimum, or twelve. Coach Blake asks for three because that is how long it takes a new habit to survive speed, contact, and a Friday night. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 12 month term.' },
+    { question: 'What does the evaluation session cost?', answer: '$50 for sixty minutes on court. Book it within 48 hours of your intro call and it is $35. The call itself is free and takes 15 to 20 minutes.' },
+    { question: 'What happens if we miss a session?', answer: 'Give 24 hours notice and Coach Blake will move it. Miss without notice and the session is forfeited: there are no private makeups and missed sessions do not roll over. All sales are final, so the honest answer is to put every session in the calendar.' },
+    { question: 'Do you help with college recruiting?', answer: 'Yes. Coach Blake spent the last two seasons on college staffs at the NJCAA and NCAA Division I levels, evaluating high school film from the recruiting side. Film review and college coaching advice are available on request alongside any program.' }
   ];
   assert.deepEqual(deriveFaqPairs({ text: {} }), FAQ_FALLBACK, 'FAQ fallback must match the site\'s current hardcoded pairs');
 

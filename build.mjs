@@ -7,7 +7,7 @@ import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
 import { renderCoachPage } from './src/lib/coach-page.mjs';
 import { breadcrumbList } from './src/lib/structured-data.mjs';
-import { SITE_URL } from './src/lib/site-config.mjs';
+import { SITE_URL, CONTACT } from './src/lib/site-config.mjs';
 import { TEXT_GROUPS, TEXT_LABELS, IMAGE_LABELS } from './src/lib/content-schema.mjs';
 import { CONTENT_GROUPS } from './src/lib/content-groups.mjs';
 import { ELEMENT_TYPES, FONT_FAMILIES, THEME_COLORS, BREAKPOINTS, DESIGN_WIDTH } from './src/lib/canvas-schema.mjs';
@@ -21,28 +21,32 @@ const DIST = resolve(ROOT, 'dist');
 // Amounts must match the homepage cards in src/templates/sections/programs.html.
 const TRAINING_PAGES = [
   {
-    slug: 'first-look', textKey: 'prog.1', title: 'Free First Look Session | Fast Basketball', label: 'First Look Session',
-    price: { amount: 'Free', unit: '60 Minutes', line: 'No obligation. The report is yours either way.' },
-    features: ['Full movement and shooting form screen', 'Live one on one reads against Coach Blake', 'Written strengths and gaps report, yours to keep', 'Open slots offered within one business day'],
-    next: 'Bring your player, their shoes, and sixty minutes. Coach Blake watches them move, puts them through live reads, and writes down exactly where they stand. You leave with the report whether or not you ever book again.'
+    slug: 'evaluation', textKey: 'prog.1', title: 'Evaluation Session | Fast Basketball', label: 'Evaluation Session',
+    description: 'A 60 minute on-court evaluation with Coach Blake Kingsley in north Broward. $50, or $35 within 48 hours of your intro call. The step before any commitment.',
+    price: { amount: '$50', unit: '60 Minutes', line: '$35 if you book within 48 hours of your intro call. The call itself is free.' },
+    features: ['Movement, handle, and shooting form screen', 'Live reads against a defender', 'Coach Blake gets to know your player and their goals', 'Enrollment call within 24 hours: what he saw, and the plan'],
+    next: 'Bring your player, their shoes, a ball, water, and sixty minutes. Coach Blake watches them move, puts them through live reads, and talks to them about what they want. Then you both decide whether the program fits.'
   },
   {
-    slug: 'private', textKey: 'prog.2', title: 'Private Basketball Training in Coral Springs | Fast Basketball', label: 'Private One on One',
-    price: { amount: '$75', unit: 'Per 60 Min', line: '$75 for a full 60 minute session. Your First Look before it is free.' },
-    features: ['Custom plan updated every four sessions', 'Footwork, handle, and finishing blocks', 'Shot chart and progress log', 'Packages of 5 and 10 available, 10 sessions $675 ($67.50 a session)'],
-    next: 'Every session is built around the three things standing between your player and the next level. The plan updates every four sessions, and the shot chart shows the change before anyone has to take our word for it.'
+    slug: 'group-training', textKey: 'prog.2', title: 'Group Training Membership | Fast Basketball', label: 'Group Training Membership',
+    description: 'Weekly group basketball training in north Broward on a 3 or 12 month term, once or twice a week, $25 to $40 a session. Every price listed, no quotes over text.',
+    price: { amount: '$25\u2013$40', unit: 'Per Session', line: '3 months: $480 once a week or $840 twice a week. 12 months: $1,380 once a week or $2,300 twice a week. Pay in full, split in two, or monthly.' },
+    features: ['Weekly 60 minute sessions with level matched players', 'Journal, homework, and daily check-ins in the members area', 'Weekly game evaluations and quarterly progress reports', 'Rained out? The session moves to Zoom that evening'],
+    next: 'Three months is the minimum because that is how long it takes a new habit to survive speed, contact, and a Friday night. Twelve months is for players who already know they are all in. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 12 month term.'
   },
   {
-    slug: 'small-group', textKey: 'prog.3', title: 'Small Group Basketball Training in North Broward | Fast Basketball', label: 'Small Group',
-    price: { amount: '$45', unit: 'Per Player', line: '$45 per player per session. Your First Look before it is free.' },
-    features: ['Level matched groups only', 'Live one on one and two on two', 'Great for teammates and siblings', 'Weekly recurring slots'],
-    next: 'Two to four players at the same level, going at each other every week. Skills get tested against a live defender the day they are taught, because that is the only version of a skill that shows up in a game.'
+    slug: 'private', textKey: 'prog.3', title: 'Private Basketball Training in Coral Springs | Fast Basketball', label: 'Private One on One',
+    description: 'Private one on one basketball training in Coral Springs and north Broward with Coach Blake Kingsley, $100 an hour, scheduled directly with the coach.',
+    price: { amount: '$100', unit: 'Per Hour', line: '$100 for a full hour on one player, scheduled directly with Coach Blake.' },
+    features: ['Footwork, handle, finishing, and shooting blocks', 'Same journal and homework standard as the membership', 'Film review and college coaching advice on request', 'Scheduled directly with Coach Blake'],
+    next: 'Every hour is built around the two or three things standing between your player and the next level. The journal and the homework are the same as the membership, because the standard does not change with the format.'
   },
   {
-    slug: 'college-track', textKey: 'prog.4', title: 'College Track Basketball Program | Fast Basketball', label: 'College Track Program',
-    price: { amount: '$349', unit: 'Per Month', line: '$349 per month. Your First Look before it is free.' },
-    features: ['Two private sessions per week', 'Monthly film review session', 'Highlight reel guidance', 'Recruiting profile and outreach help'],
-    next: 'Twelve weeks for juniors and seniors who are serious about hearing from college programs. Coach Blake evaluated recruiting film from the college side of the table — the same eye now reviews your film, your reel, and your outreach.'
+    slug: 'small-group', textKey: 'prog.4', title: 'Small Group Basketball Training | Fast Basketball', label: 'Private Small Group',
+    description: 'Private small group basketball training in north Broward, $75 per player per hour. Level matched groups for teammates and siblings; drop-in sessions $50.',
+    price: { amount: '$75', unit: 'Per Player, Hour', line: '$75 per player per hour. Drop-in sessions are $50 if you cannot commit to a term yet.' },
+    features: ['Level matched groups only', 'Live one on one and two on two', 'Great for a team\'s guards or a family with two players', 'Drop-in sessions at $50 if you cannot commit to a term yet'],
+    next: 'Two to four players at the same level, going at each other. Skills get tested against a live defender the day they are taught, because that is the only version of a skill that shows up in a game.'
   }
 ];
 
@@ -297,7 +301,7 @@ function step8_trainingPages(content, prelude) {
     const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }])];
     const html = buildSimplePage({
       title: page.title,
-      description: content.text[page.textKey],
+      description: page.description || content.text[page.textKey],
       canonicalPath,
       bodyHtml: body,
       content,
@@ -324,7 +328,7 @@ function step9_playbookPage(sections, content, playbookTemplates, prelude) {
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Free Playbook', path: '/playbook' }])];
   const html = buildSimplePage({
     title: 'Free Custom Basketball Playbook | Fast Basketball',
-    description: content.text['pb.lede'],
+    description: 'A free four week basketball workout block built for your player and sent to a parent inbox. From Coach Blake Kingsley, Fast Basketball, north Broward.',
     canonicalPath: '/playbook',
     bodyHtml: body,
     content,
@@ -370,8 +374,8 @@ function step10_contactPage(sections, content, prelude) {
   body = applyGroupOrder(body, content.order);
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact' }])];
   const html = buildSimplePage({
-    title: 'Contact Fast Basketball | Book a Session in North Broward',
-    description: content.text['ct.lede'],
+    title: 'Contact Fast Basketball | Book a Call, North Broward',
+    description: 'Book a 15 to 20 minute call with Coach Blake Kingsley about your player. Fast Basketball, north Broward. Replies within one business day.',
     canonicalPath: '/contact',
     bodyHtml: body,
     content,
@@ -394,7 +398,7 @@ function step10_contactPage(sections, content, prelude) {
 // players "roughly 11 through 18" and the forms take a name and an email, so a 12-year-old
 // can submit for themselves today. If the forms ever gain a real parent gate, this page is
 // the first thing that has to be rewritten to match.
-const LEGAL_EFFECTIVE = 'August 2026';
+const LEGAL_EFFECTIVE = 'September 2026';
 
 const OWNER_NOTE_PRIVACY = '<p class="rcp-note"><b>Note for the site owner:</b> this page is a starting point, ' +
   'written in good faith by someone who is not a lawyer. It is not legal advice and it is not a promise that ' +
@@ -415,7 +419,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<section class="band band-ink">\n<div class="shell">\n';
 
   body += '<h2>Who is asking</h2>\n';
-  body += '<p>Fast Basketball is Coach Blake Kingsley, training players one on one and in small groups across Coral Springs, Parkland, Coconut Creek, Margate and Tamarac. He is the person who reads what you send. Anything on this page, including a request to delete what we hold, goes to <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a>.</p>\n';
+  body += '<p>Fast Basketball is Coach Blake Kingsley, training players one on one and in small groups across Coral Springs, Parkland, Coconut Creek, Margate and Tamarac. He is the person who reads what you send. Anything on this page, including a request to delete what we hold, goes to <a href="mailto:blake.kingsley@gmail.com">blake.kingsley@gmail.com</a>.</p>\n';
 
   body += '<h2>What we collect</h2>\n';
   body += '<p>Only what you type into a form. The contact form asks for a name, an email, a phone number, your area, which program you are asking about, and whatever you want to tell us about the player. The playbook form asks for a name, an email, and the player\'s grade, position and skill focus. The Locker asks for an email so we can send you the resource you unlocked.</p>\n';
@@ -427,7 +431,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<h2>Parents, and players under 18</h2>\n';
   body += '<p>These forms are meant for a parent or guardian. We train players from roughly 11 through 18, and the questions that come next — cost, scheduling, health, whether this is even the right fit — are yours to answer. If your player is under 18, please send the form yourself so the conversation starts with you.</p>\n';
   body += '<p>We do not knowingly collect personal information from a child under 13. If a child under 13 fills in one of these forms without you, we are not going to use it and we will delete it as soon as we know.</p>\n';
-  body += '<p>If you think your under-13 child submitted something here, email <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a> and tell us the email address they used. We will find it, delete it, and write back to confirm it is gone. No form to fill in, no reason needed, and nothing you have to explain.</p>\n';
+  body += '<p>If you think your under-13 child submitted something here, email <a href="mailto:blake.kingsley@gmail.com">blake.kingsley@gmail.com</a> and tell us the email address they used. We will find it, delete it, and write back to confirm it is gone. No form to fill in, no reason needed, and nothing you have to explain.</p>\n';
 
   body += '<h2>Who else touches it</h2>\n';
   body += '<p>Two companies, and only because the site cannot work without them.</p>\n';
@@ -451,7 +455,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<p>As long as it is useful for the reason you gave it to us: answering your question, sending what you asked for, running your player\'s sessions. There is no fixed clock on it. If you are not training with us and you would rather we did not hold it, say so and we will not.</p>\n';
 
   body += '<h2>Want it gone?</h2>\n';
-  body += '<p>Email <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a> and we delete what we hold on you. One message, done, no reason owed. You can also just ask what is on file and we will tell you.</p>\n';
+  body += '<p>Email <a href="mailto:blake.kingsley@gmail.com">blake.kingsley@gmail.com</a> and we delete what we hold on you. One message, done, no reason owed. You can also just ask what is on file and we will tell you.</p>\n';
 
   body += '<h2>If this page changes</h2>\n';
   body += '<p>The date at the top changes with it. This version is in effect as of ' + LEGAL_EFFECTIVE + '.</p>\n';
@@ -471,67 +475,117 @@ function step11b_privacyPage(content, prelude) {
   return ['/privacy'];
 }
 
-// Rates here must match TRAINING_PAGES above and src/templates/sections/programs.html.
-// The scheduling policy is a bracketed owner placeholder on purpose: nobody but the owner
-// knows what it is, and a made-up cancellation window is a promise the business would have
-// to keep. It is written to be impossible to mistake for finished copy.
-// OWNER TODO before launch: write the real cancellation policy into the 'Scheduling,
-// cancelling and no shows' section below -- notice required to reschedule without a
-// charge, what happens on a no-show, what happens if Coach Blake cancels, and how a
-// missed session counts against the ten-session package and monthly College Track
-// billing. The visitor-facing copy currently says it is handled case by case, which is
-// true for a new program but is not a policy. Do not ship a bracketed placeholder here.
+// Rates here must match TRAINING_PAGES above, src/templates/sections/programs.html and OFFERS
+// in src/lib/site-config.mjs. Policy text mirrors the signed agreement (docs/source-of-truth).
 function step11c_termsPage(content, prelude) {
+  // The text below is the Player and Parent Training Agreement Blake sends every family,
+  // reproduced so it can be read before the enrollment call. Policy wording is kept as
+  // written in docs/source-of-truth/agreement-form-terms.md; only headings and the
+  // short lead-ins are the site's. Do not "improve" a policy sentence here without
+  // changing the signed agreement to match.
+  const li = (items) => '<ul class="prog-list">\n' + items.map((s) => '<li>' + s + '</li>\n').join('') + '</ul>\n';
   let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
-  body += '<div class="eyebrow">The Fine Print</div>\n<h1>Terms</h1>\n';
-  body += '<p class="lede">What you are agreeing to when you book a session. Same as the privacy page: plain English, no legal maze.</p>\n';
+  body += '<div class="eyebrow">The Fine Print</div>\n<h1>Terms &amp; Training Agreement</h1>\n';
+  body += '<p class="lede">This is the agreement every family agrees to when they enroll, reproduced in full so you can read it before your call rather than after. If you do not agree with it, do not enroll. Coach Blake would rather lose the sale than the standard.</p>\n';
   body += '<p class="trust-line">In effect ' + LEGAL_EFFECTIVE + '</p>\n';
   body += '</div>\n</header>\n';
   body += '<section class="band band-ink">\n<div class="shell">\n';
 
-  body += '<h2>Who books</h2>\n';
-  body += '<p>If the player is under 18, a parent or guardian books, is the person we talk to about scheduling and health, and is responsible for payment. Players 18 and over can book for themselves.</p>\n';
-  body += '<p>If your player emails us first because they are keen, no problem at all. We will just bring you into it before anything gets scheduled.</p>\n';
+  body += '<h2>How to agree</h2>\n';
+  body += '<p><b>Step 1.</b> Read the terms and training agreement entirely to understand FAST Basketball expectations. If you have any questions or concerns, text Coach Blake Kingsley Jr. at <a href="sms:' + CONTACT.tel + '">' + CONTACT.phone + '</a> to schedule a phone call.</p>\n';
+  body += '<p><b>Step 2.</b> Once you have reviewed this document, you agree to the terms by entering your full name on the checkout form where it asks &ldquo;type name to agree to the terms&rdquo; and clicking the &ldquo;I agree to the terms and conditions&rdquo; box to complete your order.</p>\n';
+  body += '<p>If you do not agree with our terms and player and parent expectations, we ask that you do not enroll into our program. Our terms are extremely clear and protect the integrity of our program. Our program is selective and certainly not for every family. We only want to work with families who truly buy into our culture at FAST Basketball.</p>\n';
 
-  body += '<h2>Training is physical</h2>\n';
-  body += '<p>Basketball training is exercise. Players run, cut, jump, land, and go live against another player. Injuries happen in every sport — a rolled ankle, a jammed finger, occasionally worse — and good coaching lowers that risk without removing it. You should know that going in.</p>\n';
-  body += '<p>Before the first session, tell Coach Blake anything that changes how your player can train: asthma, a heart condition, a concussion history, a knee still coming back, allergies, medication, anything a coach would want to know quickly. It stays between you and him, and it changes how he runs the hour.</p>\n';
-  body += '<p>A written waiver and medical form is handled separately, signed in person before the first session. This page is not that form and does not stand in for it.</p>\n';
+  body += '<h2>Term and investment</h2>\n';
+  body += '<p>This agreement begins on the day you register and continues for 3 or 12 months, with 3 months as the minimum. The investment for the 3 month, twice a week membership is $840.</p>\n';
+  body += li([
+    'Evaluation session: $50 for 60 minutes. $35 if booked within 48 hours of your intro call.',
+    'Group training membership, 3 months: $480 once a week (12 sessions) or $840 twice a week (24 sessions).',
+    'Group training membership, 12 months: $1,380 once a week (46 sessions) or $2,300 twice a week (92 sessions).',
+    'Private one on one: $100 per hour.',
+    'Private small group: $75 per player per hour.',
+    'Drop-in session: $50, for families who cannot commit to a term yet.'
+  ]);
+  body += '<p>If you choose to cancel after 6 or 12 months, you agree to provide Coach Blake Kingsley 60 days written notice at <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> to cancel any future recurring payment after the contract is complete. If you do not follow our terms, you will be automatically enrolled into the same agreement for the next 12 months, no exceptions.</p>\n';
+  body += '<p>By registering for the program, you agree to the terms and conditions below, the player expectations and the parent expectations, which state Coach Kingsley&rsquo;s refund, cancellation and early termination policies.</p>\n';
 
-  body += '<h2>What training promises, and what it cannot</h2>\n';
-  body += '<p>Coach Blake will make your player better. That is the work, and the shot chart and the progress log are there so you do not have to take our word for it.</p>\n';
-  body += '<p>Nobody can promise the rest. Not playing time, not a starting spot, not a roster place, not a college offer, not a scholarship, not a coach returning a call. Those calls belong to high school coaches, club coaches and college staffs, and they are not ours to make. The College Track Program buys the work, the film review and honest guidance on how recruiting actually runs. It does not buy an outcome, and anyone who tells you otherwise is selling you something.</p>\n';
+  body += '<h2>Player expectations</h2>\n';
+  body += '<p>Every player agrees to the following, in their own name.</p>\n';
+  body += li([
+    'I agree to be on time (15 minutes early).',
+    'I agree to be a positive player who is coachable.',
+    'I agree to bring my journal to every session to document my progress.',
+    'I agree to work hard in every session. I am here to develop and reach my goals as a player.',
+    'I agree to complete each homework task that Coach Kingsley assigns me in a timely manner.',
+    'I agree to be accountable to Coach Kingsley&rsquo;s program and not make excuses.',
+    'I agree to bring water and my own basketball and wear proper basketball shoes to each session.',
+    'I agree to work hard and achieve the personal goals that Coach Kingsley and I set.',
+    'I agree to be committed every week and dedicate time to work on my own away from our sessions.',
+    'I agree that I can communicate with Coach Kingsley daily about my progress inside the members area, where I have unlimited access to daily check-ins.',
+    'I agree to fill out my quarterly reports so I can track my progress as a player.',
+    'I agree to put in the work needed to become a better player. My results are my responsibility.',
+    'I agree to fill out my weekly game evaluations so Coach Kingsley and I have a deep understanding of my performances throughout the season.',
+    'I agree to be a positive player when I make mistakes at the sessions.',
+    'I agree to respect my neighbor.',
+    'I agree to speak respectfully.'
+  ]);
 
-  body += '<h2>What it costs</h2>\n';
-  body += '<ul class="prog-list">\n';
-  body += '<li>First Look session: free, 60 minutes, no obligation.</li>\n';
-  body += '<li>Private one on one: $75 per 60 minute session. Ten sessions $675, which is $67.50 a session.</li>\n';
-  body += '<li>Small group: $45 per player per session.</li>\n';
-  body += '<li>College Track Program: $349 per month.</li>\n';
-  body += '</ul>\n';
-  body += '<p>Coach Blake tells you how to pay when you book. If a rate changes, the new rate applies to sessions booked after the change, never to sessions you have already paid for.</p>\n';
+  body += '<h2>Parent expectations and terms</h2>\n';
+  body += li([
+    'We have a very clear no refund policy. All sales are final once you enroll into our program.',
+    'If you (as a parent) have questions during the week, you can email Coach Kingsley and you will receive a response within 12 hours, Monday to Friday.',
+    'If practice is canceled due to weather, Coach Kingsley will notify the players and parents via email. <b>The session will be moved to Zoom that evening</b>, meaning we still train regardless of the weather. Practice updates and cancellations are communicated via email.',
+    'I agree to bring my child to our scheduled weekly session 15 minutes early to warm up and stretch.',
+    'I understand that if we are late to the session we forfeit the time. All sessions last 60 minutes.',
+    'I agree with Coach Kingsley&rsquo;s reschedule policy: if you miss a session, we do not offer a private one on one makeup session.',
+    'I understand that during the sessions I will not pressure my child or yell from the sidelines. We train in a non-pressured environment.',
+    'I understand how to communicate with Coach Kingsley, and will set up a 10 minute scheduled call when there are conflicts or vacations, in advance, so we can better prepare for our sessions. Please communicate when you are going out of town so we can plan accordingly.',
+    'Missed sessions do not roll over into the following year or term for any reason.',
+    'I understand that Coach Kingsley&rsquo;s billing process is an automatic electronic funds transfer. If you choose the split payment option, half of the funds are collected on the first payment and the second half are collected 30 days later.',
+    'I understand that if I have a failed credit or debit card payment I will need to register a new card within 12 hours of the failed payment. Sessions pause until the payment is collected.',
+    'We offer three options for payment: pay in full at a discount, split payment (two payments), or monthly payments. All sales are final. If you enroll and do not use the sessions, there are no makeup sessions for missed sessions.',
+    'Three month plan: if you want to cancel your membership, notify us in writing at <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> at least 7 days before our final session and we will turn off the membership. If not, you are auto-renewed into the next training term automatically.',
+    'Twelve month plan: if you want to cancel your membership, notify us in writing at <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> at least 60 days before our final session and we will turn off the membership. If not, you are auto-renewed into the next training term automatically.',
+    'I understand that FAST Basketball, Coach Kingsley and any assistant coach for FAST Basketball are not liable for any injuries.'
+  ]);
+  body += '<p>Our terms and conditions apply to any training program offered by FAST Basketball. By scheduling any session, you are agreeing to the following terms and conditions of our company.</p>\n';
 
-  body += '<h2>Scheduling, cancelling and no shows</h2>\n';
-  body += '<p>Sessions are booked directly with Coach Blake. Weather, school and travel happen, and we would always rather move a session than lose it.</p>\n';
-  body += '<p><b>Tell him as early as you can and he will work with you. A session moved is better than a session lost. While the program is new, missed sessions inside a package are sorted out case by case rather than by a rule, and when that policy is set it will be written here.</b></p>\n';
+  body += '<h2>Social media release policy</h2>\n';
+  body += '<p>&ldquo;I, the undersigned, do hereby grant permission to FAST Basketball to post my and/or my child&rsquo;s story, photo, videos, hereinafter referred to as &lsquo;Materials,&rsquo; taken by FAST Basketball during sessions or that I submit to and for the FAST Basketball website, Instagram and Facebook accounts. I hereby release you, your representative, employees, managers, members, officers, parent companies, subsidiaries, and directors, from all claims and demands arising out of or in connection with any use of said Materials, including, without limitation, all claims for invasion of privacy, infringement of my right of publicity, defamation and any other personal and/or property rights.&rdquo;</p>\n';
 
-  body += '<h2>Photos and video</h2>\n';
-  body += '<p>No photo or video of your player goes anywhere public without your explicit permission. Not on Instagram, not on this site, not anywhere else. Coach Blake will ask, and asking means a real yes from you — silence is a no.</p>\n';
-  body += '<p>Say yes today and change your mind next year and that is fine. Email <a href="mailto:coach@kingfastbasketball.com">coach@kingfastbasketball.com</a> and it comes down. You do not need a reason.</p>\n';
-  body += '<p>Coach Blake may film during a session for coaching, because showing a player their own footwork is half the value of film. That footage stays between him and you unless you have said otherwise.</p>\n';
+  body += '<h2>Health and wellness policy</h2>\n';
+  body += '<p>&ldquo;I have enrolled in the personalized health and fitness program offered through FAST Basketball. I recognize that the program may involve strenuous physical activity including, but not limited to, muscle strength and endurance training, cardiovascular conditioning and training, and other various fitness activities. I hereby affirm that my child is in good physical condition and does not suffer from any known disability or condition which would prevent or limit my participation in this exercise program. I acknowledge my enrollment and participation in FAST Basketball training.&rdquo;</p>\n';
+  body += '<p>&ldquo;I fully understand that my child may injure myself as a result of my enrollment and participation in this program and I hereby Release and Forever Discharge FAST Basketball and its agents, employees, representatives, affiliates, successors, or assigns, from any and all liability now or in the future for any conditions, injuries, sickness, losses, expenses or damages that I may obtain or incur. These conditions may include, but are not limited to, heart attacks, muscle strains, muscle pulls, muscle tears, broken bones, shin splints, heat prostration, injuries to knees, injuries to back, injuries to foot, or any other soreness that I may incur, including death.&rdquo;</p>\n';
 
-  body += '<h2>If these terms change</h2>\n';
-  body += '<p>The date at the top changes with them, and the version in effect when you booked is the one that applies to that booking. This version is in effect as of ' + LEGAL_EFFECTIVE + '.</p>\n';
+  body += '<h2>Injury policy</h2>\n';
+  body += '<p>If injury occurs and a player is unable to participate in the training sessions, the recurring payments will continue until the last day of the training agreement.</p>\n';
 
-  body += '<h2>Which state\'s law applies</h2>\n';
-  body += '<p>Florida.</p>\n';
-  body += '<p>The <a href="/privacy">privacy page</a> covers what we collect and how to have it deleted. If anything here is unclear, <a href="/contact">ask us</a> before you book — that is a much better outcome for everyone than reading it afterwards.</p>\n';
+  body += '<h2>Missed session policy</h2>\n';
+  body += '<p>We have a zero-tolerance missed session policy. If you miss a session without notice, you forfeit the session. We respectfully request at least 24 hours advance notice for all rescheduling and cancellations.</p>\n';
+
+  body += '<h2>Rainout policy</h2>\n';
+  body += '<p>If the courts are too wet or there is significant rain during the morning or evening of our scheduled session, the session may be rescheduled upon FAST Basketball staff decision. FAST Basketball staff check to ensure the court is safe before every session. If the court is playable, we resume the session. Parents do not determine whether a session is canceled. If a parent decides not to attend a session that has been deemed playable, that session counts as a cancellation of less than 24 hours and is not eligible for makeup.</p>\n';
+
+  body += '<h2>Payment policy</h2>\n';
+  body += '<p>By agreeing to our regular training agreement, you commit to the entire training period. You have the option of paying in full or paying monthly with our automated system, which charges your credit or debit card every 30 days. If your card fails, our system prompts you to replace it within a 24 hour period. If a new card is not registered within 48 hours, there is a late payment fee of $75.</p>\n';
+
+  body += '<h2>Refund policy</h2>\n';
+  body += '<p>Due to the demand for our programs, we do not offer refunds in any case for any program, including private training, small group training, camps, clinics or any program added to our training page. Once a player reserves a training spot, we hold the spot for the player for the specific program.</p>\n';
+
+  body += '<h2>Early termination policy</h2>\n';
+  body += '<p>You can opt out of and cancel your contract at any time by providing written notice of intent to cancel to FAST Basketball, and will incur an early termination fee of 75% of the remaining contract. Paying this fee cancels any upcoming payment, and once the fee is paid, all sessions come to a close.</p>\n';
+
+  body += '<h2>End of contract and renewal policy</h2>\n';
+  body += '<p>If you would like to stop training after our contract is complete, email <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> to let Coach Kingsley know that you will be discontinuing the program. This email must be sent 7 days before the end of the agreement. If you do not communicate with Coach Kingsley by the notice date, you agree to continue in the program beyond the agreement (meaning we hold your spot in the program) and the agreement auto-renews for $420.</p>\n';
+  body += '<p>By becoming a customer of FAST Basketball, you agree to the terms on this page. Your enrollment confirms that you have reviewed this page in depth and agree to the FAST Basketball terms and conditions.</p>\n';
+
+  body += '<p>The <a href="/privacy">privacy page</a> covers what this website collects and how to have it deleted. If anything here is unclear, <a href="/contact">ask before you enroll</a>. That is a much better outcome for everyone than reading it afterwards.</p>\n';
 
   body += OWNER_NOTE_TERMS;
   body += '</div>\n</section>\n</main>\n';
   const html = buildSimplePage({
-    title: 'Terms | Fast Basketball',
-    description: 'Who books, what training costs, what it promises, how photos are handled, and what to know about physical risk. Plain English, no legal maze.',
+    title: 'Terms & Training Agreement | Fast Basketball',
+    description: 'The FAST Basketball training agreement in full: pricing, the 3 month minimum, player and parent expectations, missed session, refund and renewal policies.',
     canonicalPath: '/terms',
     bodyHtml: body,
     content,

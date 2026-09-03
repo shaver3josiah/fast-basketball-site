@@ -62,7 +62,7 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   body += '<div class="eyebrow">' + escapeHtml(suburb.county) + ' Service Area</div>\n';
   body += '<h1>Basketball Training in <span class="hollow">' + escapeHtml(suburb.name) + '</span></h1>\n';
   body += '<p class="lede">' + escapeHtml(suburb.local_paragraph) + '</p>\n';
-  body += '<a href="/training/first-look" class="btn btn-primary">Book a First Look in ' + escapeHtml(suburb.name) + '</a>\n';
+  body += '<a href="/training/evaluation" class="btn btn-primary">Book Your Call in ' + escapeHtml(suburb.name) + '</a>\n';
   body += '</div>\n';
   body += '<div class="coach-img">' + renderImage('hero.nets', content, responsiveManifest, { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 760px) 90vw, 640px' }) + '</div>\n';
   body += '</div>\n</header>\n';
@@ -104,8 +104,8 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
     body += '<section class="band band-ink">\n<div class="shell">\n<div class="eyebrow rise">Close By</div>\n<h2 class="zr">Nearby areas we also serve</h2>\n<p class="rise">' + neighbors + '</p>\n</div>\n</section>\n';
   }
 
-  body += '<section class="band band-dark">\n<div class="shell">\n<div class="eyebrow rise">First Step</div>\n<h2 class="zr">Start with a First Look in ' + escapeHtml(suburb.name) + '</h2>\n';
-  body += '<p class="lede rise">One free hour on court. A straight read on where your player stands, and a written plan for what comes next.</p>\n';
+  body += '<section class="band band-dark">\n<div class="shell">\n<div class="eyebrow rise">First Step</div>\n<h2 class="zr">Start with a call about ' + escapeHtml(suburb.name) + '</h2>\n';
+  body += '<p class="lede rise">A 15 to 20 minute call, then a $50 evaluation session on court. A straight read on where your player stands, and the plan for what comes next.</p>\n';
   body += '<p><a href="/contact" class="btn btn-primary">Contact Coach Blake</a></p>\n</div>\n</section>\n';
   body += '</main>\n';
 

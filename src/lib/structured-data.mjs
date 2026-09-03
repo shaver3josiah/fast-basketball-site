@@ -24,7 +24,7 @@ export function founderPerson() {
 // premises, and asserting one it does not have is what the per-city version did wrong.
 // areaServed comes from the suburb records rather than a parallel city list, so the
 // entity can never drift out of sync with the pages that actually exist.
-export function businessEntity({ description, email, suburbs }) {
+export function businessEntity({ description, email, telephone, offers = [], suburbs }) {
   return {
     '@context': 'https://schema.org',
     '@type': ['LocalBusiness', 'SportsActivityLocation'],
@@ -34,6 +34,19 @@ export function businessEntity({ description, email, suburbs }) {
     description,
     url: absoluteUrl('/'),
     email,
+    telephone,
+    priceRange: '$35 - $100 per session',
+    // Published rates as offers, so a rich result can quote a price without inventing one.
+    makesOffer: offers.map((o) => ({
+      '@type': 'Offer',
+      name: o.name,
+      url: absoluteUrl(o.path),
+      priceCurrency: 'USD',
+      ...(o.maxPrice
+        ? { priceSpecification: { '@type': 'PriceSpecification', minPrice: o.price, maxPrice: o.maxPrice, priceCurrency: 'USD' } }
+        : { price: o.price }),
+      itemOffered: { '@type': 'Service', name: o.name, serviceType: 'Basketball Skills Training', provider: { '@id': BUSINESS_ID } }
+    })),
     image: absoluteUrl('/brand/og-image-1200x630.png'),
     logo: absoluteUrl('/brand/logo.svg'),
     areaServed: suburbs.map((s) => ({
