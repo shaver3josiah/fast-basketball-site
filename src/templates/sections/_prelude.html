@@ -117,16 +117,28 @@
         <span class="l"><span data-edit="hero.h1a">Elevate to</span></span>
         <span class="l"><span class="hollow" data-edit="hero.h1b">Execute.</span></span>
       </h1>
-      <p class="lede fade-seq d1" data-edit="hero.lede">Coach Blake Kingsley just spent two seasons on college staffs that won 51 games, two championships, and a trip to March Madness. Now he is in north Broward, building the exact skills college coaches recruit, one player at a time.</p>
+      <p class="lede fade-seq d1" data-edit="hero.lede">Your player's level of play goes up. Fast. Weekly sessions with a journal in their hand, homework between them, and a coach who holds them to it. Bench minutes become the minutes a coach cannot do without.</p>
       <div class="hero-cta fade-seq d2">
         <a href="#contact" class="btn btn-primary" data-edit="hero.cta1">Book Your Call</a>
         <a href="#programs" class="btn btn-ghost" data-edit="hero.cta2">See Training &amp; Pricing</a>
         <p class="trust-line" style="flex-basis:100%;margin:0;" data-edit="hero.trust">Every price is on this page. Replies within one business day.</p>
       </div>
-      <div class="hero-trust fade-seq d3">
-        <div class="trust-i"><b data-edit="hero.stat1n">51</b><span data-edit="hero.stat1l">Wins in Two Seasons</span></div>
-        <div class="trust-i"><b data-edit="hero.stat2n">2</b><span data-edit="hero.stat2l">Championship Programs</span></div>
-        <div class="trust-i"><b data-edit="hero.stat3n">NCAA</b><span data-edit="hero.stat3l">Division I Staff</span></div>
+      <!-- THE EVIDENCE. The hero sells the outcome; the résumé waits behind this word. Hover
+           or tap evaporates the letters (js/main.js splits them into spans and adds particles)
+           and the record fades in. Reduced motion swaps instantly. One-way per page load. -->
+      <div class="hero-trust fade-seq d3 evd" id="evd">
+        <button type="button" class="evd-trigger" id="evdTrigger" aria-expanded="false" aria-controls="evdPanel">
+          <span class="evd-word" data-edit="evd.word">The evidence</span>
+          <span class="evd-hint" data-edit="evd.hint">Hover or tap to see the record</span>
+        </button>
+        <div class="evd-panel" id="evdPanel" hidden>
+          <p class="evd-line" data-edit="evd.line">Two seasons on college staffs. Fifty-one wins, two championships, and a trip to March Madness. Now that eye is on your player.</p>
+          <div class="evd-stats">
+            <div class="trust-i"><b data-edit="hero.stat1n">51</b><span data-edit="hero.stat1l">Wins in Two Seasons</span></div>
+            <div class="trust-i"><b data-edit="hero.stat2n">2</b><span data-edit="hero.stat2l">Championship Programs</span></div>
+            <div class="trust-i"><b data-edit="hero.stat3n">NCAA</b><span data-edit="hero.stat3l">Division I Staff</span></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -148,18 +160,18 @@
 <!-- TICKER -->
 <div class="ticker" aria-hidden="true">
   <div class="ticker-track">
-    <span class="ticker-i" data-edit="tick.1">2025 Horizon League Champions</span>
-    <span class="ticker-i" data-edit="tick.2">Robert Morris Colonials</span>
-    <span class="ticker-i" data-edit="tick.3">NCAA Tournament</span>
-    <span class="ticker-i" data-edit="tick.4">NJCAA Region 16 Champions</span>
-    <span class="ticker-i" data-edit="tick.5">Moberly Area Greyhounds</span>
-    <span class="ticker-i" data-edit="tick.6">51 Wins in Two Seasons</span>
-    <span class="ticker-i" data-edit="tick.1">2025 Horizon League Champions</span>
-    <span class="ticker-i" data-edit="tick.2">Robert Morris Colonials</span>
-    <span class="ticker-i" data-edit="tick.3">NCAA Tournament</span>
-    <span class="ticker-i" data-edit="tick.4">NJCAA Region 16 Champions</span>
-    <span class="ticker-i" data-edit="tick.5">Moberly Area Greyhounds</span>
-    <span class="ticker-i" data-edit="tick.6">51 Wins in Two Seasons</span>
+    <span class="ticker-i" data-edit="tick.1">Raises your level of play. Fast.</span>
+    <span class="ticker-i" data-edit="tick.2">Confidence on the court, 0 to 10?</span>
+    <span class="ticker-i" data-edit="tick.3">Bench minutes to key minutes</span>
+    <span class="ticker-i" data-edit="tick.4">15 minutes a day on your own</span>
+    <span class="ticker-i" data-edit="tick.5">On time. Coachable. Accountable.</span>
+    <span class="ticker-i" data-edit="tick.6">Three months. Habits that hold.</span>
+    <span class="ticker-i" data-edit="tick.1">Raises your level of play. Fast.</span>
+    <span class="ticker-i" data-edit="tick.2">Confidence on the court, 0 to 10?</span>
+    <span class="ticker-i" data-edit="tick.3">Bench minutes to key minutes</span>
+    <span class="ticker-i" data-edit="tick.4">15 minutes a day on your own</span>
+    <span class="ticker-i" data-edit="tick.5">On time. Coachable. Accountable.</span>
+    <span class="ticker-i" data-edit="tick.6">Three months. Habits that hold.</span>
   </div>
 </div>
 

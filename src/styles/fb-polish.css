@@ -694,3 +694,24 @@ html[data-night="off"] .net.sway,html[data-night="off"] .net.sway .net-cord,html
 @media(max-width:640px){.mth.four{grid-template-columns:1fr;}.fine-print{padding:24px 20px;}}
 html.fb-light .enr-foot{border-top-color:var(--line-light);}
 html.fb-light .enr-bring p{color:var(--text-soft-light);}
+
+/* ---------- The Evidence (hero): the word evaporates, the record appears ---------- */
+.evd{position:relative;display:block;}
+.evd-trigger{display:inline-flex;flex-direction:column;align-items:flex-start;gap:8px;background:none;border:0;padding:0;cursor:pointer;color:inherit;text-align:left;font:inherit;}
+.evd-trigger:focus-visible{outline:3px solid var(--red-hot);outline-offset:6px;border-radius:4px;}
+.evd-word{display:inline-block;white-space:nowrap;font-family:var(--font-display);font-size:clamp(1.9rem,4vw,3rem);line-height:1;text-transform:uppercase;letter-spacing:.02em;color:transparent;-webkit-text-stroke:2px var(--fast-red);filter:drop-shadow(0 0 14px var(--glow-red));transition:color var(--t-hover);}
+.evd-trigger:hover .evd-word,.evd-trigger:focus-visible .evd-word{color:var(--fast-red);}
+.evd-ch{display:inline-block;will-change:transform,opacity;}
+.evd-ch.go{animation:evdGo .95s var(--ease-launch) forwards;animation-delay:var(--d,0ms);}
+@keyframes evdGo{to{transform:translate(var(--dx,0),var(--dy,-60px)) scale(.55);opacity:0;filter:blur(7px);}}
+.evd-p{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--red-hot);box-shadow:0 0 8px var(--glow-red);pointer-events:none;opacity:0;animation:evdP 1.4s ease-out forwards;animation-delay:var(--d,0ms);}
+@keyframes evdP{0%{opacity:1;transform:none}100%{opacity:0;transform:translate(var(--dx,0),var(--dy,-80px)) scale(.2)}}
+.evd-hint{font-family:var(--font-eyebrow);font-weight:600;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-mute-dark);}
+.evd-panel[hidden]{display:none;}
+.evd-panel.in{animation:zrIn .7s var(--ease-reveal);}
+.evd-line{font-size:1rem;line-height:1.55;color:var(--text-lede-dark);margin:0 0 16px;max-width:46ch;}
+.evd-stats{display:flex;gap:26px;flex-wrap:wrap;}
+html.fb-light .evd-hint{color:var(--text-soft-light);}
+html.fb-light .evd-line{color:var(--text-body-light);}
+html.fb-light .evd-word{filter:none;}
+@media(prefers-reduced-motion:reduce){.evd-ch.go,.evd-p,.evd-panel.in{animation:none;}}

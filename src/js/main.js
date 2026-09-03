@@ -266,4 +266,60 @@
     toast.classList.add('show');
     setTimeout(function(){ toast.classList.remove('show'); }, 2400);
   };
+
+  /* The Evidence (hero). The word is split into letters; hover, tap, Enter or Space
+     evaporates them with a spray of particles, then the record panel fades in.
+     One-way per page load. Reduced motion (or reveals off) swaps instantly. */
+  var evd = document.getElementById('evd');
+  if(evd){
+    var evdTrig = document.getElementById('evdTrigger');
+    var evdPanel = document.getElementById('evdPanel');
+    var evdWord = evd.querySelector('.evd-word');
+    var evdDone = false;
+    if(evdWord){
+      var evdText = evdWord.textContent;
+      evdWord.textContent = '';
+      for(var ci = 0; ci < evdText.length; ci++){
+        var chEl = document.createElement('span');
+        chEl.className = 'evd-ch';
+        chEl.textContent = evdText[ci] === ' ' ? '\u00A0' : evdText[ci];
+        evdWord.appendChild(chEl);
+      }
+    }
+    function evdShow(){
+      evdTrig.hidden = true;
+      evdPanel.hidden = false;
+      evdPanel.classList.add('in');
+    }
+    function evdReveal(){
+      if(evdDone) return;
+      evdDone = true;
+      evdTrig.setAttribute('aria-expanded', 'true');
+      if(reduced || M.reveals === false || !evdWord){ evdShow(); return; }
+      var letters = evdWord.querySelectorAll('.evd-ch');
+      var box = evd.getBoundingClientRect();
+      Array.prototype.forEach.call(letters, function(l, i){
+        var delay = i * 45 + Math.random() * 80;
+        l.style.setProperty('--dx', (Math.random() * 70 - 35) + 'px');
+        l.style.setProperty('--dy', -(30 + Math.random() * 70) + 'px');
+        l.style.setProperty('--d', delay + 'ms');
+        l.classList.add('go');
+        var r = l.getBoundingClientRect();
+        for(var k = 0; k < 5; k++){
+          var dot = document.createElement('i');
+          dot.className = 'evd-p';
+          dot.style.left = (r.left - box.left + Math.random() * r.width) + 'px';
+          dot.style.top = (r.top - box.top + Math.random() * r.height) + 'px';
+          dot.style.setProperty('--dx', (Math.random() * 90 - 45) + 'px');
+          dot.style.setProperty('--dy', -(40 + Math.random() * 100) + 'px');
+          dot.style.setProperty('--d', (delay + Math.random() * 120) + 'ms');
+          evd.appendChild(dot);
+          setTimeout((function(d){ return function(){ if(d.parentNode) d.parentNode.removeChild(d); }; })(dot), 1900);
+        }
+      });
+      setTimeout(evdShow, letters.length * 45 + 750);
+    }
+    evdTrig.addEventListener('mouseenter', evdReveal);
+    evdTrig.addEventListener('click', evdReveal);
+  }
 })();
