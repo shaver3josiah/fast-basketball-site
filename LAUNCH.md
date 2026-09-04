@@ -1,6 +1,8 @@
 # Going live
 
-Written 8 August 2026, against the code as it stands on `main` at the time of writing.
+Written 8 August 2026, revised 3 September 2026 after the pricing, enrollment and terms
+work landed. The steps are unchanged; four facts about the site's state were stale and
+are corrected below.
 
 **This supersedes `phase-c/P10-netlify-deployment-guide.md` wherever the two disagree.**
 P10 was written on 4 August and audited at 92.5/100 against the site as it existed then.
@@ -38,11 +40,12 @@ production context, so Google is allowed in from the first production deploy. Th
 deliberate choice. If you change your mind, set it to `"false"` and redeploy — that is the
 whole switch, no other file changes.
 
-**The phone number is not real yet.** `content.json` has `ct.phone` as "Not published yet",
-and the page says exactly that. Since you are launching indexable, this is the first thing
-worth fixing after the site is up: for a local business, a phone number is one of the
-strongest signals Google has, and a parent deciding whether to trust a trainer will look
-for it. You can fix it yourself in the admin panel once you are live.
+**The phone number and email are now real and public.** The site publishes
+(503) 686-8371 and blake.kingsley@gmail.com, both taken from the signed training agreement.
+Two consequences worth knowing before the first indexable deploy. A personal Gmail on an
+indexed page gets scraped and will attract spam, so a forwarding address on the domain is
+worth setting up when you buy it. And every price is now on the page, so the number a
+parent reads on the site is the number they will expect on the enrollment call.
 
 ---
 
@@ -152,9 +155,27 @@ Carried forward from `TIMELINE.md`, because launching does not close any of them
 
 - Miami/Broward training photography. Every proof image is a college gym. The design system
   calls this the launch blocker.
-- A real phone number.
 - Verified reviews, before the testimonials section can come back.
 - Blake's exact role at RMU and Moberly.
-- A cancellation policy, rather than `/terms` saying it is handled case by case.
-- A Florida attorney reading `/privacy` and `/terms`. Both carry a visible note saying they
-  were written in good faith by someone who is not a lawyer.
+- A Florida attorney reading `/privacy` and `/terms`. The "written by someone who is not a
+  lawyer" note is no longer printed on the page — it read as the site disclaiming its own
+  legal text — but it is still true, and it survives as an HTML comment in both pages.
+
+Resolved since this file was first written: the phone number is published, and `/terms` now
+reproduces the signed training agreement in full rather than saying cancellations are
+handled case by case.
+
+**New, and only Blake can settle them.** `docs/source-of-truth/terms-qa-report.md` has the
+detail; four of them are contradictions inside the signed agreement that the website
+faithfully reproduces:
+
+- The notice email is misspelled `blakeingsley@gmail.com` in both plan-cancellation bullets
+  of the PDF. A parent following the signed document would email a dead address.
+- The cancellation window is 60 days in one clause and 7 days in another.
+- Auto-renewal is "the next 12 months" in one clause and "$420" in another, and $420 is not
+  a twelve-month price on the rate card.
+- A failed card must be replaced within 12 hours in one clause and 24 in another, with a
+  $75 fee at 48.
+
+Fix these in the agreement first, then bring the website copy across; the page is a
+reproduction, so the document is the thing to change.
