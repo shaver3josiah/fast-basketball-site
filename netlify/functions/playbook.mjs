@@ -1,6 +1,6 @@
 ﻿import { readFileSync } from 'node:fs';
 import { getStore } from '@netlify/blobs';
-import { isLocal } from './lib/store.mjs';
+import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 6;
@@ -14,26 +14,6 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-async function checkRateLimit(ip) {
-  // Netlify Blobs does not exist on a laptop, and calling it there throws before the
-  // playbook is ever generated — so locally this function was a hard 500 while working
-  // fine in production. draft.mjs and leads.mjs already take the same way out: local mode
-  // skips the hosted service rather than mocking it.
-  // ponytail: no local rate limit, which is correct for one developer on localhost. If the
-  // limit itself ever needs testing, give this an in-memory Map keyed the same way.
-  if (isLocal) return true;
-  const store = getStore('rate-limits');
-  const key = 'playbook:' + ip;
-  const now = Date.now();
-  const existing = await store.get(key, { type: 'json' });
-  if (!existing || now - existing.windowStart > RATE_LIMIT_WINDOW_MS) {
-    await store.setJSON(key, { count: 1, windowStart: now });
-    return true;
-  }
-  if (existing.count >= RATE_LIMIT_MAX) return false;
-  await store.setJSON(key, { count: existing.count + 1, windowStart: existing.windowStart });
-  return true;
-}
 
 function buildPlaybookHtml({ name, grade, positionLabel, skillGap }) {
   const drillRows = skillGap.drills.map((d, i) =>
@@ -119,8 +99,8 @@ export default async (request, context) => {
     return new Response(JSON.stringify({ error: 'method not allowed' }), { status: 405 });
   }
 
-  const ip = context.ip || request.headers.get('x-nf-client-connection-ip') || 'unknown';
-  const allowed = await checkRateLimit(ip);
+  const ip = clientIp(request, context);
+  const allowed = await checkRateLimit('playbook:' + ip, { windowMs: RATE_LIMIT_WINDOW_MS, max: RATE_LIMIT_MAX });
   if (!allowed) {
     return new Response(JSON.stringify({ error: 'too many requests, try again later' }), { status: 429 });
   }

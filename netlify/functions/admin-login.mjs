@@ -1,9 +1,25 @@
 import { checkPassword, createSessionCookie } from './lib/auth.mjs';
+import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
 
-export default async (request) => {
+// This endpoint is unauthenticated by definition and one correct guess hands over the
+// whole admin panel, so it is the one function that most needs a limit. Ten tries per
+// quarter hour per IP leaves a fat-fingered owner alone and makes guessing pointless.
+const WINDOW_MS = 15 * 60 * 1000;
+const MAX_ATTEMPTS = 10;
+
+export default async (request, context) => {
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'method not allowed' }), { status: 405 });
   }
+
+  const ip = clientIp(request, context);
+  if (!(await checkRateLimit('admin-login:' + ip, { windowMs: WINDOW_MS, max: MAX_ATTEMPTS }))) {
+    return new Response(JSON.stringify({ error: 'too many attempts, try again later' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': String(WINDOW_MS / 1000) }
+    });
+  }
+
   let payload;
   try {
     payload = await request.json();
