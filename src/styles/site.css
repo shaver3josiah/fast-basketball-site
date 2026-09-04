@@ -32,3 +32,26 @@ main > header ~ .band > .shell > :is(p,ul,ol,table,div:not(.eyebrow)) + h2{margi
 .suburb-hero ~ .band > .shell > p:last-child{margin-bottom:0;}
 main > header .coach-body > .eyebrow,main > header ~ .band:not(#coach) .coach-body > .eyebrow{margin-bottom:14px;}
 main > header .coach-body > h1,main > header ~ .band:not(#coach) .coach-body > h2{margin-bottom:18px;}
+
+/* /terms: contents list under the hero, anchored headings clear the fixed nav, rate-card sub-heading. */
+.toc{display:flex;flex-wrap:wrap;gap:8px 10px;margin:22px 0 0;max-width:70ch;}
+.toc a{display:inline-flex;align-items:center;min-height:36px;padding:8px 13px;border:1px solid var(--line-dark);border-radius:var(--r-pill);font-family:var(--font-eyebrow);font-weight:600;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-lede-dark);transition:border-color var(--t-hover),color var(--t-hover);}
+.toc a:hover,.toc a:focus-visible{border-color:var(--fast-red);color:var(--bone);}
+html.fb-light .toc a{border-color:var(--line-light);color:var(--text-body-light);}
+html.fb-light .toc a:hover,html.fb-light .toc a:focus-visible{color:var(--court-black);}
+.suburb-hero ~ .band > .shell > h2[id]{scroll-margin-top:calc(var(--nav-h) + 24px);}
+.suburb-hero ~ .band > .shell > h3.terms-sub{font-size:1.1rem;margin:26px 0 10px;}
+/* QA fixes on prose pages: list items were still dark-theme gray in light mode (#C4C4CE on chalk),
+   and links inside list items had an 18px tap height. Padding with matching negative margin gives
+   the link a 44px target without moving the line. */
+html.fb-light .band-ink .prog-list li,html.fb-light .band-dark .prog-list li{color:var(--text-body-light);border-bottom-color:var(--line-light);}
+.suburb-hero ~ .band > .shell > .prog-list li a{display:inline-block;padding:13px 0;margin:-13px 0;text-decoration:underline;text-underline-offset:3px;}
+
+.toc-wrap{margin-top:22px;}
+.toc-wrap > summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:10px;min-height:44px;font-family:var(--font-eyebrow);font-weight:700;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-lede-dark);}
+.toc-wrap > summary::-webkit-details-marker{display:none;}
+.toc-wrap > summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--fast-red);border-bottom:2px solid var(--fast-red);transform:rotate(45deg);transition:transform var(--t-hover);}
+.toc-wrap[open] > summary::after{transform:rotate(-135deg);}
+.toc-wrap > .toc{margin-top:12px;}
+html.fb-light .toc-wrap > summary{color:var(--text-body-light);}
+@media(min-width:641px){.toc-wrap > summary{display:none;}.toc-wrap > .toc{margin-top:0;}}

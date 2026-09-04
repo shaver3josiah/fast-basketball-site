@@ -325,4 +325,8 @@
     evdTrig.addEventListener('mouseenter', evdReveal);
     evdTrig.addEventListener('click', evdReveal);
   }
+
+  /* /terms contents list ships open; fold it on phones where 13 pills would stack a screen tall. */
+  var tocWrap = document.querySelector('.toc-wrap');
+  if(tocWrap && window.innerWidth <= 640) tocWrap.open = false;
 })();

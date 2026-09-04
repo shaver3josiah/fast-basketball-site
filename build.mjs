@@ -400,15 +400,16 @@ function step10_contactPage(sections, content, prelude) {
 // the first thing that has to be rewritten to match.
 const LEGAL_EFFECTIVE = 'September 2026';
 
-const OWNER_NOTE_PRIVACY = '<p class="rcp-note"><b>Note for the site owner:</b> this page is a starting point, ' +
-  'written in good faith by someone who is not a lawyer. It is not legal advice and it is not a promise that ' +
-  'the site is compliant with anything. Have a Florida attorney read this page and the <a href="/terms">terms</a> ' +
-  'before launch — the section about players under 13 most of all.</p>\n';
+const OWNER_NOTE_PRIVACY = '<!-- OWNER NOTE (not rendered): this page is a starting point written in good faith ' +
+  'by someone who is not a lawyer. It is not legal advice and not a promise of compliance. Have a Florida ' +
+  'attorney read it and the terms before launch, the section about players under 13 most of all. -->\n';
 
-const OWNER_NOTE_TERMS = '<p class="rcp-note"><b>Note for the site owner:</b> this page is a starting point, ' +
-  'written in good faith by someone who is not a lawyer. It is not legal advice and it is not a waiver. ' +
-  'Have a Florida attorney read this page and the <a href="/privacy">privacy page</a> before launch, and have ' +
-  'them draw up the real waiver and medical form you hand parents in person.</p>\n';
+// Emitted as an HTML comment, never as visible copy: a "not a lawyer" note on a public legal
+// page reads as a disclaimer of the page itself. The owner sees it in view-source and here.
+const OWNER_NOTE_TERMS = '<!-- OWNER NOTE (not rendered): this page reproduces the signed training agreement ' +
+  '(docs/source-of-truth/agreement-form-terms.md). Keep it in sync with the Google Doc linked from the ' +
+  'enrollment email, and resolve the contradictions listed in docs/source-of-truth/terms-qa-report.md ' +
+  'in the signed document first. Not legal advice; have a Florida attorney review the agreement. -->\n';
 
 function step11b_privacyPage(content, prelude) {
   let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
@@ -488,16 +489,24 @@ function step11c_termsPage(content, prelude) {
   body += '<div class="eyebrow">The Fine Print</div>\n<h1>Terms &amp; Training Agreement</h1>\n';
   body += '<p class="lede">This is the agreement every family agrees to when they enroll, reproduced in full so you can read it before your call rather than after. If you do not agree with it, do not enroll. Coach Blake would rather lose the sale than the standard.</p>\n';
   body += '<p class="trust-line">In effect ' + LEGAL_EFFECTIVE + '</p>\n';
+  // <details open>: pills on desktop, folded on phones (main.js closes it under 641px).
+  body += '<details class="toc-wrap" open><summary>On this page</summary>\n';
+  body += '<nav class="toc" aria-label="On this page"><a href="#how-to-agree">How to agree</a><a href="#term-and-investment">Term and investment</a><a href="#player-expectations">Player expectations</a><a href="#parent-expectations-and-terms">Parent expectations and terms</a><a href="#social-media-release-policy">Social media release policy</a><a href="#health-and-wellness-policy">Health and wellness policy</a><a href="#injury-policy">Injury policy</a><a href="#missed-session-policy">Missed session policy</a><a href="#rainout-policy">Rainout policy</a><a href="#payment-policy">Payment policy</a><a href="#refund-policy">Refund policy</a><a href="#early-termination-policy">Early termination policy</a><a href="#end-of-contract-and-renewal-policy">End of contract and renewal policy</a></nav>\n</details>\n';
   body += '</div>\n</header>\n';
   body += '<section class="band band-ink">\n<div class="shell">\n';
 
-  body += '<h2>How to agree</h2>\n';
+  body += '<h2 id="how-to-agree">How to agree</h2>\n';
   body += '<p><b>Step 1.</b> Read the terms and training agreement entirely to understand FAST Basketball expectations. If you have any questions or concerns, text Coach Blake Kingsley Jr. at <a href="sms:' + CONTACT.tel + '">' + CONTACT.phone + '</a> to schedule a phone call.</p>\n';
   body += '<p><b>Step 2.</b> Once you have reviewed this document, you agree to the terms by entering your full name on the checkout form where it asks &ldquo;type name to agree to the terms&rdquo; and clicking the &ldquo;I agree to the terms and conditions&rdquo; box to complete your order.</p>\n';
   body += '<p>If you do not agree with our terms and player and parent expectations, we ask that you do not enroll into our program. Our terms are extremely clear and protect the integrity of our program. Our program is selective and certainly not for every family. We only want to work with families who truly buy into our culture at FAST Basketball.</p>\n';
 
-  body += '<h2>Term and investment</h2>\n';
-  body += '<p>This agreement begins on the day you register and continues for 3 or 12 months, with 3 months as the minimum. The investment for the 3 month, twice a week membership is $840.</p>\n';
+  body += '<h2 id="term-and-investment">Term and investment</h2>\n';
+  body += '<p>This agreement begins on the day you register and continues for 3 or 12 months, with 3 months as the minimum. The investment is $840.</p>\n';
+  // The signed agreement names one figure. The rate card below is the site's, from the same
+  // pricing Blake set in his Sales Mastery worksheet, and is labelled so nobody mistakes it
+  // for agreement text.
+  body += '<h3 class="terms-sub">Published rates</h3>\n';
+  body += '<p>The $840 in the agreement is the 3 month, twice a week membership. Every rate this site publishes, so the number on your enrollment call matches the number here:</p>\n';
   body += li([
     'Evaluation session: $50 for 60 minutes. $35 if booked within 48 hours of your intro call.',
     'Group training membership, 3 months: $480 once a week (12 sessions) or $840 twice a week (24 sessions).',
@@ -509,7 +518,7 @@ function step11c_termsPage(content, prelude) {
   body += '<p>If you choose to cancel after 6 or 12 months, you agree to provide Coach Blake Kingsley 60 days written notice at <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> to cancel any future recurring payment after the contract is complete. If you do not follow our terms, you will be automatically enrolled into the same agreement for the next 12 months, no exceptions.</p>\n';
   body += '<p>By registering for the program, you agree to the terms and conditions below, the player expectations and the parent expectations, which state Coach Kingsley&rsquo;s refund, cancellation and early termination policies.</p>\n';
 
-  body += '<h2>Player expectations</h2>\n';
+  body += '<h2 id="player-expectations">Player expectations</h2>\n';
   body += '<p>Every player agrees to the following, in their own name.</p>\n';
   body += li([
     'I agree to be on time (15 minutes early).',
@@ -530,7 +539,7 @@ function step11c_termsPage(content, prelude) {
     'I agree to speak respectfully.'
   ]);
 
-  body += '<h2>Parent expectations and terms</h2>\n';
+  body += '<h2 id="parent-expectations-and-terms">Parent expectations and terms</h2>\n';
   body += li([
     'We have a very clear no refund policy. All sales are final once you enroll into our program.',
     'If you (as a parent) have questions during the week, you can email Coach Kingsley and you will receive a response within 12 hours, Monday to Friday.',
@@ -550,32 +559,32 @@ function step11c_termsPage(content, prelude) {
   ]);
   body += '<p>Our terms and conditions apply to any training program offered by FAST Basketball. By scheduling any session, you are agreeing to the following terms and conditions of our company.</p>\n';
 
-  body += '<h2>Social media release policy</h2>\n';
+  body += '<h2 id="social-media-release-policy">Social media release policy</h2>\n';
   body += '<p>&ldquo;I, the undersigned, do hereby grant permission to FAST Basketball to post my and/or my child&rsquo;s story, photo, videos, hereinafter referred to as &lsquo;Materials,&rsquo; taken by FAST Basketball during sessions or that I submit to and for the FAST Basketball website, Instagram and Facebook accounts. I hereby release you, your representative, employees, managers, members, officers, parent companies, subsidiaries, and directors, from all claims and demands arising out of or in connection with any use of said Materials, including, without limitation, all claims for invasion of privacy, infringement of my right of publicity, defamation and any other personal and/or property rights.&rdquo;</p>\n';
 
-  body += '<h2>Health and wellness policy</h2>\n';
+  body += '<h2 id="health-and-wellness-policy">Health and wellness policy</h2>\n';
   body += '<p>&ldquo;I have enrolled in the personalized health and fitness program offered through FAST Basketball. I recognize that the program may involve strenuous physical activity including, but not limited to, muscle strength and endurance training, cardiovascular conditioning and training, and other various fitness activities. I hereby affirm that my child is in good physical condition and does not suffer from any known disability or condition which would prevent or limit my participation in this exercise program. I acknowledge my enrollment and participation in FAST Basketball training.&rdquo;</p>\n';
   body += '<p>&ldquo;I fully understand that my child may injure myself as a result of my enrollment and participation in this program and I hereby Release and Forever Discharge FAST Basketball and its agents, employees, representatives, affiliates, successors, or assigns, from any and all liability now or in the future for any conditions, injuries, sickness, losses, expenses or damages that I may obtain or incur. These conditions may include, but are not limited to, heart attacks, muscle strains, muscle pulls, muscle tears, broken bones, shin splints, heat prostration, injuries to knees, injuries to back, injuries to foot, or any other soreness that I may incur, including death.&rdquo;</p>\n';
 
-  body += '<h2>Injury policy</h2>\n';
+  body += '<h2 id="injury-policy">Injury policy</h2>\n';
   body += '<p>If injury occurs and a player is unable to participate in the training sessions, the recurring payments will continue until the last day of the training agreement.</p>\n';
 
-  body += '<h2>Missed session policy</h2>\n';
+  body += '<h2 id="missed-session-policy">Missed session policy</h2>\n';
   body += '<p>We have a zero-tolerance missed session policy. If you miss a session without notice, you forfeit the session. We respectfully request at least 24 hours advance notice for all rescheduling and cancellations.</p>\n';
 
-  body += '<h2>Rainout policy</h2>\n';
+  body += '<h2 id="rainout-policy">Rainout policy</h2>\n';
   body += '<p>If the courts are too wet or there is significant rain during the morning or evening of our scheduled session, the session may be rescheduled upon FAST Basketball staff decision. FAST Basketball staff check to ensure the court is safe before every session. If the court is playable, we resume the session. Parents do not determine whether a session is canceled. If a parent decides not to attend a session that has been deemed playable, that session counts as a cancellation of less than 24 hours and is not eligible for makeup.</p>\n';
 
-  body += '<h2>Payment policy</h2>\n';
+  body += '<h2 id="payment-policy">Payment policy</h2>\n';
   body += '<p>By agreeing to our regular training agreement, you commit to the entire training period. You have the option of paying in full or paying monthly with our automated system, which charges your credit or debit card every 30 days. If your card fails, our system prompts you to replace it within a 24 hour period. If a new card is not registered within 48 hours, there is a late payment fee of $75.</p>\n';
 
-  body += '<h2>Refund policy</h2>\n';
+  body += '<h2 id="refund-policy">Refund policy</h2>\n';
   body += '<p>Due to the demand for our programs, we do not offer refunds in any case for any program, including private training, small group training, camps, clinics or any program added to our training page. Once a player reserves a training spot, we hold the spot for the player for the specific program.</p>\n';
 
-  body += '<h2>Early termination policy</h2>\n';
+  body += '<h2 id="early-termination-policy">Early termination policy</h2>\n';
   body += '<p>You can opt out of and cancel your contract at any time by providing written notice of intent to cancel to FAST Basketball, and will incur an early termination fee of 75% of the remaining contract. Paying this fee cancels any upcoming payment, and once the fee is paid, all sessions come to a close.</p>\n';
 
-  body += '<h2>End of contract and renewal policy</h2>\n';
+  body += '<h2 id="end-of-contract-and-renewal-policy">End of contract and renewal policy</h2>\n';
   body += '<p>If you would like to stop training after our contract is complete, email <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> to let Coach Kingsley know that you will be discontinuing the program. This email must be sent 7 days before the end of the agreement. If you do not communicate with Coach Kingsley by the notice date, you agree to continue in the program beyond the agreement (meaning we hold your spot in the program) and the agreement auto-renews for $420.</p>\n';
   body += '<p>By becoming a customer of FAST Basketball, you agree to the terms on this page. Your enrollment confirms that you have reviewed this page in depth and agree to the FAST Basketball terms and conditions.</p>\n';
 
