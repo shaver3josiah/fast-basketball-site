@@ -178,18 +178,12 @@ on `kingfastbasketball.com`. Buy that, or change the code before buying somethin
 
 ## Open items that need the owner
 
-These have been outstanding since the site was built and no amount of engineering
-closes them.
+Tracked privately in `docs/owner-open-items.md` at the project root, outside this public
+repository, because they name people and describe an unsigned commercial position.
 
-| Item | Why it matters |
-|---|---|
-| Miami/Broward training photography | Every proof image is a college gym. The design system calls this the launch blocker. |
-| Verified reviews | Testimonial placeholders were removed rather than invented. The section returns when real reviews exist. |
-| Real phone number | Currently reads "Not published yet". |
-| Blake's exact role at RMU and Moberly | A comment in `receipts.html` is waiting on it. |
-| Cancellation policy | `/terms` says it is handled case by case, which is true for a new programme but is not a policy. |
-| A Florida attorney reading `/privacy` and `/terms` | Both carry a visible note saying so. Written in good faith by someone who is not a lawyer. |
-| Oregon club credential | Stays excluded until independently verified. |
+Two items that appeared here through August are now closed: the phone number is published,
+and `/terms` reproduces the signed training agreement instead of saying cancellations are
+handled case by case.
 
 ---
 

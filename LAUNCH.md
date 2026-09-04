@@ -149,33 +149,12 @@ all agree.
 
 ---
 
-## Still open, and none of it is code
+## Still open
 
-Carried forward from `TIMELINE.md`, because launching does not close any of them:
+A handful of things launching does not close: training photography, verified reviews, a
+Florida attorney reading `/privacy` and `/terms`, and several points in the training
+agreement that only Blake can settle.
 
-- Miami/Broward training photography. Every proof image is a college gym. The design system
-  calls this the launch blocker.
-- Verified reviews, before the testimonials section can come back.
-- Blake's exact role at RMU and Moberly.
-- A Florida attorney reading `/privacy` and `/terms`. The "written by someone who is not a
-  lawyer" note is no longer printed on the page — it read as the site disclaiming its own
-  legal text — but it is still true, and it survives as an HTML comment in both pages.
-
-Resolved since this file was first written: the phone number is published, and `/terms` now
-reproduces the signed training agreement in full rather than saying cancellations are
-handled case by case.
-
-**New, and only Blake can settle them.** `docs/source-of-truth/terms-qa-report.md` has the
-detail; four of them are contradictions inside the signed agreement that the website
-faithfully reproduces:
-
-- The notice email is misspelled `blakeingsley@gmail.com` in both plan-cancellation bullets
-  of the PDF. A parent following the signed document would email a dead address.
-- The cancellation window is 60 days in one clause and 7 days in another.
-- Auto-renewal is "the next 12 months" in one clause and "$420" in another, and $420 is not
-  a twelve-month price on the rate card.
-- A failed card must be replaced within 12 hours in one clause and 24 in another, with a
-  $75 fee at 48.
-
-Fix these in the agreement first, then bring the website copy across; the page is a
-reproduction, so the document is the thing to change.
+This repository is public, so those are tracked privately in `docs/owner-open-items.md`
+alongside `docs/source-of-truth/terms-qa-report.md`, both at the project root and outside
+version control. Check that file before launch.
