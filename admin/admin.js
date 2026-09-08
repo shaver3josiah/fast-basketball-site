@@ -224,13 +224,19 @@
   // Every lead field was typed by a stranger: a contact-form name, or the parent name a
   // parent types into Stripe's custom field. Rows are built with textContent only, so a
   // name like <img onerror=...> is displayed, not run, in the owner's browser.
-  var PAY_LABELS = { full: 'Pay in full', split: 'Split in two', monthly: 'Monthly' }; // mirrors PAY_LABELS in src/lib/plans.mjs
+  // Mirrors PAY_LABELS in src/lib/plans.mjs, where 'split' was retired with the September
+  // 2026 price sheet. A lead stored under a retired option still renders: the lookup below
+  // falls back to the raw value rather than showing a blank.
+  var PAY_LABELS = { full: 'Pay in full', monthly: 'Monthly' };
   var SEP = ' \u00b7 ';
 
   function detailsText(l){
     if(l.type === 'playbook') return (l.position || '') + ' / ' + (l.focus || '');
     if(l.type === 'enrollment'){
-      var s = (l.planLabel || l.plan || '') + SEP + (PAY_LABELS[l.pay] || l.pay || '') + SEP + (l.amount || '');
+      // A monthly enrollment's amount is the first invoice, not the term: say "a month" so
+      // the row cannot read as the $183.33 Blake sold for $550.
+      var s = (l.planLabel || l.plan || '') + SEP + (PAY_LABELS[l.pay] || l.pay || '') + SEP +
+        (l.amount || '') + (l.amount && l.pay === 'monthly' ? ' a month' : '');
       if(l.cancelNoticeBy) s += SEP + 'notice by ' + l.cancelNoticeBy;
       if(l.playerName) s += SEP + 'player ' + l.playerName;
       return s;
@@ -241,10 +247,12 @@
   // RFC 4180: quote a cell that holds a quote, comma or line break, doubling inner quotes.
   // A cell starting with = + - @ would run as a formula when the file opens in Excel or
   // Sheets; a leading apostrophe makes it text. That also catches phone numbers written
-  // as +1..., which is the price of not executing a stranger's spreadsheet macro.
+  // as +1..., which is the price of not executing a stranger's spreadsheet macro. Tab and
+  // carriage return are in the set because spreadsheets skip them and evaluate what follows,
+  // so a name typed as "<tab>=HYPERLINK(...)" would otherwise sail through.
   function csvCell(v){
     var s = v == null ? '' : String(v);
-    if(/^[=+\-@]/.test(s)) s = "'" + s;
+    if(/^[=+\-@\t\r]/.test(s)) s = "'" + s;
     return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
 

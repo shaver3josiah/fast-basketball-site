@@ -1,8 +1,9 @@
 // SITE_URL (explicit override) wins; Netlify's automatic URL env var covers the
-// .netlify.app stage; the default is the production domain the business owns.
+// .netlify.app stage; the default is fast-basketball.com, the domain Blake bought from Wix
+// in September 2026. DNS lives at Wix, so pointing it at Netlify is done in that dashboard.
 // build.mjs still hard-fails a production build on a *.example placeholder, so
 // never put one back here — set SITE_URL in the Netlify environment instead.
-export const SITE_URL = process.env.SITE_URL || process.env.URL || 'https://kingfastbasketball.com';
+export const SITE_URL = process.env.SITE_URL || process.env.URL || 'https://fast-basketball.com';
 
 export const BUSINESS_NAME = 'Fast Basketball';
 
