@@ -51,3 +51,14 @@ export async function addLead(key, record) {
   const store = await blobStore();
   await store.setJSON(key, record);
 }
+
+// One record by key, or null. The webhook uses it to answer a replayed Stripe event
+// without writing a second enrollment.
+export async function getLead(key) {
+  if (LOCAL) {
+    const found = (await listLeads()).find((lead) => lead.key === key);
+    return found || null;
+  }
+  const store = await blobStore();
+  return (await store.get(key, { type: 'json' })) || null;
+}

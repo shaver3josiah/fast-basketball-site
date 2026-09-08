@@ -35,7 +35,7 @@ export function businessEntity({ description, email, telephone, offers = [], sub
     url: absoluteUrl('/'),
     email,
     telephone,
-    priceRange: '$35 - $100 per session',
+    priceRange: '$50 - $3,000',
     // Published rates as offers, so a rich result can quote a price without inventing one.
     makesOffer: offers.map((o) => ({
       '@type': 'Offer',

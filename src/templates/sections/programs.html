@@ -3,10 +3,11 @@
     <div class="head">
       <div class="eyebrow" data-edit="prog.eyebrow">Training &amp; Pricing</div>
       <h2 data-edit="prog.h2">Every price, on the page.</h2>
-      <p class="lede" data-edit="prog.lede">Group training on a 3 or 12 month term, private sessions by the hour, and an evaluation session to start. No quotes over text and no surprises on the enrollment call: what you see here is what Coach Blake charges.</p>
+      <p class="lede" data-edit="prog.lede">Group training on a 3 or 6 month term, one on one coaching by the term, and an evaluation session to start. No quotes over text and no surprises on the enrollment call: what you see here is what Coach Blake charges.</p>
     </div>
-    <!-- Four parallel options, no stagger. Amounts trace to docs/source-of-truth/fast-basketball-facts.md
-         and must match TRAINING_PAGES in build.mjs, OFFERS in src/lib/site-config.mjs and the /terms page. -->
+    <!-- Three parallel options, no stagger. Amounts trace to docs/source-of-truth/fast-basketball-facts.md
+         and must match PLANS in src/lib/plans.mjs, TRAINING_PAGES in build.mjs, OFFERS in
+         src/lib/site-config.mjs and the /terms rate card. plans.mjs is the one that charges cards. -->
     <div class="prog">
       <div class="prog-c">
         <span class="prog-tag" data-edit="prog.1.tag">Start Here</span>
@@ -23,6 +24,7 @@
         </ul>
         <a href="#contact" class="btn btn-primary" data-program="Evaluation Session" data-edit="prog.1.cta">Book Your Call</a>
         <p class="trust-line" data-edit="prog.1.trust">The call is free and takes 15 to 20 minutes. Evaluation slots come out of it.</p>
+        <p class="trust-line"><a href="/enroll?plan=eval" data-edit="prog.1.enroll">Already had your call? Book the evaluation</a></p>
       </div>
 
       <div class="prog-c flag">
@@ -30,62 +32,48 @@
         <div class="prog-top">
           <h3 data-edit="prog.2.title">Group Training Membership</h3>
           <!-- .prog-price is white-space:nowrap; keep <small> to two short words. -->
-          <div class="prog-price"><span data-edit="prog.2.price">$25&ndash;$40</span><small data-edit="prog.2.unit">Per Session</small></div>
+          <div class="prog-price"><span data-edit="prog.2.price">$450&ndash;$1,000</span><small data-edit="prog.2.unit">Per Term</small></div>
         </div>
-        <p data-edit="prog.2">Weekly 60 minute group sessions with players at a similar level, on a 3 or 12 month term. Three months is the minimum because that is how long a habit takes to hold up in a game.</p>
+        <p data-edit="prog.2">Weekly 60 minute group sessions with players at a similar level, on a 3 or 6 month term. Three months is the minimum because that is how long a habit takes to hold up in a game. Unlimited means up to two sessions a week.</p>
         <table class="price-grid">
-          <caption class="sr-only">Group training membership prices by term and frequency</caption>
-          <thead><tr><th scope="col" data-edit="prog.2.th0">Term</th><th scope="col" data-edit="prog.2.th1">1x / week</th><th scope="col" data-edit="prog.2.th2">2x / week</th></tr></thead>
+          <caption class="sr-only">Group training membership prices by term and weekly sessions</caption>
+          <thead><tr><th scope="col" data-edit="prog.2.th0">Term</th><th scope="col" data-edit="prog.2.th1">Once a week</th><th scope="col" data-edit="prog.2.th2">Unlimited</th></tr></thead>
           <tbody>
             <tr>
               <th scope="row" data-edit="prog.2.r1">3 months</th>
-              <td><b data-edit="prog.2.r1c1">$480</b><span data-edit="prog.2.r1c1s">12 sessions, $40 each</span></td>
-              <td><b data-edit="prog.2.r1c2">$840</b><span data-edit="prog.2.r1c2s">24 sessions, $35 each</span></td>
+              <td><b data-edit="prog.2.r1c1">$450</b><span data-edit="prog.2.r1c1s">or $550 paid monthly</span></td>
+              <td><b data-edit="prog.2.r1c2">$650</b><span data-edit="prog.2.r1c2s">paid in full</span></td>
             </tr>
             <tr>
-              <th scope="row" data-edit="prog.2.r2">12 months</th>
-              <td><b data-edit="prog.2.r2c1">$1,380</b><span data-edit="prog.2.r2c1s">46 sessions, $30 each</span></td>
-              <td><b data-edit="prog.2.r2c2">$2,300</b><span data-edit="prog.2.r2c2s">92 sessions, $25 each</span></td>
+              <th scope="row" data-edit="prog.2.r2">6 months</th>
+              <td><b data-edit="prog.2.r2c1">$750</b><span data-edit="prog.2.r2c1s">or $900 monthly, at $150 a month</span></td>
+              <td><b data-edit="prog.2.r2c2">$1,000</b><span data-edit="prog.2.r2c2s">paid in full</span></td>
             </tr>
           </tbody>
         </table>
         <ul class="prog-list">
-          <li data-edit="prog.2.li1">Pay in full, split in two, or monthly auto-billing</li>
-          <li data-edit="prog.2.li2">Journal, homework, and daily check-ins in the members area</li>
-          <li data-edit="prog.2.li3">Weekly game evaluations and quarterly progress reports</li>
+          <li data-edit="prog.2.li1">Six months costs one month less than two three month terms</li>
+          <li data-edit="prog.2.li2">Pay in full, or spread it monthly at the higher figure shown</li>
+          <li data-edit="prog.2.li3">Journal, homework, and daily check-ins in the members area</li>
           <li data-edit="prog.2.li4">Rained out? The session moves to Zoom that evening</li>
         </ul>
         <a href="#contact" class="btn btn-primary" data-program="Group Training Membership" data-edit="prog.2.cta">Book Your Call</a>
+        <p class="trust-line"><a href="/enroll" data-edit="prog.2.enroll">Already had your enrollment call? Choose your plan</a></p>
       </div>
 
       <div class="prog-c">
         <div class="prog-top">
           <h3 data-edit="prog.3.title">Private One on One</h3>
-          <div class="prog-price"><span data-edit="prog.3.price">$100</span><small data-edit="prog.3.unit">Per Hour</small></div>
+          <div class="prog-price"><span data-edit="prog.3.price">$3,000</span><small data-edit="prog.3.unit">6-Month Term</small></div>
         </div>
-        <p data-edit="prog.3">The full hour on one player. Built around the two or three things standing between them and the next level this season.</p>
+        <p data-edit="prog.3">A six month term with the whole session on one player, built around the two or three things standing between them and the next level. Coach Blake sets the schedule with you and invoices the term directly.</p>
         <ul class="prog-list">
           <li data-edit="prog.3.li1">Footwork, handle, finishing, and shooting blocks</li>
           <li data-edit="prog.3.li2">Same journal and homework standard as the membership</li>
           <li data-edit="prog.3.li3">Film review and college coaching advice on request</li>
-          <li data-edit="prog.3.li4">Scheduled directly with Coach Blake</li>
+          <li data-edit="prog.3.li4">Invoiced directly rather than bought online</li>
         </ul>
         <a href="#contact" class="btn btn-ghost" data-program="Private One on One" data-edit="prog.3.cta">Ask About Availability</a>
-      </div>
-
-      <div class="prog-c">
-        <div class="prog-top">
-          <h3 data-edit="prog.4.title">Private Small Group</h3>
-          <div class="prog-price"><span data-edit="prog.4.price">$75</span><small data-edit="prog.4.unit">Per Player, Hour</small></div>
-        </div>
-        <p data-edit="prog.4">Bring teammates or siblings at a similar level. Competitive reps, real defense, and a coach who sees every one of them.</p>
-        <ul class="prog-list">
-          <li data-edit="prog.4.li1">Level matched groups only</li>
-          <li data-edit="prog.4.li2">Live one on one and two on two</li>
-          <li data-edit="prog.4.li3">Great for a team's guards or a family with two players</li>
-          <li data-edit="prog.4.li4">Drop-in sessions at $50 if you cannot commit to a term yet</li>
-        </ul>
-        <a href="#contact" class="btn btn-ghost" data-program="Private Small Group" data-edit="prog.4.cta">Ask About a Group</a>
       </div>
     </div>
 
@@ -94,10 +82,10 @@
     <div class="fine-print">
       <div class="eyebrow" data-edit="fp.eyebrow">The Fine Print, Up Front</div>
       <ul class="fp-list">
-        <li><b data-edit="fp.1b">3 month minimum.</b> <span data-edit="fp.1">Memberships run 3 or 12 months from the day you register.</span></li>
+        <li><b data-edit="fp.1b">3 month minimum.</b> <span data-edit="fp.1">Memberships run 3 or 6 months from the day you register.</span></li>
         <li><b data-edit="fp.2b">All sales are final.</b> <span data-edit="fp.2">No refunds on any program. Sessions can move. Money does not come back.</span></li>
         <li><b data-edit="fp.3b">24 hours notice</b> <span data-edit="fp.3">to reschedule. Miss a session without notice and it is forfeited, with no private makeup.</span></li>
-        <li><b data-edit="fp.4b">Auto-renews</b> <span data-edit="fp.4">unless you cancel in writing 7 days before the end of a 3 month term, or 60 days before the end of a 12 month term.</span></li>
+        <li><b data-edit="fp.4b">Auto-renews</b> <span data-edit="fp.4">unless you cancel in writing 7 days before the end of a 3 month term, or 60 days before the end of a 6 month term.</span></li>
         <li><b data-edit="fp.5b">Early exit</b> <span data-edit="fp.5">costs 75% of what is left on the contract.</span></li>
       </ul>
       <p class="fp-note"><span data-edit="fp.note1">Read the full </span><a href="/terms" data-edit="fp.link">terms and training agreement</a><span data-edit="fp.note2"> before your enrollment call. If you do not agree with them, do not enroll. Coach Blake would rather lose the sale than the standard.</span></p>

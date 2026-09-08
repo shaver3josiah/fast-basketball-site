@@ -1,7 +1,7 @@
 # Fast Basketball — project timeline
 
-Repo: `shaver3josiah/fast-basketball-site` · branch `admin-canvas`
-Last updated: **8 August 2026, 12:05**
+Repo: `shaver3josiah/fast-basketball-site` · branch `main`
+Last updated: **8 September 2026, 09:30**
 
 Dates in "Done" are taken from the git history, not from memory. Dates in "Ahead" are
 **effort estimates against a working session**, not calendar commitments — the calendar
@@ -69,6 +69,19 @@ triggers one. Saving now writes a draft; only Publish spends a deploy. The nine
 hand-built sections became editable without converting them. Phase 2's first pass landed
 layers, align, duplicate and two new element types, graded 118/160 against a rubric
 written before the work.
+
+### 8 Sep — Stripe enrollment
+**Goal: a parent pays for a plan from the site, and nobody types a price by hand.** · uncommitted
+
+Hosted Stripe Checkout, reached from a new `/enroll` page that renders the plan matrix
+from `src/lib/plans.mjs`; no Stripe script on the site, so the CSP and the performance
+budget stand. Prices live in Stripe under lookup keys generated from that one catalog by
+`scripts/stripe-catalog.mjs`, which is the only way a charge changes. A signed webhook
+writes each enrollment to the leads store and emails Blake a prefilled welcome email with
+the cancel-by date already computed, and split plans get a subscription schedule that
+stops them after the second charge without anyone remembering to. The admin panel gained
+a per-family enrollment link builder and enrollments in the CSV export. Built against the
+default of every decision in `STRIPE-PLAN.md`; nothing has called Stripe yet.
 
 ---
 
@@ -167,8 +180,9 @@ describes an auth model this site does not use, and its variable table, which om
 four variables everything now depends on.
 
 **Blocked on you, not on code**, and not delegable: creating the Netlify site, entering the
-environment variables (they are secrets), buying the domain, and pointing DNS. `LAUNCH.md`
-has the exact steps and the five-minute verification pass that proves it worked.
+environment variables (they are secrets), buying the domain, pointing DNS, and the Stripe
+live cutover (keys, catalog script, webhook). `LAUNCH.md` has the exact steps and the
+five-minute verification pass that proves it worked.
 
 One reconciliation waiting on you: `phase-c/P11` recommends `fastbasketballmiami.com`, but
 the business moved to north Broward the day after P11 was written, and the code has settled

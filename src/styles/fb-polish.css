@@ -721,3 +721,12 @@ html.fb-light .evd-word{filter:none;}
 .ticker.wait.on{display:block;animation:tickerIn .6s var(--ease-rush);}
 @keyframes tickerIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.ticker.wait.on{animation:none;}}
+
+/* Programs is three cards since the September 2026 sheet retired Private Small Group.
+   .prog is a two-column grid, so the third card would sit alone in a half-width column
+   with dead space beside it. Span it instead: the one on one term is the step up, and a
+   full-width card reads as one. The single-column media query below 960px is unaffected. */
+@media(min-width:961px){
+  .prog-c:nth-child(3):last-child{grid-column:1/-1;}
+  .prog-c:nth-child(3):last-child .prog-list{columns:2;column-gap:34px;}
+}

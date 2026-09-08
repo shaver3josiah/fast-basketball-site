@@ -2,7 +2,7 @@ export const TEXT_KEYS = [
   'hero.eyebrow', 'hero.lede', 'hero.stat1n', 'hero.stat1l',
   'hero.stat2n', 'hero.stat2l', 'hero.stat3n', 'hero.stat3l',
   'aud.1', 'aud.2', 'aud.3',
-  'prog.1', 'prog.2', 'prog.3', 'prog.4',
+  'prog.1', 'prog.2', 'prog.3',
   'coach.name', 'coach.title', 'coach.p1', 'coach.p2', 'coach.p3',
   'pb.lede',
   'ct.lede', 'ct.phone', 'ct.email', 'ct.ig', 'ct.area'
@@ -23,13 +23,15 @@ export const IMAGE_KEYS = [
 export const TEXT_GROUPS = {
   hero: ['hero.eyebrow', 'hero.lede', 'hero.stat1n', 'hero.stat1l', 'hero.stat2n', 'hero.stat2l', 'hero.stat3n', 'hero.stat3l'],
   audience: ['aud.1', 'aud.2', 'aud.3'],
-  programs: ['prog.1', 'prog.2', 'prog.3', 'prog.4'],
+  programs: ['prog.1', 'prog.2', 'prog.3'],
   coach: ['coach.name', 'coach.title', 'coach.p1', 'coach.p2', 'coach.p3'],
   playbook: ['pb.lede'],
   contact: ['ct.lede', 'ct.phone', 'ct.email', 'ct.ig', 'ct.area']
 };
 
 export const TEXT_LABELS = {
+  'prog.1.enroll': 'Evaluation card: enroll link',
+  'prog.2.enroll': 'Membership card: enroll link',
   // Programs & pricing, fine print, enrollment steps (2026-09 restructure)
   'prog.2.th0': 'Price grid header: term',
   'prog.2.th1': 'Price grid header: once a week',
@@ -95,8 +97,7 @@ export const TEXT_LABELS = {
   'aud.3': 'College track audience paragraph',
   'prog.1': 'First Look program description',
   'prog.2': 'Private training program description',
-  'prog.3': 'Small group program description',
-  'prog.4': 'College Track program description',
+  'prog.3': 'Private one on one description',
   'coach.name': 'Coach name',
   'coach.title': 'Coach title',
   'coach.p1': 'Coach bio paragraph 1',
@@ -268,14 +269,6 @@ export const TEXT_LABELS = {
   'prog.3.li3': "Program 3 list item 3",
   'prog.3.li4': "Program 3 list item 4",
   'prog.3.cta': "Program 3 CTA button",
-  'prog.4.title': "Program 4 title",
-  'prog.4.price': "Program 4 price",
-  'prog.4.unit': "Program 4 price unit",
-  'prog.4.li1': "Program 4 list item 1",
-  'prog.4.li2': "Program 4 list item 2",
-  'prog.4.li3': "Program 4 list item 3",
-  'prog.4.li4': "Program 4 list item 4",
-  'prog.4.cta': "Program 4 CTA button",
   'rcp.eyebrow': "Résumé eyebrow",
   'rcp.h2': "Résumé heading",
   'rcp.lede': "Résumé intro paragraph",

@@ -1,8 +1,8 @@
 # Going live
 
 Written 8 August 2026, revised 3 September 2026 after the pricing, enrollment and terms
-work landed. The steps are unchanged; four facts about the site's state were stale and
-are corrected below.
+work landed, and again 8 September 2026 to add Step 5, Stripe. The launch steps are
+unchanged; four facts about the site's state were stale and are corrected below.
 
 **This supersedes `phase-c/P10-netlify-deployment-guide.md` wherever the two disagree.**
 P10 was written on 4 August and audited at 92.5/100 against the site as it existed then.
@@ -16,15 +16,18 @@ enforcing the CSP, and the rollback procedure.
 
 ## What I cannot do, and why
 
-Four of the steps below are yours and cannot be delegated to me:
+Five of the steps below are yours and cannot be delegated to me:
 
 - **Creating the Netlify account and site.** Account creation and accepting terms of
   service are yours to do.
 - **Entering the environment variables.** These are secrets — a GitHub token, an admin
-  password, a session-signing key. I do not handle credentials, even ones you paste to me.
-  Generate them and enter them directly in the Netlify dashboard.
+  password, a session-signing key, the Stripe keys. I do not handle credentials, even ones
+  you paste to me. Generate them and enter them directly in the Netlify dashboard.
 - **Buying the domain.** That is a purchase.
 - **Pointing DNS.** It follows the purchase and depends on your registrar account.
+- **Creating the Stripe account and its keys.** The money goes to you, so the account is
+  yours, and the restricted API key and the webhook signing secret are credentials like
+  the ones above. Step 5 lists exactly what to click.
 
 Everything on the code side is done: `main` builds clean, the golden baseline matches, and
 the branch contains the editor, the media library, and the publish split.
@@ -76,6 +79,10 @@ Site configuration → Environment variables. The authoritative list is the tabl
 Optional, only if you want the playbook emailed rather than just downloaded:
 `RESEND_API_KEY` and `PLAYBOOK_FROM_EMAIL` (must be a verified sender in Resend).
 
+The three Stripe variables (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+`ENROLL_NOTIFY_EMAIL`) come in Step 5. Leaving them unset is safe: `/enroll` still loads
+and tells parents online enrollment opens soon.
+
 Leave `GITHUB_BRANCH` unset — it defaults to `main`, which is correct.
 Leave `NETLIFY_BUILD_HOOK_URL` unset. It only makes two older save paths spend a deploy
 immediately, and nothing needs it.
@@ -116,6 +123,99 @@ Buy that one, or decide on a different one and change both places before you buy
 Once the domain resolves: add it in Netlify, let the certificate issue, then set `SITE_URL`
 to `https://yourdomain.com` and redeploy so canonicals, the sitemap and the structured data
 all agree.
+
+## Step 5 — Stripe
+
+Online enrollment at `/enroll` needs a Stripe account and two secrets in Netlify. Until
+they exist the page loads and tells parents online enrollment opens soon, so this step does
+not block launch. It comes after the domain on purpose: Checkout's "I agree to the terms"
+box needs a public Terms of service URL, and that URL lives on your domain.
+
+The code side is built and tested offline (`STRIPE-PLAN.md`, Phases 1 to 3). Nothing has
+called Stripe yet, and nothing can until you finish the checklist below.
+
+### What you do, in the Stripe dashboard
+
+Adapted from `STRIPE-PLAN.md`, Phase 0. Stripe has a test mode and a live mode, switched
+by a toggle at the top of the dashboard. Steps 1 to 5 are account-wide. Steps 6 and 7 are
+per mode: do them in test mode first, then again in live mode when the cutover order below
+says so.
+
+1. **Create the Stripe account** for FAST Basketball and complete the business profile and
+   payouts. The account is yours. I get a restricted key, never the full secret key.
+2. **Settings → Business → Public details.** Business name, support phone (503) 686-8371,
+   **Terms of service URL `https://kingfastbasketball.com/terms`**, privacy policy URL
+   `https://kingfastbasketball.com/privacy`. The Terms URL is not optional: every
+   enrollment session asks Stripe for the consent box (`consent_collection`), and Stripe
+   refuses to create the session until this URL is set. Without it `/enroll` fails on
+   every plan.
+3. **Settings → Emails.** Turn on successful-payment receipts and failed-payment emails.
+   Stripe sends the receipt; the site never does.
+4. **Settings → Billing → Subscriptions and emails.** Smart Retries on. Email customers
+   when a payment fails, and let them update their card from that email.
+5. **Settings → Billing → Customer portal.** Enable the hosted **login link**. That link is
+   how a parent replaces a card, which is the payment policy's "register a new card within
+   24 hours". Put it in your welcome email template.
+6. **Developers → API keys → Create restricted key.** Name it for the site. Permissions:
+   **write** on Checkout Sessions, Customers, Subscriptions and Subscription Schedules;
+   **read** on Products and Prices; none on anything else. Enter it in Netlify as
+   `STRIPE_SECRET_KEY`. Keep a copy in the shell you run the catalog script from and
+   nowhere else.
+7. **Developers → Webhooks → Add endpoint.** URL
+   `https://kingfastbasketball.com/.netlify/functions/stripe-webhook`. Events:
+   `checkout.session.completed`, `invoice.payment_failed`,
+   `customer.subscription.deleted`. Stripe shows a signing secret for the endpoint; enter
+   it in Netlify as `STRIPE_WEBHOOK_SECRET`. Test mode and live mode each get their own
+   endpoint and their own secret.
+
+Optional: `ENROLL_NOTIFY_EMAIL` in Netlify if enrollment and failed-payment alerts should
+go somewhere other than blake.kingsley@gmail.com. They also need `RESEND_API_KEY` and
+`PLAYBOOK_FROM_EMAIL` from Step 2; without those the enrollment is still recorded and only
+the email is skipped.
+
+### The cutover order, test mode then live
+
+Nothing in the repo changes between the two modes. Switching is an environment change
+plus one script run. Do it in this order.
+
+**Test mode**
+
+1. In Netlify, set `STRIPE_SECRET_KEY` to the **test** restricted key and
+   `STRIPE_WEBHOOK_SECRET` to the **test** endpoint's secret.
+2. With the test key in the shell, run `npm run stripe:catalog -- --dry-run` and read what
+   it will create, then `npm run stripe:catalog`. That makes the 14 products and prices
+   under their lookup keys. It is idempotent; running it twice is safe.
+3. Trigger a deploy so the functions pick up the variables.
+4. Run the Phase 1 test list from `STRIPE-PLAN.md` with card `4242 4242 4242 4242`: each
+   of the 14 plan and payment combinations reaches Checkout, the consent box and the
+   typed-name field appear, cancelling returns to `/enroll` with the plan preselected, a
+   tampered plan gets 422, the 11th request in 10 minutes gets 429, and with JavaScript
+   off the form still reaches Stripe.
+5. Run the Phase 2 test list: the same webhook event delivered twice makes one record;
+   card `4000 0000 0000 0341` attaches but fails its first invoice and the failed-payment
+   alert arrives; a split plan shows two scheduled phases then cancel in the dashboard; a
+   request with a bad signature is a 400 that writes nothing; the admin Leads tab shows
+   the enrollment with the right cancel-by date.
+
+**Live mode**
+
+6. Switch the dashboard to live mode. Repeat checklist steps 6 and 7 there: a live
+   restricted key and a live webhook endpoint with the same URL and the same three events.
+   Replace both values in Netlify.
+7. With the live key in the shell, run `npm run stripe:catalog` again. Live mode has its
+   own products and prices; the script creates them.
+8. Trigger a deploy.
+9. One real checkout: open `/enroll?plan=eval`, pay the $50 evaluation with a real card,
+   then refund it from the dashboard (Payments → that payment → Refund). This is the only
+   live test, and it proves the live key, the live webhook and the live catalog agree.
+
+### The five-minute check afterwards
+
+1. `/enroll` loads and shows the plan matrix, not the "opens soon" message.
+2. The enrollment from step 9 appears in the admin Leads tab with its plan and amount.
+3. Blake has the alert email, with the prefilled welcome email in it.
+4. In the Stripe dashboard, that payment's Checkout session shows the terms consent and
+   the typed full name. That is the record the agreement's Step 2 asks for.
 
 ---
 

@@ -137,3 +137,40 @@ body.egg-open{overflow:hidden;}
    block above, which hides .hoop/.nite-guide/.nball) — hide the trigger so mobile visitors
    never open an easter egg with no court inside it. */
 @media(max-width:960px){.egg-ball{display:none;}}
+
+/* ---------- ENROLL (/enroll) ----------
+   One form, three fieldsets. Plan and pay options are real radios so the no-JS path
+   works; the input in a plan card is visually hidden and the card is its label, with
+   the checked state drawn on the card (border plus a check mark, not colour alone). */
+.en-form{display:grid;gap:44px;}
+.en-fs{border:0;padding:0;margin:0;min-width:0;}
+/* Author display on these would outrank the UA [hidden]{display:none}; same trap
+   .modal-ovl documents above. */
+.en-fs[hidden],.en-card[hidden]{display:none;}
+.en-lg{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;padding:0;font-family:var(--font-display);font-size:clamp(1.3rem,2.4vw,1.9rem);letter-spacing:.01em;line-height:1;text-transform:uppercase;color:var(--bone);}
+.en-n{font-family:var(--font-num);font-size:1.25em;color:var(--fast-red);line-height:.85;}
+.en-plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;}
+.en-card{position:relative;display:block;cursor:pointer;}
+.en-card input{position:absolute;opacity:0;width:1px;height:1px;margin:0;}
+.en-card-b{display:flex;flex-direction:column;gap:10px;height:100%;padding:24px 22px;border-radius:16px;background:var(--ink-lift);border:1px solid var(--line-dark);transition:border-color .25s,box-shadow .25s;}
+.en-card-t{font-family:var(--font-eyebrow);font-size:.82rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--bone);}
+.en-card .prog-price{font-size:1.9rem;}
+.en-card-d{font-size:.9rem;line-height:1.5;color:var(--text-body-dark);}
+.en-card:hover .en-card-b{border-color:rgba(230,12,32,.55);}
+.en-card input:checked+.en-card-b{border-color:var(--fast-red);box-shadow:inset 0 0 0 1px var(--fast-red);}
+.en-card input:checked+.en-card-b .en-card-t::after{content:" \2713";color:var(--fast-red);}
+.en-card input:focus-visible+.en-card-b{outline:3px solid var(--fast-red);outline-offset:3px;}
+.en-pays{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+.en-pay{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:16px 18px;border-radius:12px;background:var(--ink-lift);border:1px solid var(--line-dark);cursor:pointer;transition:border-color .25s;}
+.en-pay input{width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;accent-color:var(--fast-red);cursor:pointer;}
+.en-pay input:focus-visible{outline:3px solid var(--fast-red);outline-offset:3px;}
+.en-pay:has(input:checked){border-color:var(--fast-red);}
+.en-pay-l{display:block;font-family:var(--font-eyebrow);font-size:.82rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--bone);}
+.en-pay-a{display:block;margin-top:3px;font-size:.9rem;color:var(--text-body-dark);}
+.en-pay-a:empty{display:none;}
+.en-form .pb-form{max-width:640px;}
+html.fb-light .en-lg,html.fb-light .en-card-t,html.fb-light .en-pay-l{color:var(--court-black);}
+html.fb-light .en-card-b,html.fb-light .en-pay{background:var(--bone);border-color:var(--chalk-2);}
+html.fb-light .en-card input:checked+.en-card-b,html.fb-light .en-pay:has(input:checked){border-color:var(--fast-red);}
+html.fb-light .en-card-d,html.fb-light .en-pay-a{color:var(--text-body-light);}
+@media(max-width:640px){.en-form{gap:32px;}.en-card-b{padding:20px 18px;}}

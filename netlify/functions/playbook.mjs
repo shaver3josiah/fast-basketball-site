@@ -1,6 +1,7 @@
 ﻿import { readFileSync } from 'node:fs';
 import { getStore } from '@netlify/blobs';
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
+import { sendEmail } from './lib/notify.mjs';
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 6;
@@ -62,28 +63,6 @@ function buildPlaybookHtml({ name, grade, positionLabel, skillGap }) {
     '</div></body></html>';
 }
 
-async function sendEmail({ to, name, html }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.PLAYBOOK_FROM_EMAIL;
-  if (!apiKey || !from) return false;
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: from,
-        to: [to],
-        subject: name + "'s Fast Basketball playbook is ready",
-        html: html
-      })
-    });
-    return res.ok;
-  } catch (err) {
-    console.error('playbook email send failed', err.message);
-    return false;
-  }
-}
-
 async function storeLead(record) {
   try {
     const store = getStore('leads');
@@ -128,7 +107,7 @@ export default async (request, context) => {
   const grade = (payload.grade || '').trim() || 'Not specified';
 
   const html = buildPlaybookHtml({ name, grade, positionLabel: position.label, skillGap });
-  const emailSent = await sendEmail({ to: email, name, html });
+  const emailSent = await sendEmail({ to: email, subject: name + "'s Fast Basketball playbook is ready", html });
 
   await storeLead({
     type: 'playbook',

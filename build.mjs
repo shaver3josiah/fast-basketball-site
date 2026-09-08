@@ -2,12 +2,13 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, sta
 import { resolve, join, relative } from 'node:path';
 import { validateSuburbs, formatErrors } from './src/lib/validate-suburbs.mjs';
 import { generateResponsiveImages } from './scripts/responsive-images.mjs';
-import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, escapeHtml, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
+import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
 import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
 import { renderCoachPage } from './src/lib/coach-page.mjs';
 import { breadcrumbList } from './src/lib/structured-data.mjs';
 import { SITE_URL, CONTACT } from './src/lib/site-config.mjs';
+import { PLANS, PAY_LABELS, getPlan, payOptionsFor, checkoutSpec, totalCents, dollars } from './src/lib/plans.mjs';
 import { TEXT_GROUPS, TEXT_LABELS, IMAGE_LABELS } from './src/lib/content-schema.mjs';
 import { CONTENT_GROUPS } from './src/lib/content-groups.mjs';
 import { ELEMENT_TYPES, FONT_FAMILIES, THEME_COLORS, BREAKPOINTS, DESIGN_WIDTH } from './src/lib/canvas-schema.mjs';
@@ -29,24 +30,17 @@ const TRAINING_PAGES = [
   },
   {
     slug: 'group-training', textKey: 'prog.2', title: 'Group Training Membership | Fast Basketball', label: 'Group Training Membership',
-    description: 'Weekly group basketball training in north Broward on a 3 or 12 month term, once or twice a week, $25 to $40 a session. Every price listed, no quotes over text.',
-    price: { amount: '$25\u2013$40', unit: 'Per Session', line: '3 months: $480 once a week or $840 twice a week. 12 months: $1,380 once a week or $2,300 twice a week. Pay in full, split in two, or monthly.' },
-    features: ['Weekly 60 minute sessions with level matched players', 'Journal, homework, and daily check-ins in the members area', 'Weekly game evaluations and quarterly progress reports', 'Rained out? The session moves to Zoom that evening'],
-    next: 'Three months is the minimum because that is how long it takes a new habit to survive speed, contact, and a Friday night. Twelve months is for players who already know they are all in. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 12 month term.'
+    description: 'Group basketball training in north Broward on a 3 or 6 month term, once a week or unlimited. $450 to $1,000, every figure listed. No quotes over text.',
+    price: { amount: '$450\u2013$1,000', unit: 'Per Term', line: '3 months: $450 once a week, or $650 unlimited. 6 months: $750 once a week, or $1,000 unlimited. Paying monthly instead of up front costs more, and both figures are on the page.' },
+    features: ['Weekly 60 minute sessions with level matched players', 'Unlimited means up to two sessions a week', 'Journal, homework, and daily check-ins in the members area', 'Rained out? The session moves to Zoom that evening'],
+    next: 'Three months is the minimum because that is how long it takes a new habit to survive speed, contact, and a Friday night. Six months costs one month less than two three month terms. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.'
   },
   {
     slug: 'private', textKey: 'prog.3', title: 'Private Basketball Training in Coral Springs | Fast Basketball', label: 'Private One on One',
-    description: 'Private one on one basketball training in Coral Springs and north Broward with Coach Blake Kingsley, $100 an hour, scheduled directly with the coach.',
-    price: { amount: '$100', unit: 'Per Hour', line: '$100 for a full hour on one player, scheduled directly with Coach Blake.' },
+    description: 'Private one on one basketball training in Coral Springs and north Broward with Coach Blake Kingsley. $3,000 for a six month term, scheduled directly with the coach.',
+    price: { amount: '$3,000', unit: '6-Month Term', line: 'A six month term of one on one coaching, invoiced directly by Coach Blake rather than bought online.' },
     features: ['Footwork, handle, finishing, and shooting blocks', 'Same journal and homework standard as the membership', 'Film review and college coaching advice on request', 'Scheduled directly with Coach Blake'],
-    next: 'Every hour is built around the two or three things standing between your player and the next level. The journal and the homework are the same as the membership, because the standard does not change with the format.'
-  },
-  {
-    slug: 'small-group', textKey: 'prog.4', title: 'Small Group Basketball Training | Fast Basketball', label: 'Private Small Group',
-    description: 'Private small group basketball training in north Broward, $75 per player per hour. Level matched groups for teammates and siblings; drop-in sessions $50.',
-    price: { amount: '$75', unit: 'Per Player, Hour', line: '$75 per player per hour. Drop-in sessions are $50 if you cannot commit to a term yet.' },
-    features: ['Level matched groups only', 'Live one on one and two on two', 'Great for a team\'s guards or a family with two players', 'Drop-in sessions at $50 if you cannot commit to a term yet'],
-    next: 'Two to four players at the same level, going at each other. Skills get tested against a live defender the day they are taught, because that is the only version of a skill that shows up in a game.'
+    next: 'Every session is built around the two or three things standing between your player and the next level. The journal and the homework are the same as the membership, because the standard does not change with the format. Coach Blake sets the schedule with you and invoices the term directly.'
   }
 ];
 
@@ -114,6 +108,18 @@ function step3b_emitAdminSchema() {
   writeFileSync(resolve(DIST, 'admin/schema.js'),
     '/* GENERATED by build.mjs from src/lib/content-schema.mjs. Do not edit. */\n' + body);
 
+  // The catalog, for the admin's enrollment records and per-family links. Generated from
+  // plans.mjs for the same reason schema.js is: a hand-typed copy of a price drifts.
+  const plans = Object.keys(PLANS).map((key) => ({
+    key, label: PLANS[key].label, kind: PLANS[key].kind,
+    payOptions: payOptionsFor(key).map((pay) => {
+      const spec = checkoutSpec(key, pay);
+      return { pay, label: PAY_LABELS[pay], amountCents: spec.amountCents, amount: dollars(spec.amountCents), mode: spec.mode, iterations: spec.iterations };
+    })
+  }));
+  writeFileSync(resolve(DIST, 'admin/plans.js'),
+    '/* GENERATED by build.mjs from src/lib/plans.mjs. Do not edit. */\nwindow.FB_PLANS = ' + JSON.stringify({ siteUrl: SITE_URL, plans }, null, 2) + ';\n');
+
   // The editor's inspector is generated from this, exactly as the build's renderer is
   // generated from the same module. render() and css() are functions and cannot cross
   // into the browser, but they are not needed there — the canvas is rendered by the
@@ -180,7 +186,7 @@ function step3b_emitAdminSchema() {
   }, null, 2) + ';\n';
   writeFileSync(resolve(DIST, 'admin/canvas-schema.js'),
     '/* GENERATED by build.mjs from src/lib/canvas-schema.mjs. Do not edit. */\n' + canvas);
-  console.log('Emitted admin/schema.js and admin/canvas-schema.js.');
+  console.log('Emitted admin/schema.js, admin/plans.js and admin/canvas-schema.js.');
 }
 
 // The editor's canvas iframe has to load EXACTLY the stylesheets a published canvas
@@ -452,6 +458,9 @@ function step11b_privacyPage(content, prelude) {
   body += '</ul>\n';
   body += '<p>There is no analytics on this site, no advertising pixel, no session recording and no third-party script of any kind. Every script and font a page here loads is served from this site. Clearing your browser storage removes everything in that list.</p>\n';
 
+  body += '<h2>Paying online</h2>\n';
+  body += '<p>Payments happen on Stripe\'s own checkout pages, not here. This site never sees a card number. Stripe keeps what it needs to process the payment, under <a href="https://stripe.com/privacy">Stripe\'s privacy policy</a>. We keep the enrollment record itself: the parent\'s name, email and phone, the player\'s name, the plan, and the dates. That is what running your player\'s sessions takes, for the reasons above.</p>\n';
+
   body += '<h2>How long we keep it</h2>\n';
   body += '<p>As long as it is useful for the reason you gave it to us: answering your question, sending what you asked for, running your player\'s sessions. There is no fixed clock on it. If you are not training with us and you would rather we did not hold it, say so and we will not.</p>\n';
 
@@ -506,14 +515,13 @@ function step11c_termsPage(content, prelude) {
   // pricing Blake set in his Sales Mastery worksheet, and is labelled so nobody mistakes it
   // for agreement text.
   body += '<h3 class="terms-sub">Published rates</h3>\n';
-  body += '<p>The $840 in the agreement is the 3 month, twice a week membership. Every rate this site publishes, so the number on your enrollment call matches the number here:</p>\n';
+  body += '<p>The $840 above is the figure in the signed agreement, which is being re-issued to match the rates below. Those rates are what Coach Blake charges today, and they are the numbers on your enrollment call:</p>\n';
   body += li([
     'Evaluation session: $50 for 60 minutes. $35 if booked within 48 hours of your intro call.',
-    'Group training membership, 3 months: $480 once a week (12 sessions) or $840 twice a week (24 sessions).',
-    'Group training membership, 12 months: $1,380 once a week (46 sessions) or $2,300 twice a week (92 sessions).',
-    'Private one on one: $100 per hour.',
-    'Private small group: $75 per player per hour.',
-    'Drop-in session: $50, for families who cannot commit to a term yet.'
+    'Group training membership, 3 months: $450 once a week paid in full, or $550 paid monthly. $650 unlimited, paid in full.',
+    'Group training membership, 6 months: $750 once a week paid in full, or $900 paid monthly. $1,000 unlimited, paid in full.',
+    'Unlimited means up to two group sessions a week.',
+    'Private one on one: $3,000 for a six month term, invoiced directly rather than bought online.'
   ]);
   body += '<p>If you choose to cancel after 6 or 12 months, you agree to provide Coach Blake Kingsley 60 days written notice at <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> to cancel any future recurring payment after the contract is complete. If you do not follow our terms, you will be automatically enrolled into the same agreement for the next 12 months, no exceptions.</p>\n';
   body += '<p>By registering for the program, you agree to the terms and conditions below, the player expectations and the parent expectations, which state Coach Kingsley&rsquo;s refund, cancellation and early termination policies.</p>\n';
@@ -602,6 +610,118 @@ function step11c_termsPage(content, prelude) {
   });
   writeHtml(resolve(DIST, 'terms', 'index.html'), html);
   return ['/terms'];
+}
+
+// The fine print on /enroll is the homepage block, sliced out of programs.html the way
+// faqSection slices the FAQ, so an owner edit to an fp.* key lands on both pages.
+function finePrint(programsHtml) {
+  const start = programsHtml.indexOf('<div class="fine-print">');
+  const end = start === -1 ? -1 : programsHtml.indexOf('</section>', start);
+  if (start === -1 || end === -1) throw new Error('could not locate the fine print in programs.html — /enroll/ would ship without it');
+  // The last </div> before </section> closes the shell, not the block; stop short of it.
+  return programsHtml.slice(start, programsHtml.lastIndexOf('</div>', end)) + '\n';
+}
+
+// /enroll is the plan matrix as one form. Every amount is rendered from plans.mjs, the
+// catalog the checkout function resolves prices from, so a card cannot promise a figure
+// Stripe does not charge. The form posts to the function on its own (no JS: the function
+// answers 303 to Stripe); enroll.js upgrades it to fetch + location.assign and wires the
+// chosen plan to the three pay-option amounts. /enroll/thanks is copy only: the webhook,
+// not the redirect, is the record of a payment, so the page never says one succeeded.
+function step11d_enrollPages(sections, content, prelude) {
+  const sms = '<a href="sms:' + CONTACT.tel + '">' + CONTACT.phone + '</a>';
+  const payLine = (key, pay) => {
+    const spec = checkoutSpec(key, pay);
+    if (pay === 'full') return dollars(spec.amountCents) + ' today';
+    return dollars(spec.amountCents) + ' a month for ' + spec.iterations + ' months, ' + dollars(totalCents(key, pay)) + ' in total';
+  };
+  const card = (key) => {
+    const plan = getPlan(key);
+    const attrs = payOptionsFor(key).map((pay) => ' data-' + pay + '="' + escapeAttr(payLine(key, pay)) + '"').join('');
+    // The 48-hour rate is quoted on the intro call and linked from the follow-up email,
+    // never listed: enroll.js un-hides it for ?plan=eval-call only.
+    let out = '<label class="en-card"' + attrs + (key === 'eval-call' ? ' hidden' : '') + '>\n';
+    out += '<input type="radio" name="plan" value="' + key + '" required>\n<span class="en-card-b">\n';
+    if (plan.kind === 'once') {
+      out += '<span class="en-card-t">' + escapeHtml(plan.label) + '</span>\n';
+      out += '<span class="prog-price">' + dollars(plan.cents) + '<small>60 minutes</small></span>\n';
+      out += '<span class="en-card-d">' + escapeHtml(key === 'eval-call' ? 'The 48-hour rate from your intro call.' : plan.description) + '</span>\n';
+    } else {
+      out += '<span class="en-card-t">' + plan.months + ' months, ' + escapeHtml(plan.frequency) + '</span>\n';
+      out += '<span class="prog-price">' + dollars(totalCents(key, 'full')) + '<small>paid in full</small></span>\n';
+      out += '<span class="en-card-d">Group Training Membership. Weekly 60 minute sessions with level matched players. Cancel in writing ' + plan.noticeDays + ' days before the end of the term or it renews.</span>\n';
+    }
+    return out + '</span>\n</label>\n';
+  };
+  const legend = (n, text) => '<legend class="en-lg"><span class="en-n">0' + n + '</span>' + text + '</legend>\n';
+
+  let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
+  body += '<div class="eyebrow">Step 4 of 4</div>\n<h1>Enroll</h1>\n';
+  body += '<p class="lede">This is step 4 of enrollment. If you have not had your call with Coach Blake yet, <a href="/#contact">book it first</a>: plans are chosen on the enrollment call, after he has seen your player. Nothing here replaces that conversation.</p>\n';
+  body += '</div>\n</header>\n';
+  body += '<section class="band band-ink">\n<div class="shell">\n';
+  body += '<form id="enForm" class="en-form" method="post" action="/.netlify/functions/checkout">\n';
+
+  body += '<fieldset class="en-fs">\n' + legend(1, 'Choose your plan');
+  body += '<div class="en-plans">\n' + Object.keys(PLANS).map(card).join('') + '</div>\n</fieldset>\n';
+
+  body += '<fieldset class="en-fs" id="enPay">\n' + legend(2, 'Choose how to pay');
+  body += '<div class="en-pays">\n';
+  for (const pay of Object.keys(PAY_LABELS)) {
+    body += '<label class="en-pay"><input type="radio" name="pay" value="' + pay + '"' + (pay === 'full' ? ' checked' : '') + '>' +
+      '<span class="en-pay-l">' + escapeHtml(PAY_LABELS[pay]) + '</span><span class="en-pay-a"></span></label>\n';
+  }
+  body += '</div>\n</fieldset>\n';
+
+  body += '<fieldset class="en-fs">\n' + legend(3, 'Who is enrolling') + '<div class="pb-form">\n';
+  body += '<div class="fld"><label for="enEmail">Parent or Guardian Email</label><input type="email" id="enEmail" name="email" autocomplete="email" placeholder="you@email.com" required></div>\n';
+  // Same parent gate as the contact form, markup and copy: a child must not be able to
+  // hand over a card, and the inline styles are what contact.html ships too.
+  body += '<div class="fld">\n<label for="enGuardian" style="display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;">\n' +
+    '<input type="checkbox" id="enGuardian" name="guardian-confirmed" value="yes" required style="width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;">\n' +
+    '<span>I\'m the player\'s parent or guardian, or I\'m 18 or older, and these are my own contact details.</span>\n</label>\n</div>\n';
+  // Honeypot, hidden exactly as the playbook form hides its own.
+  body += '<p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="en-hp" id="enHp" tabindex="-1" autocomplete="off"></label></p>\n';
+  body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;"></p>\n';
+  body += '<button type="submit" class="btn btn-primary" style="width:100%;">Continue to Secure Checkout</button>\n';
+  body += '<p class="trust-line">You finish on Stripe\'s secure checkout page. There you tick the terms box and type your full name to agree, exactly as the agreement asks. Card details never touch this site.</p>\n';
+  body += '</div>\n</fieldset>\n</form>\n';
+
+  body += applyTextEdits(finePrint(sections.programs), content.text);
+  body += '</div>\n</section>\n</main>\n';
+
+  writeHtml(resolve(DIST, 'enroll', 'index.html'), buildSimplePage({
+    title: 'Enroll | Fast Basketball',
+    description: 'Step 4 of enrollment at Fast Basketball: choose the plan from your enrollment call, pick pay in full, split or monthly, and finish on Stripe\'s secure checkout.',
+    canonicalPath: '/enroll',
+    bodyHtml: body,
+    content,
+    prelude,
+    jsonLd: [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Enroll', path: '/enroll' }])],
+    extraScripts: ['/js/enroll.js']
+  }));
+
+  let thanks = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
+  thanks += '<div class="eyebrow">Enrollment</div>\n<h1>Thanks.</h1>\n';
+  thanks += '<p class="lede">If the payment went through, Stripe is emailing your receipt now. Give it a few minutes and check spam before you worry.</p>\n';
+  thanks += '</div>\n</header>\n';
+  thanks += '<section class="band band-ink">\n<div class="shell">\n';
+  thanks += '<h2>What happens next</h2>\n';
+  thanks += '<p>Coach Blake sends the welcome email within 12 hours, Monday to Friday. Reply YES to it so he knows you have it. Your first session date and place are in it.</p>\n';
+  thanks += '<p>Questions, or no receipt: text ' + sms + '.</p>\n';
+  thanks += '<p><a href="/" class="btn btn-ghost">Back to the site</a></p>\n';
+  thanks += '</div>\n</section>\n</main>\n';
+  writeHtml(resolve(DIST, 'enroll', 'thanks', 'index.html'), buildSimplePage({
+    title: 'Thanks | Fast Basketball',
+    description: 'Your enrollment is in. Watch for the receipt from Stripe and the welcome email from Coach Blake.',
+    canonicalPath: '/enroll/thanks',
+    bodyHtml: thanks,
+    content,
+    prelude,
+    robots: 'noindex, nofollow'
+  }));
+  // The thanks page stays out of the sitemap: it is a landing, not a destination.
+  return ['/enroll'];
 }
 
 function step11_blogIndex(content, prelude) {
@@ -770,6 +890,7 @@ async function main() {
   allPaths.push(...step11_blogIndex(content, prelude));
   allPaths.push(...step11b_privacyPage(content, prelude));
   allPaths.push(...step11c_termsPage(content, prelude));
+  allPaths.push(...step11d_enrollPages(sections, content, prelude));
   allPaths.push(...step12_canvasPages(content, responsiveManifest, prelude));
 
   writeSitemap(allPaths, SITE_URL);

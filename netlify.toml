@@ -13,6 +13,12 @@
   directory = "netlify/functions"
   included_files = ["src/data/**", "src/templates/**"]
 
+# Permissions-Policy keeps payment=() even though the site sells through Stripe: hosted
+# Checkout runs on stripe.com, so no page we serve ever calls the Payment Request API.
+# Only embedded Checkout or Elements would need payment=(self) here and js.stripe.com in
+# script-src. form-action lists checkout.stripe.com because the no-JS enroll form posts
+# to our checkout function, which answers 303 to Stripe, and Chrome applies form-action
+# to redirect targets.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -23,7 +29,7 @@
     Cross-Origin-Opener-Policy = "same-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     Cache-Control = "public, max-age=0, must-revalidate"
-    Content-Security-Policy-Report-Only = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; upgrade-insecure-requests"
+    Content-Security-Policy-Report-Only = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://checkout.stripe.com; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; upgrade-insecure-requests"
 
 [[headers]]
   for = "/images/*"
@@ -57,6 +63,13 @@
   [headers.values]
     Cache-Control = "no-store"
 
+# Stripe's success_url. Copy only, never proof of payment, and not worth indexing.
+[[headers]]
+  for = "/enroll/thanks/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"
+
 [[redirects]]
   from = "/playbook/generate"
   to = "/.netlify/functions/playbook"
@@ -65,6 +78,14 @@
 [[redirects]]
   from = "/coach"
   to = "/coach-blake-kingsley"
+  status = 301
+  force = true
+
+# Private small group and the $50 drop-in were retired by the September 2026 price sheet.
+# The page was indexed and linked from every footer, so it redirects rather than 404s.
+[[redirects]]
+  from = "/training/small-group"
+  to = "/training/group-training"
   status = 301
   force = true
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-03T19:14:16.614Z",
+  "updated": "2026-09-08T17:58:28.406Z",
   "text": {
     "hero.lede": "Your player's level of play goes up. Fast. Weekly sessions with a journal in their hand, homework between them, and a coach who holds them to it. Bench minutes become the minutes a coach cannot do without.",
     "hero.stat1n": "51",
@@ -75,7 +75,6 @@
     "ct.lbl.msg": "Tell us about the player",
     "ct.consent": "I'm the player's parent or guardian, or I'm 18 or older, and these are my own contact details.",
     "ct.submit": "Request My Call",
-    "ct.trust": "You hear back within one business day. The call is free. The evaluation session is $50.",
     "ct.note1": "What we do with it: ",
     "ct.note2": " and ",
     "ct.note3": ".",
@@ -265,11 +264,10 @@
     "ft.col3h": "More",
     "ft.bot": "Fast Basketball. Elevate to Execute.",
     "ft.city": "Coral Springs, Florida",
+    "hero.eyebrow": "North Broward, FL / Group & Private Skills Training",
     "prog.1": "Sixty minutes on court with Coach Blake. He gets to know your player, watches them move, and finds out where they actually are. It is the step before any commitment, for both sides.",
-    "prog.2": "Weekly 60 minute group sessions with players at a similar level, on a 3 or 12 month term. Three months is the minimum because that is how long a habit takes to hold up in a game.",
-    "prog.3": "The full hour on one player. Built around the two or three things standing between them and the next level this season.",
-    "prog.4": "Bring teammates or siblings at a similar level. Competitive reps, real defense, and a coach who sees every one of them.",
-    "hero.eyebrow": "North Broward, FL / Group & Private Skills Training"
+    "prog.2": "Weekly 60 minute group sessions with players at a similar level, on a 3 or 6 month term. Three months is the minimum because that is how long a habit takes to hold up in a game. Unlimited means up to two sessions a week.",
+    "prog.3": "A six month term with the whole session on one player, built around the two or three things standing between them and the next level. Coach Blake sets the schedule with you and invoices the term directly."
   },
   "images": {
     "hero.nets": {
