@@ -100,10 +100,12 @@ function records() {
   assert.equal(r.livemode, false);
   assert.equal(r.subscriptionId, null);
 
-  // Stripe retries and dashboard resends deliver the same session again.
+  // Stripe retries and dashboard resends deliver the same session again. RESEND_API_KEY is
+  // unset here, so the owner email never went out and the record is not marked notified: a
+  // redelivery is a real second attempt at the email, and must still leave one record.
   const replay = await post(payload, header);
   assert.equal(replay.status, 200);
-  assert.deepEqual(await replay.json(), { duplicate: true }, 'replay is answered without a second record');
+  assert.deepEqual(await replay.json(), { ok: true }, 'an un-notified enrollment is retried, not skipped');
   assert.equal(records().length, 1, 'still one record after replay');
 
   // A body that does not match the signature must be refused before anything is written.
@@ -162,6 +164,55 @@ function records() {
   assert.deepEqual(await unconfigured.json(), { error: 'payments not configured' });
   assert.equal(records().length, 3, 'nothing written without a secret');
   process.env.STRIPE_WEBHOOK_SECRET = SECRET;
+}
+
+{
+  // With the owner email actually going out, the record is marked notified and the next
+  // delivery of the same session is the duplicate Stripe's retries are meant to hit.
+  process.env.RESEND_API_KEY = 'test-key';
+  process.env.PLAYBOOK_FROM_EMAIL = 'from@example.test';
+  const sends = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { sends.push(JSON.parse(init.body)); return { ok: true }; };
+
+  const spec = checkoutSpec('group-6m-1x', 'monthly');
+  const payload = JSON.stringify(sessionEvent('5', spec, { subscription: 'sub_test_5' }));
+  const header = sign(payload);
+  assert.deepEqual(await (await post(payload, header)).json(), { ok: true });
+  assert.equal(sends.length, 1, 'one owner email');
+  assert.ok(sends[0].subject.startsWith('New enrollment: '), sends[0].subject);
+  assert.ok(sends[0].html.includes('Welcome email to paste'), 'a paid enrollment gets the pasteable welcome');
+  assert.deepEqual(await (await post(payload, header)).json(), { duplicate: true }, 'a notified record is not emailed again');
+  assert.equal(sends.length, 1, 'no second owner email');
+  assert.equal(records().filter((x) => x.key === 'enrollment:cs_test_5').length, 1, 'marking notified does not add a record');
+
+  // Stripe completes the session before the money lands: a card that attaches but fails its
+  // first invoice arrives as 'unpaid'. Record it, but never hand Blake a welcome to paste.
+  const unpaid = JSON.stringify(sessionEvent('6', spec, { subscription: 'sub_test_6', payment_status: 'unpaid' }));
+  assert.deepEqual(await (await post(unpaid, sign(unpaid))).json(), { ok: true });
+  assert.equal(sends.length, 2);
+  assert.ok(sends[1].subject.startsWith('UNPAID'), sends[1].subject);
+  assert.ok(!sends[1].html.includes('Welcome email to paste'), 'no pasteable welcome for an unpaid session');
+  assert.ok(records().find((x) => x.key === 'enrollment:cs_test_6'), 'an unpaid enrollment is still recorded');
+
+  globalThis.fetch = realFetch;
+  delete process.env.RESEND_API_KEY;
+  delete process.env.PLAYBOOK_FROM_EMAIL;
+}
+
+{
+  // A leads-store failure has to be answered non-2xx: a 200 would tell Stripe a paid
+  // enrollment was handled when nothing was recorded and nobody was emailed, and Stripe
+  // would never deliver it again. '.local' as a plain file makes addLead's mkdirSync throw,
+  // which is the shape of Blobs being unavailable.
+  const broken = fs.mkdtempSync(path.join(os.tmpdir(), 'fb-webhook-broken-'));
+  const back = process.cwd();
+  process.chdir(broken);
+  fs.writeFileSync(path.resolve('.local'), 'not a directory');
+  const payload = JSON.stringify(sessionEvent('7', checkoutSpec('eval', 'full')));
+  const res = await post(payload, sign(payload));
+  assert.equal(res.status, 500, 'a store failure is retried by Stripe, not swallowed as 200');
+  process.chdir(back);
 }
 
 console.log('stripe-webhook: ok');

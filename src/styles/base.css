@@ -475,6 +475,9 @@ html[data-ticker="off"] .ticker-track{animation-play-state:paused;}
 .fld-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .fld.err input,.fld.err select,.fld.err textarea{border-color:var(--red-hot);}
 .f-err{display:block;font-size:.8rem;color:var(--red-hot);margin-top:6px;}
+/* --red-hot is 3.5:1 on the light theme's white form surface, under AA at this size.
+   --fast-red is 4.7:1 and is the red the rest of the light theme already uses. */
+html.fb-light .f-err{color:var(--fast-red);}
 .pb-note{font-size:.8rem;color:#8F8F9C;margin-top:13px;}
 .pb-out{margin-top:20px;padding:20px;border:1px dashed rgba(230,12,32,.5);border-radius:11px;background:rgba(230,12,32,.07);display:none;}
 .pb-out.show{display:block;animation:zrIn .7s linear forwards;}

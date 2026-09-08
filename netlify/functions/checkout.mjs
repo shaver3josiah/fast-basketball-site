@@ -13,7 +13,9 @@ import { stripeClient, priceByLookupKey, json } from './lib/stripe.mjs';
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
-const SESSION_TTL_SECONDS = 24 * 60 * 60;
+// Stripe caps expires_at at 24 hours after the session's own created time, so an hour of
+// slack keeps our clock running slightly ahead of theirs from failing every checkout.
+const SESSION_TTL_SECONDS = 23 * 60 * 60;
 
 // Pure so the parameter shape is testable without a Stripe account. siteUrl is a
 // parameter for the same reason; the handler passes SITE_URL from site-config.
@@ -78,9 +80,11 @@ export default async (request, context) => {
     if (!body || typeof body !== 'object') return json(400, { error: 'invalid request body' });
   }
 
-  // Every failure below has two shapes, decided once here.
+  // Every failure below has two shapes, decided once here. The #enErr fragment is what
+  // makes a no-JS failure visible: /enroll ships the retry copy in that paragraph, hidden,
+  // and CSS reveals it on :target.
   const fail = (status, error) => isForm
-    ? redirect('/enroll?plan=' + encodeURIComponent(body.plan || '') + '&pay=' + encodeURIComponent(body.pay || '') + '&err=1')
+    ? redirect('/enroll?plan=' + encodeURIComponent(body.plan || '') + '&pay=' + encodeURIComponent(body.pay || '') + '&err=1#enErr')
     : json(status, { error });
 
   // Honeypot, same as the contact and playbook forms: a bot gets the thanks page and

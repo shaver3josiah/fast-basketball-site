@@ -4,7 +4,7 @@
 //
 //   STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-catalog.mjs [--dry-run]
 //
-// Idempotent. A second run prints "unchanged" 14 times. A changed amount creates a new
+// Idempotent. A second run prints "unchanged" once per lookup key, eight times today. A changed amount creates a new
 // price, moves the lookup key onto it (transfer_lookup_key) and archives the old one, so
 // existing subscriptions keep their price and new checkouts get the new one.
 import { pathToFileURL } from 'node:url';

@@ -3,8 +3,9 @@
 //
 // Order inside checkout.session.completed matters: write the record, then talk to Stripe,
 // then email. A schedule Blake can fix in the dashboard; an enrollment that never got
-// recorded he cannot. Nothing after signature verification may throw out of the handler,
-// because a non-2xx makes Stripe retry and that would mean a second owner email.
+// recorded he cannot. A throw out of the handler is answered 500 so Stripe retries: the
+// leads-store calls are the only things in here that throw, both happen before the owner
+// email, and the guard in onCheckoutCompleted makes every retry safe.
 
 import Stripe from 'stripe';
 import { addLead, getLead } from './lib/leads.mjs';
@@ -39,15 +40,22 @@ export default async (request) => {
       default: return json(200, { ignored: event.type });
     }
   } catch (err) {
+    // 500 on purpose. A 200 here would tell Stripe a paid enrollment was handled when the
+    // store write failed, nothing was recorded and nobody was emailed, and Stripe would
+    // never deliver it again. Retries run for three days and are idempotent.
     console.error('webhook ' + event.type + ' (' + event.id + ') failed: ' + err.message);
-    return json(200, { warning: err.message });
+    return json(500, { error: err.message });
   }
 };
 
 async function onCheckoutCompleted(event) {
   const session = event.data.object;
   const key = 'enrollment:' + session.id;
-  if (await getLead(key)) return { duplicate: true };
+  // The marker is "Blake was told", not "a record exists". A retry or a dashboard resend is
+  // the only second chance the owner email gets; skipping on the record alone spent that
+  // chance on the run where the send failed.
+  const seen = await getLead(key);
+  if (seen && seen.notified) return { duplicate: true };
 
   const timestamp = new Date(event.created * 1000).toISOString();
   const meta = session.metadata || {};
@@ -91,12 +99,17 @@ async function onCheckoutCompleted(event) {
 
   const scheduleNote = await attachSchedule(session, plan, pay);
 
+  // Stripe completes the session before the money lands: a card that attaches but fails its
+  // first invoice arrives here as 'unpaid'. Record it either way, but never hand Blake a
+  // ready-to-send welcome email for a family that has not paid.
+  const paid = record.paymentStatus === 'paid' || record.paymentStatus === 'no_payment_required';
   const sent = await sendEmail({
     to: ownerEmail(),
-    subject: 'New enrollment: ' + planLabel + ' (' + (PAY_LABELS[pay] || pay) + ') - ' + (record.name || record.email),
-    html: enrollmentHtml(record, scheduleNote)
+    subject: (paid ? 'New enrollment: ' : 'UNPAID, do not welcome yet: ') + planLabel + ' (' + (PAY_LABELS[pay] || pay) + ') - ' + (record.name || record.email),
+    html: enrollmentHtml(record, scheduleNote, paid)
   });
-  if (!sent) console.error('owner email not sent for ' + key + '; the record is saved');
+  if (sent) await addLead(key, { ...record, notified: true });
+  else console.error('owner email not sent for ' + key + '; the record is saved, and a Stripe resend of this event will try again');
   return { ok: true };
 }
 
@@ -105,10 +118,9 @@ function customField(session, key) {
   return field?.text?.value || null;
 }
 
-// Checkout creates an open-ended subscription. Split and monthly plans have a fixed number
-// of payments, so a schedule is wrapped around the subscription to stop it (split) or let
-// it run on month to month (monthly) after that many. Returns one line for the owner
-// email; never throws.
+// Checkout creates an open-ended subscription. A monthly plan has a fixed number of term
+// payments, so a schedule is wrapped around the subscription and released to run on month
+// to month after that many. Returns one line for the owner email; never throws.
 async function attachSchedule(session, plan, pay) {
   if (session.mode !== 'subscription' || !session.subscription) return 'not needed, one payment';
   let spec;
@@ -143,16 +155,19 @@ async function attachSchedule(session, plan, pay) {
   }
 }
 
-function enrollmentHtml(record, scheduleNote) {
+function enrollmentHtml(record, scheduleNote, paid) {
   const rows = Object.entries(record)
     .map(([k, v]) => '<tr><th align="left">' + k + '</th><td>' + escapeHtml(v ?? '') + '</td></tr>')
     .join('');
-  return '<h2>New enrollment</h2>' +
+  return '<h2>' + (paid ? 'New enrollment' : 'Enrollment recorded, payment NOT collected') + '</h2>' +
     '<table border="1" cellpadding="4" style="border-collapse:collapse">' + rows + '</table>' +
     '<p><b>Installment schedule:</b> ' + escapeHtml(scheduleNote) + '</p>' +
-    '<h2>Welcome email to paste</h2>' +
-    '<p>Fill the two [brackets], then send it from your own inbox so the YES reply lands there. Stripe already sent the receipt.</p>' +
-    '<div style="border:1px solid #ccc;padding:16px">' + welcomeHtml(record) + '</div>';
+    (paid
+      ? '<h2>Welcome email to paste</h2>' +
+        '<p>Fill the two [brackets], then send it from your own inbox so the YES reply lands there. Stripe already sent the receipt.</p>' +
+        '<div style="border:1px solid #ccc;padding:16px">' + welcomeHtml(record) + '</div>'
+      : '<p><b>No welcome email yet.</b> Stripe reports payment_status ' + escapeHtml(record.paymentStatus ?? 'unknown') +
+        ', so the money has not arrived. Check the payment in the dashboard before you welcome them.</p>');
 }
 
 // The welcome email from docs/source-of-truth/parent-closing-checklist.md with the blanks

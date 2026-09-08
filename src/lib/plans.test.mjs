@@ -101,8 +101,11 @@ test('metadata is strings only, which is what Stripe accepts', () => {
 test('cancelNoticeBy: 3 months minus 7 days, 6 months minus 60 days', () => {
   assert.equal(cancelNoticeBy('2026-09-10T15:00:00Z', 3, 7), '2026-12-03');
   assert.equal(cancelNoticeBy('2026-09-10T15:00:00Z', 6, 60), '2027-01-09');
-  // Month-end start rolls forward the way JS Date does; the point is it never throws.
-  assert.equal(cancelNoticeBy('2026-01-31T00:00:00Z', 3, 7), '2026-04-24');
+  // A start day the target month does not have must clamp to that month's last day, not
+  // overflow into the next one: 31 Jan + 3 months is 30 April, not "31 April" = 1 May.
+  assert.equal(cancelNoticeBy('2026-01-31T00:00:00Z', 3, 7), '2026-04-23');
+  assert.equal(cancelNoticeBy('2026-08-31T15:00:00Z', 6, 60), '2026-12-30', '31 Aug + 6 months is 28 Feb');
+  assert.equal(cancelNoticeBy('2026-08-31T15:00:00Z', 3, 7), '2026-11-23');
   assert.throws(() => cancelNoticeBy('not a date', 3, 7));
 });
 

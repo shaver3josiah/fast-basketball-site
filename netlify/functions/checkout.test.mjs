@@ -45,7 +45,7 @@ test('sessionParams for a one-off payment (eval, full)', () => {
   }
   assert.equal(p.success_url, 'https://example.test/enroll/thanks');
   assert.equal(p.cancel_url, 'https://example.test/enroll?plan=eval&pay=full');
-  assert.equal(p.expires_at, NOW + 86400);
+  assert.equal(p.expires_at, NOW + 82800, 'an hour under Stripe\'s 24h ceiling, not on it');
 
   assert.deepEqual(p.metadata, { plan: 'eval', pay: 'full' });
   assert.deepEqual(p.payment_intent_data, { metadata: p.metadata });
@@ -63,7 +63,7 @@ test('sessionParams for an installment plan (group-6m-1x, monthly)', () => {
   assert.equal(p.payment_intent_data, undefined);
   assert.equal(p.customer_creation, undefined, 'a payment-mode-only parameter, Stripe rejects it on subscriptions');
   assert.equal(p.cancel_url, 'https://example.test/enroll?plan=group-6m-1x&pay=monthly');
-  assert.equal(p.expires_at, NOW + 86400);
+  assert.equal(p.expires_at, NOW + 82800);
 
   assert.deepEqual(Object.keys(p.metadata).sort(), ['months', 'noticeDays', 'pay', 'plan', 'totalCents']);
   for (const [k, v] of Object.entries(p.metadata)) assert.equal(typeof v, 'string', 'metadata.' + k + ' must be a string');
@@ -112,11 +112,13 @@ test('urlencoded honeypot is a 303 to the thanks page', async () => {
   assert.equal(res.headers.get('location'), '/enroll/thanks');
 });
 
+// The #enErr fragment is the whole point of the no-JS branch: the static page can only
+// show the failure through #enErr:target.
 test('urlencoded failure is a 303 back to the form with the selection kept', async () => {
   const form = new URLSearchParams({ plan: 'eval', pay: 'full', email: 'parent@example.com', 'en-hp': '' });
   const res = await handler(post(form.toString(), 'application/x-www-form-urlencoded'), { ip: '127.0.0.1' });
   assert.equal(res.status, 303);
-  assert.equal(res.headers.get('location'), '/enroll?plan=eval&pay=full&err=1');
+  assert.equal(res.headers.get('location'), '/enroll?plan=eval&pay=full&err=1#enErr');
 });
 
 test('valid request with no STRIPE_SECRET_KEY is 503 payments not configured', async () => {
@@ -128,5 +130,5 @@ test('valid request with no STRIPE_SECRET_KEY is 503 payments not configured', a
   const form = new URLSearchParams({ plan: 'group-3m-1x', pay: 'monthly', email: 'parent@example.com', 'guardian-confirmed': 'yes', 'en-hp': '' });
   const formRes = await handler(post(form.toString(), 'application/x-www-form-urlencoded'), { ip: '127.0.0.1' });
   assert.equal(formRes.status, 303);
-  assert.equal(formRes.headers.get('location'), '/enroll?plan=group-3m-1x&pay=monthly&err=1');
+  assert.equal(formRes.headers.get('location'), '/enroll?plan=group-3m-1x&pay=monthly&err=1#enErr');
 });

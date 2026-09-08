@@ -42,7 +42,9 @@ export async function listLeads() {
 export async function addLead(key, record) {
   if (LOCAL) {
     const path = LOCAL_PATH();
-    const existing = await listLeads();
+    // Same key overwrites, the way Blobs' setJSON does, so re-saving a record does not
+    // leave the local file holding two copies of it.
+    const existing = (await listLeads()).filter((lead) => lead.key !== key);
     existing.push({ key, ...record });
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, JSON.stringify(existing, null, 2) + '\n');

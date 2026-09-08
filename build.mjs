@@ -31,7 +31,7 @@ const TRAINING_PAGES = [
   {
     slug: 'group-training', textKey: 'prog.2', title: 'Group Training Membership | Fast Basketball', label: 'Group Training Membership',
     description: 'Group basketball training in north Broward on a 3 or 6 month term, once a week or unlimited. $450 to $1,000, every figure listed. No quotes over text.',
-    price: { amount: '$450\u2013$1,000', unit: 'Per Term', line: '3 months: $450 once a week, or $650 unlimited. 6 months: $750 once a week, or $1,000 unlimited. Paying monthly instead of up front costs more, and both figures are on the page.' },
+    price: { amount: '$450\u2013$1,000', unit: 'Per Term', line: '3 months: $450 once a week, or $650 unlimited. 6 months: $750 once a week, or $1,000 unlimited. Paying monthly instead of up front costs more: $550 for 3 months once a week, $900 for 6.' },
     features: ['Weekly 60 minute sessions with level matched players', 'Unlimited means up to two sessions a week', 'Journal, homework, and daily check-ins in the members area', 'Rained out? The session moves to Zoom that evening'],
     next: 'Three months is the minimum because that is how long it takes a new habit to survive speed, contact, and a Friday night. Six months costs one month less than two three month terms. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.'
   },
@@ -515,7 +515,7 @@ function step11c_termsPage(content, prelude) {
   // pricing Blake set in his Sales Mastery worksheet, and is labelled so nobody mistakes it
   // for agreement text.
   body += '<h3 class="terms-sub">Published rates</h3>\n';
-  body += '<p>The $840 above is the figure in the signed agreement, which is being re-issued to match the rates below. Those rates are what Coach Blake charges today, and they are the numbers on your enrollment call:</p>\n';
+  body += '<p>The $840 above, and the $420 renewal figure in the last section of this page, are the figures in the signed agreement, which is being re-issued to match the rates below. Those rates are what Coach Blake charges today, and they are the numbers on your enrollment call:</p>\n';
   body += li([
     'Evaluation session: $50 for 60 minutes. $35 if booked within 48 hours of your intro call.',
     'Group training membership, 3 months: $450 once a week paid in full, or $550 paid monthly. $650 unlimited, paid in full.',
@@ -626,7 +626,7 @@ function finePrint(programsHtml) {
 // catalog the checkout function resolves prices from, so a card cannot promise a figure
 // Stripe does not charge. The form posts to the function on its own (no JS: the function
 // answers 303 to Stripe); enroll.js upgrades it to fetch + location.assign and wires the
-// chosen plan to the three pay-option amounts. /enroll/thanks is copy only: the webhook,
+// chosen plan to the two pay-option amounts. /enroll/thanks is copy only: the webhook,
 // not the redirect, is the record of a payment, so the page never says one succeeded.
 function step11d_enrollPages(sections, content, prelude) {
   const sms = '<a href="sms:' + CONTACT.tel + '">' + CONTACT.phone + '</a>';
@@ -649,6 +649,9 @@ function step11d_enrollPages(sections, content, prelude) {
     } else {
       out += '<span class="en-card-t">' + plan.months + ' months, ' + escapeHtml(plan.frequency) + '</span>\n';
       out += '<span class="prog-price">' + dollars(totalCents(key, 'full')) + '<small>paid in full</small></span>\n';
+      // The monthly figure belongs on the card, not only beside the pay radio: that span is
+      // filled by enroll.js, so without JS this is the only place the parent can read it.
+      if (payOptionsFor(key).includes('monthly')) out += '<span class="en-card-d">Or ' + escapeHtml(payLine(key, 'monthly')) + '.</span>\n';
       out += '<span class="en-card-d">Group Training Membership. Weekly 60 minute sessions with level matched players. Cancel in writing ' + plan.noticeDays + ' days before the end of the term or it renews.</span>\n';
     }
     return out + '</span>\n</label>\n';
@@ -660,11 +663,16 @@ function step11d_enrollPages(sections, content, prelude) {
   body += '<p class="lede">This is step 4 of enrollment. If you have not had your call with Coach Blake yet, <a href="/#contact">book it first</a>: plans are chosen on the enrollment call, after he has seen your player. Nothing here replaces that conversation.</p>\n';
   body += '</div>\n</header>\n';
   body += '<section class="band band-ink">\n<div class="shell">\n';
+  // The 48-hour evaluation rate is revealed by enroll.js only, so without JS its link does
+  // nothing and the $50 card is the only evaluation on the page. Say so rather than sell it.
+  body += '<noscript><p class="trust-line">JavaScript is off. Everything on this page still works. If Coach Blake quoted you the 48-hour evaluation rate, text ' + sms + ' for that link rather than paying the listed rate.</p></noscript>\n';
   body += '<form id="enForm" class="en-form" method="post" action="/.netlify/functions/checkout">\n';
 
   body += '<fieldset class="en-fs">\n' + legend(1, 'Choose your plan');
   body += '<div class="en-plans">\n' + Object.keys(PLANS).map(card).join('') + '</div>\n</fieldset>\n';
 
+  // The pay options a plan does not price are hidden by a CSS rule keyed off the card's own
+  // data-monthly attribute (features.css), which is how the no-JS page matches syncPay().
   body += '<fieldset class="en-fs" id="enPay">\n' + legend(2, 'Choose how to pay');
   body += '<div class="en-pays">\n';
   for (const pay of Object.keys(PAY_LABELS)) {
@@ -682,7 +690,10 @@ function step11d_enrollPages(sections, content, prelude) {
     '<span>I\'m the player\'s parent or guardian, or I\'m 18 or older, and these are my own contact details.</span>\n</label>\n</div>\n';
   // Honeypot, hidden exactly as the playbook form hides its own.
   body += '<p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="en-hp" id="enHp" tabindex="-1" autocomplete="off"></label></p>\n';
-  body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;"></p>\n';
+  // The copy ships in the page instead of being written by JS, because the caller that
+  // needs it most is the no-JS form POST: checkout.mjs 303s back to ?err=1#enErr and
+  // #enErr:target is what unhides it. enroll.js replaces the text on the fetch path.
+  body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;">That did not go through. Check the plan and payment option you picked and try again, or text Coach Blake at ' + CONTACT.phone + ' and he will send your link.</p>\n';
   body += '<button type="submit" class="btn btn-primary" style="width:100%;">Continue to Secure Checkout</button>\n';
   body += '<p class="trust-line">You finish on Stripe\'s secure checkout page. There you tick the terms box and type your full name to agree, exactly as the agreement asks. Card details never touch this site.</p>\n';
   body += '</div>\n</fieldset>\n</form>\n';
@@ -692,7 +703,7 @@ function step11d_enrollPages(sections, content, prelude) {
 
   writeHtml(resolve(DIST, 'enroll', 'index.html'), buildSimplePage({
     title: 'Enroll | Fast Basketball',
-    description: 'Step 4 of enrollment at Fast Basketball: choose the plan from your enrollment call, pick pay in full, split or monthly, and finish on Stripe\'s secure checkout.',
+    description: 'Step 4 of enrollment at Fast Basketball: choose the plan from your enrollment call, pick pay in full or monthly, and finish on Stripe\'s secure checkout.',
     canonicalPath: '/enroll',
     bodyHtml: body,
     content,
@@ -713,7 +724,7 @@ function step11d_enrollPages(sections, content, prelude) {
   thanks += '</div>\n</section>\n</main>\n';
   writeHtml(resolve(DIST, 'enroll', 'thanks', 'index.html'), buildSimplePage({
     title: 'Thanks | Fast Basketball',
-    description: 'Your enrollment is in. Watch for the receipt from Stripe and the welcome email from Coach Blake.',
+    description: 'Watch for the receipt from Stripe and the welcome email from Coach Blake within 12 hours.',
     canonicalPath: '/enroll/thanks',
     bodyHtml: thanks,
     content,

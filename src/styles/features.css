@@ -168,6 +168,21 @@ body.egg-open{overflow:hidden;}
 .en-pay-l{display:block;font-family:var(--font-eyebrow);font-size:.82rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--bone);}
 .en-pay-a{display:block;margin-top:3px;font-size:.9rem;color:var(--text-body-dark);}
 .en-pay-a:empty{display:none;}
+/* Without JS, syncPay() is not there to disable a pay option the plan does not price, so
+   the same gate runs off the card's own data-monthly attribute, which build.mjs writes from
+   the catalog — no plan key is repeated here, so it cannot drift from plans.mjs.
+   ponytail: an affordance, not a guard. A radio already checked when the plan changes still
+   posts, and the server's 422, now visible through #enErr below, is what catches that. */
+.en-form:has(.en-card:not([data-monthly]) input:checked) .en-pay:has(input[value="monthly"]){display:none;}
+/* Without JS this is the only thing that can show a checkout failure: checkout.mjs 303s
+   back to /enroll?...&err=1#enErr and the page ships the copy hidden. !important because
+   build.mjs sets display:none inline, which keeps enroll.js in charge on the fetch path.
+   :not(:empty) so that once enroll.js clears the text the paragraph collapses again. */
+#enErr:target:not(:empty){display:block !important;}
+/* --slate is 3.3:1 on the card's dark surface, under AA. This is the value base.css already
+   gives the same caption on a dark card (.prog-c.flag .prog-price small); the light theme
+   keeps --slate, which passes there and which this value would not. */
+html:not(.fb-light) .en-card .prog-price small{color:#8A8A96;}
 .en-form .pb-form{max-width:640px;}
 html.fb-light .en-lg,html.fb-light .en-card-t,html.fb-light .en-pay-l{color:var(--court-black);}
 html.fb-light .en-card-b,html.fb-light .en-pay{background:var(--bone);border-color:var(--chalk-2);}

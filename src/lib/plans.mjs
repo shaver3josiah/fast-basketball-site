@@ -160,7 +160,12 @@ export function catalog() {
 export function cancelNoticeBy(startIso, months, noticeDays) {
   const d = new Date(startIso);
   if (Number.isNaN(d.getTime())) throw new Error('bad start date: ' + startIso);
+  const day = d.getUTCDate();
   d.setUTCMonth(d.getUTCMonth() + Number(months));
+  // A start day the target month does not have overflows: 31 Aug + 6 months is "31 Feb",
+  // which JS rolls into March, handing the parent a deadline days past the term it belongs
+  // to. setUTCDate(0) steps back to the last day of the month that was meant.
+  if (d.getUTCDate() !== day) d.setUTCDate(0);
   d.setUTCDate(d.getUTCDate() - Number(noticeDays));
   return d.toISOString().slice(0, 10);
 }
