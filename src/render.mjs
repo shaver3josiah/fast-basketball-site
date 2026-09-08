@@ -1,7 +1,7 @@
 ﻿import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
-import { absoluteUrl, AREA_SERVED, PROGRAM_PAGES, CONTACT, OFFERS } from './lib/site-config.mjs';
+import { absoluteUrl, AREA_SERVED, HEADLINE_AREAS, PROGRAM_PAGES, CONTACT, OFFERS } from './lib/site-config.mjs';
 import { faqPage, jsonLdScript, breadcrumbList, businessEntity } from './lib/structured-data.mjs';
 import { CONTENT_GROUPS } from './lib/content-groups.mjs';
 
@@ -28,9 +28,9 @@ const IMAGE_RENDER_RULES = {
 
 const FAQ_PAIRS = [
   { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
-  { question: 'Where do sessions actually happen?', answer: 'City parks and partner courts across north Broward County. You get the exact location when you book. If the court is too wet to play, the session moves to Zoom that evening rather than disappearing.' },
+  { question: 'Where do sessions actually happen?', answer: 'Courts across South Florida, with Fort Lauderdale, Miami and Hollywood at the center. You get the exact location when you book.' },
   { question: 'How long is the commitment, and why?', answer: 'Three months minimum, or six. Coach Blake asks for three because that is how long it takes a new habit to survive speed, contact, and a Friday night. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.' },
-  { question: 'What does the evaluation session cost?', answer: '$50 for sixty minutes on court. Book it within 48 hours of your intro call and it is $35. The call itself is free and takes 15 to 20 minutes.' },
+  { question: 'Is there a cost for the evaluation session?', answer: 'Yes. Coach Blake goes over it on your call, along with the membership options, so you have the full picture before anything is booked.' },
   { question: 'What happens if we miss a session?', answer: 'Give 24 hours notice and Coach Blake will move it. Miss without notice and the session is forfeited: there are no private makeups and missed sessions do not roll over. All sales are final, so the honest answer is to put every session in the calendar.' },
   { question: 'Do you help with college recruiting?', answer: 'Yes. Coach Blake spent the last two seasons on college staffs at the NJCAA and NCAA Division I levels, evaluating high school film from the recruiting side. Film review and college coaching advice are available on request alongside any program.' }
 ];
@@ -40,11 +40,15 @@ const FAQ_PAIRS = [
 // service area is renamed, not two — falling back to AREA_SERVED (in its existing order)
 // when a slot is absent so an un-seeded content.json renders exactly what it always has.
 // `count` caps how many slots the caller wants; the footer has only ever shown 4.
+// Tile order on the homepage: the three headline cities, then the five with a page.
+const AREA_TILE_ORDER = [...HEADLINE_AREAS.map((a) => a.name), ...AREA_SERVED];
+const PAGED = new Set(AREA_SERVED);
+
 function deriveAreaNames(content, count) {
   const text = (content && content.text) || {};
   const names = [];
   for (let i = 1; i <= count; i++) {
-    names.push(text['area.' + i + '.name'] || AREA_SERVED[i - 1]);
+    names.push(text['area.' + i + '.name'] || AREA_TILE_ORDER[i - 1]);
   }
   return names;
 }
@@ -259,7 +263,9 @@ export function fixAreaLinks(html) {
   let out = html;
   for (const name of AREA_SERVED) {
     const slug = name.toLowerCase().replace(/\s+/g, '-');
-    const anchorMarker = '<b>' + name + '</b>';
+    // The tile's <b> carries a data-edit attribute since the editor work, so match on the
+    // closing side of the name rather than a bare <b> tag, which never occurs any more.
+    const anchorMarker = '>' + name + '</b>';
     const anchorIndex = out.indexOf(anchorMarker);
     if (anchorIndex === -1) continue;
     const hrefStart = out.lastIndexOf('href="#contact"', anchorIndex);
@@ -289,7 +295,7 @@ export function fixContactForm(html) {
 // same way fixPlaybookForm rewrites #pbPos/#pbFocus below, keeps one source — area.N.name
 // — for the tiles, the footer and this form instead of a fourth hand-typed copy.
 export function fixContactAreaSelect(html, content) {
-  const options = deriveAreaNames(content, 5).map((name) => '<option>' + escapeHtml(name) + '</option>').join('') + '<option>Other</option>';
+  const options = deriveAreaNames(content, AREA_TILE_ORDER.length).map((name) => '<option>' + escapeHtml(name) + '</option>').join('') + '<option>Other</option>';
   return html.replace(/<select id="cArea" name="area">[\s\S]*?<\/select>/, '<select id="cArea" name="area">' + options + '</select>');
 }
 
@@ -638,8 +644,8 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   // cannot describe the business differently. meta.desc can override the page's own
   // description, but the JSON-LD business entity keeps this exact constant — the
   // contract only asks the <title>/meta description/og tags to read from content.text.
-  const HOMEPAGE_DESCRIPTION = 'Group and private basketball training in north Broward, FL with Coach Blake Kingsley. Terms from $450, every price on the page. Start with a call.';
-  const HOMEPAGE_TITLE = 'Basketball Training in Coral Springs, FL | Fast Basketball';
+  const HOMEPAGE_DESCRIPTION = 'Group and private basketball training in South Florida with Coach Blake Kingsley: Fort Lauderdale, Miami and Hollywood. Start with a call.';
+  const HOMEPAGE_TITLE = 'Basketball Training in South Florida | Fast Basketball';
 
   let page = '';
   page += buildHead({
@@ -652,7 +658,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
     jsonLd: [
       // The canonical business entity. It lived in _prelude.html's <head>, which the
       // build never emits, so the homepage shipped no business identity at all.
-      businessEntity({ description: HOMEPAGE_DESCRIPTION, email: CONTACT.email, telephone: CONTACT.tel, offers: OFFERS, suburbs }),
+      businessEntity({ description: HOMEPAGE_DESCRIPTION, email: CONTACT.email, telephone: CONTACT.tel, offers: OFFERS, suburbs, extraAreas: HEADLINE_AREAS }),
       faqPage(deriveFaqPairs(content)),
       breadcrumbList([{ name: 'Home', path: '/' }])
     ]
@@ -692,12 +698,12 @@ export function buildFooter({ content, anchors = false } = {}) {
   const contactHref = anchors ? '#contact' : '/contact';
   const pricingHref = anchors ? '#programs' : '/#programs';
   const text = (content && content.text) || {};
-  const tagline = escapeHtml(text['ft.tagline'] || 'Private basketball training in north Broward. Built by a college coach for players chasing the next level.');
+  const tagline = escapeHtml(text['ft.tagline'] || 'Group and private basketball training in South Florida. Built by a college coach for players chasing the next level.');
   const col1h = escapeHtml(text['ft.col1h'] || 'Training');
   const col2h = escapeHtml(text['ft.col2h'] || 'Areas');
   const col3h = escapeHtml(text['ft.col3h'] || 'More');
   const bot = escapeHtml(text['ft.bot'] || 'Fast Basketball. Elevate to Execute.');
-  const city = escapeHtml(text['ft.city'] || 'Coral Springs, Florida');
+  const city = escapeHtml(text['ft.city'] || 'South Florida');
   const mob1 = escapeHtml(text['ft.mob1'] || 'Book a Call');
   const mob2 = escapeHtml(text['ft.mob2'] || 'See Pricing');
   const areaNames = deriveAreaNames(content, 4);
@@ -713,7 +719,7 @@ export function buildFooter({ content, anchors = false } = {}) {
     // the real <title>/H1 of the four /training/<slug> pages this column links to, so
     // editing them here without renaming those pages would make the footer lie.
     '<div class="ft-col"><h3 data-edit="ft.col1h">' + col1h + '</h3>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
-    '<div class="ft-col"><h3 data-edit="ft.col2h">' + col2h + '</h3>' + areaNames.map((name) => '<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
+    '<div class="ft-col"><h3 data-edit="ft.col2h">' + col2h + '</h3>' + areaNames.map((name) => '<a href="' + (PAGED.has(name) ? '/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') : '/#areas') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
     '<div class="ft-col"><h3 data-edit="ft.col3h">' + col3h + '</h3><a href="/#enroll">How to Enroll</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
     '</div>\n</div>\n' +
     // OWNER NOTE: the old line here claimed copyright and "all rights reserved".

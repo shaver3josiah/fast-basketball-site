@@ -2,29 +2,27 @@
   <div class="shell">
     <div class="head">
       <div class="eyebrow" data-edit="prog.eyebrow">Training &amp; Pricing</div>
-      <h2 data-edit="prog.h2">Every price, on the page.</h2>
-      <p class="lede" data-edit="prog.lede">Group training on a 3 or 6 month term, one on one coaching by the term, and an evaluation session to start. No quotes over text and no surprises on the enrollment call: what you see here is what Coach Blake charges.</p>
+      <h2 data-edit="prog.h2">Pricing and options.</h2>
+      <p class="lede" data-edit="prog.lede">Group training on a 3 to 6 month commitment, private 1-on-1 coaching by consultation, and an evaluation session to start.</p>
     </div>
-    <!-- Three parallel options, no stagger. Amounts trace to docs/source-of-truth/fast-basketball-facts.md
-         and must match PLANS in src/lib/plans.mjs, TRAINING_PAGES in build.mjs, OFFERS in
-         src/lib/site-config.mjs and the /terms rate card. plans.mjs is the one that charges cards. -->
+    <!-- Three parallel options, no stagger. Group amounts trace to docs/source-of-truth/fast-basketball-facts.md
+         and must match PLANS in src/lib/plans.mjs, TRAINING_PAGES in build.mjs and OFFERS in
+         src/lib/site-config.mjs. The evaluation and the 1-on-1 carry NO public price by Blake's
+         decision (September 2026): he quotes both on the call. Do not add one back here. -->
     <div class="prog">
       <div class="prog-c">
         <span class="prog-tag" data-edit="prog.1.tag">Start Here</span>
         <div class="prog-top">
           <h3 data-edit="prog.1.title">Evaluation Session</h3>
-          <div class="prog-price"><span data-edit="prog.1.price">$50</span><small data-edit="prog.1.unit">60 Minutes</small></div>
         </div>
         <p data-edit="prog.1">Sixty minutes on court with Coach Blake. He gets to know your player, watches them move, and finds out where they actually are. It is the step before any commitment, for both sides.</p>
         <ul class="prog-list">
-          <li data-edit="prog.1.li1">$35 when you book within 48 hours of your intro call</li>
-          <li data-edit="prog.1.li2">Movement, handle, and shooting form screen</li>
-          <li data-edit="prog.1.li3">Live reads against a defender</li>
-          <li data-edit="prog.1.li4">Enrollment call within 24 hours: what he saw, and the plan</li>
+          <li data-edit="prog.1.li1">Movement, handle, and shooting form screen</li>
+          <li data-edit="prog.1.li2">Live reads against a defender</li>
+          <li data-edit="prog.1.li3">Enrollment call within 24 hours: what we saw, and the plan</li>
         </ul>
         <a href="#contact" class="btn btn-primary" data-program="Evaluation Session" data-edit="prog.1.cta">Book Your Call</a>
-        <p class="trust-line" data-edit="prog.1.trust">The call is free and takes 15 to 20 minutes. Evaluation slots come out of it.</p>
-        <p class="trust-line"><a href="/enroll?plan=eval" data-edit="prog.1.enroll">Already had your call? Book the evaluation</a></p>
+        <p class="trust-line" data-edit="prog.1.trust">The call is free and takes 15 to 20 minutes.</p>
       </div>
 
       <div class="prog-c flag">
@@ -34,7 +32,7 @@
           <!-- .prog-price is white-space:nowrap; keep <small> to two short words. -->
           <div class="prog-price"><span data-edit="prog.2.price">$450&ndash;$1,000</span><small data-edit="prog.2.unit">Per Term</small></div>
         </div>
-        <p data-edit="prog.2">Weekly 60 minute group sessions with players at a similar level, on a 3 or 6 month term. Three months is the minimum because that is how long a habit takes to hold up in a game. Unlimited means up to two sessions a week.</p>
+        <p data-edit="prog.2">60 minute group sessions with players at a similar level. 3-6 month commitment.</p>
         <table class="price-grid">
           <caption class="sr-only">Group training membership prices by term and weekly sessions</caption>
           <thead><tr><th scope="col" data-edit="prog.2.th0">Term</th><th scope="col" data-edit="prog.2.th1">Once a week</th><th scope="col" data-edit="prog.2.th2">Unlimited</th></tr></thead>
@@ -52,28 +50,24 @@
           </tbody>
         </table>
         <ul class="prog-list">
-          <li data-edit="prog.2.li1">Six months costs one month less than two three month terms</li>
+          <li data-edit="prog.2.li1">Unlimited means up to two sessions a week</li>
           <li data-edit="prog.2.li2">Pay in full, or spread it monthly at the higher figure shown</li>
           <li data-edit="prog.2.li3">Journal, homework, and daily check-ins in the members area</li>
-          <li data-edit="prog.2.li4">Rained out? The session moves to Zoom that evening</li>
         </ul>
         <a href="#contact" class="btn btn-primary" data-program="Group Training Membership" data-edit="prog.2.cta">Book Your Call</a>
-        <p class="trust-line"><a href="/enroll" data-edit="prog.2.enroll">Already had your enrollment call? Choose your plan</a></p>
       </div>
 
+      <!-- Blake's card, September 2026: title, subtitle, one paragraph, "Limited Availability",
+           "Pricing Available After Consultation", "Book a Consultation". No price, no bullets. -->
       <div class="prog-c">
+        <span class="prog-tag" data-edit="prog.3.tag">Limited Availability</span>
         <div class="prog-top">
-          <h3 data-edit="prog.3.title">Private One on One</h3>
-          <div class="prog-price"><span data-edit="prog.3.price">$3,000</span><small data-edit="prog.3.unit">6-Month Term</small></div>
+          <h3 data-edit="prog.3.title">Private 1-on-1 Training</h3>
         </div>
-        <p data-edit="prog.3">A six month term with the whole session on one player, built around the two or three things standing between them and the next level. Coach Blake sets the schedule with you and invoices the term directly.</p>
-        <ul class="prog-list">
-          <li data-edit="prog.3.li1">Footwork, handle, finishing, and shooting blocks</li>
-          <li data-edit="prog.3.li2">Same journal and homework standard as the membership</li>
-          <li data-edit="prog.3.li3">Film review and college coaching advice on request</li>
-          <li data-edit="prog.3.li4">Invoiced directly rather than bought online</li>
-        </ul>
-        <a href="#contact" class="btn btn-ghost" data-program="Private One on One" data-edit="prog.3.cta">Ask About Availability</a>
+        <p class="prog-sub" data-edit="prog.3.sub">Customized Player Development</p>
+        <p data-edit="prog.3">Individualized training built around the athlete's specific goals, strengths, and areas for improvement.</p>
+        <a href="#contact" class="btn btn-ghost" data-program="Private 1-on-1 Training" data-edit="prog.3.cta">Book a Consultation</a>
+        <p class="trust-line" data-edit="prog.3.trust">Pricing available after consultation.</p>
       </div>
     </div>
 
@@ -88,7 +82,7 @@
         <li><b data-edit="fp.4b">Auto-renews</b> <span data-edit="fp.4">unless you cancel in writing 7 days before the end of a 3 month term, or 60 days before the end of a 6 month term.</span></li>
         <li><b data-edit="fp.5b">Early exit</b> <span data-edit="fp.5">costs 75% of what is left on the contract.</span></li>
       </ul>
-      <p class="fp-note"><span data-edit="fp.note1">Read the full </span><a href="/terms" data-edit="fp.link">terms and training agreement</a><span data-edit="fp.note2"> before your enrollment call. If you do not agree with them, do not enroll. Coach Blake would rather lose the sale than the standard.</span></p>
+      <p class="fp-note"><span data-edit="fp.note1">Read the full </span><a href="/terms" data-edit="fp.link">terms and training agreement</a><span data-edit="fp.note2"> before your enrollment call. If you do not agree with them, do not enroll.</span></p>
     </div>
   </div>
 </section>

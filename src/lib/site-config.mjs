@@ -7,9 +7,20 @@ export const SITE_URL = process.env.SITE_URL || process.env.URL || 'https://fast
 
 export const BUSINESS_NAME = 'Fast Basketball';
 
-// Must stay in lockstep with src/data/suburbs.json: the footer builds
-// /basketball-training/<slug> links from these names, so a name with no matching
-// suburb record is a 404 in the footer of every page.
+// The three cities Blake headlines (September 2026: "South Florida", with Fort Lauderdale,
+// Miami and Hollywood as the specifics). They have NO dedicated page and no suburb record:
+// their tiles stay on #contact, the footer sends them to /#areas, and they appear in the
+// contact select and the LocalBusiness areaServed. Building a page for one needs verified
+// local data in src/data/suburbs.json, the same bar the five below cleared.
+export const HEADLINE_AREAS = [
+  { name: 'Fort Lauderdale', county: 'Broward County' },
+  { name: 'Miami', county: 'Miami-Dade County' },
+  { name: 'Hollywood', county: 'Broward County' }
+];
+
+// Cities WITH a dedicated page. Must stay in lockstep with src/data/suburbs.json: fixAreaLinks
+// and the footer build /basketball-training/<slug> links from these names, so a name with no
+// matching suburb record is a 404.
 export const AREA_SERVED = [
   'Coral Springs', 'Parkland', 'Coconut Creek', 'Margate', 'Tamarac'
 ];
@@ -31,10 +42,10 @@ export const CONTACT = {
 
 // Published rates, used for the LocalBusiness makesOffer structured data. Amounts must
 // match src/templates/sections/programs.html, TRAINING_PAGES in build.mjs and /terms.
+// Only the group membership is publicly priced. The evaluation and the 1-on-1 are quoted on
+// the call (Blake, September 2026), so they are not offers with a price.
 export const OFFERS = [
-  { name: 'Evaluation Session', price: '50', unit: 'per 60 minute session', path: '/training/evaluation' },
-  { name: 'Group Training Membership', price: '450', maxPrice: '1000', unit: 'per 3 or 6 month term', path: '/training/group-training' },
-  { name: 'Private One on One', price: '3000', unit: 'per 6 month term', path: '/training/private' }
+  { name: 'Group Training Membership', price: '450', maxPrice: '1000', unit: 'per 3 or 6 month term', path: '/training/group-training' }
 ];
 
 export function absoluteUrl(path) {

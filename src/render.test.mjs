@@ -9,9 +9,8 @@
 import assert from 'node:assert/strict';
 import {
   applyTextEdits, applyAttrEdits, escapeHtml, escapeAttr,
-  buildHead, buildFooter, fixContactAreaSelect, deriveFaqPairs
-} from './render.mjs';
-import { AREA_SERVED } from './lib/site-config.mjs';
+  buildHead, buildFooter, fixContactAreaSelect, deriveFaqPairs, fixAreaLinks } from './render.mjs';
+import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
 
 // ---------------------------------------------------------------- applyTextEdits: replace-all
 
@@ -121,35 +120,37 @@ import { AREA_SERVED } from './lib/site-config.mjs';
   assert.ok(/<h3[^>]*>Training<\/h3>/.test(footer), 'Training header fallback: ' + footer);
   assert.ok(/<h3[^>]*>Areas<\/h3>/.test(footer), 'Areas header fallback: ' + footer);
   assert.ok(/<h3[^>]*>More<\/h3>/.test(footer), 'More header fallback: ' + footer);
-  assert.ok(footer.includes('Private basketball training in north Broward. Built by a college coach for players chasing the next level.'), 'tagline fallback: ' + footer);
+  assert.ok(footer.includes('Group and private basketball training in South Florida. Built by a college coach for players chasing the next level.'), 'tagline fallback: ' + footer);
   assert.ok(footer.includes('Fast Basketball. Elevate to Execute.'), 'bottom line fallback: ' + footer);
-  // The Areas column has only ever shown the first 4 of AREA_SERVED's 5 cities.
-  for (const name of AREA_SERVED.slice(0, 4)) {
-    assert.ok(footer.includes('<a href="/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') + '">' + name + '</a>'), 'area link fallback missing for ' + name);
+  // The Areas column shows the first 4 tiles: the three headline cities, which have no page and
+  // so link to the areas section, then the first paged city, which links to its page.
+  for (const a of HEADLINE_AREAS) {
+    assert.ok(footer.includes('<a href="/#areas">' + a.name + '</a>'), 'headline area must link to /#areas: ' + a.name);
   }
-  assert.ok(!footer.includes('Tamarac'), 'the footer must still cap at 4 areas, not all 5: ' + footer);
+  assert.ok(footer.includes('<a href="/basketball-training/coral-springs">Coral Springs</a>'), 'first paged city must link to its page: ' + footer);
+  assert.ok(!footer.includes('Tamarac'), 'the footer must still cap at 4 areas: ' + footer);
 
   // Override still reads through: a seeded area.2.name replaces just that slot.
   const overridden = buildFooter({ content: { text: { 'area.2.name': 'Renamed City' } } });
   assert.ok(overridden.includes('Renamed City'), 'area.2.name override must reach the footer: ' + overridden);
-  assert.ok(!overridden.includes('>Parkland<'), 'the overridden slot must not also show its old name: ' + overridden);
+  assert.ok(!overridden.includes('>Miami<'), 'the overridden slot must not also show its old name: ' + overridden);
 }
 
 {
   const selectFixture = '<select id="cArea" name="area">\n<option>Coral Springs</option><option>Parkland</option>\n<option>Other</option>\n</select>';
   const out = fixContactAreaSelect(selectFixture, { text: {} });
   const expected = '<select id="cArea" name="area">' +
-    AREA_SERVED.map((n) => '<option>' + n + '</option>').join('') +
+    [...HEADLINE_AREAS.map((a) => a.name), ...AREA_SERVED].map((n) => '<option>' + n + '</option>').join('') +
     '<option>Other</option></select>';
-  assert.equal(out, expected, 'contact area select fallback must list all 5 AREA_SERVED cities plus Other: ' + out);
+  assert.equal(out, expected, 'contact area select fallback must list the 3 headline cities, then all 5 paged cities, plus Other: ' + out);
 }
 
 {
   const FAQ_FALLBACK = [
     { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
-    { question: 'Where do sessions actually happen?', answer: 'City parks and partner courts across north Broward County. You get the exact location when you book. If the court is too wet to play, the session moves to Zoom that evening rather than disappearing.' },
+    { question: 'Where do sessions actually happen?', answer: 'Courts across South Florida, with Fort Lauderdale, Miami and Hollywood at the center. You get the exact location when you book.' },
     { question: 'How long is the commitment, and why?', answer: 'Three months minimum, or six. Coach Blake asks for three because that is how long it takes a new habit to survive speed, contact, and a Friday night. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.' },
-    { question: 'What does the evaluation session cost?', answer: '$50 for sixty minutes on court. Book it within 48 hours of your intro call and it is $35. The call itself is free and takes 15 to 20 minutes.' },
+    { question: 'Is there a cost for the evaluation session?', answer: 'Yes. Coach Blake goes over it on your call, along with the membership options, so you have the full picture before anything is booked.' },
     { question: 'What happens if we miss a session?', answer: 'Give 24 hours notice and Coach Blake will move it. Miss without notice and the session is forfeited: there are no private makeups and missed sessions do not roll over. All sales are final, so the honest answer is to put every session in the calendar.' },
     { question: 'Do you help with college recruiting?', answer: 'Yes. Coach Blake spent the last two seasons on college staffs at the NJCAA and NCAA Division I levels, evaluating high school film from the recruiting side. Film review and college coaching advice are available on request alongside any program.' }
   ];
@@ -160,6 +161,16 @@ import { AREA_SERVED } from './lib/site-config.mjs';
   assert.equal(overridden[1].question, 'New question?');
   assert.equal(overridden[1].answer, FAQ_FALLBACK[1].answer, 'an untouched faq.N.a must keep its fallback');
   assert.deepEqual(overridden[0], FAQ_FALLBACK[0], 'other pairs must be untouched by one override');
+}
+
+{
+  // Tiles carry data-edit on the <b>; a paged city must still get its page link, and a
+  // headline city with no page must stay on #contact.
+  const tiles = '<a href="#contact" class="area"><b data-edit="area.1.name">Fort Lauderdale</b><span>Home Base</span></a>' +
+    '<a href="#contact" class="area"><b data-edit="area.4.name">Coral Springs</b><span>Tier 1</span></a>';
+  const linked = fixAreaLinks(tiles);
+  assert.ok(linked.includes('<a href="/basketball-training/coral-springs" class="area"><b data-edit="area.4.name">Coral Springs</b>'), 'paged city tile must link to its page: ' + linked);
+  assert.ok(linked.includes('<a href="#contact" class="area"><b data-edit="area.1.name">Fort Lauderdale</b>'), 'headline city without a page must stay on #contact: ' + linked);
 }
 
 console.log('render: ok');

@@ -730,3 +730,7 @@ html.fb-light .evd-word{filter:none;}
   .prog-c:nth-child(3):last-child{grid-column:1/-1;}
   .prog-c:nth-child(3):last-child .prog-list{columns:2;column-gap:34px;}
 }
+
+/* ---------- September 2026 copy: multi-paragraph section intros, and the 1-on-1 card subtitle ---------- */
+.head .lede + .lede{margin-top:14px;}
+.prog-sub{font-family:var(--font-eyebrow);font-weight:600;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--red-deep);margin:-4px 0 14px;}

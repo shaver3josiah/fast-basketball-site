@@ -105,7 +105,7 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   }
 
   body += '<section class="band band-dark">\n<div class="shell">\n<div class="eyebrow rise">First Step</div>\n<h2 class="zr">Start with a call about ' + escapeHtml(suburb.name) + '</h2>\n';
-  body += '<p class="lede rise">A 15 to 20 minute call, then a $50 evaluation session on court. A straight read on where your player stands, and the plan for what comes next.</p>\n';
+  body += '<p class="lede rise">A 15 to 20 minute call, then an evaluation session on court. A straight read on where your player stands, and the plan for what comes next.</p>\n';
   body += '<p><a href="/contact" class="btn btn-primary">Contact Coach Blake</a></p>\n</div>\n</section>\n';
   body += '</main>\n';
 

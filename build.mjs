@@ -23,24 +23,27 @@ const DIST = resolve(ROOT, 'dist');
 const TRAINING_PAGES = [
   {
     slug: 'evaluation', textKey: 'prog.1', title: 'Evaluation Session | Fast Basketball', label: 'Evaluation Session',
-    description: 'A 60 minute on-court evaluation with Coach Blake Kingsley in north Broward. $50, or $35 within 48 hours of your intro call. The step before any commitment.',
-    price: { amount: '$50', unit: '60 Minutes', line: '$35 if you book within 48 hours of your intro call. The call itself is free.' },
-    features: ['Movement, handle, and shooting form screen', 'Live reads against a defender', 'Coach Blake gets to know your player and their goals', 'Enrollment call within 24 hours: what he saw, and the plan'],
+    description: 'A 60 minute on-court evaluation with Coach Blake Kingsley in South Florida. The step before any commitment; the cost is covered on your intro call.',
+    // No public price: Blake quotes it on the call (September 2026). The amount slot carries the length.
+    price: { amount: '60', unit: 'Minutes on Court', line: 'Coach Blake goes over the cost on your intro call, along with the membership options. The call itself is free.' },
+    features: ['Movement, handle, and shooting form screen', 'Live reads against a defender', 'Coach Blake gets to know your player and their goals', 'Enrollment call within 24 hours: what we saw, and the plan'],
     next: 'Bring your player, their shoes, a ball, water, and sixty minutes. Coach Blake watches them move, puts them through live reads, and talks to them about what they want. Then you both decide whether the program fits.'
   },
   {
     slug: 'group-training', textKey: 'prog.2', title: 'Group Training Membership | Fast Basketball', label: 'Group Training Membership',
-    description: 'Group basketball training in north Broward on a 3 or 6 month term, once a week or unlimited. $450 to $1,000, every figure listed. No quotes over text.',
-    price: { amount: '$450\u2013$1,000', unit: 'Per Term', line: '3 months: $450 once a week, or $650 unlimited. 6 months: $750 once a week, or $1,000 unlimited. Paying monthly instead of up front costs more: $550 for 3 months once a week, $900 for 6.' },
-    features: ['Weekly 60 minute sessions with level matched players', 'Unlimited means up to two sessions a week', 'Journal, homework, and daily check-ins in the members area', 'Rained out? The session moves to Zoom that evening'],
-    next: 'Three months is the minimum because that is how long it takes a new habit to survive speed, contact, and a Friday night. Six months costs one month less than two three month terms. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.'
+    description: 'Group basketball training in South Florida on a 3 to 6 month commitment, once a week or unlimited. $450 to $1,000 a term. Start with a call.',
+    price: { amount: '$450\u2013$1,000', unit: 'Per Term', line: '3 months: $450 once a week, or $650 unlimited. 6 months: $750 once a week, or $1,000 unlimited. Paying monthly instead of up front costs more, and both figures are on the page.' },
+    features: ['60 minute sessions with level matched players', 'Unlimited means up to two sessions a week', 'Journal, homework, and daily check-ins in the members area', 'Weekly game evaluations and quarterly progress reports'],
+    next: 'Three months is the minimum because that is how long it takes a new habit to survive speed, contact, and a Friday night. Six months is for players who already know they are all in. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.'
   },
   {
-    slug: 'private', textKey: 'prog.3', title: 'Private Basketball Training in Coral Springs | Fast Basketball', label: 'Private One on One',
-    description: 'Private one on one basketball training in Coral Springs and north Broward with Coach Blake Kingsley. $3,000 for a six month term, scheduled directly with the coach.',
-    price: { amount: '$3,000', unit: '6-Month Term', line: 'A six month term of one on one coaching, invoiced directly by Coach Blake rather than bought online.' },
-    features: ['Footwork, handle, finishing, and shooting blocks', 'Same journal and homework standard as the membership', 'Film review and college coaching advice on request', 'Scheduled directly with Coach Blake'],
-    next: 'Every session is built around the two or three things standing between your player and the next level. The journal and the homework are the same as the membership, because the standard does not change with the format. Coach Blake sets the schedule with you and invoices the term directly.'
+    slug: 'private', textKey: 'prog.3', title: 'Private 1-on-1 Basketball Training in South Florida | Fast Basketball', label: 'Private 1-on-1 Training',
+    description: 'Private 1-on-1 basketball training in South Florida with Coach Blake Kingsley. Individualized development built around the athlete. Limited availability; pricing after a consultation.',
+    // No public price: Blake quotes it after a consultation (September 2026).
+    price: { amount: 'Limited', unit: 'Availability', line: 'Pricing available after a consultation. Book a call to talk through your player\'s goals.' },
+    cta: 'Book a Consultation',
+    features: ['Individualized training built around the athlete\'s specific goals, strengths, and areas for improvement', 'Footwork, handle, finishing, and shooting blocks', 'Same journal and homework standard as the membership', 'Film review and college coaching advice on request'],
+    next: 'Every session is built around the two or three things standing between your player and the next level. Coach Blake sets the schedule with you after the consultation, and the journal and homework standard is the same as the membership, because the standard does not change with the format.'
   }
 ];
 
@@ -294,7 +297,7 @@ function step8_trainingPages(content, prelude) {
     const price = page.price;
     body += '<div class="prog-price" style="margin:22px 0 20px;">' + escapeHtml(price.amount) +
       '<small style="color:#8A8A96;">' + escapeHtml(price.unit) + '</small></div>\n';
-    body += '<a href="/contact" class="btn btn-primary" data-program="' + escapeHtml(page.label) + '">Book This Program</a>\n';
+    body += '<a href="/contact" class="btn btn-primary" data-program="' + escapeHtml(page.label) + '">' + escapeHtml(page.cta || 'Book This Program') + '</a>\n';
     body += '<p class="trust-line">' + escapeHtml(price.line) + '</p>\n';
     body += '</div>\n</header>\n';
     body += '<section class="band band-ink">\n<div class="shell">\n';
@@ -302,7 +305,7 @@ function step8_trainingPages(content, prelude) {
     for (const f of page.features) body += '<li>' + escapeHtml(f) + '</li>\n';
     body += '</ul>\n';
     body += '<h2>How it works</h2>\n<p style="max-width:70ch;">' + escapeHtml(page.next) + '</p>\n';
-    body += '<p>Sessions run at city parks and partner courts across north Broward County. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
+    body += '<p>Sessions run at courts across South Florida, with Fort Lauderdale, Miami and Hollywood at the center. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
     body += '</div>\n</section>\n</main>\n';
     const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }])];
     const html = buildSimplePage({
@@ -334,7 +337,7 @@ function step9_playbookPage(sections, content, playbookTemplates, prelude) {
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Free Playbook', path: '/playbook' }])];
   const html = buildSimplePage({
     title: 'Free Custom Basketball Playbook | Fast Basketball',
-    description: 'A free four week basketball workout block built for your player and sent to a parent inbox. From Coach Blake Kingsley, Fast Basketball, north Broward.',
+    description: 'A free four week basketball workout block built for your player and sent to a parent inbox. From Coach Blake Kingsley, Fast Basketball, South Florida.',
     canonicalPath: '/playbook',
     bodyHtml: body,
     content,
@@ -380,8 +383,8 @@ function step10_contactPage(sections, content, prelude) {
   body = applyGroupOrder(body, content.order);
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact' }])];
   const html = buildSimplePage({
-    title: 'Contact Fast Basketball | Book a Call, North Broward',
-    description: 'Book a 15 to 20 minute call with Coach Blake Kingsley about your player. Fast Basketball, north Broward. Replies within one business day.',
+    title: 'Contact Fast Basketball | Book a Call, South Florida',
+    description: 'Book a 15 to 20 minute call with Coach Blake Kingsley about your player. Fast Basketball, South Florida. Replies within one business day.',
     canonicalPath: '/contact',
     bodyHtml: body,
     content,
@@ -496,7 +499,7 @@ function step11c_termsPage(content, prelude) {
   const li = (items) => '<ul class="prog-list">\n' + items.map((s) => '<li>' + s + '</li>\n').join('') + '</ul>\n';
   let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
   body += '<div class="eyebrow">The Fine Print</div>\n<h1>Terms &amp; Training Agreement</h1>\n';
-  body += '<p class="lede">This is the agreement every family agrees to when they enroll, reproduced in full so you can read it before your call rather than after. If you do not agree with it, do not enroll. Coach Blake would rather lose the sale than the standard.</p>\n';
+  body += '<p class="lede">This is the agreement every family agrees to when they enroll, reproduced in full so you can read it before your call rather than after. If you do not agree with it, do not enroll.</p>\n';
   body += '<p class="trust-line">In effect ' + LEGAL_EFFECTIVE + '</p>\n';
   // <details open>: pills on desktop, folded on phones (main.js closes it under 641px).
   body += '<details class="toc-wrap" open><summary>On this page</summary>\n';
@@ -515,13 +518,12 @@ function step11c_termsPage(content, prelude) {
   // pricing Blake set in his Sales Mastery worksheet, and is labelled so nobody mistakes it
   // for agreement text.
   body += '<h3 class="terms-sub">Published rates</h3>\n';
-  body += '<p>The $840 above, and the $420 renewal figure in the last section of this page, are the figures in the signed agreement, which is being re-issued to match the rates below. Those rates are what Coach Blake charges today, and they are the numbers on your enrollment call:</p>\n';
+  body += '<p>The $840 above, and the $420 renewal figure in the last section of this page, are the figures in the signed agreement, which is being re-issued to match the current rates. The group membership rates below are what Coach Blake charges today:</p>\n';
   body += li([
-    'Evaluation session: $50 for 60 minutes. $35 if booked within 48 hours of your intro call.',
     'Group training membership, 3 months: $450 once a week paid in full, or $550 paid monthly. $650 unlimited, paid in full.',
     'Group training membership, 6 months: $750 once a week paid in full, or $900 paid monthly. $1,000 unlimited, paid in full.',
     'Unlimited means up to two group sessions a week.',
-    'Private one on one: $3,000 for a six month term, invoiced directly rather than bought online.'
+    'The evaluation session and private 1-on-1 training are quoted on your call.'
   ]);
   body += '<p>If you choose to cancel after 6 or 12 months, you agree to provide Coach Blake Kingsley 60 days written notice at <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> to cancel any future recurring payment after the contract is complete. If you do not follow our terms, you will be automatically enrolled into the same agreement for the next 12 months, no exceptions.</p>\n';
   body += '<p>By registering for the program, you agree to the terms and conditions below, the player expectations and the parent expectations, which state Coach Kingsley&rsquo;s refund, cancellation and early termination policies.</p>\n';
@@ -709,7 +711,11 @@ function step11d_enrollPages(sections, content, prelude) {
     content,
     prelude,
     jsonLd: [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Enroll', path: '/enroll' }])],
-    extraScripts: ['/js/enroll.js']
+    extraScripts: ['/js/enroll.js'],
+    // Checkout is reached from the enrollment call, not from search: it shows the evaluation
+    // price because a card is charged there, and Blake quotes that price on the call, not on
+    // the site. noindex plus no sitemap entry keeps it that way.
+    robots: 'noindex, follow'
   }));
 
   let thanks = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
@@ -732,7 +738,7 @@ function step11d_enrollPages(sections, content, prelude) {
     robots: 'noindex, nofollow'
   }));
   // The thanks page stays out of the sitemap: it is a landing, not a destination.
-  return ['/enroll'];
+  return []; // noindex: not in the sitemap
 }
 
 function step11_blogIndex(content, prelude) {
@@ -741,7 +747,7 @@ function step11_blogIndex(content, prelude) {
     '<p class="lede">Training notes and recruiting guidance are on the way. Check back soon, or follow along on <a href="https://www.instagram.com/blakekingsleyjr/" target="_blank" rel="noopener">Instagram</a>.</p>\n' +
     '</div>\n</header>\n</main>\n';
   const html = buildSimplePage({
-    title: 'Blog | Fast Basketball North Broward',
+    title: 'Blog | Fast Basketball South Florida',
     description: 'Training notes and recruiting guidance from Coach Blake Kingsley.',
     canonicalPath: '/blog/',
     bodyHtml: body,

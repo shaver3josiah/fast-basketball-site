@@ -30,6 +30,17 @@ export const TEXT_GROUPS = {
 };
 
 export const TEXT_LABELS = {
+  'prog.3.tag': 'Private card tag',
+  'prog.3.sub': 'Private card subtitle',
+  'prog.3.trust': 'Private card trust line',
+  'enr.lede2': 'Enroll intro, paragraph 2',
+  'enr.lede3': 'Enroll intro, closing line',
+  'area.6.name': 'Area tile 6 name',
+  'area.6.tier': 'Area tile 6 tier',
+  'area.7.name': 'Area tile 7 name',
+  'area.7.tier': 'Area tile 7 tier',
+  'area.8.name': 'Area tile 8 name',
+  'area.8.tier': 'Area tile 8 tier',
   'prog.1.enroll': 'Evaluation card: enroll link',
   'prog.2.enroll': 'Membership card: enroll link',
   // Programs & pricing, fine print, enrollment steps (2026-09 restructure)
