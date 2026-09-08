@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { ROOT } from './preview.mjs';
+import { ROOT } from '../preview.mjs';
 
 for (const relative of ['src/data/content.json', 'src/data/suburbs.json', 'src/templates/sections']) {
   const full = resolve(ROOT, relative);

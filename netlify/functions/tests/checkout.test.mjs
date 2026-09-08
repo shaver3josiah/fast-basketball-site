@@ -8,9 +8,9 @@ delete process.env.STRIPE_SECRET_KEY;
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkoutSpec } from '../../src/lib/plans.mjs';
+import { checkoutSpec } from '../../../src/lib/plans.mjs';
 
-const { default: handler, sessionParams } = await import('./checkout.mjs');
+const { default: handler, sessionParams } = await import('../checkout.mjs');
 
 const SITE = 'https://example.test/';
 const NOW = 1_800_000_000;

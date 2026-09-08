@@ -8,6 +8,11 @@
   NPM_FLAGS = "--include=dev"
   TZ = "America/New_York"
 
+# Every top-level file in the functions directory becomes a function, and the name is the
+# filename, so a dot in it is a deploy error: "checkout.test" is not a legal function name and
+# it failed the first deploy. Tests therefore live in functions/tests/, which Netlify ignores
+# because a subdirectory is only a function when it holds a file matching its own name. Keep
+# new tests there, or in functions/lib/, never beside a handler.
 [functions]
   node_bundler = "esbuild"
   directory = "netlify/functions"

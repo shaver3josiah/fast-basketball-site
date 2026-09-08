@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Stripe from 'stripe';
-import { checkoutSpec } from '../../src/lib/plans.mjs';
+import { checkoutSpec } from '../../../src/lib/plans.mjs';
 
 const SECRET = 'whsec_test_secret';
 process.env.FB_LOCAL = 'true';
@@ -21,7 +21,7 @@ delete process.env.STRIPE_SECRET_KEY;
 delete process.env.RESEND_API_KEY;
 process.chdir(fs.mkdtempSync(path.join(os.tmpdir(), 'fb-webhook-')));
 
-const { default: handler } = await import('./stripe-webhook.mjs');
+const { default: handler } = await import('../stripe-webhook.mjs');
 
 // 2026-09-07 15:00 UTC. Three months minus seven days lands on 2026-11-30.
 const CREATED = Date.UTC(2026, 8, 7, 15, 0, 0) / 1000;
