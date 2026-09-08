@@ -1,14 +1,15 @@
 # Stripe integration plan
 
-> **SEPTEMBER 2026 PRICE CHANGE.** The catalog below is the original design and its plan
-> keys and amounts are out of date. `src/lib/plans.mjs` is the source of truth. Two things
-> changed shape, not just value: a membership now carries a `totals` map keyed by pay option,
-> because paying monthly costs more than paying up front; and `split` (two payments) is no
-> longer sold, so `PAY_OPTIONS` is `full` and `monthly`. Session counts are gone from the
-> catalog because the price sheet publishes none.
+> **SEPTEMBER 2026 PRICE CHANGE.** The catalog block below has been rewritten to match, but
+> `src/lib/plans.mjs` is the source of truth and this file is a design note, not a spec. Two
+> things changed shape, not just value: a membership now carries a `totals` map keyed by pay
+> option, because paying monthly costs more than paying up front; and `split` (two payments)
+> is no longer sold, so `PAY_OPTIONS` is `full` and `monthly`. Session counts are gone from
+> the catalog because the price sheet publishes none.
 
-**Status, 8 September 2026:** Phases 1 to 3 are built, using the default of every decision
-in the table at the end. Phase 0 and the live-mode tests wait on Blake. Nothing has called
+**Status, 8 September 2026:** Phases 1 and 2 are built, using the default of every decision
+in the table at the end. Of Phase 3, CSV export and the enrollment link builder shipped; the
+"Renew" action did not. Phase 0 and the live-mode tests wait on Blake. Nothing has called
 Stripe yet.
 
 Written 8 September 2026 against commit `d526cdb`. Same shape as `ADMIN-PANEL-PLAN.md`:
@@ -23,7 +24,7 @@ Blake never quotes over text. The order is: intro call, evaluation ($50, or $35 
 hours of the call), enrollment call, then an enrollment email with a payment link, then a
 welcome email the parent answers "YES" to. Links are sent by Blake, during or right after a
 call. The website's step 4 ("Enroll Online") promises: read the agreement, pick pay in full
-/ split / monthly, type your name to agree. That step has no backend today.
+/ monthly, type your name to agree. That step had no backend when this was written.
 
 **What the site already has that Stripe can reuse:**
 
@@ -77,30 +78,33 @@ IDs in env vars, no amounts in client requests, and one file to change when a ra
 
 ```
 src/lib/plans.mjs                       the catalog, and one pure function
-────────────────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────────────────────────────
 PLANS = {
-  'eval':          { label:'Evaluation Session',            cents:  5000, mode:'payment' },
-  'eval-call':     { label:'Evaluation Session (48h rate)',  cents:  3500, mode:'payment' },
-  'group-3m-1x':   { label:'Group Training, 3 months, 1x/week', total: 48000, months: 3, sessions: 12, noticeDays: 7 },
-  'group-3m-2x':   { …total: 84000, months: 3, sessions: 24, noticeDays: 7 },
-  'group-12m-1x':  { …total: 138000, months: 12, sessions: 46, noticeDays: 60 },
-  'group-12m-2x':  { …total: 230000, months: 12, sessions: 92, noticeDays: 60 },
+  'eval':               { label:'Evaluation Session', cents: 5000, kind:'once' },
+  'eval-call':          { …cents: 3500, kind:'once' },              // the 48-hour rate
+  'group-3m-1x':        { months: 3, noticeDays:  7, totals:{ full:  45000, monthly: 55000 } },
+  'group-3m-unlimited': { months: 3, noticeDays:  7, totals:{ full:  65000 } },
+  'group-6m-1x':        { months: 6, noticeDays: 60, totals:{ full:  75000, monthly: 90000 } },
+  'group-6m-unlimited': { months: 6, noticeDays: 60, totals:{ full: 100000 } },
 }
-PAY = 'full' | 'split' | 'monthly'
+PAY_OPTIONS = ['full', 'monthly']   // a plan offers exactly the ones it prices
 
 checkoutSpec(planKey, pay) → {
-  lookupKey,        // e.g. 'group-3m-2x-monthly'
+  lookupKey,        // e.g. 'group-6m-1x-monthly'
   mode,             // 'payment' | 'subscription'
-  iterations,       // split: 2, monthly: months, full: null
-  endBehavior,      // 'cancel' | 'release'   (see Decision 3)
-  metadata: { plan, pay, months, noticeDays, sessions }
+  amountCents,      // full: the term total; monthly: that total over months, rounded
+  iterations,       // monthly: months, full: null
+  endBehavior,      // 'release'   (see Decision 3)
+  metadata: { plan, pay, months, noticeDays, totalCents }
 }
 ```
 
-Group memberships are only 4 × 3 = 12 lookup keys plus two evaluation prices. Private,
-small-group and drop-in sessions are **not** in the catalog on purpose: they are scheduled
-by Blake and billed per hour, and Stripe Invoicing from the dashboard covers them with no
-code. Add them to the catalog only if Blake asks for self-serve booking.
+That is eight lookup keys: four memberships, two of which price monthly as well as in
+full, plus the two evaluation rates. The Unlimited tiers publish one figure each, so they
+sell pay in full only rather than offering a monthly number nobody set. Private one on one
+($3,000 per six month term) is **not** in the catalog on purpose: Blake schedules it by
+hand and invoices it from the Stripe dashboard, which needs no code. Small group and
+drop-in sessions were retired with the September 2026 sheet and have no successor.
 
 ### Flow
 
@@ -139,18 +143,22 @@ Leads tab shows it beside contact and playbook leads with no new function:
 
 ```
 { type:'enrollment', timestamp, sessionId, customerId, subscriptionId|null,
-  email, phone, parentName (typed-to-agree field), playerName,
-  plan, pay, amountCents, months, sessions, startDate,
+  email, phone, name (the typed-to-agree field), playerName,
+  plan, planLabel, pay, amountCents, amount, months, termTotalCents, noticeDays, startDate,
   cancelNoticeBy,            // startDate + months − noticeDays, the blank Blake fills by hand today
-  termsAccepted: true, stripeLivemode }
+  paymentStatus, termsAccepted, livemode,
+  notified }                 // true once the owner email went out; a resend retries it if not
 ```
 
 ### What the parent sees on Stripe
 
 Business name FAST Basketball (dashboard branding, red `#E60C20`), product name from the
-catalog label, description "24 sessions · $35 each · billed monthly for 3 months", phone
-collection on, the terms checkbox linking to `https://kingfastbasketball.com/terms`, two
-custom fields (player's full name; type your full name to agree). Stripe emails the receipt.
+catalog label, which is where the parent reads the term ("Group Training Membership,
+3 months, once a week"), phone collection on, the terms checkbox linking to
+`https://fast-basketball.com/terms`, two custom fields (player's full name; type your
+full name to agree). Stripe emails the receipt. `checkoutSpec().description` is written to
+the price's `nickname`, which Stripe shows in the dashboard and never to the parent, so the
+term total is disclosed on the `/enroll` card rather than on Checkout.
 
 ### What Blake sees
 
@@ -171,7 +179,7 @@ Blake does these (account creation and keys are his, per `LAUNCH.md`):
 
 1. Create the Stripe account for FAST Basketball. Complete business profile and payouts.
 2. Settings → Public details: business name, support phone `(503) 686-8371`, **Terms of
-   service URL `https://kingfastbasketball.com/terms`** (required for the consent box),
+   service URL `https://fast-basketball.com/terms`** (required for the consent box),
    privacy URL `/privacy`.
 3. Settings → Emails: turn on successful-payment receipts and failed-payment emails.
    Billing → Subscriptions: Smart Retries on, email customers when a payment fails and
@@ -179,8 +187,9 @@ Blake does these (account creation and keys are his, per `LAUNCH.md`):
 4. Settings → Customer portal: enable the hosted **login link**. Put that link in the
    welcome email template. This is the "register a new card" path from the payment policy.
 5. Developers → API keys: a **restricted key** for the site with write access to Checkout
-   Sessions, Customers, Subscriptions, Subscription Schedules, and read on Prices and
-   Products. Give the key to the developer to enter in Netlify, or add the developer as a
+   Sessions, Customers, Subscriptions, Subscription Schedules, Products and Prices. Write
+   on the last two because the same key runs `scripts/stripe-catalog.mjs`, which creates
+   products and prices and archives a replaced one. Give the key to the developer to enter in Netlify, or add the developer as a
    team member with the Developer role. Never the full secret key.
 6. Optional but useful now: two dashboard **Payment Links** for the evaluation ($50 and
    $35). Blake can send those on calls before any site code exists. They are replaced by
@@ -195,11 +204,11 @@ mode end to end, and the catalog script is idempotent.**
 |---|---|
 | `package.json` | add `stripe` (the one new dependency; see "Dependencies" below) |
 | `src/lib/plans.mjs` | catalog + `checkoutSpec()`; amounts must match `OFFERS`, `TRAINING_PAGES`, `programs.html`, `/terms` |
-| `src/lib/plans.test.mjs` | `node --test`: every plan × pay produces a whole-cent price, split sums to total, monthly × months sums to total, lookup keys unique |
+| `src/lib/plans.test.mjs` | `node --test`: every plan × pay produces a whole-cent price, a plan offers exactly the pay options it prices, monthly × months lands within a cent of the published total, monthly always costs more than paying in full, lookup keys unique |
 | `scripts/stripe-catalog.mjs` | idempotent: for each spec, find price by `lookup_key`; create product/price if missing; on an amount change, create the new price with `transfer_lookup_key` and archive the old one. Run once per mode (test, then live) with `STRIPE_SECRET_KEY` in the shell, never committed |
 | `netlify/functions/lib/stripe.mjs` | ~10 lines: client from `STRIPE_SECRET_KEY`, `priceByLookupKey()`, 503 helper when the key is unset |
-| `netlify/functions/checkout.mjs` | POST JSON `{plan, pay, email, hp}` → honeypot, `checkRateLimit('checkout:'+ip, 10 per 10 min)`, validate `plan`/`pay` against `PLANS`, resolve price, create session with `consent_collection`, `custom_fields`, `customer_email`, `phone_number_collection`, `metadata`, `expires_at` 24h, `success_url /enroll/thanks`, `cancel_url /enroll?plan=…`, idempotency key from ip+plan+minute → `{url}`. Returns 503 `{error:'payments not configured'}` without a key, which the page turns into "Online enrollment opens soon, text Coach Blake" |
-| `build.mjs` | `step11d_enrollPage`: `/enroll` (plan matrix rendered from `plans.mjs`, one form: plan radio group, payment option radio group, parent email, guardian checkbox like the contact form, honeypot) and `/enroll/thanks` (noindex, "check your email for the receipt; Coach Blake's welcome email arrives within 12 hours; reply YES"). `/enroll` in the sitemap, thanks page not |
+| `netlify/functions/checkout.mjs` | POST JSON `{plan, pay, email, en-hp}` → honeypot, `checkRateLimit('checkout:'+ip, 10 per 10 min)`, validate `plan`/`pay` against `PLANS`, resolve price, create session with `consent_collection`, `custom_fields`, `customer_email`, `phone_number_collection`, `metadata`, `expires_at` 23h (an hour under Stripe's 24h ceiling), `success_url /enroll/thanks`, `cancel_url /enroll?plan=…` → `{url}`. Returns 503 `{error:'payments not configured'}` without a key, which the page turns into "Online enrollment opens soon, text Coach Blake" |
+| `build.mjs` | `step11d_enrollPages`: `/enroll` (plan matrix rendered from `plans.mjs`, one form: plan radio group, payment option radio group, parent email, guardian checkbox like the contact form, honeypot) and `/enroll/thanks` (noindex, "check your email for the receipt; Coach Blake's welcome email arrives within 12 hours; reply YES"). `/enroll` in the sitemap, thanks page not |
 | `src/js/enroll.js` | ~40 lines in the `contact-form.js` style: validate, `fetch` the function, `location.assign(url)`, inline error, disabled button while waiting. Reads `?plan=` to preselect |
 | `src/templates/sections/enroll.html` | step 4 body links to `/enroll`; CTA row gains "Enroll Online" ghost button |
 | `src/templates/sections/programs.html` | evaluation card: secondary link "Already had your call? Book the evaluation" → `/enroll?plan=eval`. Primary CTAs stay "Book Your Call": Blake does not want the call skipped |
@@ -210,7 +219,7 @@ Privacy page gets one paragraph: payments are processed by Stripe on Stripe's pa
 site never sees card numbers; what Stripe keeps is governed by Stripe's privacy policy.
 
 **Phase 1 test:** `node --test src/lib/plans.test.mjs` green. Then in test mode with
-card `4242 4242 4242 4242`: each of the 14 lookup keys checks out, the consent box and
+card `4242 4242 4242 4242`: each of the eight lookup keys checks out, the consent box and
 typed-name field appear, `cancel_url` returns to the matrix with the plan preselected,
 a request with a tampered `plan` gets 422, the 11th request in 10 minutes gets 429, and
 JS disabled still reaches Stripe through the form POST. Lighthouse and the golden
@@ -219,11 +228,11 @@ baseline are unchanged on every page except the two new ones.
 ### Phase 2: record, notify, and stop installments (one session)
 
 **Goal: every completed checkout produces exactly one record and one owner email, and a
-3-month split plan stops after two charges without anyone remembering to cancel it.**
+monthly plan bills the term it was sold without anyone tracking the count by hand.**
 
 | File | Change |
 |---|---|
-| `netlify/functions/stripe-webhook.mjs` | `await request.text()` raw body → `stripe.webhooks.constructEvent` with `STRIPE_WEBHOOK_SECRET` (400 on failure). Idempotency: a `stripe-events` Blobs store keyed by event id, same `getStore` call `lib/rate-limit.mjs` makes; a seen id returns 200 immediately. Handles: `checkout.session.completed` (expand `custom_fields`, `customer`, `subscription`; build the record; `addLead`; for `iterations` plans `subscriptionSchedules.create({from_subscription})` then `update({phases:[{items, iterations}], end_behavior})`; owner email), `invoice.payment_failed` (owner alert: who, amount, attempt count; parent already got Stripe's email), `customer.subscription.deleted` (owner alert). Everything else 200 and ignored |
+| `netlify/functions/stripe-webhook.mjs` | `await request.text()` raw body → `stripe.webhooks.constructEvent` with `STRIPE_WEBHOOK_SECRET` (400 on failure). Idempotency: keyed on the **Checkout Session id** in the existing leads store, not on the event id — a dashboard resend is a new event id for the same session, and event-id dedupe would write the enrollment twice. The record carries `notified`, so a resend after a failed owner email retries the email and a resend after a successful one returns `{duplicate:true}`. Anything that throws is answered 500 so Stripe retries. Handles: `checkout.session.completed` (expand `custom_fields`, `customer`, `subscription`; build the record; `addLead`; for `iterations` plans `subscriptionSchedules.create({from_subscription})` then `update({phases:[{items, iterations}], end_behavior})`; owner email), `invoice.payment_failed` (owner alert: who, amount, attempt count; parent already got Stripe's email), `customer.subscription.deleted` (owner alert). Everything else 200 and ignored |
 | `netlify/functions/lib/notify.mjs` | move `sendEmail` out of `playbook.mjs` into a shared helper with a `to` and `subject`; playbook keeps working unchanged |
 | `admin/admin.js` | `renderLeadsTable`: details column for `type === 'enrollment'` shows plan, pay option, amount; filter dropdown gains "Enrollment" |
 | `LAUNCH.md` | Stripe section: Phase 0 checklist, `stripe listen` for local, live-mode cutover order (catalog script in live, live restricted key, live webhook endpoint + secret, one $0.50 real test refunded) |
@@ -235,22 +244,23 @@ Webhook endpoint registered in the Stripe dashboard as
 
 **Phase 2 test:** replay the same event twice, one record. `stripe trigger` for each
 event type produces the right email to `ENROLL_NOTIFY_EMAIL`. Card `4000 0000 0000 0341`
-attaches but fails the first invoice, and the failed-payment alert arrives. A split plan
-shows two scheduled phases then cancel in the dashboard. The admin Leads tab lists the
+attaches but fails the first invoice, and the failed-payment alert arrives. A monthly plan
+shows a schedule of the term's iterations then `release` in the dashboard. The admin Leads tab lists the
 enrollment with the correct cancel-by date. A request with a bad signature is a 400 and
 writes nothing.
 
 ### Phase 3: polish, only if Blake asks (half a session)
 
 - CSV export of enrollments alongside leads (the Phase 3 item already in `TIMELINE.md`).
-- Per-family enrollment links from the admin panel: Blake picks plan and pay option, the
-  panel calls `checkout.mjs` with `customer_email` prefilled and copies the URL. Removes
-  the last manual step from the enrollment email. Small: reuses the function as is.
+- Per-family enrollment links from the admin panel. **Built, differently:** the panel copies
+  an `/enroll?plan=…&pay=…&email=…` deep link rather than calling `checkout.mjs`, because a
+  real Checkout Session URL expires in 23 hours and a link Blake pastes into an email must not.
 - A "Renew" action for pay-in-full families when their term ends, once Decision 3 is settled.
+  **Not built.**
 
 ### Not in this plan, and why
 
-- **Auto-charging renewals for pay-in-full or split families.** The signed agreement says
+- **Auto-charging renewals for pay-in-full families.** The signed agreement says
   both "the next 12 months" and "$420". Until Blake resolves that (it is already in
   `docs/owner-open-items.md`), no code should charge a card for a renewal a parent has not
   seen in writing. Monthly families keep billing (Decision 3), which is the renewal the
@@ -270,9 +280,9 @@ writes nothing.
 
 | # | Decision | Why it blocks | Default if he says "your call" |
 |---|---|---|---|
-| 1 | **What "pay in full at a discount" means.** The rate card totals ($480, $840, $1,380, $2,300) are the only figures in his documents. Is the total the pay-in-full price, with split and monthly at the same total? Or is there a discount off it? | Sets 12 of the 14 prices | Rate card total is the pay-in-full price; split and monthly sum to the same total, no surcharge |
-| 2 | **12-month, 2x/week monthly price.** $2,300 ÷ 12 is $191.666… Stripe needs whole cents. | One price | $191.67 × 12 = $2,300.04, disclosed on the card as "$191.67/month for 12 months" |
-| 3 | **What happens at the end of a monthly plan.** `release` keeps billing monthly until Blake cancels on written notice, which is the auto-renewal the parent expectations describe. `cancel` stops it and Blake sends a new link. | Schedule end behaviour | `release` for monthly; `cancel` for split (it is a full payment in two parts, not a membership fee) |
+| 1 | ~~**What "pay in full at a discount" means.**~~ **SETTLED 3 September 2026** by Blake's new price sheet, which publishes both figures for every tier: $450 in full or $550 monthly on 3 months, $750 or $900 on 6 months. Paying over time costs more, and the catalog says so directly instead of deriving it. | Set 6 of the 8 prices | n/a, answered |
+| 2 | **Monthly prices that do not divide into whole cents.** $550 ÷ 3 is $183.333… and Stripe needs whole cents. | One price | Round to the nearest cent, which bills $183.33 × 3 = $549.99, a cent under the published total. Under is the right direction to miss. $900 ÷ 6 is exactly $150 |
+| 3 | **What happens at the end of a monthly plan.** `release` keeps billing monthly until Blake cancels on written notice, which is the auto-renewal the parent expectations describe. `cancel` stops it and Blake sends a new link. | Schedule end behaviour | `release`. Pay-in-full terms simply end, since they are one payment |
 | 4 | **Whether the $35 evaluation rate needs enforcing.** The site shows $50; the $35 link only goes out in the post-call email. Without a call there is no evaluation slot, so a found link buys nothing. | Whether to build a signed-link mechanism | Not enforced. Two prices, no token. Add a signed `?call=` link (HMAC with `ADMIN_SESSION_SECRET`, same as `lib/auth.mjs`) only if it is ever abused |
 | 5 | **Stripe account ownership and the developer's access.** | Nothing can be built against the wrong account | Blake's account; developer gets a restricted key or a Developer-role seat |
 
@@ -296,7 +306,9 @@ only; the built site and the build minutes are unaffected.
 
 - Amounts never come from the client. The function accepts a plan key and resolves the
   price by lookup key server-side.
-- The webhook trusts nothing without a valid signature, and is idempotent by event id.
+- The webhook trusts nothing without a valid signature, and is idempotent by Checkout
+  Session id. A store failure answers 500 rather than 200, so Stripe redelivers instead of
+  dropping a paid enrollment nothing recorded.
 - The thanks page is not evidence of payment. The record is written by the webhook only.
 - The checkout function is public and rate-limited like the playbook; a honeypot field
   matches the contact and playbook forms.
@@ -314,8 +326,11 @@ only; the built site and the build minutes are unaffected.
   `plans.test.mjs` cannot catch a mismatch with the page; the existing "must match"
   convention across `OFFERS`, `TRAINING_PAGES`, `programs.html` and `/terms` now has a
   fifth member.
-- **Split payment is "30 days later" in the agreement and "next month, same day" in
-  Stripe.** Close enough for a two-payment plan; noted for the attorney.
+- **The signed agreement still sells things the site no longer does.** It lists a split
+  payment option, a 12 month term and a $420 renewal, none of which exist on the September
+  2026 sheet. `/terms` reproduces the agreement verbatim and says above the rate card that
+  it is being re-issued. Rewriting signed contract text to match new marketing is not the
+  fix; re-issuing the document is, and that is Blake's.
 - **No proration, no pausing.** The injury policy says payments continue; the site honours
   that by not building a pause.
 - **Rate limiting fails open**, as everywhere else on the site. Stripe's own velocity

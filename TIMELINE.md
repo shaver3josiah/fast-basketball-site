@@ -1,7 +1,7 @@
 # Fast Basketball — project timeline
 
 Repo: `shaver3josiah/fast-basketball-site` · branch `main`
-Last updated: **8 September 2026, 09:30**
+Last updated: **8 September 2026, 15:00**
 
 Dates in "Done" are taken from the git history, not from memory. Dates in "Ahead" are
 **effort estimates against a working session**, not calendar commitments — the calendar
@@ -16,11 +16,11 @@ yet, and that is now a choice rather than a blocker.
 
 | | |
 |---|---|
-| Pages building | 17 |
+| Pages building | 19 |
 | Canvas element types | 6 (text, image, shape, icon, divider, button) |
 | Hand-built sections editable | 5 of 9 · 23 fields |
-| Golden-output baseline | 51 files locked |
-| Test suites | 2 |
+| Golden-output baseline | 54 files locked |
+| Test suites | 10 |
 | Phase 2 rubric score | **141 / 160** — passed the 130 bar |
 
 ---
@@ -70,16 +70,30 @@ hand-built sections became editable without converting them. Phase 2's first pas
 layers, align, duplicate and two new element types, graded 118/160 against a rubric
 written before the work.
 
+### 8 Sep — the September price sheet
+**Goal: the site sells what Blake actually sells now.** · shipped in the same commit as the Stripe work below
+
+Blake's new sheet replaced the pricing outright. Six month terms take over from twelve,
+"Unlimited" replaces the twice-a-week tier, and paying over time now costs more than paying
+up front: $450 in full or $550 monthly on three months, $750 or $900 on six. That last part
+was a model change, not new numbers. Every pay option used to be derived from one total,
+which cannot express a monthly price a hundred dollars higher, so a membership now carries a
+`totals` map keyed by pay option and offers exactly the options it prices. Split payment and
+per-session pricing are gone because the sheet prices neither. `/terms` still reproduces the
+signed agreement verbatim, $840 and all, and says plainly that the document is being
+re-issued: rewriting contract text to match new marketing would change what the site claims
+families agreed to without changing what anyone signed.
+
 ### 8 Sep — Stripe enrollment
-**Goal: a parent pays for a plan from the site, and nobody types a price by hand.** · uncommitted
+**Goal: a parent pays for a plan from the site, and nobody types a price by hand.** · 1 commit, `fe74485`, with the price sheet above
 
 Hosted Stripe Checkout, reached from a new `/enroll` page that renders the plan matrix
 from `src/lib/plans.mjs`; no Stripe script on the site, so the CSP and the performance
 budget stand. Prices live in Stripe under lookup keys generated from that one catalog by
 `scripts/stripe-catalog.mjs`, which is the only way a charge changes. A signed webhook
 writes each enrollment to the leads store and emails Blake a prefilled welcome email with
-the cancel-by date already computed, and split plans get a subscription schedule that
-stops them after the second charge without anyone remembering to. The admin panel gained
+the cancel-by date already computed, and monthly plans get a subscription schedule for the
+term they were sold so nobody tracks the count by hand. The admin panel gained
 a per-family enrollment link builder and enrollments in the CSV export. Built against the
 default of every decision in `STRIPE-PLAN.md`; nothing has called Stripe yet.
 
@@ -180,13 +194,14 @@ describes an auth model this site does not use, and its variable table, which om
 four variables everything now depends on.
 
 **Blocked on you, not on code**, and not delegable: creating the Netlify site, entering the
-environment variables (they are secrets), buying the domain, pointing DNS, and the Stripe
+environment variables (they are secrets), pointing DNS at Wix, and the Stripe
 live cutover (keys, catalog script, webhook). `LAUNCH.md` has the exact steps and the
 five-minute verification pass that proves it worked.
 
-One reconciliation waiting on you: `phase-c/P11` recommends `fastbasketballmiami.com`, but
-the business moved to north Broward the day after P11 was written, and the code has settled
-on `kingfastbasketball.com`. Buy that, or change the code before buying something else.
+The domain question is closed: Blake bought `fast-basketball.com` from Wix, and `171dbd3`
+made it the fallback in `src/lib/site-config.mjs`. Ignore `phase-c/P11`'s
+`fastbasketballmiami.com` recommendation, written the day before the business moved to north
+Broward. DNS is at Wix, which the domain runbook does not cover.
 
 ---
 

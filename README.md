@@ -61,7 +61,7 @@ Set these in the Netlify dashboard under Site configuration, Environment variabl
 
 | Variable | Holds |
 |---|---|
-| `SITE_URL` | Overrides the site's public URL. Used in canonicals, the sitemap, and structured data. Leave it unset unless the domain changes: `src/lib/site-config.mjs` already defaults to the production domain `https://kingfastbasketball.com`, and Netlify's automatic `URL` variable (the `.netlify.app` address) is used ahead of that default on deploys where no custom domain is attached. |
+| `SITE_URL` | Overrides the site's public URL. Used in canonicals, the sitemap, and structured data. Leave it unset unless the domain changes: `src/lib/site-config.mjs` already defaults to the production domain `https://fast-basketball.com`, and Netlify's automatic `URL` variable (the `.netlify.app` address) is used ahead of that default on deploys where no custom domain is attached. |
 | `ADMIN_PASSWORD` | The single password that unlocks /admin. |
 | `ADMIN_SESSION_SECRET` | A long random string used to sign the admin login cookie. Generate once, never reuse elsewhere. |
 | `GITHUB_TOKEN` | A fine-grained GitHub personal access token, write access to this one repository only. Lets the admin panel commit content and photo changes. |
@@ -69,12 +69,12 @@ Set these in the Netlify dashboard under Site configuration, Environment variabl
 | `GITHUB_BRANCH` | The branch the site deploys from. Defaults to `main` if not set, which is the branch this site deploys from, so it can normally be left unset. |
 | `NETLIFY_BUILD_HOOK_URL` | Optional, and deliberately narrow. Only `admin-content.mjs` (hand-built section saves) and the add-a-resume-card path in `admin-upload.mjs` call it. The canvas editor and the media library never do — they stage their work and commit once on Publish, which is what keeps a batch of edits down to one deploy. Setting this makes those two older paths trigger a build immediately. |
 | `RESEND_API_KEY` | API key for the Resend transactional email service. Used to email the generated playbook, and now also the enrollment and failed-payment alerts to the coach. |
-| `PLAYBOOK_FROM_EMAIL` | The from address playbook emails and enrollment alerts are sent from, for example `playbook@kingfastbasketball.com`. Must be a verified sender in Resend. |
-| `STRIPE_SECRET_KEY` | A **restricted** API key from Blake's Stripe account, never the full secret key: write access on Checkout Sessions, Customers, Subscriptions and Subscription Schedules, read access on Products and Prices. Use the test-mode key first and swap in the live key at cutover (`LAUNCH.md`, Step 5). While it is unset, the checkout function answers 503 `{"error":"payments not configured"}` and `/enroll` tells the parent online enrollment opens soon. |
+| `PLAYBOOK_FROM_EMAIL` | The from address playbook emails and enrollment alerts are sent from, for example `playbook@fast-basketball.com`. Must be a verified sender in Resend. |
+| `STRIPE_SECRET_KEY` | A **restricted** API key from Blake's Stripe account, never the full secret key: write access on Checkout Sessions, Customers, Subscriptions, Subscription Schedules, Products and Prices. Products and Prices are write rather than read because the same key runs `npm run stripe:catalog`, which creates them. Use the test-mode key first and swap in the live key at cutover (`LAUNCH.md`, Step 5). While it is unset, the checkout function answers 503 `{"error":"payments not configured"}` and `/enroll` tells the parent online enrollment opens soon when they submit the form; the page itself always shows the plans. |
 | `STRIPE_WEBHOOK_SECRET` | The signing secret of the webhook endpoint registered in Stripe as `https://<site>/.netlify/functions/stripe-webhook`, subscribed to `checkout.session.completed`, `invoice.payment_failed` and `customer.subscription.deleted`. Test mode and live mode each have their own endpoint and their own secret. |
 | `ENROLL_NOTIFY_EMAIL` | Optional. Where enrollment and failed-payment alerts go. Defaults to the coach's published email, `CONTACT.email` in `src/lib/site-config.mjs`. |
 
-If `RESEND_API_KEY` or `PLAYBOOK_FROM_EMAIL` are missing, the playbook function still generates and returns the document. It just skips sending the email and reports that in its response, so a visitor's download never depends on email working. The same holds for enrollment: the webhook still saves the record, and only the alert email is skipped.
+If `RESEND_API_KEY` or `PLAYBOOK_FROM_EMAIL` are missing, the playbook function still generates and returns the document. It just skips sending the email and reports that in its response, so a visitor's download never depends on email working. The same holds for enrollment: the webhook still saves the record, and only the alert email is skipped. That record is not marked `notified`, so re-sending the event from Stripe's dashboard sends the alert once the keys exist.
 
 ## Deploying
 
