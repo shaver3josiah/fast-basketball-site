@@ -18,7 +18,7 @@
 //   - The Unlimited tiers publish one figure each, so they are pay-in-full only. Adding a
 //     monthly price for them is an owner decision, not an arithmetic one.
 //
-// Private one on one ($3,000 per 6 month term), small group and drop-in sessions are
+// Private one on one (priced on consultation, not published), small group and drop-in sessions are
 // deliberately absent. Blake schedules those by hand and bills them from the Stripe
 // dashboard (Invoicing), no site code needed.
 

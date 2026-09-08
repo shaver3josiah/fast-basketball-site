@@ -13,9 +13,9 @@ export const BUSINESS_NAME = 'Fast Basketball';
 // contact select and the LocalBusiness areaServed. Building a page for one needs verified
 // local data in src/data/suburbs.json, the same bar the five below cleared.
 export const HEADLINE_AREAS = [
-  { name: 'Fort Lauderdale', county: 'Broward County' },
-  { name: 'Miami', county: 'Miami-Dade County' },
-  { name: 'Hollywood', county: 'Broward County' }
+  { name: 'Fort Lauderdale', county: 'Broward' },
+  { name: 'Miami', county: 'Miami-Dade' },
+  { name: 'Hollywood', county: 'Broward' }
 ];
 
 // Cities WITH a dedicated page. Must stay in lockstep with src/data/suburbs.json: fixAreaLinks
@@ -29,7 +29,7 @@ export const AREA_SERVED = [
 export const PROGRAM_PAGES = [
   { path: '/training/evaluation', label: 'Evaluation Session' },
   { path: '/training/group-training', label: 'Group Training Membership' },
-  { path: '/training/private', label: 'Private One on One' }
+  { path: '/training/private', label: 'Private 1-on-1 Training' }
 ];
 
 // One place for how families reach Coach Blake. Values come from the signed training
