@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-08T19:11:01.060Z",
+  "recorded": "2026-09-08T19:17:52.640Z",
   "files": {
     "404.html": {
       "sha": "9486c66ea3b08bf3",
@@ -110,7 +110,7 @@
       "bytes": 17897
     },
     "enroll/index.html": {
-      "sha": "4a335d08b26b619f",
+      "sha": "207f90a16e82ac1d",
       "bytes": 14647
     },
     "enroll/thanks/index.html": {
@@ -126,8 +126,8 @@
       "bytes": 4473
     },
     "js/enroll.js": {
-      "sha": "7ff7acb5bba164fb",
-      "bytes": 6813
+      "sha": "8bd2aab9eaccc6e2",
+      "bytes": 7242
     },
     "js/locker.js": {
       "sha": "f03a246aecd481e2",

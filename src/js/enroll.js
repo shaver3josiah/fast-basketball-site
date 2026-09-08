@@ -57,9 +57,9 @@
   /* Plan -> pay. The card carries one amount line per pay option it actually prices
      (data-full / data-monthly, written by build.mjs from the catalog). Some plans price
      only one: evaluations, and the Unlimited memberships, which the September 2026 sheet
-     gives a single figure. Those fold the pay step away and force pay in full. An option
-     the card does not price is disabled, so a stale radio can never post a combination
-     checkoutSpec() would throw on. */
+     gives a single figure. Those fold the pay step away and select the one option they do
+     price. An option the card does not price is disabled, so a stale radio can never post a
+     combination checkoutSpec() would throw on. */
   function syncPay(){
     var plan = checked('plan');
     var card = plan && plan.closest ? plan.closest('.en-card') : null;
@@ -73,9 +73,17 @@
       if(pays[i].disabled && pays[i].checked) pays[i].checked = false;
       if(line) offered++;
     }
-    /* One priced option, or none chosen yet: force full and hide the step. */
+    /* One priced option: select that one and fold the step away. Take whichever option the
+       card actually prices rather than assuming it is 'full' — every plan today that sells a
+       single option sells pay in full, but a monthly-only one would otherwise arrive at
+       checkout with a pay the catalog refuses. The loop skips disabled radios, so it picks
+       the priced option by construction. */
     if(card && offered < 2){
-      for(var j = 0; j < pays.length; j++) if(pays[j].value === 'full') pays[j].checked = true;
+      for(var j = 0; j < pays.length; j++){
+        if(pays[j].disabled) continue;
+        pays[j].checked = true;
+        break;
+      }
     }
     if(payBox) payBox.hidden = !!card && offered < 2;
   }
