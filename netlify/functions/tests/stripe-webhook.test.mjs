@@ -215,4 +215,85 @@ function records() {
   process.chdir(back);
 }
 
+{
+  // A session the enroll page opened completes the registration record in place: the form's
+  // answers and signature stay, Stripe's facts land on top, and there is still one row.
+  const { addLead } = await import('../lib/leads.mjs');
+  const { sampleRegistration } = await import('../../../src/lib/registration.mjs');
+  const { registrationRecord } = await import('../checkout.mjs');
+  const spec = checkoutSpec('group-3m-1x', 'full');
+  const id = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+  const reg = registrationRecord({ id, timestamp: '2026-09-07T14:00:00.000Z', values: { ...sampleRegistration(), goals: '' }, spec });
+  await addLead('registration:' + id, reg);
+  const before = records().length;
+
+  process.env.RESEND_API_KEY = 'test-key';
+  process.env.PLAYBOOK_FROM_EMAIL = 'from@example.test';
+  const sends = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { sends.push(JSON.parse(init.body)); return { ok: true }; };
+
+  const payload = JSON.stringify(sessionEvent('8', spec, { metadata: { ...spec.metadata, registrationId: id }, custom_fields: [
+    { key: 'agree_name', type: 'text', label: { type: 'custom', custom: 'Type your full name to agree to the terms' }, text: { value: 'Benjamin Parent' } }
+  ] }));
+  assert.deepEqual(await (await post(payload, sign(payload))).json(), { ok: true });
+  assert.equal(records().length, before, 'the registration row was completed, not joined by a second');
+  const r = records().find((x) => x.key === 'registration:' + id);
+  assert.equal(r.type, 'enrollment');
+  assert.equal(r.paymentStatus, 'paid');
+  assert.equal(r.sessionId, 'cs_test_8');
+  assert.equal(r.name, 'Ben Parent', 'the form\'s parent name, not the typed one');
+  assert.equal(r.agreeName, 'Benjamin Parent', 'the typed-to-agree name kept beside it');
+  assert.equal(r.playerName, 'Jordan Parent');
+  assert.equal(r.email, 'ben@example.com', 'Stripe\'s email wins: the receipt went there');
+  assert.equal(r.insurancePolicy, 'XYZ123456', 'the registration\'s answers survive');
+  assert.ok(r.signature.startsWith('data:image/png;base64,'), 'so does the signature');
+  assert.equal(r.registeredAt, '2026-09-07T14:00:00.000Z');
+  assert.equal(r.startDate, '2026-09-07');
+  assert.equal(r.cancelNoticeBy, '2026-11-30');
+  assert.equal(r.notified, true);
+  assert.equal(sends.length, 1);
+  assert.ok(sends[0].subject.startsWith('New enrollment: '), sends[0].subject);
+  assert.ok(sends[0].html.includes('Welcome email to paste'));
+  assert.ok(sends[0].html.includes('Westglades Middle'), 'the owner email prints the registration too');
+  assert.ok(!sends[0].html.includes('data:image/png'), 'the signature is attached, not pasted');
+  assert.equal(sends[0].attachments?.[0]?.filename, 'signature.png');
+
+  // The expired event: a paid registration is left alone.
+  const expiredPaid = JSON.stringify({ id: 'evt_exp1', object: 'event', type: 'checkout.session.expired', created: CREATED, livemode: false,
+    data: { object: { id: 'cs_test_8', object: 'checkout.session', metadata: { registrationId: id } } } });
+  assert.deepEqual(await (await post(expiredPaid, sign(expiredPaid))).json(), { ignored: 'not pending' });
+  assert.equal(sends.length, 1, 'no alert for a family that paid');
+
+  // A pending one is a family that filled in the form and never paid: mark it and tell Blake.
+  const id2 = 'bbbbbbbb-cccc-4ddd-8eee-ffffffffffff';
+  await addLead('registration:' + id2, registrationRecord({ id: id2, timestamp: '2026-09-07T14:00:00.000Z',
+    values: { ...sampleRegistration(), athleteFirst: 'Casey', email: 'casey@example.com' }, spec }));
+  const expiredPending = JSON.stringify({ id: 'evt_exp2', object: 'event', type: 'checkout.session.expired', created: CREATED, livemode: false,
+    data: { object: { id: 'cs_test_9', object: 'checkout.session', metadata: { registrationId: id2 } } } });
+  assert.deepEqual(await (await post(expiredPending, sign(expiredPending))).json(), { ok: true });
+  assert.equal(records().find((x) => x.key === 'registration:' + id2).paymentStatus, 'abandoned');
+  assert.equal(sends.length, 2);
+  assert.equal(sends[1].subject, 'Registered, did not pay: Casey Parent');
+  assert.ok(sends[1].html.includes('casey@example.com'));
+
+  // A pending twin of a paid registration (same parent, same player, fresh tab) is superseded, quietly.
+  const id3 = 'cccccccc-dddd-4eee-8fff-000000000000';
+  await addLead('registration:' + id3, registrationRecord({ id: id3, timestamp: '2026-09-07T14:30:00.000Z', values: { ...sampleRegistration(), email: 'ben@example.com' }, spec }));
+  const expiredTwin = JSON.stringify({ id: 'evt_exp3', object: 'event', type: 'checkout.session.expired', created: CREATED, livemode: false,
+    data: { object: { id: 'cs_test_10', object: 'checkout.session', metadata: { registrationId: id3 } } } });
+  assert.deepEqual(await (await post(expiredTwin, sign(expiredTwin))).json(), { ok: true, superseded: true });
+  assert.equal(records().find((x) => x.key === 'registration:' + id3).paymentStatus, 'superseded');
+  assert.equal(sends.length, 2, 'no alert: the family paid under the other id');
+
+  // No registration id on the session (a dashboard link): nothing to do.
+  const expiredNone = JSON.stringify({ id: 'evt_exp4', object: 'event', type: 'checkout.session.expired', created: CREATED, livemode: false,
+    data: { object: { id: 'cs_test_11', object: 'checkout.session', metadata: {} } } });
+  assert.deepEqual(await (await post(expiredNone, sign(expiredNone))).json(), { ignored: 'no registration' });
+
+  globalThis.fetch = realFetch;
+  delete process.env.RESEND_API_KEY;
+  delete process.env.PLAYBOOK_FROM_EMAIL;
+}
+
 console.log('stripe-webhook: ok');

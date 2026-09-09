@@ -1,26 +1,36 @@
-// POST /.netlify/functions/checkout: a plan key and a payment option in, a hosted Stripe
-// Checkout URL out. Amounts never come from the client; checkoutSpec() resolves the plan
-// and the price is looked up by lookup_key server-side (STRIPE-PLAN.md, security notes).
+// POST /.netlify/functions/checkout: the athlete registration in, a hosted Stripe Checkout
+// URL out. The registration is written to the leads store and emailed to Blake BEFORE
+// Stripe is asked for anything: a family that pays must never be a family whose form was
+// lost, and a family Stripe cannot take yet (no key, no price) is still a registration he
+// can follow up by hand. Amounts never come from the client; checkoutSpec() resolves the
+// plan and the price is looked up by lookup_key server-side (STRIPE-PLAN.md, security notes).
 //
-// Two callers share it. src/js/enroll.js sends JSON and gets JSON back. The no-JS form
-// on /enroll posts urlencoded fields and gets a 303: to Stripe on success, back to the
-// form with ?err=1 on any failure.
-import { checkoutSpec } from '../../src/lib/plans.mjs';
+// One caller: src/js/enroll.js, JSON in and JSON out. The form cannot be sent without
+// JavaScript, since the signature is drawn, so a urlencoded POST is bounced back to the
+// page where the noscript notice explains.
+import { randomUUID } from 'node:crypto';
+import { checkoutSpec, getPlan, totalCents, dollars } from '../../src/lib/plans.mjs';
+import { validateRegistration } from '../../src/lib/registration.mjs';
 import { SITE_URL } from '../../src/lib/site-config.mjs';
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
+import { addLead, getLead } from './lib/leads.mjs';
+import { sendEmail, ownerEmail, escapeHtml, recordTable, signatureAttachment } from './lib/notify.mjs';
 import { stripeClient, priceByLookupKey, json } from './lib/stripe.mjs';
 
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 // Stripe caps expires_at at 24 hours after the session's own created time, so an hour of
 // slack keeps our clock running slightly ahead of theirs from failing every checkout.
 const SESSION_TTL_SECONDS = 23 * 60 * 60;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 // Pure so the parameter shape is testable without a Stripe account. siteUrl is a
 // parameter for the same reason; the handler passes SITE_URL from site-config.
-export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds }) {
+export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds, registrationId }) {
   const abs = (path) => siteUrl.replace(/\/$/, '') + path;
+  // The registration id rides on the session so the webhook can find the record it belongs
+  // to, and on the dashboard's reference field so Blake can too.
+  const metadata = registrationId ? { ...spec.metadata, registrationId } : spec.metadata;
   const params = {
     mode: spec.mode,
     line_items: [{ price: priceId, quantity: 1 }],
@@ -28,7 +38,8 @@ export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds }) {
     phone_number_collection: { enabled: true },
     billing_address_collection: 'auto',
     // The agreement's step 2 ("click the I agree box", "type your full name") lives on the
-    // Stripe session, which is Blake's evidence in a dispute. No form of our own.
+    // Stripe session, which is Blake's evidence in a dispute. The player's name used to be
+    // asked here as well; the registration carries it now, so the parent types it once.
     consent_collection: { terms_of_service: 'required' },
     custom_text: {
       terms_of_service_acceptance: {
@@ -36,93 +47,144 @@ export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds }) {
       }
     },
     custom_fields: [
-      { key: 'player_name', label: { type: 'custom', custom: "Player's full name" }, type: 'text' },
       { key: 'agree_name', label: { type: 'custom', custom: 'Type your full name to agree to the terms' }, type: 'text' }
     ],
-    metadata: spec.metadata,
+    metadata,
     success_url: abs('/enroll/thanks'),
     cancel_url: abs('/enroll?plan=' + spec.plan + '&pay=' + spec.pay),
     expires_at: nowSeconds + SESSION_TTL_SECONDS
   };
+  if (registrationId) params.client_reference_id = registrationId;
   // Metadata is copied onto the object the webhook and the dashboard actually look at:
   // the subscription for installment plans, the PaymentIntent for one-off payments.
   // customer_creation is a payment-mode-only parameter; subscriptions always make one.
   if (spec.mode === 'subscription') {
-    params.subscription_data = { metadata: spec.metadata };
+    params.subscription_data = { metadata };
   } else {
-    params.payment_intent_data = { metadata: spec.metadata };
+    params.payment_intent_data = { metadata };
     params.customer_creation = 'always';
   }
   return params;
 }
 
-function redirect(location) {
-  return new Response(null, { status: 303, headers: { Location: location } });
+// The registration as the leads store keeps it: type 'enrollment' from the first save, so
+// the admin panel shows one row per family, and paymentStatus 'pending' until the webhook
+// hears from Stripe. name/email/phone/playerName are the columns every lead type shares.
+export function registrationRecord({ id, timestamp, values, spec }) {
+  const plan = getPlan(spec.plan);
+  return {
+    type: 'enrollment',
+    registrationId: id,
+    timestamp,
+    ...values,
+    name: values.parentFirst + ' ' + values.parentLast,
+    playerName: values.athleteFirst + ' ' + values.athleteLast,
+    plan: spec.plan,
+    planLabel: spec.label,
+    pay: spec.pay,
+    amountCents: spec.amountCents,
+    amount: dollars(spec.amountCents),
+    months: plan.months || null,
+    noticeDays: plan.noticeDays || null,
+    termTotalCents: totalCents(spec.plan, spec.pay),
+    paymentStatus: 'pending',
+    termsAccepted: true,
+    reviewed: true,
+    notified: false
+  };
 }
 
 export default async (request, context) => {
   if (request.method !== 'POST') return json(405, { error: 'method not allowed' });
-
-  const isForm = (request.headers.get('content-type') || '').includes('application/x-www-form-urlencoded');
-  let body;
-  if (isForm) {
-    const form = new URLSearchParams(await request.text());
-    body = {
-      plan: form.get('plan'), pay: form.get('pay'), email: form.get('email'),
-      guardianConfirmed: form.get('guardian-confirmed') === 'yes', 'en-hp': form.get('en-hp')
-    };
-  } else {
-    try {
-      body = await request.json();
-    } catch (err) {
-      body = null;
-    }
-    if (!body || typeof body !== 'object') return json(400, { error: 'invalid request body' });
+  if ((request.headers.get('content-type') || '').includes('application/x-www-form-urlencoded')) {
+    return new Response(null, { status: 303, headers: { Location: '/enroll?err=1#enErr' } });
   }
 
-  // Every failure below has two shapes, decided once here. The #enErr fragment is what
-  // makes a no-JS failure visible: /enroll ships the retry copy in that paragraph, hidden,
-  // and CSS reveals it on :target.
-  const fail = (status, error) => isForm
-    ? redirect('/enroll?plan=' + encodeURIComponent(body.plan || '') + '&pay=' + encodeURIComponent(body.pay || '') + '&err=1#enErr')
-    : json(status, { error });
+  let body;
+  try {
+    body = await request.json();
+  } catch (err) {
+    body = null;
+  }
+  if (!body || typeof body !== 'object') return json(400, { error: 'invalid request body' });
 
   // Honeypot, same as the contact and playbook forms: a bot gets the thanks page and
-  // Stripe never hears about it.
-  if (body['en-hp']) return isForm ? redirect('/enroll/thanks') : json(200, { url: '/enroll/thanks' });
+  // neither the store nor Stripe ever hears about it.
+  if (body['en-hp']) return json(200, { url: '/enroll/thanks' });
 
   const ip = clientIp(request, context);
   const allowed = await checkRateLimit('checkout:' + ip, { windowMs: RATE_LIMIT_WINDOW_MS, max: RATE_LIMIT_MAX });
-  if (!allowed) return fail(429, 'too many requests, try again later');
+  if (!allowed) return json(429, { error: 'too many requests, try again later' });
 
-  const email = String(body.email || '').trim();
-  if (!EMAIL_RE.test(email)) return fail(422, 'a valid email is required');
-  if (body.guardianConfirmed !== true) return fail(422, 'guardian confirmation is required');
-
-  let spec;
+  const { errors, values } = validateRegistration(body);
+  let spec = null;
   try {
     spec = checkoutSpec(body.plan, body.pay);
   } catch (err) {
-    return fail(422, err.message);
+    errors.plan = err.message;
   }
+  const keys = Object.keys(errors);
+  if (keys.length) return json(422, { error: errors[keys[0]], errors });
 
+  // A parent back from Stripe's cancel link resubmits with the id enroll.js kept, and the
+  // pending record is rewritten rather than doubled. Anything else gets a fresh id: a value
+  // that is not one of our own pending registrations is never reused, whatever the client says.
+  let id = null;
+  let reused = false;
+  if (typeof body.registrationId === 'string' && UUID_RE.test(body.registrationId)) {
+    const prior = await getLead('registration:' + body.registrationId);
+    if (prior && prior.paymentStatus === 'pending') {
+      id = body.registrationId;
+      reused = true;
+    }
+  }
+  if (!id) id = randomUUID();
+
+  const record = registrationRecord({ id, timestamp: new Date().toISOString(), values, spec });
+  try {
+    await addLead('registration:' + id, record);
+  } catch (err) {
+    console.error('registration ' + id + ' not saved: ' + err.message);
+    return json(500, { error: 'registration not saved' });
+  }
+  await notifyRegistration(record, reused);
+
+  // From here on every answer carries the id, so a retry from the same tab updates this
+  // record. 503 means "saved, but Stripe cannot take this plan yet": no key, or a price the
+  // catalog script has not created. enroll.js tells the parent Blake will send the link.
   const stripe = stripeClient();
-  if (!stripe) return fail(503, 'payments not configured');
+  if (!stripe) return json(503, { error: 'payments not configured', registrationId: id });
 
   let session;
   try {
     const price = await priceByLookupKey(stripe, spec.lookupKey);
     if (!price) {
       console.error('no active Stripe price for ' + spec.lookupKey + ': scripts/stripe-catalog.mjs has not been run for this mode (test or live)');
-      return fail(500, 'price not found: ' + spec.lookupKey);
+      return json(503, { error: 'price not configured: ' + spec.lookupKey, registrationId: id });
     }
     session = await stripe.checkout.sessions.create(sessionParams(spec, {
-      email, priceId: price.id, siteUrl: SITE_URL, nowSeconds: Math.floor(Date.now() / 1000)
+      email: values.email, priceId: price.id, siteUrl: SITE_URL, nowSeconds: Math.floor(Date.now() / 1000), registrationId: id
     }));
   } catch (err) {
     console.error('stripe checkout failed: ' + err.message);
-    return fail(502, 'checkout unavailable');
+    return json(502, { error: 'checkout unavailable', registrationId: id });
   }
 
-  return isForm ? redirect(session.url) : json(200, { url: session.url });
+  return json(200, { url: session.url, registrationId: id });
 };
+
+// Blake hears about a registration the moment it is saved, paid or not: this is the Jotform
+// submission email he is used to. The enrollment email from the webhook follows once Stripe
+// confirms the money. Never throws; a lost email is logged and the record still stands.
+async function notifyRegistration(record, reused) {
+  const sent = await sendEmail({
+    to: ownerEmail(),
+    subject: (reused ? 'Updated registration' : 'New registration') + ', payment pending: ' + record.playerName + ' (' + record.planLabel + ')',
+    html: '<h2>' + (reused ? 'Registration updated' : 'New registration') + '</h2>' +
+      '<p>' + escapeHtml(record.name) + ' registered ' + escapeHtml(record.playerName) + ' and is on the way to Stripe to pay ' +
+      escapeHtml(record.amount) + (record.pay === 'monthly' ? ' a month' : '') + '. The spot is not reserved until the enrollment email arrives. The signature is attached.</p>' +
+      recordTable(record),
+    attachments: signatureAttachment(record)
+  });
+  if (!sent) console.error('registration email not sent for ' + record.registrationId + '; the record is saved');
+}

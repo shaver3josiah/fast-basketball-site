@@ -9,6 +9,7 @@ import { renderCoachPage } from './src/lib/coach-page.mjs';
 import { breadcrumbList } from './src/lib/structured-data.mjs';
 import { SITE_URL, CONTACT } from './src/lib/site-config.mjs';
 import { PLANS, PAY_LABELS, getPlan, payOptionsFor, checkoutSpec, totalCents, dollars } from './src/lib/plans.mjs';
+import { FIELDS as REGISTRATION_FIELDS, SECTIONS as REGISTRATION_SECTIONS } from './src/lib/registration.mjs';
 import { TEXT_GROUPS, TEXT_LABELS, IMAGE_LABELS } from './src/lib/content-schema.mjs';
 import { CONTENT_GROUPS } from './src/lib/content-groups.mjs';
 import { ELEMENT_TYPES, FONT_FAMILIES, THEME_COLORS, BREAKPOINTS, DESIGN_WIDTH } from './src/lib/canvas-schema.mjs';
@@ -433,6 +434,7 @@ function step11b_privacyPage(content, prelude) {
 
   body += '<h2>What we collect</h2>\n';
   body += '<p>Only what you type into a form. The contact form asks for a name, an email, a phone number, your area, which program you are asking about, and whatever you want to tell us about the player. The playbook form asks for a name, an email, and the player\'s grade, position and skill focus. The Locker asks for an email so we can send you the resource you unlocked.</p>\n';
+  body += '<p>The enrollment form asks for more, because it is the registration for a training program: the athlete\'s name, date of birth, gender, grade, school, experience, and optionally their own email, phone, team, position and goals; the parent or guardian\'s name, relationship, email, phone, home city and preferred way to be contacted; the program, frequency, day and T-shirt size; the athlete\'s health insurance provider and policy number, which is what a coach needs if a player is hurt on the court; the plan chosen; any questions; and the parent\'s drawn signature on the agreement.</p>\n';
   body += '<p>One thing gets recorded that you did not type: a playbook request is saved along with the internet address it came from, which is how we stop the form being hammered by a bot. Netlify, which hosts the site, also keeps its own standard server logs, the way every web host does.</p>\n';
 
   body += '<h2>What we do with it</h2>\n';
@@ -446,8 +448,8 @@ function step11b_privacyPage(content, prelude) {
   body += '<h2>Who else touches it</h2>\n';
   body += '<p>Two companies, and only because the site cannot work without them.</p>\n';
   body += '<ul class="prog-list">\n';
-  body += '<li><b>Netlify</b> hosts this site, receives what the contact and playbook forms send, and stores playbook requests where Coach Blake can read them.</li>\n';
-  body += '<li><b>Resend</b> sends the playbook email. It gets the email address you gave and the playbook itself. Nothing else.</li>\n';
+  body += '<li><b>Netlify</b> hosts this site, receives what the contact, playbook and enrollment forms send, and stores playbook requests and enrollment records where Coach Blake can read them.</li>\n';
+  body += '<li><b>Resend</b> sends the playbook email to you, and sends each enrollment, signature included, to Coach Blake. It gets the email address you gave and the message itself. Nothing else.</li>\n';
   body += '</ul>\n';
   body += '<p>That is the complete list. No mailing list tool, no advertising platform, no data broker, nobody else in the middle.</p>\n';
 
@@ -457,12 +459,13 @@ function step11b_privacyPage(content, prelude) {
   body += '<li>The email you used to open the Locker, so your unlocked resources stay unlocked next time. Hit "Log out" in the Locker and it is gone.</li>\n';
   body += '<li>A count of the shots you have made in the little night court on the homepage. It is a number. That is genuinely all it is.</li>\n';
   body += '<li>Which program you clicked, so the contact form arrives already knowing what you wanted to ask about. It clears when you close the tab.</li>\n';
+  body += '<li>The answers you typed into the enrollment form, so coming back from Stripe\'s checkout does not empty it. The insurance policy number and the signature are not kept. All of it clears when you close the tab.</li>\n';
   body += '<li>A note that you have already seen the opening animation, so it does not replay on every page. That clears when you close the tab too.</li>\n';
   body += '</ul>\n';
   body += '<p>There is no analytics on this site, no advertising pixel, no session recording and no third-party script of any kind. Every script and font a page here loads is served from this site. Clearing your browser storage removes everything in that list.</p>\n';
 
   body += '<h2>Paying online</h2>\n';
-  body += '<p>Payments happen on Stripe\'s own checkout pages, not here. This site never sees a card number. Stripe keeps what it needs to process the payment, under <a href="https://stripe.com/privacy">Stripe\'s privacy policy</a>. We keep the enrollment record itself: the parent\'s name, email and phone, the player\'s name, the plan, and the dates. That is what running your player\'s sessions takes, for the reasons above.</p>\n';
+  body += '<p>Payments happen on Stripe\'s own checkout pages, not here. This site never sees a card number. Stripe keeps what it needs to process the payment, under <a href="https://stripe.com/privacy">Stripe\'s privacy policy</a>. We keep the enrollment record itself: everything the enrollment form asked, the plan, whether Stripe reports it paid, and the dates. That is what running your player\'s sessions takes, for the reasons above.</p>\n';
 
   body += '<h2>How long we keep it</h2>\n';
   body += '<p>As long as it is useful for the reason you gave it to us: answering your question, sending what you asked for, running your player\'s sessions. There is no fixed clock on it. If you are not training with us and you would rather we did not hold it, say so and we will not.</p>\n';
@@ -661,22 +664,72 @@ function step11d_enrollPages(sections, content, prelude) {
   };
   const legend = (n, text) => '<legend class="en-lg"><span class="en-n">0' + n + '</span>' + text + '</legend>\n';
 
+  // The registration questions come from src/lib/registration.mjs, so the page asks exactly
+  // what checkout.mjs validates. Labels take the .fld eyebrow style; a field the Jotform did
+  // not require says "optional", since the form marks nothing else.
+  const control = (f) => {
+    const attrs = ' id="en_' + f.key + '" name="' + f.key + '"' + (f.required ? ' required' : '') +
+      (f.autocomplete ? ' autocomplete="' + f.autocomplete + '"' : '') +
+      (f.placeholder ? ' placeholder="' + escapeAttr(f.placeholder) + '"' : '');
+    if (f.type === 'select') {
+      return '<select' + attrs + '><option value="">Please select</option>' +
+        f.options.map((o) => '<option value="' + escapeAttr(o) + '">' + escapeHtml(o) + '</option>').join('') + '</select>';
+    }
+    if (f.type === 'textarea') return '<textarea' + attrs + '></textarea>';
+    return '<input type="' + f.type + '"' + attrs + '>';
+  };
+  const field = (f) => '<div class="fld"><label for="en_' + f.key + '">' + escapeHtml(f.label) +
+    (f.required ? '' : ' <span class="en-opt">optional</span>') + '</label>' + control(f) + '</div>\n';
+  // Two fields that share a `row` sit side by side, the way the contact form pairs name and phone.
+  const fieldsIn = (section) => {
+    const list = REGISTRATION_FIELDS.filter((f) => f.section === section);
+    let out = '';
+    for (let i = 0; i < list.length; i++) {
+      const next = list[i + 1];
+      if (list[i].row && next && next.row === list[i].row) {
+        out += '<div class="fld-row">' + field(list[i]) + field(next) + '</div>\n';
+        i++;
+      } else out += field(list[i]);
+    }
+    return out;
+  };
+  // Same checkbox markup as the contact form's parent gate: the inline styles are what
+  // contact.html ships too. A child must not be able to sign for a parent or hand over a card.
+  const LABEL_CSS = 'display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;';
+  const BOX_CSS = 'width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;';
+  const check = (id, name, html) => '<div class="fld">\n<label for="' + id + '" style="' + LABEL_CSS + '">\n' +
+    '<input type="checkbox" id="' + id + '" name="' + name + '" value="yes" required style="' + BOX_CSS + '">\n<span>' + html + '</span>\n</label>\n</div>\n';
+
   let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
-  body += '<div class="eyebrow">Step 4 of 4</div>\n<h1>Enroll</h1>\n';
-  body += '<p class="lede">This is step 4 of enrollment. If you have not had your call with Coach Blake yet, <a href="/#contact">book it first</a>: plans are chosen on the enrollment call, after he has seen your player. Nothing here replaces that conversation.</p>\n';
+  body += '<div class="eyebrow">Athlete registration</div>\n<h1>Enroll</h1>\n';
+  body += '<p class="lede">Thank you for your interest in FAST Basketball. This form tells Coach Blake who your athlete is and places them in the right training group. The spot is reserved once payment is in. Not had your call with Coach Blake yet? <a href="/#contact">Book it first</a>.</p>\n';
   body += '</div>\n</header>\n';
   body += '<section class="band band-ink">\n<div class="shell">\n';
-  // The 48-hour evaluation rate is revealed by enroll.js only, so without JS its link does
-  // nothing and the $50 card is the only evaluation on the page. Say so rather than sell it.
-  body += '<noscript><p class="trust-line">JavaScript is off. Everything on this page still works. If Coach Blake quoted you the 48-hour evaluation rate, text ' + sms + ' for that link rather than paying the listed rate.</p></noscript>\n';
+  // The intro from Blake's registration form: where, when, and the two rules every family
+  // has to read before the first field. Facts, not marketing, so they stay as he wrote them.
+  body += '<div class="en-intro">\n';
+  body += '<p><b>Where.</b> The Salvation Army, Fort Lauderdale Corps, 100 SW 9th Ave, Fort Lauderdale, FL 33312.</p>\n';
+  body += '<p><b>When.</b> Every Thursday and Friday. 3rd to 5th grade 5:00 to 6:00 PM, 6th to 8th grade 6:00 to 7:00 PM, 9th to 12th grade 7:00 to 8:00 PM.</p>\n';
+  body += '<p><b>Registration and payment.</b> Every athlete completes this form and pays to take part. Your athlete\'s spot is not reserved until payment is received. Space is limited, and registration is confirmed first paid, first reserved. All payments are final. FAST Basketball does not offer refunds.</p>\n';
+  body += '<p>What to bring and program expectations follow once you are registered. Read the <a href="/terms">terms and agreement</a> before you sign. Questions: Blake Kingsley Jr., ' + sms + '. Train Fast. Think Fast. Play Fast.</p>\n';
+  body += '</div>\n';
+  // The signature box is drawn by enroll.js, so without JS there is nothing to sign with and
+  // nothing worth sending. The button is hidden rather than left to post thirty answers to a
+  // function that can only turn them away.
+  body += '<noscript><style>#enForm button[type="submit"]{display:none;}</style><p class="trust-line">JavaScript is off, and the signature box needs it. Text ' + sms + ' and Coach Blake will send you the registration another way.</p></noscript>\n';
   body += '<form id="enForm" class="en-form" method="post" action="/.netlify/functions/checkout">\n';
 
-  body += '<fieldset class="en-fs">\n' + legend(1, 'Choose your plan');
+  let n = 0;
+  for (const s of REGISTRATION_SECTIONS) {
+    body += '<fieldset class="en-fs">\n' + legend(++n, s.title) + '<div class="pb-form">\n' + fieldsIn(s.id) + '</div>\n</fieldset>\n';
+  }
+
+  body += '<fieldset class="en-fs">\n' + legend(++n, 'Choose your plan');
   body += '<div class="en-plans">\n' + Object.keys(PLANS).map(card).join('') + '</div>\n</fieldset>\n';
 
   // The pay options a plan does not price are hidden by a CSS rule keyed off the card's own
-  // data-monthly attribute (features.css), which is how the no-JS page matches syncPay().
-  body += '<fieldset class="en-fs" id="enPay">\n' + legend(2, 'Choose how to pay');
+  // data-monthly attribute (features.css), which is how the page matches syncPay() before JS runs.
+  body += '<fieldset class="en-fs" id="enPay">\n' + legend(++n, 'Choose how to pay');
   body += '<div class="en-pays">\n';
   for (const pay of Object.keys(PAY_LABELS)) {
     body += '<label class="en-pay"><input type="radio" name="pay" value="' + pay + '"' + (pay === 'full' ? ' checked' : '') + '>' +
@@ -684,19 +737,21 @@ function step11d_enrollPages(sections, content, prelude) {
   }
   body += '</div>\n</fieldset>\n';
 
-  body += '<fieldset class="en-fs">\n' + legend(3, 'Who is enrolling') + '<div class="pb-form">\n';
-  body += '<div class="fld"><label for="enEmail">Parent or Guardian Email</label><input type="email" id="enEmail" name="email" autocomplete="email" placeholder="you@email.com" required></div>\n';
-  // Same parent gate as the contact form, markup and copy: a child must not be able to
-  // hand over a card, and the inline styles are what contact.html ships too.
-  body += '<div class="fld">\n<label for="enGuardian" style="display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;">\n' +
-    '<input type="checkbox" id="enGuardian" name="guardian-confirmed" value="yes" required style="width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;">\n' +
-    '<span>I\'m the player\'s parent or guardian, or I\'m 18 or older, and these are my own contact details.</span>\n</label>\n</div>\n';
+  body += '<fieldset class="en-fs">\n' + legend(++n, 'Review and sign') + '<div class="pb-form">\n';
+  body += fieldsIn('agreement');
+  body += check('enReviewed', 'reviewed', 'I am this athlete\'s parent or guardian. The details above are correct, and I have read the <a href="/terms">player and parent expectations</a>.');
+  // Draw only, like the Jotform's pad. enroll.js paints it white, records the strokes and
+  // exports a PNG into the hidden input; the canvas keeps the .fld error styling of an input.
+  body += '<div class="fld en-sig-fld">\n<label>Parent signature</label>\n' +
+    '<canvas id="enSig" class="en-sig" width="620" height="228" role="img" aria-label="Signature box. Sign with your finger or mouse."></canvas>\n' +
+    '<div class="en-sig-bar"><span>Sign in the box with your finger or mouse.</span><button type="button" class="btn btn-ghost" id="enSigClear">Clear</button></div>\n' +
+    '<input type="hidden" name="signature" id="enSignature">\n</div>\n';
+  body += check('enTerms', 'terms', 'I agree to the <a href="/terms">terms and conditions</a>.');
   // Honeypot, hidden exactly as the playbook form hides its own.
   body += '<p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="en-hp" id="enHp" tabindex="-1" autocomplete="off"></label></p>\n';
-  // The copy ships in the page instead of being written by JS, because the caller that
-  // needs it most is the no-JS form POST: checkout.mjs 303s back to ?err=1#enErr and
-  // #enErr:target is what unhides it. enroll.js replaces the text on the fetch path.
-  body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;">That did not go through. Check the plan and payment option you picked and try again, or text Coach Blake at ' + CONTACT.phone + ' and he will send your link.</p>\n';
+  // Ships in the page rather than being written by JS: a form POST with JS off comes back to
+  // ?err=1#enErr and #enErr:target is what unhides it. enroll.js replaces the text otherwise.
+  body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;">That did not go through. Check the highlighted fields and try again, or text Coach Blake at ' + CONTACT.phone + ' and he will take it from there.</p>\n';
   body += '<button type="submit" class="btn btn-primary" style="width:100%;">Continue to Secure Checkout</button>\n';
   body += '<p class="trust-line">You finish on Stripe\'s secure checkout page. There you tick the terms box and type your full name to agree, exactly as the agreement asks. Card details never touch this site.</p>\n';
   body += '</div>\n</fieldset>\n</form>\n';
@@ -706,7 +761,7 @@ function step11d_enrollPages(sections, content, prelude) {
 
   writeHtml(resolve(DIST, 'enroll', 'index.html'), buildSimplePage({
     title: 'Enroll | Fast Basketball',
-    description: 'Step 4 of enrollment at Fast Basketball: choose the plan from your enrollment call, pick pay in full or monthly, and finish on Stripe\'s secure checkout.',
+    description: 'Athlete registration at Fast Basketball: the athlete, the parent, the program, the plan from your enrollment call, the signed agreement, then Stripe\'s secure checkout.',
     canonicalPath: '/enroll',
     bodyHtml: body,
     content,

@@ -8,8 +8,8 @@
 // email, and the guard in onCheckoutCompleted makes every retry safe.
 
 import Stripe from 'stripe';
-import { addLead, getLead } from './lib/leads.mjs';
-import { sendEmail, ownerEmail, escapeHtml } from './lib/notify.mjs';
+import { addLead, getLead, listLeads } from './lib/leads.mjs';
+import { sendEmail, ownerEmail, escapeHtml, recordTable, signatureAttachment } from './lib/notify.mjs';
 import { stripeClient, json } from './lib/stripe.mjs';
 import { getPlan, checkoutSpec, dollars, cancelNoticeBy, PAY_LABELS } from '../../src/lib/plans.mjs';
 import { CONTACT, absoluteUrl } from '../../src/lib/site-config.mjs';
@@ -35,6 +35,7 @@ export default async (request) => {
   try {
     switch (event.type) {
       case 'checkout.session.completed': return json(200, await onCheckoutCompleted(event));
+      case 'checkout.session.expired': return json(200, await onSessionExpired(event));
       case 'invoice.payment_failed': return json(200, await onPaymentFailed(event));
       case 'customer.subscription.deleted': return json(200, await onSubscriptionDeleted(event));
       default: return json(200, { ignored: event.type });
@@ -50,15 +51,21 @@ export default async (request) => {
 
 async function onCheckoutCompleted(event) {
   const session = event.data.object;
-  const key = 'enrollment:' + session.id;
+  const meta = session.metadata || {};
+  // A session the enroll page opened carries its registration id, and the record that page
+  // wrote is completed in place: one row per family. A session Blake made in the dashboard
+  // has none and gets a record of its own, keyed by the session, holding what Stripe knows.
+  const regId = typeof meta.registrationId === 'string' && meta.registrationId ? meta.registrationId : null;
+  const key = regId ? 'registration:' + regId : 'enrollment:' + session.id;
   // The marker is "Blake was told", not "a record exists". A retry or a dashboard resend is
   // the only second chance the owner email gets; skipping on the record alone spent that
   // chance on the run where the send failed.
   const seen = await getLead(key);
   if (seen && seen.notified) return { duplicate: true };
+  const reg = regId && seen ? seen : null;
+  if (regId && !seen) console.error('session ' + session.id + ' names registration ' + regId + ', which is not in the store');
 
   const timestamp = new Date(event.created * 1000).toISOString();
-  const meta = session.metadata || {};
   const plan = meta.plan || '';
   const pay = meta.pay || '';
   let planLabel = plan;
@@ -71,16 +78,22 @@ async function onCheckoutCompleted(event) {
   const noticeDays = Number(meta.noticeDays) || null;
   const amountCents = session.amount_total ?? 0;
 
+  // The registration's own answers come first and Stripe's facts land on top. Stripe's
+  // email and phone win because the receipt went there; the names come from the form,
+  // with the typed-to-agree name kept beside them as the contract's own evidence.
   const record = {
+    ...(reg || {}),
     type: 'enrollment',
     timestamp,
+    registeredAt: reg ? reg.timestamp : null,
     sessionId: session.id,
     customerId: session.customer || null,
     subscriptionId: session.subscription || null,
-    email: session.customer_details?.email || session.customer_email || null,
-    phone: session.customer_details?.phone || null,
-    name: customField(session, 'agree_name'),
-    playerName: customField(session, 'player_name'),
+    email: session.customer_details?.email || session.customer_email || reg?.email || null,
+    phone: session.customer_details?.phone || reg?.phone || null,
+    name: reg?.name || customField(session, 'agree_name'),
+    agreeName: customField(session, 'agree_name'),
+    playerName: reg?.playerName || customField(session, 'player_name'),
     plan,
     planLabel,
     pay,
@@ -106,7 +119,8 @@ async function onCheckoutCompleted(event) {
   const sent = await sendEmail({
     to: ownerEmail(),
     subject: (paid ? 'New enrollment: ' : 'UNPAID, do not welcome yet: ') + planLabel + ' (' + (PAY_LABELS[pay] || pay) + ') - ' + (record.name || record.email),
-    html: enrollmentHtml(record, scheduleNote, paid)
+    html: enrollmentHtml(record, scheduleNote, paid),
+    attachments: signatureAttachment(record)
   });
   if (sent) await addLead(key, { ...record, notified: true });
   else console.error('owner email not sent for ' + key + '; the record is saved, and a Stripe resend of this event will try again');
@@ -156,11 +170,9 @@ async function attachSchedule(session, plan, pay) {
 }
 
 function enrollmentHtml(record, scheduleNote, paid) {
-  const rows = Object.entries(record)
-    .map(([k, v]) => '<tr><th align="left">' + k + '</th><td>' + escapeHtml(v ?? '') + '</td></tr>')
-    .join('');
   return '<h2>' + (paid ? 'New enrollment' : 'Enrollment recorded, payment NOT collected') + '</h2>' +
-    '<table border="1" cellpadding="4" style="border-collapse:collapse">' + rows + '</table>' +
+    recordTable(record) +
+    (record.signature ? '<p>The parent\'s signature is attached.</p>' : '') +
     '<p><b>Installment schedule:</b> ' + escapeHtml(scheduleNote) + '</p>' +
     (paid
       ? '<h2>Welcome email to paste</h2>' +
@@ -198,6 +210,33 @@ function welcomeHtml(r) {
 
 function longDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+
+// Stripe expires a session 23 hours after the page opened it (SESSION_TTL in checkout.mjs). A
+// registration still pending then is a family that filled in the form and never paid, which
+// is a text Blake wants to send. One that is no longer pending was paid through a later
+// session from the same tab and stays as it is.
+async function onSessionExpired(event) {
+  const id = event.data.object.metadata?.registrationId;
+  if (!id) return { ignored: 'no registration' };
+  const key = 'registration:' + id;
+  const reg = await getLead(key);
+  if (!reg || reg.paymentStatus !== 'pending') return { ignored: 'not pending' };
+  // ponytail: a full scan of the store, fine at this size. A parent who came back in a fresh
+  // tab registered again under a new id; if that one paid, this one is not a lost family.
+  const twin = (await listLeads()).find((l) => l.key !== key && l.type === 'enrollment' && l.paymentStatus === 'paid' &&
+    l.email === reg.email && l.playerName === reg.playerName);
+  await addLead(key, { ...reg, paymentStatus: twin ? 'superseded' : 'abandoned' });
+  if (twin) return { ok: true, superseded: true };
+  await alert(
+    'Registered, did not pay: ' + reg.playerName,
+    '<h2>Registration without payment</h2>' +
+    '<p>' + escapeHtml(reg.name) + ' registered ' + escapeHtml(reg.playerName) + ' for ' + escapeHtml(reg.planLabel) +
+    ' and the checkout expired unpaid. Preferred contact: ' + escapeHtml(reg.contactMethod || '?') + ', ' +
+    escapeHtml(reg.phone || '') + ', ' + escapeHtml(reg.email || '') + '.</p>' +
+    '<p>The spot is not reserved. A text from you is usually what finishes it.</p>'
+  );
+  return { ok: true };
 }
 
 async function onPaymentFailed(event) {

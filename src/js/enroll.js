@@ -3,19 +3,21 @@
   var form = document.getElementById('enForm');
   if(!form) return;
 
-  /* Native validation is the no-JS fallback's only check, so the markup keeps `required`.
-     With JS the messages below take over, the way contact-form.js does with novalidate. */
+  /* The markup keeps `required` so native validation still fires if this script fails to
+     load. With JS the messages below take over, the way contact-form.js does with novalidate. */
   form.setAttribute('novalidate', '');
 
-  var emailInput = document.getElementById('enEmail');
-  var guardianInput = document.getElementById('enGuardian');
+  var emailInput = document.getElementById('en_email');
   var hp = document.getElementById('enHp');
   var payBox = document.getElementById('enPay');
   var formErr = document.getElementById('enErr');
   var btn = form.querySelector('button[type="submit"]');
   var btnLabel = btn ? btn.textContent : '';
   var PHONE = '(503) 686-8371';
-  var RETRY = 'That did not go through. Try again, or text Coach Blake at ' + PHONE + ' and he will send your link.';
+  var RETRY = 'That did not go through. Try again, or text Coach Blake at ' + PHONE + ' and he will take it from there.';
+  var STORE = 'fb_enroll';
+  /* Server error keys that are not registration fields, and the element each one marks. */
+  var FIXED = { reviewed: 'enReviewed', terms: 'enTerms', signature: 'enSig' };
 
   function say(msg){ if(window.fbToast) window.fbToast(msg); }
 
@@ -74,10 +76,8 @@
       if(line) offered++;
     }
     /* One priced option: select that one and fold the step away. Take whichever option the
-       card actually prices rather than assuming it is 'full' — every plan today that sells a
-       single option sells pay in full, but a monthly-only one would otherwise arrive at
-       checkout with a pay the catalog refuses. The loop skips disabled radios, so it picks
-       the priced option by construction. */
+       card actually prices rather than assuming it is 'full'. The loop skips disabled radios,
+       so it picks the priced option by construction. */
     if(card && offered < 2){
       for(var j = 0; j < pays.length; j++){
         if(pays[j].disabled) continue;
@@ -103,6 +103,82 @@
     }
   }
 
+  /* ---- Signature box. Draw only, like the Jotform's pad: a white box, dark ink, exported
+     as a PNG on submit. Pointer events cover mouse, pen and finger; touch-action:none in the
+     CSS keeps a finger from scrolling the page instead of signing. The backing store is
+     twice the box's CSS size, so the PNG Blake receives is not a blurry thumbnail. */
+  var sig = document.getElementById('enSig');
+  var sigClear = document.getElementById('enSigClear');
+  var ctx = sig && sig.getContext ? sig.getContext('2d') : null;
+  var strokes = 0;
+  var drawing = false;
+
+  function sigBlank(){
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, sig.width, sig.height);
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#0A0A0C';
+    strokes = 0;
+  }
+  function sigPoint(e){
+    var r = sig.getBoundingClientRect();
+    return [(e.clientX - r.left) * sig.width / r.width, (e.clientY - r.top) * sig.height / r.height];
+  }
+  if(ctx){
+    sigBlank();
+    sig.addEventListener('pointerdown', function(e){
+      drawing = true;
+      strokes++;
+      try { sig.setPointerCapture(e.pointerId); } catch(err){}
+      var p = sigPoint(e);
+      ctx.beginPath();
+      ctx.moveTo(p[0], p[1]);
+      /* A tap with no movement still leaves a dot, so the dot on an i counts. */
+      ctx.lineTo(p[0] + 0.1, p[1]);
+      ctx.stroke();
+      clearErr(sig);
+      e.preventDefault();
+    });
+    sig.addEventListener('pointermove', function(e){
+      if(!drawing) return;
+      var p = sigPoint(e);
+      ctx.lineTo(p[0], p[1]);
+      ctx.stroke();
+      e.preventDefault();
+    });
+    sig.addEventListener('pointerup', function(){ drawing = false; });
+    sig.addEventListener('pointercancel', function(){ drawing = false; });
+    if(sigClear) sigClear.addEventListener('click', sigBlank);
+  }
+
+  /* ---- The typed answers live for the tab. Stripe's cancel link lands back here, and
+     thirty empty fields after one "back" is how a family gives up. The policy number and
+     the signature are not kept: retyping one line and signing again is the right price for
+     not parking those in the browser. Radios are not kept either; ?plan= handles those. */
+  var SKIP = { 'en-hp': 1, signature: 1, insurancePolicy: 1, plan: 1, pay: 1 };
+  function remember(){
+    var data = {};
+    for(var i = 0; i < form.elements.length; i++){
+      var el = form.elements[i];
+      if(!el.name || SKIP[el.name] || !/^(text|email|tel|date|select-one|textarea)$/.test(el.type)) continue;
+      data[el.name] = el.value;
+    }
+    try { sessionStorage.setItem(STORE, JSON.stringify(data)); } catch(e){}
+  }
+  function restore(){
+    var data = null;
+    try { data = JSON.parse(sessionStorage.getItem(STORE) || 'null'); } catch(e){}
+    if(!data || typeof data !== 'object') return;
+    for(var k in data){
+      if(!Object.prototype.hasOwnProperty.call(data, k) || SKIP[k] || typeof data[k] !== 'string') continue;
+      var el = form.elements[k];
+      if(el && el.tagName && !el.value) el.value = data[k];
+    }
+  }
+  restore();
+
   var q = null;
   try { q = new URLSearchParams(window.location.search); } catch(e){}
   if(q){
@@ -121,57 +197,109 @@
     showFormErr('');
   });
 
+  /* Every control in page order, so the first problem is the one that gets focus. The
+     server checks all of this again (registration.mjs); this is the copy with manners. */
+  function validate(){
+    var bad = null;
+    function flag(el, msg){ setErr(el, msg); if(!bad) bad = el; }
+    var planSeen = false;
+    var els = form.querySelectorAll('input, select, textarea, canvas');
+    for(var i = 0; i < els.length; i++){
+      var el = els[i];
+      if(el === hp || el.name === 'pay' || el.type === 'hidden') continue;
+      if(el.name === 'plan'){
+        if(planSeen) continue;
+        planSeen = true;
+        if(!checked('plan')){
+          showFormErr('Pick a plan. It is the one you settled on with Coach Blake.');
+          if(!bad) bad = form.querySelector('.en-card:not([hidden]) input[name="plan"]') || el;
+        }
+        continue;
+      }
+      clearErr(el);
+      if(el === sig){
+        if(!strokes) flag(el, 'Sign in the box. Finger or mouse both work.');
+        continue;
+      }
+      if(el.type === 'checkbox'){
+        if(el.required && !el.checked) flag(el, el.id === 'enTerms' ? 'Tick this once you have read the agreement.' : 'Tick this so we know a parent or guardian is enrolling. Players, grab a parent.');
+        continue;
+      }
+      var v = (el.value || '').trim();
+      if(!v){
+        if(el.required) flag(el, 'Please fill this in.');
+        continue;
+      }
+      if(el.type === 'email' && !emailOk(v)) flag(el, 'That email looks off. Check the spelling and try again.');
+      else if(el.type === 'tel' && v.replace(/\D/g, '').length < 10) flag(el, 'Add the area code: ten digits.');
+      else if(el.type === 'date' && !(/^\d{4}-\d{2}-\d{2}$/.test(v) && new Date(v + 'T00:00:00Z') < new Date())) flag(el, 'A date in the past, please.');
+    }
+    return bad;
+  }
+
   form.addEventListener('submit', function(e){
     e.preventDefault();
     showFormErr('');
 
-    var plan = checked('plan');
-    var bad = null;
-    if(!plan){
-      showFormErr('Pick a plan first. It is the one you settled on with Coach Blake.');
-      bad = form.querySelector('.en-card:not([hidden]) input[name="plan"]');
-    }
-    if(!emailOk(emailInput.value.trim())){
-      setErr(emailInput, 'That email looks off. Check the spelling and try again.');
-      bad = bad || emailInput;
-    } else { clearErr(emailInput); }
-    /* Parent gate: a child must not be able to hand over a card. */
-    if(guardianInput && !guardianInput.checked){
-      setErr(guardianInput, 'Tick this so we know an adult is enrolling. Players, grab a parent.');
-      bad = bad || guardianInput;
-    } else if(guardianInput){ clearErr(guardianInput); }
+    var bad = validate();
     if(bad){
       bad.focus();
-      say(bad === guardianInput ? 'Confirm a parent or guardian is enrolling' : 'Pick a plan and add a valid email');
+      say(bad === sig ? 'Sign the form' : 'Check the highlighted fields');
       return;
     }
+    remember();
 
+    var plan = checked('plan');
     var pay = checked('pay');
-    if(btn){ btn.disabled = true; btn.textContent = 'Opening checkout...'; }
+    if(btn){ btn.disabled = true; btn.textContent = 'Saving your registration...'; }
 
     function fail(msg){
       /* ponytail: typed values stay in the DOM, so a retry costs the parent nothing. */
       showFormErr(msg);
-      say('Checkout did not open');
+      say('Registration did not go through');
       if(btn){ btn.disabled = false; btn.textContent = btnLabel; }
     }
+
+    var data = {};
+    new FormData(form).forEach(function(v, k){ if(typeof v === 'string') data[k] = v; });
+    data.plan = plan.value;
+    data.pay = pay ? pay.value : 'full';
+    data.reviewed = document.getElementById('enReviewed').checked === true;
+    data.terms = document.getElementById('enTerms').checked === true;
+    data.signature = ctx ? sig.toDataURL('image/png') : '';
+    data['en-hp'] = hp ? hp.value : '';
+    /* The id from an earlier try in this tab, so a return from Stripe's cancel link rewrites
+       the same pending registration instead of adding a second one. */
+    try { data.registrationId = sessionStorage.getItem(STORE + '_id') || ''; } catch(err){}
 
     fetch('/.netlify/functions/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        plan: plan.value,
-        pay: pay ? pay.value : 'full',
-        email: emailInput.value.trim(),
-        guardianConfirmed: true,
-        'en-hp': hp ? hp.value : ''
-      })
+      body: JSON.stringify(data)
     }).then(function(res){
-      return res.json().catch(function(){ return {}; }).then(function(data){
-        if(res.status === 200 && data.url){ window.location.assign(data.url); return; }
-        if(res.status === 503) return fail('Online enrollment opens soon. Text Coach Blake at ' + PHONE + ' and he will send your link.');
+      return res.json().catch(function(){ return {}; }).then(function(r){
+        if(r.registrationId){ try { sessionStorage.setItem(STORE + '_id', r.registrationId); } catch(err){} }
+        if(res.status === 200 && r.url){ window.location.assign(r.url); return; }
+        if(res.status === 503){
+          /* Saved, but Stripe cannot take this plan yet. Say so and leave the button down:
+             a second click would only save the same registration again. */
+          showFormErr('Your registration is saved. Online payment opens soon, and Coach Blake will text you the payment link. Nothing more to do here.');
+          say('Registration saved');
+          if(btn) btn.textContent = 'Registration saved';
+          return;
+        }
         if(res.status === 429) return fail('Too many tries. Wait a few minutes.');
-        if((res.status === 422 || res.status === 400) && data.error) return fail(data.error);
+        if(res.status === 422){
+          var first = null;
+          for(var k in (r.errors || {})){
+            var el = document.getElementById('en_' + k) || document.getElementById(FIXED[k] || '');
+            if(!el) continue;
+            setErr(el, r.errors[k]);
+            if(!first) first = el;
+          }
+          if(first) first.focus();
+          return fail(r.error || RETRY);
+        }
         fail(RETRY);
       });
     }).catch(function(){ fail(RETRY); });

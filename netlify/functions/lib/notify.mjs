@@ -7,7 +7,7 @@
 
 import { CONTACT } from '../../../src/lib/site-config.mjs';
 
-export async function sendEmail({ to, subject, html }) {
+export async function sendEmail({ to, subject, html, attachments = [] }) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.PLAYBOOK_FROM_EMAIL;
   if (!apiKey || !from) return false;
@@ -15,7 +15,7 @@ export async function sendEmail({ to, subject, html }) {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [to], subject, html })
+      body: JSON.stringify({ from, to: [to], subject, html, ...(attachments.length ? { attachments } : {}) })
     });
     return res.ok;
   } catch (err) {
@@ -34,4 +34,22 @@ export function ownerEmail() {
 // the sendEmail import. Fold playbook's copy into this one the next time it is edited.
 export function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// A record as the owner emails print it: one row per field. The signature is left out
+// because it is a PNG data URL, which no mail client shows inline; signatureAttachment()
+// carries it instead. `notified` is bookkeeping, not something Blake reads.
+export function recordTable(record, skip = ['signature', 'notified']) {
+  return '<table border="1" cellpadding="4" style="border-collapse:collapse">' +
+    Object.entries(record)
+      .filter(([k]) => !skip.includes(k))
+      .map(([k, v]) => '<tr><th align="left">' + escapeHtml(k) + '</th><td>' + escapeHtml(v ?? '') + '</td></tr>')
+      .join('') +
+    '</table>';
+}
+
+// Resend takes attachment content as base64, which is a data URL after its comma.
+export function signatureAttachment(record) {
+  const m = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(record?.signature || '');
+  return m ? [{ filename: 'signature.png', content: m[1] }] : [];
 }

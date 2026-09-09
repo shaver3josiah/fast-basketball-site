@@ -229,6 +229,15 @@
   // falls back to the raw value rather than showing a blank.
   var PAY_LABELS = { full: 'Pay in full', monthly: 'Monthly' };
   var SEP = ' \u00b7 ';
+  // A registration is an enrollment row before Stripe has confirmed anything. 'paid' and
+  // 'unpaid' are Stripe's own words for a completed session; the rest are ours, set by
+  // checkout.mjs and the webhook.
+  var STATUS = { pending: 'PENDING PAYMENT', abandoned: 'NO PAYMENT', superseded: 'REPLACED', unpaid: 'UNPAID' };
+  // The registration's typed answers, in form order, for the CSV. Mirrors FIELDS in
+  // src/lib/registration.mjs; the signature stays out because it is an image, not a cell.
+  var REG_KEYS = ['athleteFirst', 'athleteLast', 'dob', 'gender', 'grade', 'school', 'studentEmail', 'studentPhone',
+    'experience', 'team', 'position', 'goals', 'parentFirst', 'parentLast', 'relationship', 'homeCity', 'contactMethod',
+    'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'paymentStatus', 'agreeName'];
 
   function detailsText(l){
     if(l.type === 'playbook') return (l.position || '') + ' / ' + (l.focus || '');
@@ -237,8 +246,10 @@
       // the row cannot read as the $183.33 Blake sold for $550.
       var s = (l.planLabel || l.plan || '') + SEP + (PAY_LABELS[l.pay] || l.pay || '') + SEP +
         (l.amount || '') + (l.amount && l.pay === 'monthly' ? ' a month' : '');
+      if(STATUS[l.paymentStatus]) s = STATUS[l.paymentStatus] + SEP + s;
       if(l.cancelNoticeBy) s += SEP + 'notice by ' + l.cancelNoticeBy;
-      if(l.playerName) s += SEP + 'player ' + l.playerName;
+      if(l.playerName) s += SEP + 'player ' + l.playerName + (l.grade ? ', ' + l.grade : '');
+      if(l.program) s += SEP + l.program;
       return s;
     }
     return l.area || '';
@@ -257,10 +268,12 @@
   }
 
   function leadsCsv(rows){
-    var lines = ['date,name,email,phone,type,plan,pay,amount,cancelNoticeBy,details'];
+    var lines = ['date,name,email,phone,type,plan,pay,amount,cancelNoticeBy,details,' + REG_KEYS.join(',')];
     rows.forEach(function(l){
-      lines.push([l.timestamp, l.name, l.email, l.phone, l.type, l.plan, l.pay, l.amount, l.cancelNoticeBy,
-        detailsText(l) + (l.livemode === false ? ' (test)' : '')].map(csvCell).join(','));
+      var cells = [l.timestamp, l.name, l.email, l.phone, l.type, l.plan, l.pay, l.amount, l.cancelNoticeBy,
+        detailsText(l) + (l.livemode === false ? ' (test)' : '')];
+      REG_KEYS.forEach(function(k){ cells.push(l[k]); });
+      lines.push(cells.map(csvCell).join(','));
     });
     return lines.join('\r\n') + '\r\n';
   }
@@ -448,6 +461,16 @@
           var badge = cell('span', 'TEST');
           badge.className = 'badge-test';
           details.appendChild(badge);
+        }
+        // The parent's drawn signature. Only a PNG data URL is ever put in the src: the
+        // function stored it under that same shape, and a stranger's string that is not one
+        // simply does not render.
+        if(typeof l.signature === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(l.signature)){
+          var img = document.createElement('img');
+          img.src = l.signature;
+          img.alt = 'Parent signature';
+          img.style.cssText = 'display:block;height:40px;margin-top:6px;border:1px solid #ddd;border-radius:4px;background:#fff;';
+          details.appendChild(img);
         }
         tr.appendChild(details);
         tbody.appendChild(tr);

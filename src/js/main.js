@@ -269,27 +269,21 @@
     foldsClosedForPrint = [];
   });
 
-  /* Sticky mobile CTA bar: hidden over the hero, the contact band and the footer. */
+  /* Sticky mobile CTA bar ("Book Your Call", "See Pricing"): out of the way while the visitor
+     reads, in once they reach the end of the page (owner's call, 9 September 2026). It used to
+     be the other way round, shown everywhere but the hero, the contact band and the footer,
+     which sat two buttons over every form on the site. The footer is the sentinel; a page too
+     short to scroll shows it at once, which is the same rule. */
   var mobBar = document.getElementById('mobBar');
   if(mobBar){
-    var barState = {hero:true, contact:false, foot:false};
-    function setBar(){ mobBar.classList.toggle('on', !barState.hero && !barState.contact && !barState.foot); }
-    function watch(el, key){
-      /* A missing sentinel means "not over it", not "permanently over it". barState
-         starts hero:true, which is right on the homepage before the observer first
-         fires — but every other page has no #home, so this returned early and left
-         hero true forever. setBar() then never added .on and the mobile CTA bar was
-         invisible on all fifteen interior pages while still occupying its space. */
-      if(!el){ barState[key] = false; return; }
+    var foot = document.querySelector('.ft');
+    if(foot){
       new IntersectionObserver(function(entries){
-        barState[key] = entries[0].isIntersecting;
-        setBar();
-      }, {threshold:0.05}).observe(el);
+        mobBar.classList.toggle('on', entries[0].isIntersecting);
+      }, {threshold:0.05}).observe(foot);
+    } else {
+      mobBar.classList.add('on');
     }
-    watch(document.getElementById('home'), 'hero');
-    watch(document.getElementById('contact'), 'contact');
-    watch(document.querySelector('.ft'), 'foot');
-    setBar();
   }
 
   var toast = document.getElementById('toast');
