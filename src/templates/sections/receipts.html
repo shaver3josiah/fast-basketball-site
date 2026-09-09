@@ -5,6 +5,12 @@
       <h2 data-edit="rcp.h2">Two championships. Check them yourself.</h2>
       <p class="lede" data-edit="rcp.lede">Two seasons. Two programs. Two championships. Coach Blake was on staff for all of it, and he brought the same standards to South Florida.</p>
     </div>
+    <!-- FOLD (September 2026): the page carried too much at once, so this body ships closed in a
+         native details element and opens on the pill; main.js opens it for any link that targets
+         the section. The pill label and the fact beside it are hard-coded: to make them editable,
+         hook a leaf span inside the summary, never the summary itself (applyTextEdits splices leaves). -->
+    <details class="fold">
+      <summary><span class="btn btn-ghost fold-pill"><span class="fold-show">See the record</span><span class="fold-hide">Hide the record</span><svg class="fold-ic" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path class="fold-v" d="M6 1v10"/><path d="M1 6h10"/></svg></span><span class="fold-fact">51 wins, two titles, and where to check them</span></summary>
     <!-- The scoreboard, folded in from its own red band after the September 2026 review: the record
          was told four times on one page. It is stated once here, above the photos that prove it.
          No .rise on the tiles: main.js staggers the data-count counters 160ms apart, and the numbers
@@ -68,6 +74,7 @@
       <p><b data-edit="rcp.cta.b">That season is over.</b><span data-edit="rcp.cta.rest"> The preparation behind it now goes into your player's footwork, handle, and reads, one week at a time. It starts with a call.</span></p>
       <a href="#contact" class="btn btn-primary" data-edit="rcp.cta">Book Your Call</a>
     </div>
+    </details>
   </div>
 </section>
 

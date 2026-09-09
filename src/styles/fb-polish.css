@@ -762,7 +762,6 @@ html.fb-light .evd-word{filter:none;}
 @media(max-width:480px){.ticker .ticker-i{font-size:1rem;}}
 
 /* Scoreboard tiles inside The Résumé (folded in from their own red band). */
-.rcp-score{margin-top:-8px;}
 .rcp-score+.score-src{margin-bottom:44px;color:var(--text-dim-dark);}
 html.fb-light .score-c{background:#fff;border-color:var(--line-light);}
 html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
@@ -805,3 +804,38 @@ html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
        system's own footer carries 14px on each side of that gap. render.mjs dropped both
        margins and left only .brand's 6px padding. 18px restores the kit's 24px. */
 .ft-brand{margin-bottom:18px;}
+
+/* ---------- Folded sections ----------
+   Five homepage bodies ship inside a native <details class="fold"> under the section head. The
+   summary is a row: a .btn-ghost pill (the FAQ's red plus, folding to a minus, drawn as an inline
+   SVG) and one plain fact beside it, so the closed state still says the essential thing and the
+   pill never has to carry a sentence on a phone. Native so it works with JS off; main.js opens the
+   fold for any link that targets the section and arms the reveals inside it.
+   The open/close animates only where interpolate-size exists (Chromium 131+) AND motion is
+   allowed: base.css's reduced-motion reset is *,*::before,*::after and cannot reach
+   ::details-content, so the gate lives here, with data-motion="off" in it too. Everywhere else
+   the toggle is the instant native one. overflow-clip-margin gives the card hover lifts
+   (-6 to -8px) room while open; the same 12px peeks below the shrinking edge during a close. */
+.band:has(> .shell > .fold) .head{margin-bottom:28px;}
+.fold>summary{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;cursor:pointer;list-style:none;}
+.fold>summary::-webkit-details-marker{display:none;}
+/* The gap under the pill is padding on the body's first block, so it grows with the body instead
+   of popping in as a margin (and nothing animates a margin). */
+.fold>summary+*{padding-top:44px;}
+.fold>summary:hover .fold-pill{border-color:var(--fast-red);transform:translateY(-3px);}
+.fold>summary:active .fold-pill{transform:translateY(-1px) scale(.97);}
+.fold>summary:focus-visible{outline:none;}
+.fold>summary:focus-visible .fold-pill{outline:3px solid var(--red-hot);outline-offset:3px;}
+.fold-ic{flex-shrink:0;stroke:var(--fast-red);stroke-width:2;stroke-linecap:round;fill:none;}
+.fold-ic .fold-v{transform-box:fill-box;transform-origin:center;transition:transform calc(.35s / var(--motion-speed,1)) var(--ease-rush);}
+.fold[open] .fold-ic .fold-v{transform:scaleY(0);}
+.fold-fact{font-size:.86rem;color:var(--text-dim-dark);}
+.band-light .fold-fact,html.fb-light .fold-fact{color:var(--text-soft-light);}
+.fold[open]>summary .fold-fact,.fold[open]>summary .fold-show,.fold:not([open])>summary .fold-hide{display:none;}
+@supports (interpolate-size:allow-keywords){
+  @media(prefers-reduced-motion:no-preference){
+    html:not([data-motion="off"]) .fold{interpolate-size:allow-keywords;}
+    html:not([data-motion="off"]) .fold::details-content{block-size:0;overflow:clip;overflow-clip-margin:12px;transition:block-size calc(.45s / var(--motion-speed,1)) var(--ease-rush),content-visibility calc(.45s / var(--motion-speed,1)) allow-discrete;}
+    html:not([data-motion="off"]) .fold[open]::details-content{block-size:auto;}
+  }
+}

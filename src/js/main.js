@@ -157,6 +157,18 @@
     closeEgg();
   });
 
+  /* Folded sections (details.fold, five homepage bodies): nothing inside a closed fold is
+     observed or force-revealed until it opens, so its stagger and count-up play for the
+     parent who opened it instead of running unseen. arm() runs once for the document and
+     again for each fold as it opens; toggle does not bubble, hence the capture listener. */
+  function inClosedFold(el){ return !!el.closest('details.fold:not([open])'); }
+  var armReveals = function(){};
+  var armCounters = function(){};
+  function arm(root){ armReveals(root); armCounters(root); }
+  document.addEventListener('toggle', function(e){
+    if(e.target.matches && e.target.matches('details.fold') && e.target.open) arm(e.target);
+  }, true);
+
   if(M.reveals === false){
     /* Setting disabled: same outcome as the safety net below, applied immediately
        instead of observed — no IntersectionObserver needed. */
@@ -167,11 +179,14 @@
         if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
       });
     }, {threshold:0.14, rootMargin:'0px 0px -60px 0px'});
-    document.querySelectorAll('.zr, .rise').forEach(function(el){ io.observe(el); });
-    /* Safety net: if the observer never fires (blocked API, odd layout), force reveal anyway. */
-    setTimeout(function(){
-      document.querySelectorAll('.zr:not(.in), .rise:not(.in)').forEach(function(el){ el.classList.add('in'); });
-    }, 3000);
+    armReveals = function(root){
+      var pending = Array.prototype.filter.call(root.querySelectorAll('.zr:not(.in), .rise:not(.in)'), function(el){ return !inClosedFold(el); });
+      pending.forEach(function(el){ io.observe(el); });
+      /* Safety net: if the observer never fires (blocked API, odd layout), force reveal anyway. */
+      setTimeout(function(){
+        pending.forEach(function(el){ el.classList.add('in'); });
+      }, 3000);
+    };
   }
 
   /* Scoreboard counters: DOM ships the real resting number (works with no JS /
@@ -200,7 +215,10 @@
       setTimeout(function(){ requestAnimationFrame(step); }, delay);
     });
   }, {threshold:0.4});
-  counters.forEach(function(el){ cio.observe(el); });
+  armCounters = function(root){
+    Array.prototype.forEach.call(root.querySelectorAll('[data-count]'), function(el){ if(!inClosedFold(el)) cio.observe(el); });
+  };
+  arm(document);
 
   /* Active nav state: mark the nav link whose path matches the current page.
      Nav links are same-page section anchors (e.g. /#coach) everywhere on this
@@ -234,6 +252,26 @@
         btn.setAttribute('aria-expanded', 'true');
       }
     });
+  });
+
+  /* Folds open for any link that promises the section: nav, hero, mobile bar, footer, the
+     Locker's "Go to the Locker", and cross-page /#programs arrivals. The ids stay on the
+     section, so the browser never auto-opens the details itself. Opening never moves the
+     section's top, so the native fragment scroll still lands right. */
+  function openFold(hash){
+    var t = hash && hash.length > 1 && document.getElementById(hash.slice(1));
+    var fold = t && (t.closest('details.fold') || t.querySelector('details.fold'));
+    if(fold) fold.open = true;
+  }
+  openFold(location.hash);
+  window.addEventListener('hashchange', function(){ openFold(location.hash); });
+  document.addEventListener('click', function(e){
+    var a = e.target.closest && e.target.closest('a[href*="#"]');
+    if(a && a.origin === location.origin && a.pathname === location.pathname) openFold(a.hash);
+  });
+  /* A closed details prints nothing, so print the page open. */
+  window.addEventListener('beforeprint', function(){
+    document.querySelectorAll('details.fold').forEach(function(d){ d.open = true; });
   });
 
   /* Sticky mobile CTA bar: hidden over the hero, the contact band and the footer. */

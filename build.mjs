@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, sta
 import { resolve, join, relative } from 'node:path';
 import { validateSuburbs, formatErrors } from './src/lib/validate-suburbs.mjs';
 import { generateResponsiveImages } from './scripts/responsive-images.mjs';
-import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
+import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, scanBalancedElement, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
 import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
 import { renderCoachPage } from './src/lib/coach-page.mjs';
@@ -618,10 +618,11 @@ function step11c_termsPage(content, prelude) {
 // faqSection slices the FAQ, so an owner edit to an fp.* key lands on both pages.
 function finePrint(programsHtml) {
   const start = programsHtml.indexOf('<div class="fine-print">');
-  const end = start === -1 ? -1 : programsHtml.indexOf('</section>', start);
-  if (start === -1 || end === -1) throw new Error('could not locate the fine print in programs.html — /enroll/ would ship without it');
-  // The last </div> before </section> closes the shell, not the block; stop short of it.
-  return programsHtml.slice(start, programsHtml.lastIndexOf('</div>', end)) + '\n';
+  // A balanced scan, not "the last </div> before </section>": the block now sits inside the
+  // section's <details class="fold">, so that heuristic would ship a literal </details> to /enroll.
+  const el = start === -1 ? null : scanBalancedElement(programsHtml, start);
+  if (!el) throw new Error('could not locate the fine print in programs.html — /enroll/ would ship without it');
+  return programsHtml.slice(start, el.end) + '\n';
 }
 
 // /enroll is the plan matrix as one form. Every amount is rendered from plans.mjs, the

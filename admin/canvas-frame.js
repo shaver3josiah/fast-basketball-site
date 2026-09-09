@@ -78,6 +78,10 @@
     Array.prototype.forEach.call(stage.querySelectorAll('img[loading="lazy"]'), function (img) {
       img.loading = 'eager';
     });
+    // The five folded homepage bodies ship closed (details.fold). Open them here so every hook
+    // inside has a box to click and the frame is measured at full height. Admin-only file, so
+    // the public page keeps its closed default.
+    Array.prototype.forEach.call(stage.querySelectorAll('details.fold'), function (d) { d.open = true; });
     document.body.classList.add('is-editing');
     document.body.classList.toggle('is-legacy', !!payload.legacy);
     // Also on <html>: overflow:clip on the OUTER box still clips a tall child even if

@@ -5,6 +5,12 @@
       <h2 data-edit="mth.h2">Every session runs these five steps.</h2>
       <p class="lede" data-edit="mth.lede">This is how skill gets built so it survives a real game. Each step only works because the one before it is already automatic.</p>
     </div>
+    <!-- FOLD (September 2026): the page carried too much at once, so this body ships closed in a
+         native details element and opens on the pill; main.js opens it for any link that targets
+         the section. The pill label and the fact beside it are hard-coded: to make them editable,
+         hook a leaf span inside the summary, never the summary itself (applyTextEdits splices leaves). -->
+    <details class="fold">
+      <summary><span class="btn btn-ghost fold-pill"><span class="fold-show">See the steps</span><span class="fold-hide">Hide the steps</span><svg class="fold-ic" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path class="fold-v" d="M6 1v10"/><path d="M1 6h10"/></svg></span><span class="fold-fact">Screen, Isolate, Load, Read, Log</span></summary>
     <!-- .rise kept here on purpose: these are the numbered 01-05 steps, so the 130ms
          stagger IS the content arriving in order. One of only three staggers left on the page. -->
     <div class="mth stg">
@@ -14,6 +20,7 @@
       <div class="mth-s rise" style="--i:3"><span class="mth-n" data-edit="mth.4.num">04</span><h3 data-edit="mth.4.title">Read</h3><p data-edit="mth.4.body">Live reps against a defender. Skills become decisions or they never show up on film.</p></div>
       <div class="mth-s rise" style="--i:4"><span class="mth-n" data-edit="mth.5.num">05</span><h3 data-edit="mth.5.title">Log</h3><p data-edit="mth.5.body">Numbers on paper every session. You will see yourself pulling away before you feel it.</p></div>
     </div>
+    </details>
   </div>
 </section>
 
