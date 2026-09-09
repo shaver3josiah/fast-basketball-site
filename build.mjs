@@ -32,7 +32,7 @@ const TRAINING_PAGES = [
   {
     slug: 'group-training', textKey: 'prog.2', title: 'Group Training Membership | Fast Basketball', label: 'Group Training Membership',
     description: 'Group basketball training in South Florida on a 3 to 6 month commitment, once a week or unlimited. $450 to $1,000 a term. Start with a call.',
-    price: { amount: '$450\u2013$1,000', unit: 'Per Term', line: '3 months: $450 once a week, or $650 unlimited. 6 months: $750 once a week, or $1,000 unlimited. Paying monthly instead of up front costs more, and both figures are on the page.' },
+    price: { amount: '$450\u2013$1,000', unit: 'Per Term', line: '3 months: $450 once a week, or $650 unlimited. 6 months: $750 once a week, or $1,000 unlimited. Paying monthly instead of up front costs more: $550 for 3 months, $900 for 6.' },
     features: ['60 minute sessions with level matched players', 'Unlimited means up to two sessions a week', 'Journal, homework, and daily check-ins in the members area', 'Weekly game evaluations and quarterly progress reports'],
     next: 'Three months is the minimum because that is how long it takes a new habit to survive speed, contact, and a Friday night. Six months is for players who already know they are all in. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.'
   },

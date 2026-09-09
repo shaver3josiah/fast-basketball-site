@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-08T20:51:14.809Z",
+  "recorded": "2026-09-09T03:07:06.394Z",
   "files": {
     "404.html": {
       "sha": "5ff4f1b768314692",
@@ -210,8 +210,8 @@
       "bytes": 9027
     },
     "training/group-training/index.html": {
-      "sha": "5268311abaf81cc7",
-      "bytes": 9148
+      "sha": "7b075bc6696062dd",
+      "bytes": 9145
     },
     "training/private/index.html": {
       "sha": "7379236c172a91a1",

@@ -55,7 +55,8 @@ parent reads on the site is the number they will expect on the enrollment call.
 ## Step 1 — Create the Netlify site
 
 1. app.netlify.com → **Add new project** → **Import an existing project** → GitHub.
-2. Authorise Netlify for `shaver3josiah/fast-basketball-site` (private repo — it will ask).
+2. Authorise Netlify for `shaver3josiah/fast-basketball-site`. The repo is public, so Netlify
+   needs no special grant beyond the usual GitHub authorisation.
 3. Pick branch **`main`**. It is current as of this writing and contains everything.
 4. Leave the build settings alone. Netlify reads them from `netlify.toml`:
    build `npm run build`, publish `dist`, functions `netlify/functions`, Node 22,
