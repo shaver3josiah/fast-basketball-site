@@ -1,6 +1,7 @@
 (function(){
-  var t = 'light';
-  try { t = localStorage.getItem('fb_theme') || 'light'; } catch(e) {}
+  /* Dark by default (owner's call, 9 September 2026); a stored choice always wins. */
+  var t = 'dark';
+  try { t = localStorage.getItem('fb_theme') || 'dark'; } catch(e) {}
   if(t === 'light') document.documentElement.classList.add('fb-light');
   function ready(fn){ if(document.readyState === 'loading') addEventListener('DOMContentLoaded', fn); else fn(); }
   ready(function(){
