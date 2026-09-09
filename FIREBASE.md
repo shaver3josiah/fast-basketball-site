@@ -85,14 +85,45 @@ Blake edits at `/admin` and presses Publish. That commits to GitHub through the 
 the repo itself; Firebase does not, so **that workflow is what makes the Publish button work.**
 
 It needs one repository secret, `FIREBASE_SERVICE_ACCOUNT`, holding the JSON key of a service
-account with the Firebase Hosting Admin role. The quickest way to create it:
+account with the Firebase Hosting Admin role. Creating that key needs your Google account in
+a browser, so it cannot be scripted from here.
+
+**The one-command way.** From `build/site`:
 
 ```bash
 npx firebase-tools init hosting:github
 ```
 
-Answer the repo as `shaver3josiah/fast-basketball-site`, decline its offer to overwrite the
-existing workflow file, and let it create the secret.
+It opens a browser to authorise GitHub, creates the service account and its key in the
+project, and sets the repository secret for you. Answer the repo as
+`shaver3josiah/fast-basketball-site`. **Say no when it offers to overwrite the workflow
+file** — `.github/workflows/deploy.yml` is already written, and its version deploys on every
+push to main rather than only on pull requests. Say no to the PR preview workflow too unless
+you want one. The only thing you want out of that command is the secret.
+
+**The manual way,** if the command's browser step is awkward:
+
+1. Google Cloud console → IAM and Admin → Service Accounts → **Create service account**, in
+   project `fast-basketball-b3ebe`. Name it `github-deploy`.
+2. Grant it the **Firebase Hosting Admin** role. Nothing else.
+3. Keys → Add key → Create new key → **JSON**. A file downloads.
+4. Store it as the secret and then delete the file:
+
+```bash
+gh secret set FIREBASE_SERVICE_ACCOUNT --repo shaver3josiah/fast-basketball-site < ~/Downloads/that-file.json
+```
+
+That key is a live credential with rights to publish to the site, and this repository is
+public. It belongs in the GitHub secret and nowhere else: do not paste it into a file in the
+repo, and delete the download once the secret is set. `.gitignore` already ignores the
+filenames Google and the Firebase CLI hand out, so an accidental copy in the working tree is
+not stageable, but that is a backstop rather than a plan.
+
+To confirm it worked, push anything and watch the run:
+
+```bash
+gh run list --limit 1
+```
 
 ## Everyday commands
 

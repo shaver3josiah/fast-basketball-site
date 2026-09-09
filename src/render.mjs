@@ -11,6 +11,10 @@ import { CONTENT_GROUPS } from './lib/content-groups.mjs';
 // second sign-up. 'nights' stays last on purpose: nights.html now ships as a hidden easter-egg
 // overlay (opened from the footer ball / Konami code in main.js), so its DOM position is moot.
 export const SECTION_IDS = ['programs', 'enroll', 'coach', 'receipts', 'method', 'playbook', 'resources', 'areas', 'contact', 'nights'];
+// The Locker and the Free Playbook left the homepage for /locker in September 2026 (owner's call):
+// the nav's "The Locker" is a page, not a hash. Both stay in SECTION_IDS so loadSections and the
+// editor still know them; only the homepage loop skips them, and build.mjs renders the page.
+export const LOCKER_PAGE_SECTIONS = new Set(['resources', 'playbook']);
 
 // Single source for the footer's editable keys: buildFooter reads these with fallbacks,
 // and build.mjs's footer pseudo-section reports the same list as its hooks, so the two
@@ -674,6 +678,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
 
   let body = bodyMarkup;
   for (const id of SECTION_IDS) {
+    if (LOCKER_PAGE_SECTIONS.has(id)) continue;
     if (id === 'contact') {
       body += trimContactSection(sections[id]);
     } else {
@@ -694,8 +699,6 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   // reaches into it via window.fbNiteMade once both have run.
   body += nightCourtScript();
   body += scriptsBlock();
-  body += '<script src="' + asset('/js/playbook-form.js') + '" defer></script>\n';
-  body += '<script src="' + asset('/js/locker.js') + '" defer></script>\n';
   body += '<script src="' + asset('/js/contact-form.js') + '" defer></script>\n';
   body += '</body>\n</html>\n';
 
@@ -728,7 +731,7 @@ export function buildFooter({ content, anchors = false } = {}) {
     // editing them here without renaming those pages would make the footer lie.
     '<div class="ft-col"><h3 data-edit="ft.col1h">' + col1h + '</h3>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
     '<div class="ft-col"><h3 data-edit="ft.col2h">' + col2h + '</h3>' + areaNames.map((name) => '<a href="' + (PAGED.has(name) ? '/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') : '/#areas') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
-    '<div class="ft-col"><h3 data-edit="ft.col3h">' + col3h + '</h3><a href="/#enroll">How to Enroll</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/#resources">The Locker</a></div>\n' +
+    '<div class="ft-col"><h3 data-edit="ft.col3h">' + col3h + '</h3><a href="/#enroll">How to Enroll</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/locker">The Locker</a></div>\n' +
     '</div>\n</div>\n' +
     // OWNER NOTE: the old line here claimed copyright and "all rights reserved".
     // Fast Basketball is pre-launch with no verified entity and no registered marks,

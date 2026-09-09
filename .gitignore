@@ -1,6 +1,5 @@
 node_modules
 dist
-.netlify
 .local
 .env
 .env.local
@@ -10,3 +9,15 @@ Thumbs.db
 
 # Firebase CLI deploy cache
 .firebase/
+
+# Service-account keys. This repo is PUBLIC, and a downloaded key is a live credential with
+# deploy rights to the Firebase project: committing one hands anybody who reads GitHub the
+# ability to publish to the site. These patterns cover what the Google Cloud console and the
+# Firebase CLI actually name their downloads, so a key dropped in here by accident is ignored
+# rather than staged. The key belongs in the GitHub secret FIREBASE_SERVICE_ACCOUNT and
+# nowhere else on disk; delete the file once it is set. See FIREBASE.md.
+*-service-account*.json
+*serviceaccount*.json
+*-adminsdk-*.json
+firebase-adminsdk*.json
+gha-creds-*.json

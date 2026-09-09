@@ -844,3 +844,20 @@ html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
     html:not([data-motion="off"]) .fold[open]::details-content{block-size:auto;}
   }
 }
+
+/* ---------- Head art (September 2026) ----------
+   .head is capped at 760px, so on a desktop the right third of the shell above every fold sat
+   empty. A mono court photo from the media library fills it: a plain <img> with no data-img, so it
+   is decoration rather than an owner-editable slot (the same call as the fold pills; give it
+   data-img plus a content key when Blake wants to swap them). Desktop only: below 1041px the head
+   stacks over the fold and the figure is display:none, and since it is loading="lazy" a hidden
+   image is never fetched, so a phone pays nothing for it. Absolute rather than a grid so the
+   eyebrow, h2 and lede keep their own rhythm: the figure takes the head's height (250px at least)
+   and crops with cover, and --art-y on the img picks which band of a portrait shot survives. */
+.head-art{display:none;}
+@media(min-width:1041px){
+  .head:has(> .head-art){position:relative;max-width:none;padding-right:40%;min-height:250px;}
+  .head-art{display:block;position:absolute;top:0;right:0;bottom:0;width:36%;margin:0;border-radius:14px;overflow:hidden;border:1px solid var(--line-dark);background:var(--ink-lift);}
+  .head-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% var(--art-y,50%);}
+  .band-light .head-art,html.fb-light .head-art{border-color:var(--line-light);background:var(--chalk-2);}
+}

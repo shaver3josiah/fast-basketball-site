@@ -350,6 +350,34 @@ function step9_playbookPage(sections, content, playbookTemplates, prelude) {
   return ['/playbook'];
 }
 
+// /locker: The Locker and the Free Playbook, moved off the homepage in September 2026 (owner's
+// call) behind the nav's "The Locker". Same recipe as /playbook above. The Locker section leads,
+// so its heading becomes the page's h1, and its fold wrapper is gone from resources.html because a
+// page whose whole body hides behind a pill is not a page. Both scripts ride along: each finds its
+// own section by id and returns when it is absent, which is also why the homepage no longer
+// loads them. /playbook stays as it was; it is linked from the footer and the sitemap.
+function step9b_lockerPage(sections, content, playbookTemplates, prelude) {
+  let body = trimToFirstSectionClose(sections.resources) + trimToFirstSectionClose(sections.playbook);
+  body = applyTextEdits(body, content.text);
+  body = applyAttrEdits(body, content.text);
+  body = fixPlaybookForm(body, playbookTemplates);
+  body = applyGroupOrder(body, content.order);
+  body = '<main id="main">\n' + promoteFirstH2(body) + '</main>\n';
+  const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'The Locker', path: '/locker' }])];
+  const html = buildSimplePage({
+    title: 'The Locker: Workouts, Drill Packs and a Free Playbook | Fast Basketball',
+    description: 'Workout blocks, drill packs and film guides Coach Blake Kingsley assigns, plus a free four week playbook built for your player. Fast Basketball, South Florida.',
+    canonicalPath: '/locker',
+    bodyHtml: body,
+    content,
+    prelude,
+    jsonLd,
+    extraScripts: ['/js/locker.js', '/js/playbook-form.js']
+  });
+  writeHtml(resolve(DIST, 'locker', 'index.html'), html);
+  return ['/locker'];
+}
+
 // The six item FAQ lives in areas.html for the homepage. Slice that same <section> in rather
 // than copying it, so the two pages can never drift. Behaviour needs nothing extra: /js/main.js
 // wires every .faq-q it finds and already ships on every page, and it assigns the faqA<n> ids
@@ -966,6 +994,7 @@ async function main() {
   allPaths.push(...step7_coachPage(content, responsiveManifest, prelude));
   allPaths.push(...step8_trainingPages(content, prelude));
   allPaths.push(...step9_playbookPage(sections, content, playbookTemplates, prelude));
+  allPaths.push(...step9b_lockerPage(sections, content, playbookTemplates, prelude));
   allPaths.push(...step10_contactPage(sections, content, prelude));
   allPaths.push(...step11_blogIndex(content, prelude));
   allPaths.push(...step11b_privacyPage(content, prelude));

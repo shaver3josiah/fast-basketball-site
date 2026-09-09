@@ -12,13 +12,8 @@
       <div class="eyebrow" data-edit="lkr.eyebrow">The Locker</div>
       <h2 data-edit="lkr.h2">The work does not stop at the buzzer.</h2>
       <p class="lede" data-edit="lkr.lede">Workout blocks, drill packs, and film guides Coach Blake actually assigns. The free ones only need a parent's inbox to send them to. The rest unlock with that same email: one login, no passwords.</p>
+      <figure class="head-art"><img src="/images/court-sunset-ball-brand.jpg" width="736" height="1104" alt="" loading="lazy" decoding="async" style="--art-y:40%"></figure>
     </div>
-    <!-- FOLD (September 2026): the page carried too much at once, so this body ships closed in a
-         native details element and opens on the pill alone: links and hashes scroll to the head and
-         leave it closed (owner's call). The pill label and the fact beside it are hard-coded: to make them editable,
-         hook a leaf span inside the summary, never the summary itself (applyTextEdits splices leaves). -->
-    <details class="fold">
-      <summary><span class="btn btn-ghost fold-pill"><img class="fold-mark" src="/brand/icon.svg" width="24" height="24" alt="" decoding="async"><span class="fold-show">Open the Locker</span><span class="fold-hide">Close the Locker</span><svg class="fold-ic" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path class="fold-v" d="M6 1v10"/><path d="M1 6h10"/></svg></span><span class="fold-fact">Six plans, two of them free</span></summary>
     <!-- LOCKER STATE. The three states locker.js actually has are Free / Locked / Unlocked, and the
          button must match: "Get it by email" (free, no email on file yet), "Unlock with email"
          (locked), "Download" (email on file). The two data-locked="false" cards below therefore ship
@@ -95,7 +90,6 @@
       </article>
     </div>
     <p class="rcp-note" id="lockerNote"><span data-edit="lkr.note1">Already unlocked before? </span><a href="#resources" id="lockerLoginLink" data-edit="lkr.notelink">Log back in</a><span data-edit="lkr.note2"> with the same email. Everything stays on this device.</span></p>
-    </details>
   </div>
 
   <div class="modal-ovl" id="lockerOverlay" hidden>
