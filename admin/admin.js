@@ -30,7 +30,7 @@
   function api(path, options){
     options = options || {};
     options.credentials = 'same-origin';
-    return fetch('/.netlify/functions/' + path, options);
+    return fetch('/api/' + path, options);
   }
 
   document.getElementById('loginForm').addEventListener('submit', function(e){

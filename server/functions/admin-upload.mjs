@@ -140,7 +140,7 @@ export default async (request) => {
   await putMediaIndex(index);
 
   const image = {
-    src: '/.netlify/functions/admin-media?raw=' + record.id,
+    src: '/api/admin-media?raw=' + record.id,
     alt: record.alt, caption: record.caption, source: record.source,
     width: dims.width, height: dims.height
   };

@@ -272,7 +272,7 @@
        the same pending registration instead of adding a second one. */
     try { data.registrationId = sessionStorage.getItem(STORE + '_id') || ''; } catch(err){}
 
-    fetch('/.netlify/functions/checkout', {
+    fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)

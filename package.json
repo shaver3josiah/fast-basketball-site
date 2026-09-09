@@ -11,13 +11,18 @@
     "fetch:fonts": "node scripts/fetch-fonts.mjs",
     "golden:snapshot": "node scripts/golden.mjs snapshot",
     "golden:check": "node scripts/golden.mjs check",
-    "dev": "node --watch-path=./src/lib --watch-path=./netlify scripts/dev-server.mjs",
+    "dev": "node --watch-path=./src/lib --watch-path=./server scripts/dev-server.mjs",
     "serve": "node build.mjs && npx --yes serve dist -l 8888",
-    "test": "node --test src/lib/*.test.mjs src/*.test.mjs scripts/*.test.mjs netlify/functions/tests/*.test.mjs netlify/functions/lib/*.test.mjs",
-    "stripe:catalog": "node scripts/stripe-catalog.mjs"
+    "test": "node --test src/lib/*.test.mjs src/*.test.mjs scripts/*.test.mjs server/functions/tests/*.test.mjs server/functions/lib/*.test.mjs",
+    "stripe:catalog": "node scripts/stripe-catalog.mjs",
+    "pack:functions": "node scripts/functions-pack.mjs",
+    "functions:install": "npm --prefix functions install",
+    "emulate": "npm run build && npm run pack:functions && npx --yes firebase-tools emulators:start --only hosting,functions,firestore",
+    "deploy": "npm run build && npx --yes firebase-tools deploy --only hosting,functions",
+    "deploy:hosting": "npm run build && npx --yes firebase-tools deploy --only hosting",
+    "deploy:functions": "npx --yes firebase-tools deploy --only functions"
   },
   "dependencies": {
-    "@netlify/blobs": "^8.1.0",
     "stripe": "^22.6.1"
   },
   "devDependencies": {

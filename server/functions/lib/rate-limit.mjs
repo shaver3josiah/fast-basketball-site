@@ -1,4 +1,4 @@
-import { getStore } from '@netlify/blobs';
+import { getStore } from './blobs.mjs';
 import { isLocal } from './store.mjs';
 
 // Fixed-window counter in Netlify Blobs, shared by every function that needs one.
@@ -19,7 +19,7 @@ import { isLocal } from './store.mjs';
 export async function checkRateLimit(key, { windowMs, max, store = null } = {}) {
   if (isLocal) return true;
   try {
-    const blobs = store || getStore('rate-limits');
+    const blobs = store || await getStore('rate-limits');
     const now = Date.now();
     const existing = await blobs.get(key, { type: 'json' });
     if (!existing || now - existing.windowStart > windowMs) {
@@ -36,6 +36,10 @@ export async function checkRateLimit(key, { windowMs, max, store = null } = {}) 
 }
 
 // One place for "who is calling", so two functions cannot key their limits differently.
+// The context is the host's: functions/index.mjs reads the first hop of x-forwarded-for
+// before handing it over, and the dev server passes the socket address. The header is the
+// fallback for anything that calls a handler directly.
 export function clientIp(request, context) {
-  return (context && context.ip) || request.headers.get('x-nf-client-connection-ip') || 'unknown';
+  const forwarded = request.headers.get('x-forwarded-for');
+  return (context && context.ip) || (forwarded && forwarded.split(',')[0].trim()) || 'unknown';
 }

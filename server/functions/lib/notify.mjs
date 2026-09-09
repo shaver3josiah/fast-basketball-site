@@ -7,7 +7,7 @@
 
 import { CONTACT } from '../../../src/lib/site-config.mjs';
 
-export async function sendEmail({ to, subject, html, attachments = [] }) {
+export async function sendEmail({ to, subject, html, attachments = [], replyTo = null }) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.PLAYBOOK_FROM_EMAIL;
   if (!apiKey || !from) return false;
@@ -15,7 +15,12 @@ export async function sendEmail({ to, subject, html, attachments = [] }) {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [to], subject, html, ...(attachments.length ? { attachments } : {}) })
+      body: JSON.stringify({
+        from, to: [to], subject, html,
+        ...(attachments.length ? { attachments } : {}),
+        // So Blake can hit reply on an enquiry and reach the parent, not himself.
+        ...(replyTo ? { reply_to: replyTo } : {})
+      })
     });
     return res.ok;
   } catch (err) {

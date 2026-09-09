@@ -1,9 +1,13 @@
-// SITE_URL (explicit override) wins; Netlify's automatic URL env var covers the
-// .netlify.app stage; the default is fast-basketball.com, the domain Blake bought from Wix
-// in September 2026. DNS lives at Wix, so pointing it at Netlify is done in that dashboard.
-// build.mjs still hard-fails a production build on a *.example placeholder, so
-// never put one back here — set SITE_URL in the Netlify environment instead.
-export const SITE_URL = process.env.SITE_URL || process.env.URL || 'https://fast-basketball.com';
+// Canonicals, the sitemap and the structured data are built from this. SITE_URL wins; the
+// default is fast-basketball.com, the domain Blake bought from Wix in September 2026.
+//
+// The host moved to Firebase Hosting that month, and Firebase sets no automatic URL
+// variable the way Netlify did, so the deploy workflow passes SITE_URL explicitly: the
+// firebase web.app address until Wix DNS points at Firebase, the real domain after. It is a
+// repository variable in .github/workflows/deploy.yml, so switching it is not a code change.
+// build.mjs still hard-fails a production build on a *.example placeholder, so never put
+// one back here.
+export const SITE_URL = process.env.SITE_URL || 'https://fast-basketball.com';
 
 export const BUSINESS_NAME = 'Fast Basketball';
 

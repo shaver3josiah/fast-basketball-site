@@ -1,4 +1,4 @@
-// POST /.netlify/functions/checkout: the athlete registration in, a hosted Stripe Checkout
+// POST /api/checkout: the athlete registration in, a hosted Stripe Checkout
 // URL out. The registration is written to the leads store and emailed to Blake BEFORE
 // Stripe is asked for anything: a family that pays must never be a family whose form was
 // lost, and a family Stripe cannot take yet (no key, no price) is still a registration he

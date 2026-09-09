@@ -13,7 +13,7 @@ const LOCAL = process.env.FB_LOCAL === 'true';
 const LOCAL_PATH = () => resolve(process.cwd(), '.local/leads.json');
 
 async function blobStore() {
-  const { getStore } = await import('@netlify/blobs');
+  const { getStore } = await import('./blobs.mjs');
   return getStore('leads');
 }
 
@@ -30,11 +30,16 @@ export async function listLeads() {
     }
   }
   const store = await blobStore();
-  const { blobs } = await store.list();
+  // One query for the whole collection. The Blobs version listed the keys and then read
+  // each one, which was a round trip per lead every time the admin panel opened.
   const leads = [];
-  for (const blob of blobs) {
-    const record = await store.get(blob.key, { type: 'json' });
-    if (record) leads.push({ key: blob.key, ...record });
+  for (const { key, value } of await store.entries()) {
+    if (!value) continue;
+    try {
+      leads.push({ key, ...JSON.parse(value) });
+    } catch (err) {
+      console.error('[leads] ' + key + ' is not readable JSON, skipping: ' + err.message);
+    }
   }
   return leads;
 }

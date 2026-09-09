@@ -1,9 +1,14 @@
-// The only thing in this codebase that spends a Netlify deploy.
+// The only thing in this codebase that puts anything live.
 //
 // Takes whatever the owner has saved as a draft — a canvas edit, staged photo uploads,
 // or both — and commits it to GitHub in a single commit, which is what triggers the
 // production build. Everything else — every save, every keystroke, every drag, every
-// upload — costs nothing until this runs.
+// upload — changes nothing on the live site until this runs.
+//
+// That commit reaches the site through .github/workflows/deploy.yml, which builds and
+// deploys to Firebase Hosting on a push to main. Netlify used to watch the repo and
+// rebuild by itself; Firebase does not, so if that workflow is ever removed this button
+// goes quiet — it will still commit, and the live site will simply stop changing.
 
 import { verifyRequestSession } from './lib/auth.mjs';
 import { getFile, putFiles } from './lib/store.mjs';

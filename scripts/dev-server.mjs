@@ -5,7 +5,7 @@
 //
 // What it does:
 //   - serves dist/ as static files
-//   - routes /.netlify/functions/<name> to netlify/functions/<name>.mjs, the same
+//   - routes /api/<name> to server/functions/<name>.mjs, the same
 //     handler code Netlify runs, with FB_LOCAL=true so writes land on disk instead
 //     of becoming GitHub commits
 //   - watches src/ and admin/, rebuilds on change, and live-reloads open tabs
@@ -26,7 +26,7 @@ import { pathToFileURL } from 'node:url';
 
 const ROOT = process.cwd();
 const DIST = resolve(ROOT, 'dist');
-const FUNCTIONS = resolve(ROOT, 'netlify/functions');
+const FUNCTIONS = resolve(ROOT, 'server/functions');
 const PORT = Number(process.env.PORT || 8899);
 
 // Dev-only credentials. Production reads the same names from the Netlify environment;
@@ -271,12 +271,12 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  if (path.startsWith('/.netlify/functions/')) {
-    return callFunction(path.slice('/.netlify/functions/'.length).split('/')[0], req, res);
+  // Same path Firebase Hosting rewrites to the Cloud Function, so the browser cannot tell
+  // this server from production. server/router.mjs picks the same handler out of the same
+  // segment; this just calls it directly instead of through Cloud Functions.
+  if (path.startsWith('/api/')) {
+    return callFunction(path.slice('/api/'.length).split('/')[0], req, res);
   }
-
-  // The one redirect from netlify.toml the admin panel and playbook form depend on.
-  if (path === '/playbook/generate') return callFunction('playbook', req, res);
 
   return serveStatic(path, res);
 });

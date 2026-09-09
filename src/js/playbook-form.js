@@ -60,13 +60,13 @@
     var submitBtn = form.querySelector('button[type="submit"]');
     if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Building your playbook...'; }
 
-    fetch('/playbook/generate', {
+    fetch('/api/playbook', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: name, email: email, grade: grade, position: position, focus: focus,
         /* Consent record. Only ever true — submission is blocked above otherwise.
-           ponytail: netlify/functions/playbook.mjs currently drops unknown keys. Its owner
+           ponytail: server/functions/playbook.mjs currently drops unknown keys. Its owner
            should add guardianConfirmed to storeLead() so the confirmation is actually kept. */
         guardianConfirmed: true,
         referrer: document.referrer || window.location.href

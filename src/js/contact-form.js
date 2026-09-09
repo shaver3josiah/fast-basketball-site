@@ -100,16 +100,22 @@
       return;
     }
 
-    /* Netlify static forms: urlencoded POST to any path on the site, form-name included. */
+    /* JSON to our own endpoint. Until September 2026 this was a urlencoded POST to "/",
+       which is how Netlify Forms captured a submission without any server code. Firebase has
+       no equivalent, so server/functions/contact.mjs takes it now, and the enquiry lands in
+       the same leads store as an enrollment instead of in a dashboard on another company's
+       site. The checkbox is sent as a real boolean, the way the enroll form sends its own. */
     var data = new FormData(form);
-    if(!data.get('form-name')) data.set('form-name', 'contact');
+    var payload = {};
+    data.forEach(function(value, key){ if(typeof value === 'string') payload[key] = value; });
+    payload.guardianConfirmed = guardianInput ? guardianInput.checked === true : true;
 
     if(btn){ btn.disabled = true; btn.textContent = 'Sending...'; }
 
-    fetch('/', {
+    fetch('/api/contact', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(data).toString()
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     }).then(function(res){
       if(!res.ok) throw new Error('send failed');
       try { sessionStorage.removeItem(KEY); } catch(err){}

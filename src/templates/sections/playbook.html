@@ -5,16 +5,17 @@
       <h2 style="margin:18px 0 20px;" data-edit="pb.h2">A free four week playbook.</h2>
       <p class="lede" data-edit="pb.lede">Tell us the player, the position, and the one thing standing in their way. We build a custom four week workout block, send it to your inbox, and hand you the download right here.</p>
       <div class="pb-form" style="margin-top:28px;">
-        <!-- Netlify wiring mirrors #ctForm (see fixContactForm in src/render.mjs): method=POST +
-             data-netlify + matching hidden form-name + honeypot, so a no-JS submit still posts.
-             With JS on, src/js/playbook-form.js preventDefault()s and posts to /playbook/generate. -->
+        <!-- Mirrors #ctForm (see fixContactForm in src/render.mjs): method=POST to the endpoint
+             plus a honeypot, so a no-JS submit still posts and gets a 303 back to #pbOut. With JS
+             on, src/js/playbook-form.js preventDefault()s and posts JSON to the same URL. Until
+             September 2026 this was a Netlify Form (data-netlify + a hidden form-name); Firebase
+             has no equivalent, so server/functions/playbook.mjs handles both shapes itself. -->
         <!-- OWNER, PLEASE READ. NOT LEGAL ADVICE. The parent-or-guardian confirmation and the
              privacy/terms links below are a good-faith starting point written by a non-lawyer, to
              cut the risk of collecting a child's email address with no adult involved. They are not
              a compliance guarantee. Have a Florida attorney review this form, the privacy notice
              and the terms before launch. Parents never see this note; it is a source comment. -->
-        <form id="pbForm" name="playbook" method="POST" data-netlify="true" netlify-honeypot="pb-hp" novalidate>
-          <input type="hidden" name="form-name" value="playbook">
+        <form id="pbForm" name="playbook" method="POST" action="/api/playbook" novalidate>
           <p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="pb-hp" id="pbHp" tabindex="-1" autocomplete="off"></label></p>
           <p class="pb-note" style="margin:0 0 18px;" data-edit="pb.gatenote">Parents and guardians, this one is for you. Tell us about your player and the plan lands in your inbox. Players, go grab a parent. It takes them about a minute.</p>
           <div class="fld-row">
@@ -80,7 +81,10 @@
                rendered values exactly (1.1rem, bold, 1.6 leading, no tracking) rather than
                restyling. base.css owner: retarget those two selectors to h3, then delete these. -->
           <h3 id="pbTitle" style="font-size:1.1rem;font-weight:700;line-height:1.6;letter-spacing:normal;text-wrap:normal;margin-bottom:8px;" data-edit="pb.out.title">Playbook ready</h3>
-          <p id="pbMsg" data-edit="pb.out.msg">Generated and queued to your inbox. Download it below.</p>
+          <!-- Default copy is written for the no-JS path, which gets a 303 back here with no
+               download link: the email is the delivery. playbook-form.js replaces this line
+               with the fuller one the moment it has a file to hand over. -->
+          <p id="pbMsg" data-edit="pb.out.msg">Generated and on its way to your inbox. Check your spam folder if it has not landed in a few minutes.</p>
           <ul class="pb-list" id="pbList"></ul>
         </div>
       </div>

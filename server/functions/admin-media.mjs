@@ -22,7 +22,7 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 });
 
 function rawUrl(id) {
-  return '/.netlify/functions/admin-media?raw=' + id;
+  return '/api/admin-media?raw=' + id;
 }
 
 // Both published lib.* entries and staged ones sort by the timestamp already embedded

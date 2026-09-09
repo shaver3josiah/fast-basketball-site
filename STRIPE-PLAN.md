@@ -1,5 +1,12 @@
 # Stripe integration plan
 
+> **HOST CHANGED, 9 SEPTEMBER 2026.** This site no longer runs on Netlify. It is on Firebase
+> Hosting, with one Cloud Function behind `/api/**`, Firestore in place of Netlify Blobs, and
+> real endpoints in place of Netlify Forms. Wherever this file says Netlify, read
+> [`FIREBASE.md`](FIREBASE.md) instead. Everything about prices, Stripe, content and the admin
+> panel below is still accurate.
+
+
 > **SEPTEMBER 2026 PRICE CHANGE.** The catalog block below has been rewritten to match, but
 > `src/lib/plans.mjs` is the source of truth and this file is a design note, not a spec. Two
 > things changed shape, not just value: a membership now carries a `totals` map keyed by pay

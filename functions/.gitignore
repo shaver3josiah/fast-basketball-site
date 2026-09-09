@@ -1,0 +1,11 @@
+# Copied in at predeploy by scripts/functions-pack.mjs. The originals in build/site/server
+# and build/site/src are the source of truth; a committed copy would go stale silently.
+/server/
+/src/
+
+# Environment for the deployed function. Never commit: see .env.example for the names.
+.env
+.env.*
+!.env.example
+
+node_modules/

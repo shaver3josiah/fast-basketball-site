@@ -1,0 +1,62 @@
+# Publishing the site. A push to main builds and deploys to Firebase Hosting.
+#
+# This workflow is not a convenience, it is load-bearing. Netlify rebuilt on every push by
+# itself; Firebase Hosting does not. The admin panel's Publish button commits to this repo
+# through the GitHub API (server/functions/lib/github.mjs), so without this workflow the
+# owner's edits would land in git and never reach the live site.
+#
+# Hosting only, on purpose. The Cloud Function changes rarely and deploying it needs wider
+# permissions, so it stays a deliberate `npm run deploy:functions` from a laptop.
+#
+# ONE SECRET IS REQUIRED: FIREBASE_SERVICE_ACCOUNT, the JSON key of a service account with
+# the Firebase Hosting Admin role. `firebase init hosting:github` creates it and stores it
+# for you; see FIREBASE.md.
+
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A content publish can land while an earlier one is still building. Take the newest and
+# cancel the rest: they would deploy the same repo state anyway.
+concurrency:
+  group: hosting-live
+  cancel-in-progress: true
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # --include=dev: sharp generates the responsive images and is a devDependency, so a
+      # production-only install builds a site with no photographs on it.
+      - run: npm ci --include=dev
+
+      - run: npm test
+
+      - run: npm run build
+        env:
+          # Canonicals, the sitemap and the structured data are built from this. It stays
+          # the Firebase address until the domain moves; on the day Wix DNS points at
+          # Firebase, set a repository variable SITE_URL to https://fast-basketball.com and
+          # this picks it up with no code change.
+          SITE_URL: ${{ vars.SITE_URL || 'https://fast-basketball-b3ebe.web.app' }}
+          ROBOTS_ALLOW: ${{ vars.ROBOTS_ALLOW || 'true' }}
+          SITE_ENV: production
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: fast-basketball-b3ebe

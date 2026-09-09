@@ -1,5 +1,12 @@
 # Fast Basketball Website
 
+> **HOST CHANGED, 9 SEPTEMBER 2026.** This site no longer runs on Netlify. It is on Firebase
+> Hosting, with one Cloud Function behind `/api/**`, Firestore in place of Netlify Blobs, and
+> real endpoints in place of Netlify Forms. Wherever this file says Netlify, read
+> [`FIREBASE.md`](FIREBASE.md) instead. Everything about prices, Stripe, content and the admin
+> panel below is still accurate.
+
+
 This is the source code for the Fast Basketball website. If you are the site owner and you just want to edit words or photos, you do not need anything in this file. Open `admin/OWNER-GUIDE.md` instead, or go to yoursite.com/admin.
 
 This file is for whoever sets up or maintains the code.

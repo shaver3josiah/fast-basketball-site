@@ -56,9 +56,18 @@ function fakeStore(clock) {
 }
 
 {
-  const req = { headers: { get: (h) => (h === 'x-nf-client-connection-ip' ? '203.0.113.7' : null) } };
+  // x-forwarded-for since the move to Firebase (was Netlify's x-nf-client-connection-ip).
+  // Every proxy in front of the function appends to it, so only the first hop is the caller;
+  // taking the last would let anyone set their own rate-limit key by sending the header.
+  const header = (value) => ({ headers: { get: (h) => (h === 'x-forwarded-for' ? value : null) } });
+  const req = header('203.0.113.7');
   assert.equal(clientIp(req, { ip: '198.51.100.4' }), '198.51.100.4', 'context.ip wins when present');
-  assert.equal(clientIp(req, {}), '203.0.113.7', 'falls back to the Netlify header');
+  assert.equal(clientIp(req, {}), '203.0.113.7', 'falls back to the forwarding header');
+  assert.equal(
+    clientIp(header('203.0.113.7, 70.41.3.18, 150.172.238.178'), {}),
+    '203.0.113.7',
+    'a chain of proxies resolves to the original caller, not the nearest hop'
+  );
   assert.equal(clientIp({ headers: { get: () => null } }, {}), 'unknown', 'never throws when both are missing');
 }
 

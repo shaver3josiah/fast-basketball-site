@@ -230,7 +230,7 @@
   });
 
   function requestPlaybook(opts){
-    return fetch('/playbook/generate', {
+    return fetch('/api/playbook', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -242,7 +242,7 @@
         /* Consent record. Always true by construction: every path here needs an email on file,
            and the only thing that puts one there is the login form, which blocks submission
            until the parent-or-guardian box is ticked.
-           ponytail: netlify/functions/playbook.mjs drops unknown keys — its owner should add
+           ponytail: server/functions/playbook.mjs drops unknown keys — its owner should add
            guardianConfirmed to storeLead() so the confirmation is actually kept. */
         guardianConfirmed: true,
         referrer: document.referrer || window.location.href

@@ -285,7 +285,10 @@ export function fixContactForm(html) {
   let out = html;
   out = out.replace(
     '<form id="ctForm" novalidate>',
-    '<form id="ctForm" name="contact" method="POST" data-netlify="true" netlify-honeypot="ct-hp" novalidate><input type="hidden" name="form-name" value="contact"><p class="ct-hp-wrap" style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="ct-hp" tabindex="-1" autocomplete="off"></label></p>'
+    // method + action so a no-JS submit still posts; server/functions/contact.mjs answers
+    // that shape with a 303 back to #ctDone. Until September 2026 this carried data-netlify
+    // and a hidden form-name, and Netlify captured the submission with no code of ours.
+    '<form id="ctForm" name="contact" method="POST" action="/api/contact" novalidate><p class="ct-hp-wrap" style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="ct-hp" tabindex="-1" autocomplete="off"></label></p>'
   );
   return out;
 }

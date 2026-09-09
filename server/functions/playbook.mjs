@@ -1,6 +1,6 @@
 ﻿import { readFileSync } from 'node:fs';
-import { getStore } from '@netlify/blobs';
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
+import { addLead } from './lib/leads.mjs';
 import { sendEmail } from './lib/notify.mjs';
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -63,14 +63,28 @@ function buildPlaybookHtml({ name, grade, positionLabel, skillGap }) {
     '</div></body></html>';
 }
 
+// Never throws: a playbook that generated and emailed is a win even if the record of it
+// did not save, and the parent should not see an error for our bookkeeping.
 async function storeLead(record) {
   try {
-    const store = getStore('leads');
-    const key = new Date().toISOString() + '-' + Math.random().toString(36).slice(2, 8);
-    await store.setJSON(key, record);
+    await addLead('playbook:' + record.timestamp + '-' + Math.random().toString(36).slice(2, 8), record);
   } catch (err) {
     console.error('lead storage failed', err.message);
   }
+}
+
+// The form posts urlencoded when playbook-form.js never ran. Same page, same fields, so it
+// is answered with a 303 back to #pbOut rather than a body of JSON; the playbook itself is
+// emailed either way, which is what makes the no-JS path work at all.
+function backTo(request, hash) {
+  const referer = request.headers.get('referer');
+  if (referer) {
+    try {
+      const from = new URL(referer);
+      if (from.origin === new URL(request.url).origin) return from.pathname + hash;
+    } catch (err) { /* unparseable referer: fall through */ }
+  }
+  return '/playbook' + hash;
 }
 
 export default async (request, context) => {
@@ -84,21 +98,32 @@ export default async (request, context) => {
     return new Response(JSON.stringify({ error: 'too many requests, try again later' }), { status: 429 });
   }
 
+  const isForm = (request.headers.get('content-type') || '').includes('application/x-www-form-urlencoded');
   let payload;
-  try {
-    payload = await request.json();
-  } catch (err) {
-    return new Response(JSON.stringify({ error: 'invalid request body' }), { status: 400 });
+  if (isForm) {
+    const form = new URLSearchParams(await request.text());
+    payload = Object.fromEntries(form.entries());
+    payload.guardianConfirmed = form.get('guardian-confirmed') === 'yes';
+  } else {
+    try {
+      payload = await request.json();
+    } catch (err) {
+      return new Response(JSON.stringify({ error: 'invalid request body' }), { status: 400 });
+    }
   }
 
   if (payload['pb-hp']) {
-    return new Response(JSON.stringify({ html: '', emailSent: false }), { status: 200 });
+    return isForm
+      ? new Response(null, { status: 303, headers: { Location: backTo(request, '#pbOut') } })
+      : new Response(JSON.stringify({ html: '', emailSent: false }), { status: 200 });
   }
 
   const name = (payload.name || '').trim();
   const email = (payload.email || '').trim();
   if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return new Response(JSON.stringify({ error: 'name and a valid email are required' }), { status: 422 });
+    return isForm
+      ? new Response(null, { status: 303, headers: { Location: backTo(request, '#pbForm') } })
+      : new Response(JSON.stringify({ error: 'name and a valid email are required' }), { status: 422 });
   }
 
   const templates = loadPlaybookTemplates();
@@ -122,6 +147,10 @@ export default async (request, context) => {
     ip,
     emailSent
   });
+
+  // No-JS: the browser cannot be handed a Blob to download, so the emailed copy is the
+  // delivery and the page says so (#pbOut's default copy).
+  if (isForm) return new Response(null, { status: 303, headers: { Location: backTo(request, '#pbOut') } });
 
   return new Response(JSON.stringify({ html, emailSent }), {
     status: 200,
