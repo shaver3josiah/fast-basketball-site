@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-09T18:54:04.951Z",
+  "recorded": "2026-09-09T18:54:40.061Z",
   "files": {
     "404.html": {
       "sha": "5ff4f1b768314692",
@@ -22,8 +22,8 @@
       "bytes": 23895
     },
     "admin/canvas-schema.js": {
-      "sha": "0f8fe1735ad4086e",
-      "bytes": 20651
+      "sha": "ef2f68db5fd8f2b4",
+      "bytes": 20630
     },
     "admin/editor.css": {
       "sha": "2f8f0b2ef305ce65",
@@ -46,8 +46,8 @@
       "bytes": 2656
     },
     "admin/schema.js": {
-      "sha": "966ee01a9b0b5306",
-      "bytes": 17558
+      "sha": "5cc28aeea67583c2",
+      "bytes": 17512
     },
     "admin/vendor/moveable.min.js": {
       "sha": "6c6c78751303afd6",
@@ -118,8 +118,8 @@
       "bytes": 7765
     },
     "index.html": {
-      "sha": "0ad7441033bd4bc3",
-      "bytes": 131534
+      "sha": "3ae3c8ca605ad4fe",
+      "bytes": 131489
     },
     "js/contact-form.js": {
       "sha": "cfc2886a41d74680",

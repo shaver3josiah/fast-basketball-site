@@ -33,7 +33,6 @@ export const TEXT_LABELS = {
   'prog.3.tag': 'Private card tag',
   'prog.3.sub': 'Private card subtitle',
   'prog.3.trust': 'Private card trust line',
-  'enr.lede2': 'Enroll intro, paragraph 2',
   'enr.lede3': 'Enroll intro, closing line',
   'area.6.name': 'Area tile 6 name',
   'area.6.tier': 'Area tile 6 tier',
