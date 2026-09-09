@@ -807,8 +807,8 @@ html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
 
 /* ---------- Folded sections ----------
    Five homepage bodies ship inside a native <details class="fold"> under the section head. The
-   summary is a row: a .btn-ghost pill (the FAQ's red plus, folding to a minus, drawn as an inline
-   SVG) and one plain fact beside it, so the closed state still says the essential thing and the
+   summary is a row: a .btn-ghost pill (the brand icon at the leading end, the label, and the FAQ's
+   red plus folding to a minus, drawn as an inline SVG) and one plain fact beside it, so the closed state still says the essential thing and the
    pill never has to carry a sentence on a phone. Native so it works with JS off. Links and hashes
    leave a fold closed (owner's call); main.js only arms the reveals inside a fold when it opens.
    The open/close animates only where interpolate-size exists (Chromium 131+) AND motion is
@@ -826,6 +826,11 @@ html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
 .fold>summary:active .fold-pill{transform:translateY(-1px) scale(.97);}
 .fold>summary:focus-visible{outline:none;}
 .fold>summary:focus-visible .fold-pill{outline:3px solid var(--red-hot);outline-offset:3px;}
+/* The brand icon (kit: icon below the 250px lockup floor, min 16px, red only, no shadow, no
+   stretch). 24px is the pill's own line height, so the mark fills the line without growing the
+   pill; the tighter leading padding lets it nest into the rounded end. */
+.fold-mark{width:24px;height:24px;flex-shrink:0;}
+.fold-pill{padding-left:16px;}
 .fold-ic{flex-shrink:0;stroke:var(--fast-red);stroke-width:2;stroke-linecap:round;fill:none;}
 .fold-ic .fold-v{transform-box:fill-box;transform-origin:center;transition:transform calc(.35s / var(--motion-speed,1)) var(--ease-rush);}
 .fold[open] .fold-ic .fold-v{transform:scaleY(0);}

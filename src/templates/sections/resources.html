@@ -18,7 +18,7 @@
          leave it closed (owner's call). The pill label and the fact beside it are hard-coded: to make them editable,
          hook a leaf span inside the summary, never the summary itself (applyTextEdits splices leaves). -->
     <details class="fold">
-      <summary><span class="btn btn-ghost fold-pill"><span class="fold-show">Open the Locker</span><span class="fold-hide">Close the Locker</span><svg class="fold-ic" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path class="fold-v" d="M6 1v10"/><path d="M1 6h10"/></svg></span><span class="fold-fact">Six plans, two of them free</span></summary>
+      <summary><span class="btn btn-ghost fold-pill"><img class="fold-mark" src="/brand/icon.svg" width="24" height="24" alt="" decoding="async"><span class="fold-show">Open the Locker</span><span class="fold-hide">Close the Locker</span><svg class="fold-ic" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path class="fold-v" d="M6 1v10"/><path d="M1 6h10"/></svg></span><span class="fold-fact">Six plans, two of them free</span></summary>
     <!-- LOCKER STATE. The three states locker.js actually has are Free / Locked / Unlocked, and the
          button must match: "Get it by email" (free, no email on file yet), "Unlock with email"
          (locked), "Download" (email on file). The two data-locked="false" cards below therefore ship
