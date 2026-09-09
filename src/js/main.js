@@ -254,24 +254,19 @@
     });
   });
 
-  /* Folds open for any link that promises the section: nav, hero, mobile bar, footer, the
-     Locker's "Go to the Locker", and cross-page /#programs arrivals. The ids stay on the
-     section, so the browser never auto-opens the details itself. Opening never moves the
-     section's top, so the native fragment scroll still lands right. */
-  function openFold(hash){
-    var t = hash && hash.length > 1 && document.getElementById(hash.slice(1));
-    var fold = t && (t.closest('details.fold') || t.querySelector('details.fold'));
-    if(fold) fold.open = true;
-  }
-  openFold(location.hash);
-  window.addEventListener('hashchange', function(){ openFold(location.hash); });
-  document.addEventListener('click', function(e){
-    var a = e.target.closest && e.target.closest('a[href*="#"]');
-    if(a && a.origin === location.origin && a.pathname === location.pathname) openFold(a.hash);
-  });
-  /* A closed details prints nothing, so print the page open. */
+  /* Folds stay closed until the visitor opens one (owner's call, September 2026): nav, hero,
+     mobile-bar and cross-page links scroll to the section head and leave it closed. The ids
+     stay on the section, so the browser never auto-opens a details itself. Printing is the one
+     exception, because a closed details prints nothing: open everything for the print and put
+     back what was closed afterwards. */
+  var foldsClosedForPrint = [];
   window.addEventListener('beforeprint', function(){
-    document.querySelectorAll('details.fold').forEach(function(d){ d.open = true; });
+    foldsClosedForPrint = Array.prototype.filter.call(document.querySelectorAll('details.fold'), function(d){ return !d.open; });
+    foldsClosedForPrint.forEach(function(d){ d.open = true; });
+  });
+  window.addEventListener('afterprint', function(){
+    foldsClosedForPrint.forEach(function(d){ d.open = false; });
+    foldsClosedForPrint = [];
   });
 
   /* Sticky mobile CTA bar: hidden over the hero, the contact band and the footer. */

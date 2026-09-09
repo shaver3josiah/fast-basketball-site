@@ -809,8 +809,8 @@ html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
    Five homepage bodies ship inside a native <details class="fold"> under the section head. The
    summary is a row: a .btn-ghost pill (the FAQ's red plus, folding to a minus, drawn as an inline
    SVG) and one plain fact beside it, so the closed state still says the essential thing and the
-   pill never has to carry a sentence on a phone. Native so it works with JS off; main.js opens the
-   fold for any link that targets the section and arms the reveals inside it.
+   pill never has to carry a sentence on a phone. Native so it works with JS off. Links and hashes
+   leave a fold closed (owner's call); main.js only arms the reveals inside a fold when it opens.
    The open/close animates only where interpolate-size exists (Chromium 131+) AND motion is
    allowed: base.css's reduced-motion reset is *,*::before,*::after and cannot reach
    ::details-content, so the gate lives here, with data-motion="off" in it too. Everywhere else
