@@ -2,7 +2,8 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, sta
 import { resolve, join, relative } from 'node:path';
 import { validateSuburbs, formatErrors } from './src/lib/validate-suburbs.mjs';
 import { generateResponsiveImages } from './scripts/responsive-images.mjs';
-import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, scanBalancedElement, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
+import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, promoteFirstH2, scanBalancedElement, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
+import { renderLockerPage } from './src/lib/locker-page.mjs';
 import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
 import { renderCoachPage } from './src/lib/coach-page.mjs';
@@ -67,14 +68,6 @@ function writeHtml(path, html) {
 
 // Standalone pages built from homepage section fragments start at <h2>;
 // promote the first one so every page has exactly one <h1>.
-function promoteFirstH2(html) {
-  const open = html.indexOf('<h2');
-  if (open === -1) return html;
-  const close = html.indexOf('</h2>', open);
-  if (close === -1) return html;
-  return html.slice(0, open) + '<h1' + html.slice(open + 3, close) + '</h1>' + html.slice(close + 5);
-}
-
 function copyDir(src, dest) {
   if (!existsSync(src)) return;
   mkdirSync(dest, { recursive: true });
@@ -93,8 +86,16 @@ function step1_validate() {
   console.log('suburbs.json valid: ' + suburbs.length + ' record(s).');
 }
 
+// Five Claude sessions share this checkout, and a shell parked inside dist/ makes Windows refuse
+// to delete the directory itself (EPERM) while every file inside it deletes fine. Empty it in
+// that case rather than fail the build; the next mkdirSync is then a no-op.
 function step2_cleanDist() {
-  rmSync(DIST, { recursive: true, force: true });
+  try {
+    rmSync(DIST, { recursive: true, force: true });
+  } catch (err) {
+    if (err.code !== 'EPERM' && err.code !== 'EBUSY') throw err;
+    for (const entry of readdirSync(DIST)) rmSync(resolve(DIST, entry), { recursive: true, force: true });
+  }
   mkdirSync(DIST, { recursive: true });
 }
 
@@ -325,6 +326,9 @@ function step8_trainingPages(content, prelude) {
   return paths;
 }
 
+// Since September 2026 the same playbook section ships on /locker, which is the page the nav and
+// the footer send people to. This one stays for anyone holding the old link, but it is noindex and
+// out of the sitemap so search engines are not asked to pick between two identical pages.
 function step9_playbookPage(sections, content, playbookTemplates, prelude) {
   let body = trimToFirstSectionClose(sections.playbook);
   // Full content.text rather than a hand-picked {pb.lede} map: applyTextEdits/applyAttrEdits
@@ -340,6 +344,7 @@ function step9_playbookPage(sections, content, playbookTemplates, prelude) {
     title: 'Free Custom Basketball Playbook | Fast Basketball',
     description: 'A free four week basketball workout block built for your player and sent to a parent inbox. From Coach Blake Kingsley, Fast Basketball, South Florida.',
     canonicalPath: '/playbook',
+    robots: 'noindex, follow',
     bodyHtml: body,
     content,
     prelude,
@@ -347,34 +352,12 @@ function step9_playbookPage(sections, content, playbookTemplates, prelude) {
     extraScripts: ['/js/playbook-form.js']
   });
   writeHtml(resolve(DIST, 'playbook', 'index.html'), html);
-  return ['/playbook'];
+  return []; // written, not in the sitemap: /locker is the indexed copy
 }
 
-// /locker: The Locker and the Free Playbook, moved off the homepage in September 2026 (owner's
-// call) behind the nav's "The Locker". Same recipe as /playbook above. The Locker section leads,
-// so its heading becomes the page's h1, and its fold wrapper is gone from resources.html because a
-// page whose whole body hides behind a pill is not a page. Both scripts ride along: each finds its
-// own section by id and returns when it is absent, which is also why the homepage no longer
-// loads them. /playbook stays as it was; it is linked from the footer and the sitemap.
+// /locker is rendered by src/lib/locker-page.mjs (shared with the admin preview); see the notes there.
 function step9b_lockerPage(sections, content, playbookTemplates, prelude) {
-  let body = trimToFirstSectionClose(sections.resources) + trimToFirstSectionClose(sections.playbook);
-  body = applyTextEdits(body, content.text);
-  body = applyAttrEdits(body, content.text);
-  body = fixPlaybookForm(body, playbookTemplates);
-  body = applyGroupOrder(body, content.order);
-  body = '<main id="main">\n' + promoteFirstH2(body) + '</main>\n';
-  const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'The Locker', path: '/locker' }])];
-  const html = buildSimplePage({
-    title: 'The Locker: Workouts, Drill Packs and a Free Playbook | Fast Basketball',
-    description: 'Workout blocks, drill packs and film guides Coach Blake Kingsley assigns, plus a free four week playbook built for your player. Fast Basketball, South Florida.',
-    canonicalPath: '/locker',
-    bodyHtml: body,
-    content,
-    prelude,
-    jsonLd,
-    extraScripts: ['/js/locker.js', '/js/playbook-form.js']
-  });
-  writeHtml(resolve(DIST, 'locker', 'index.html'), html);
+  writeHtml(resolve(DIST, 'locker', 'index.html'), renderLockerPage({ sections, content, prelude, playbookTemplates }));
   return ['/locker'];
 }
 

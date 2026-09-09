@@ -548,18 +548,22 @@
     a.click();
   });
 
-  document.getElementById('previewBtn').addEventListener('click', function(){
+  // Two previews since September 2026: the Locker and the Playbook left the homepage for /locker,
+  // so a pb.* or lkr.* edit has no homepage to show on.
+  function openPreview(page){
     api('preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ page: 'home', text: state.content.text })
+      body: JSON.stringify({ page: page, text: state.content.text })
     }).then(function(res){ return res.text(); }).then(function(html){
       var blob = new Blob([html], { type: 'text/html' });
       window.open(URL.createObjectURL(blob), '_blank');
     }).catch(function(){
       say('Preview failed to load.');
     });
-  });
+  }
+  document.getElementById('previewBtn').addEventListener('click', function(){ openPreview('home'); });
+  document.getElementById('previewLockerBtn').addEventListener('click', function(){ openPreview('locker'); });
 
   window.addEventListener('beforeunload', function(e){
     if(state.dirty){ e.preventDefault(); e.returnValue = ''; }

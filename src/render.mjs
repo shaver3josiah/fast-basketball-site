@@ -488,6 +488,16 @@ export function applyGroupOrder(html, order) {
   return out;
 }
 
+// Inner pages have no hero, so the first section heading is the page heading. Was a build.mjs
+// local until /locker needed it from src/lib/locker-page.mjs as well.
+export function promoteFirstH2(html) {
+  const open = html.indexOf('<h2');
+  if (open === -1) return html;
+  const close = html.indexOf('</h2>', open);
+  if (close === -1) return html;
+  return html.slice(0, open) + '<h1' + html.slice(open + 3, close) + '</h1>' + html.slice(close + 5);
+}
+
 export function trimToFirstSectionClose(html) {
   const end = html.indexOf('</section>');
   if (end === -1) return html;
@@ -731,7 +741,7 @@ export function buildFooter({ content, anchors = false } = {}) {
     // editing them here without renaming those pages would make the footer lie.
     '<div class="ft-col"><h3 data-edit="ft.col1h">' + col1h + '</h3>' + PROGRAM_PAGES.map((p) => '<a href="' + p.path + '">' + escapeHtml(p.label) + '</a>').join('') + '</div>\n' +
     '<div class="ft-col"><h3 data-edit="ft.col2h">' + col2h + '</h3>' + areaNames.map((name) => '<a href="' + (PAGED.has(name) ? '/basketball-training/' + name.toLowerCase().replace(/\s+/g, '-') : '/#areas') + '">' + escapeHtml(name) + '</a>').join('') + '</div>\n' +
-    '<div class="ft-col"><h3 data-edit="ft.col3h">' + col3h + '</h3><a href="/#enroll">How to Enroll</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/playbook">Free Playbook</a><a href="/locker">The Locker</a></div>\n' +
+    '<div class="ft-col"><h3 data-edit="ft.col3h">' + col3h + '</h3><a href="/#enroll">How to Enroll</a><a href="/coach-blake-kingsley">About Coach Blake</a><a href="/locker#playbook">Free Playbook</a><a href="/locker">The Locker</a></div>\n' +
     '</div>\n</div>\n' +
     // OWNER NOTE: the old line here claimed copyright and "all rights reserved".
     // Fast Basketball is pre-launch with no verified entity and no registered marks,

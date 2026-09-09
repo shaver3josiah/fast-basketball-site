@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { verifyRequestSession } from './lib/auth.mjs';
 import { loadData, loadSections, assembleHomepage } from '../../src/render.mjs';
 import { renderCoachPage } from '../../src/lib/coach-page.mjs';
+import { renderLockerPage } from '../../src/lib/locker-page.mjs';
 import { renderSuburbPage } from '../../src/lib/suburb-page.mjs';
 
 // fileURLToPath, not .pathname. A file:// URL is percent-encoded, so any space in the
@@ -44,6 +45,10 @@ export default async (request) => {
     const suburb = data.suburbs.find((s) => s.slug === payload.slug);
     if (!suburb) return new Response('unknown suburb slug', { status: 404 });
     html = renderSuburbPage({ suburb, content: draftContent, prelude });
+  } else if (payload.page === 'locker') {
+    // The Locker and the Playbook left the homepage in September 2026, so a pb.* or lkr.* edit
+    // has nothing to show on 'home'. admin.js's second preview button asks for this page.
+    html = renderLockerPage({ sections, content: draftContent, prelude, playbookTemplates: data.playbookTemplates });
   } else {
     html = assembleHomepage({ sections, prelude, content: draftContent, responsiveManifest: data.responsiveManifest, playbookTemplates: data.playbookTemplates });
   }
