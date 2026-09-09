@@ -18,9 +18,10 @@
     "pack:functions": "node scripts/functions-pack.mjs",
     "functions:install": "npm --prefix functions install",
     "emulate": "npm run build && npm run pack:functions && npx --yes firebase-tools emulators:start --only hosting,functions,firestore",
-    "deploy": "npm run build && npx --yes firebase-tools deploy --only hosting,functions",
-    "deploy:hosting": "npm run build && npx --yes firebase-tools deploy --only hosting",
-    "deploy:functions": "npx --yes firebase-tools deploy --only functions"
+    "deploy": "node build.mjs --live && npx --yes firebase-tools deploy --only hosting,functions",
+    "deploy:hosting": "node build.mjs --live && npx --yes firebase-tools deploy --only hosting",
+    "deploy:functions": "npx --yes firebase-tools deploy --only functions",
+    "preview": "node build.mjs && npx --yes firebase-tools hosting:channel:deploy preview --expires 7d"
   },
   "dependencies": {
     "stripe": "^22.6.1"

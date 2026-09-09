@@ -59,26 +59,29 @@ editor and a canvas footgun, and retrofitting either one later is a rescue proje
 
 ### Rule 4, added after research: saving is not publishing
 
-Netlify no longer bills in build minutes. It bills in credits, **15 per successful
-production deploy**, and the free tier is **300 credits** — twenty deploys. Netlify's
-own wording for what happens after that:
+> **The original reason for this rule expired in September 2026**, when the site moved to
+> Firebase Hosting, where deploys are free and unmetered. The rule stayed, because the
+> billing constraint was never the only argument for it. The research that produced it is
+> kept below, since it explains why the code is shaped this way.
 
-> "all of your web projects (sites/apps) are paused and visitors to your web projects
-> will find a `Site not available` page"
+The host at the time billed in credits, 15 per successful production deploy against 300 a
+month on the free tier, which is twenty deploys, and paused every site in the account once
+they ran out. Every admin save committed to GitHub, and every commit triggered a deploy, so
+the site as it then stood would have gone dark on the owner's twentieth edit of the month.
 
-([Netlify: how credits work](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/how-credits-work/),
-[pricing](https://www.netlify.com/pricing/))
+The two arguments that outlived that, and still hold on a host that charges nothing:
 
-Today, every admin save commits to GitHub, and every commit triggers a production
-deploy. **The site as it stands goes dark on the owner's twentieth edit of the month.**
-That is true right now, before any of this is built.
+- A deploy takes a minute or two to land, so a save that deployed would make the editor
+  feel broken while it caught up.
+- A git history with one commit per keystroke is a history nobody can read, and it is the
+  only undo the content has.
 
 So the editor splits the two, in Phase 1:
 
-- **Save** — continuous, instant, unlimited, costs nothing. Drafts go to Netlify Blobs
-  in production and to a local file in development.
-- **Publish** — deliberate, explicit, commits to GitHub and spends one deploy. The
-  button shows how many deploys are left this month.
+- **Save** — continuous, instant, unlimited, costs nothing. Drafts go to Firestore in
+  production and to a local file in development.
+- **Publish** — deliberate, explicit, commits to GitHub, and that commit is what the deploy
+  workflow turns into a live update. The button reports how many publishes this month.
 
 Deploy previews, branch deploys, failed deploys and rollbacks all cost zero credits,
 so preview-before-publish is free and version rollback is free.
@@ -95,11 +98,11 @@ localhost, with no cloud credentials, and you can drag something and see it chan
 | 1 | **Golden-output test** (`scripts/golden.mjs`) | Snapshots today's `dist/` HTML. The migration must not silently regress four rounds of design work. Written *before* any migration, not after. |
 | 2 | **Data model** — `src/data/site.json`, `src/data/theme.json` | Pages → sections → elements. Element = `{id, type, props, box, z, locked, hidden}`, box in relative units per breakpoint. Theme = the brand kit. |
 | 3 | **The compiler** — `src/lib/compile.mjs` | site.json → static HTML + generated CSS. Container-query positioning, auto mobile reflow, per-breakpoint overrides. The heart of the system. |
-| 4 | **Storage adapter** — `netlify/functions/lib/store.mjs` | One `get`/`put` interface. GitHub Contents API in production, local filesystem in dev. Same function handlers run in both. |
-| 5 | **Local dev server** — `scripts/dev-server.mjs` | Zero dependencies. Serves `dist/`, routes `/.netlify/functions/*` to the real handlers, rebuilds on save, live-reloads the preview. |
+| 4 | **Storage adapter** — `server/functions/lib/store.mjs` | One `get`/`put` interface. GitHub Contents API in production, local filesystem in dev. Same function handlers run in both. |
+| 5 | **Local dev server** — `scripts/dev-server.mjs` | Zero dependencies. Serves `dist/`, routes `/api/*` to the real handlers, rebuilds on save, live-reloads the preview. |
 | 6 | **Canvas editor v1** | Select, drag, resize, rotate, multi-select marquee, snapping with smart guides, z-order, group, lock, undo/redo, keyboard shortcuts, breakpoint switcher. Elements: text, image, shape, button. |
 | 7 | **Migration of the nine existing sections** | Imported as locked legacy sections that render byte-identically today, unlockable into canvas sections one at a time. Patient conversion, not a proud rewrite. |
-| 8 | **Save/publish split** (see Rule 4) | Drafts to Netlify Blobs in production, a local file in dev. Only an explicit Publish commits and spends a deploy. Not optional — without it the site is capped at twenty edits a month. |
+| 8 | **Save/publish split** (see Rule 4) | Drafts to Firestore in production, a local file in dev. Only an explicit Publish commits, and the commit is what deploys. Not optional — without it the site is capped at twenty edits a month. |
 
 **Dependencies added:** `moveable` and `selecto` (MIT, vanilla, self-hosted into
 `admin/vendor/` so the existing `script-src 'self'` CSP holds). These solve transform
@@ -108,7 +111,7 @@ well. Everything else is written here.
 
 **Reused, not rebuilt:** `scripts/responsive-images.mjs` (sharp) for image variants,
 `scripts/fetch-fonts.mjs` for self-hosting new fonts, the existing signed-cookie auth,
-and the existing Netlify functions.
+and the existing server handlers.
 
 **Gate:** you open localhost, log in, drag a headline, resize a photo, hit save, and
 watch the live site change. If that does not work end to end, Phase 1 is not done.
@@ -156,7 +159,7 @@ the panel.
 5. **Leads** — the existing list, plus CSV export and per-lead status.
 6. **Impeccable pass on the admin panel itself** — product register, full keyboard
    paths, every state (empty, loading, error, conflict), accessibility.
-7. **Netlify wiring and go-live runbook** — last, and only after you have signed off
+7. **Hosting wiring and go-live runbook** — last, and only after you have signed off
    on the local demo.
 
 **Gate:** an impeccable critique of the admin UI with no P0 or P1, and the go-live
@@ -180,7 +183,7 @@ the browser tab, and there are no artificial ceilings on pages, colors, redirect
 meta tags. Wix caps those at 298, 25, 5,000 and 10 respectively.
 
 **Every editor framework was rejected, and the reason is the same one.**
-`netlify/functions/preview.mjs` already imports the real renderer and server-renders a
+`server/functions/preview.mjs` already imports the real renderer and server-renders a
 live page from draft content. That means preview fidelity — the hardest problem in
 visual editing — is already solved here, and every candidate tool would *regress* it:
 Decap requires rewriting all nine sections in `React.createElement` for its preview,

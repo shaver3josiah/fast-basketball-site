@@ -889,8 +889,15 @@ function writeSitemap(allPaths, siteUrl) {
   writeFileSync(resolve(DIST, 'sitemap.xml'), xml);
 }
 
+// `node build.mjs --live` is a build meant for the public site. It exists because
+// netlify.toml used to set ROBOTS_ALLOW and SITE_ENV per deploy context, and nothing does
+// that on Firebase: CI passes them explicitly, but a hand-run `npm run deploy` would have
+// built the live site with "Disallow: /" and quietly asked Google to leave. The flag is
+// cross-platform in a way `VAR=x npm run ...` is not on Windows, which is what the owner runs.
+const LIVE_BUILD = process.argv.includes('--live');
+
 function writeRobots(siteUrl) {
-  const allowIndexing = process.env.ROBOTS_ALLOW === 'true';
+  const allowIndexing = LIVE_BUILD || process.env.ROBOTS_ALLOW === 'true';
   const robots = allowIndexing
     ? 'User-agent: *\nAllow: /\nDisallow: /admin/\n\nSitemap: ' + siteUrl.replace(/\/$/, '') + '/sitemap.xml\n'
     : 'User-agent: *\nDisallow: /\n';
@@ -970,10 +977,14 @@ async function main() {
   writeRobots(SITE_URL);
   step13_assertNoEditorLeak();
 
-  if (process.env.SITE_ENV === 'production' && SITE_URL.includes('SITE-DOMAIN-PENDING')) {
-    console.error('Build failed: SITE_URL still holds the placeholder domain. Set SITE_URL in the Netlify environment.');
+  if ((LIVE_BUILD || process.env.SITE_ENV === 'production') && SITE_URL.includes('SITE-DOMAIN-PENDING')) {
+    console.error('Build failed: SITE_URL still holds the placeholder domain. Set SITE_URL before a live build.');
     process.exit(1);
   }
+
+  // A live build says which address it baked into the canonicals, the sitemap and the
+  // structured data. Getting this wrong is invisible in the browser and expensive in search.
+  if (LIVE_BUILD) console.log('Live build: indexable, canonicals on ' + SITE_URL);
 
   const totalBytes = dirSize(DIST);
   console.log('Build complete. ' + allPaths.length + ' page(s) written to dist/.');

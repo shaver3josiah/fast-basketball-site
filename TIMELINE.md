@@ -64,8 +64,8 @@ Backspace deleted the element.
 ### 8 Aug — safe to host, and Phase 2 opens
 **Goal: editing must not be able to take the site offline.** · 6 commits
 
-Netlify bills in credits — 15 per production deploy, 300/month free — and every commit
-triggers one. Saving now writes a draft; only Publish spends a deploy. The nine
+The host at the time billed in credits, 15 per production deploy against 300 a month
+free, and every commit triggered one. Saving now writes a draft; only Publish deploys. The nine
 hand-built sections became editable without converting them. Phase 2's first pass landed
 layers, align, duplicate and two new element types, graded 118/160 against a rubric
 written before the work.
@@ -96,6 +96,23 @@ the cancel-by date already computed, and monthly plans get a subscription schedu
 term they were sold so nobody tracks the count by hand. The admin panel gained
 a per-family enrollment link builder and enrollments in the CSV export. Built against the
 default of every decision in `STRIPE-PLAN.md`; nothing has called Stripe yet.
+
+### 9 Sep — off Netlify, onto Firebase
+**Goal: a host the owner chose, with the domain and DNS staying at Wix.** · 1 commit, `c62c0e0`
+
+Wix keeps the domain and answers DNS; it cannot host a custom build with thirteen server
+endpoints, so the two jobs split. Firebase over Cloudflare Pages because a root domain on
+outside DNS needs plain A records, which Firebase publishes, and because the project the
+coach app uses already existed. The twelve functions became one Cloud Function behind
+`/api/**` and not a single handler body changed: they take a web `Request` and return a
+`Response`, so one adapter translates and `server/router.mjs` picks the handler. Netlify
+Blobs became Firestore behind a module that keeps the old API's shape, staged photos went to
+Cloud Storage because an 8MB upload will not fit a 1MB document, and Netlify Forms became
+`/api/contact` and `/api/playbook`, so an enquiry finally lands in the same leads store as
+everything else. A push no longer deploys by itself, so `.github/workflows/deploy.yml` does
+that, which is what keeps the admin Publish button working. Verified on a real Firebase
+preview channel rather than the emulator, which applies no headers or redirects on this
+machine.
 
 ---
 
@@ -185,17 +202,15 @@ Estimate: **3–4 sessions**
 `main` was 18 commits behind and would have deployed the 5 August site with no editor and
 no media library at all. It has been fast-forwarded to the current work and pushed, builds
 clean, and matches the golden baseline. The site will launch **indexable** —
-`ROBOTS_ALLOW = "true"` in the production context, a deliberate choice.
+the deploy workflow passes `ROBOTS_ALLOW=true` and `npm run deploy` builds with `--live`, a deliberate choice.
 
-The checklist is `LAUNCH.md`, which supersedes `phase-c/P10-netlify-deployment-guide.md`
-wherever they disagree. P10 was audited at 92.5/100 against the 4 August site and five
-parts of it are now wrong — most importantly its whole Netlify Identity section, which
-describes an auth model this site does not use, and its variable table, which omits the
-four variables everything now depends on.
+The checklist is `LAUNCH.md`, and `FIREBASE.md` is the hosting reference beside it. The two
+phase-c runbooks, `P10-netlify-deployment-guide.md` and `P11-domain-dns-runbook.md`, are
+retired: they describe a host this site left in September 2026 and a domain it did not buy.
 
-**Blocked on you, not on code**, and not delegable: creating the Netlify site, entering the
-environment variables (they are secrets), pointing DNS at Wix, and the Stripe
-live cutover (keys, catalog script, webhook). `LAUNCH.md` has the exact steps and the
+**Blocked on you, not on code**, and not delegable: upgrading the Firebase project to the
+Blaze plan, entering the environment values (they are secrets), creating the deploy service
+account, pointing DNS at Wix, and the Stripe live cutover (keys, catalog script, webhook). `LAUNCH.md` has the exact steps and the
 five-minute verification pass that proves it worked.
 
 The domain question is closed: Blake bought `fast-basketball.com` from Wix, and `171dbd3`
@@ -225,7 +240,8 @@ handled case by case.
   a phone breakpoint is Phase 3.
 - **The editor is desktop-only** and says so below 900px.
 - **The deploy meter is a floor, not a truth.** It counts publishes made through the
-  editor and cannot see deploys triggered by a git push or from Netlify's UI.
+  editor and cannot see deploys triggered by a git push or run by hand. Since the move to
+  Firebase Hosting, where deploys are free, it is a note rather than a budget.
 - ~~The publish split does not cover hand-built sections yet~~ Closed. `admin-content.mjs`
   writes a draft on every save, `admin-publish.mjs` merges the content draft with the
   canvas draft into one commit, and the Content Admin at `/admin/` has its own Save and

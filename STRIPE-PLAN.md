@@ -1,11 +1,5 @@
 # Stripe integration plan
 
-> **HOST CHANGED, 9 SEPTEMBER 2026.** This site no longer runs on Netlify. It is on Firebase
-> Hosting, with one Cloud Function behind `/api/**`, Firestore in place of Netlify Blobs, and
-> real endpoints in place of Netlify Forms. Wherever this file says Netlify, read
-> [`FIREBASE.md`](FIREBASE.md) instead. Everything about prices, Stripe, content and the admin
-> panel below is still accurate.
-
 
 > **SEPTEMBER 2026 PRICE CHANGE.** The catalog block below has been rewritten to match, but
 > `src/lib/plans.mjs` is the source of truth and this file is a design note, not a spec. Two
@@ -37,23 +31,23 @@ call. The website's step 4 ("Enroll Online") promises: read the agreement, pick 
 
 | Need | Already here |
 |---|---|
-| Serverless endpoints | `netlify/functions/*.mjs`, Functions v2 (`Request`/`Response`), esbuild-bundled |
-| Storage without a database | Netlify Blobs via `lib/leads.mjs` (`addLead`/`listLeads`), local JSON fallback |
+| Serverless endpoints | `server/functions/*.mjs`, plain `(Request) => Response` handlers behind one Cloud Function |
+| Storage without a database | Firestore via `lib/leads.mjs` (`addLead`/`listLeads`), local JSON fallback |
 | Abuse control | `lib/rate-limit.mjs` (`checkRateLimit`, `clientIp`), fails open by design |
 | Transactional email | Resend call pattern in `playbook.mjs` (`RESEND_API_KEY`, `PLAYBOOK_FROM_EMAIL`) |
 | Owner-facing records | Admin panel Leads tab (`leads-list.mjs`, `admin.js` `renderLeadsTable`) |
 | Pricing source of truth | `OFFERS` in `src/lib/site-config.mjs`, `TRAINING_PAGES` in `build.mjs`, `programs.html`, `/terms` (all "must match" by convention) |
 | Simple page builder | `buildSimplePage` in `src/render.mjs` (privacy, terms, contact, training pages) |
-| Local dev with real functions | `scripts/dev-server.mjs` routes `/.netlify/functions/<name>`, passes raw body, sets `FB_LOCAL` |
+| Local dev with real functions | `scripts/dev-server.mjs` routes `/api/<name>`, passes raw body, sets `FB_LOCAL` |
 | Terms the checkout must honour | `/terms` step 2: "type your full name … click the I agree box" |
 
 **Constraints that shape the design:**
 
-- `netlify.toml` CSP is `script-src 'self'`, `connect-src 'self'`, `form-action 'self'`
+- `firebase.json` CSP is `script-src 'self'`, `connect-src 'self'`, `form-action 'self'`
   (report-only), and `Permissions-Policy: payment=()`. The site ships zero third-party
   script and the critique loop measured that. Putting Stripe.js on the page is a real cost.
-- Netlify free tier bills deploys in credits; nothing in the payment path may trigger a
-  build. Payments must land in Blobs, not in git.
+- Firebase Hosting deploys are free and unmetered, but nothing in the payment path should trigger a
+  build. Payments must land in the store, not in git.
 - The repo is public. No key, price ID, or account ID goes in it.
 - The money goes to Blake. The Stripe account is his; the developer gets a restricted key.
 
@@ -196,7 +190,7 @@ Blake does these (account creation and keys are his, per `LAUNCH.md`):
 5. Developers → API keys: a **restricted key** for the site with write access to Checkout
    Sessions, Customers, Subscriptions, Subscription Schedules, Products and Prices. Write
    on the last two because the same key runs `scripts/stripe-catalog.mjs`, which creates
-   products and prices and archives a replaced one. Give the key to the developer to enter in Netlify, or add the developer as a
+   products and prices and archives a replaced one. Give the key to the developer to enter in `functions/.env`, or add the developer as a
    team member with the Developer role. Never the full secret key.
 6. Optional but useful now: two dashboard **Payment Links** for the evaluation ($50 and
    $35). Blake can send those on calls before any site code exists. They are replaced by
@@ -213,13 +207,13 @@ mode end to end, and the catalog script is idempotent.**
 | `src/lib/plans.mjs` | catalog + `checkoutSpec()`; amounts must match `OFFERS`, `TRAINING_PAGES`, `programs.html`, `/terms` |
 | `src/lib/plans.test.mjs` | `node --test`: every plan × pay produces a whole-cent price, a plan offers exactly the pay options it prices, monthly × months lands within a cent of the published total, monthly always costs more than paying in full, lookup keys unique |
 | `scripts/stripe-catalog.mjs` | idempotent: for each spec, find price by `lookup_key`; create product/price if missing; on an amount change, create the new price with `transfer_lookup_key` and archive the old one. Run once per mode (test, then live) with `STRIPE_SECRET_KEY` in the shell, never committed |
-| `netlify/functions/lib/stripe.mjs` | ~10 lines: client from `STRIPE_SECRET_KEY`, `priceByLookupKey()`, 503 helper when the key is unset |
-| `netlify/functions/checkout.mjs` | POST JSON `{plan, pay, email, en-hp}` → honeypot, `checkRateLimit('checkout:'+ip, 10 per 10 min)`, validate `plan`/`pay` against `PLANS`, resolve price, create session with `consent_collection`, `custom_fields`, `customer_email`, `phone_number_collection`, `metadata`, `expires_at` 23h (an hour under Stripe's 24h ceiling), `success_url /enroll/thanks`, `cancel_url /enroll?plan=…` → `{url}`. Returns 503 `{error:'payments not configured'}` without a key, which the page turns into "Online enrollment opens soon, text Coach Blake" |
+| `server/functions/lib/stripe.mjs` | ~10 lines: client from `STRIPE_SECRET_KEY`, `priceByLookupKey()`, 503 helper when the key is unset |
+| `server/functions/checkout.mjs` | POST JSON `{plan, pay, email, en-hp}` → honeypot, `checkRateLimit('checkout:'+ip, 10 per 10 min)`, validate `plan`/`pay` against `PLANS`, resolve price, create session with `consent_collection`, `custom_fields`, `customer_email`, `phone_number_collection`, `metadata`, `expires_at` 23h (an hour under Stripe's 24h ceiling), `success_url /enroll/thanks`, `cancel_url /enroll?plan=…` → `{url}`. Returns 503 `{error:'payments not configured'}` without a key, which the page turns into "Online enrollment opens soon, text Coach Blake" |
 | `build.mjs` | `step11d_enrollPages`: `/enroll` (plan matrix rendered from `plans.mjs`, one form: plan radio group, payment option radio group, parent email, guardian checkbox like the contact form, honeypot) and `/enroll/thanks` (noindex, "check your email for the receipt; Coach Blake's welcome email arrives within 12 hours; reply YES"). `/enroll` in the sitemap, thanks page not |
 | `src/js/enroll.js` | ~40 lines in the `contact-form.js` style: validate, `fetch` the function, `location.assign(url)`, inline error, disabled button while waiting. Reads `?plan=` to preselect |
 | `src/templates/sections/enroll.html` | step 4 body links to `/enroll`; CTA row gains "Enroll Online" ghost button |
 | `src/templates/sections/programs.html` | evaluation card: secondary link "Already had your call? Book the evaluation" → `/enroll?plan=eval`. Primary CTAs stay "Book Your Call": Blake does not want the call skipped |
-| `netlify.toml` | `form-action` gains `https://checkout.stripe.com` so the no-JS POST fallback (function answers 303) is not reported; `/enroll/thanks` gets `X-Robots-Tag: noindex` and `Cache-Control: no-store`. `Permissions-Policy` unchanged: hosted Checkout runs on stripe.com |
+| `firebase.json` | `form-action` gains `https://checkout.stripe.com` so the no-JS POST fallback (function answers 303) is not reported; `/enroll/thanks` gets `X-Robots-Tag: noindex` and `Cache-Control: no-store`. `Permissions-Policy` unchanged: hosted Checkout runs on stripe.com |
 | `README.md` | env table: `STRIPE_SECRET_KEY` (restricted), `STRIPE_WEBHOOK_SECRET` (Phase 2), `ENROLL_NOTIFY_EMAIL` (Phase 2, optional, defaults to `CONTACT.email`) |
 
 Privacy page gets one paragraph: payments are processed by Stripe on Stripe's pages; the
@@ -239,14 +233,14 @@ monthly plan bills the term it was sold without anyone tracking the count by han
 
 | File | Change |
 |---|---|
-| `netlify/functions/stripe-webhook.mjs` | `await request.text()` raw body → `stripe.webhooks.constructEvent` with `STRIPE_WEBHOOK_SECRET` (400 on failure). Idempotency: keyed on the **Checkout Session id** in the existing leads store, not on the event id — a dashboard resend is a new event id for the same session, and event-id dedupe would write the enrollment twice. The record carries `notified`, so a resend after a failed owner email retries the email and a resend after a successful one returns `{duplicate:true}`. Anything that throws is answered 500 so Stripe retries. Handles: `checkout.session.completed` (expand `custom_fields`, `customer`, `subscription`; build the record; `addLead`; for `iterations` plans `subscriptionSchedules.create({from_subscription})` then `update({phases:[{items, iterations}], end_behavior})`; owner email), `invoice.payment_failed` (owner alert: who, amount, attempt count; parent already got Stripe's email), `customer.subscription.deleted` (owner alert). Everything else 200 and ignored |
-| `netlify/functions/lib/notify.mjs` | move `sendEmail` out of `playbook.mjs` into a shared helper with a `to` and `subject`; playbook keeps working unchanged |
+| `server/functions/stripe-webhook.mjs` | `await request.text()` raw body → `stripe.webhooks.constructEvent` with `STRIPE_WEBHOOK_SECRET` (400 on failure). Idempotency: keyed on the **Checkout Session id** in the existing leads store, not on the event id — a dashboard resend is a new event id for the same session, and event-id dedupe would write the enrollment twice. The record carries `notified`, so a resend after a failed owner email retries the email and a resend after a successful one returns `{duplicate:true}`. Anything that throws is answered 500 so Stripe retries. Handles: `checkout.session.completed` (expand `custom_fields`, `customer`, `subscription`; build the record; `addLead`; for `iterations` plans `subscriptionSchedules.create({from_subscription})` then `update({phases:[{items, iterations}], end_behavior})`; owner email), `invoice.payment_failed` (owner alert: who, amount, attempt count; parent already got Stripe's email), `customer.subscription.deleted` (owner alert). Everything else 200 and ignored |
+| `server/functions/lib/notify.mjs` | move `sendEmail` out of `playbook.mjs` into a shared helper with a `to` and `subject`; playbook keeps working unchanged |
 | `admin/admin.js` | `renderLeadsTable`: details column for `type === 'enrollment'` shows plan, pay option, amount; filter dropdown gains "Enrollment" |
 | `LAUNCH.md` | Stripe section: Phase 0 checklist, `stripe listen` for local, live-mode cutover order (catalog script in live, live restricted key, live webhook endpoint + secret, one $0.50 real test refunded) |
 
 Webhook endpoint registered in the Stripe dashboard as
-`https://<site>/.netlify/functions/stripe-webhook` for the three event types. Locally:
-`stripe listen --forward-to localhost:8899/.netlify/functions/stripe-webhook` and
+`https://<site>/api/stripe-webhook` for the three event types. Locally:
+`stripe listen --forward-to localhost:8899/api/stripe-webhook` and
 `stripe trigger checkout.session.completed`; records land in `.local/leads.json`.
 
 **Phase 2 test:** replay the same event twice, one record. `stripe trigger` for each
@@ -320,7 +314,7 @@ only; the built site and the build minutes are unaffected.
 - The checkout function is public and rate-limited like the playbook; a honeypot field
   matches the contact and playbook forms.
 - No Stripe key, price ID, or webhook secret in the repo. Test keys and live keys are
-  separate Netlify env values; switching mode is an env change plus rerunning the catalog
+  separate values in `functions/.env`; switching mode is an env change plus rerunning the catalog
   script in live mode.
 - Consent (`terms_of_service` acceptance) and the typed name live on the Stripe session,
   which is the evidence Blake needs in a dispute. The record also stores `termsAccepted`.
