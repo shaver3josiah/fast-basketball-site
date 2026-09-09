@@ -177,7 +177,7 @@ Estimate: **3–4 sessions**
   heading order, tap-target size, image weight.
 - Version history and one-click revert — free, since they are git commits.
 - Page management: create, duplicate, delete, slug, per-page SEO, nav and footer.
-- Leads: CSV export and per-lead status.
+- Leads: per-lead status. (CSV export shipped 8 Sep with the enrollment rows.)
 
 ### Go live — code side done, 8 Aug
 **Goal: the site is public and the owner is editing it.**
@@ -218,21 +218,18 @@ handled case by case.
 
 ## Known limits, stated plainly
 
-- **4 of 9 hand-built sections cannot be edited yet** (`method`, `nights`, `resources`,
-  `areas`). They carry no edit hooks; adding them is a code change.
+- ~~4 of 9 hand-built sections cannot be edited yet~~ Closed by the 10 Aug editability
+  work: every section template carries hooks now. What is deliberately not editable is the
+  dollar figures on the programs card, which mirror the Stripe catalog in `plans.mjs`.
 - **The canvas is a desktop surface.** Below 1000px it stacks automatically. Hand-laying
   a phone breakpoint is Phase 3.
 - **The editor is desktop-only** and says so below 900px.
 - **The deploy meter is a floor, not a truth.** It counts publishes made through the
   editor and cannot see deploys triggered by a git push or from Netlify's UI.
-- **The publish split does not cover hand-built sections yet.** `admin-content.mjs` commits
-  and fires the build hook on every POST, and the editor's Save routes there whenever a
-  hand-built section is being edited (`editor.js`, `state.mode === 'legacy'`). So editing
-  the hero or the coach bio still spends a deploy per save, exactly as it did before the
-  split existed. The canvas and the media library both stage properly; this one surface
-  does not. Fixing it means giving `content.json` the draft treatment `site.json` already
-  has, and giving the older Content Admin at `/admin/` a Publish button, since it has none
-  and currently relies on that immediate commit.
+- ~~The publish split does not cover hand-built sections yet~~ Closed. `admin-content.mjs`
+  writes a draft on every save, `admin-publish.mjs` merges the content draft with the
+  canvas draft into one commit, and the Content Admin at `/admin/` has its own Save and
+  Publish buttons. Editing the hero costs nothing until Publish.
 - **Adding a resume card still commits directly.** The `resumeExtra` path in
   `admin-upload.mjs` writes to an array rather than to `content.images`, which the staging
   model has no way to represent, so it was left alone. Rare enough to be worth its cost.

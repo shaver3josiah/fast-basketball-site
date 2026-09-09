@@ -1,41 +1,104 @@
 Fast Basketball Website: Owner's Guide
 
-How to open the editor
+There are two editing screens, and one rule that matters more than anything else in
+this guide. The rule first.
 
-Go to yoursite.com/admin in any phone or computer browser. Type in the password you were given. You do not need any special app and you do not need to know how to code.
+The one rule: Save is free, Publish is not
 
-Editing text
+Every screen has a Save button and a Publish button.
 
-The Content tab shows every piece of text on the site, grouped by section: hero, audience, programs, coach, playbook, testimonials, contact. Click into any box and type your change. Boxes with a lot of text become a bigger typing area automatically.
+Save keeps your work on the server as a draft. It costs nothing, it is not visible to
+visitors, and it waits for you, even if you close the browser and come back next week.
+Save as often as you like.
 
-Nothing goes live until you press Publish Changes at the top of the screen. Before that, your edits only exist on your own screen.
+Publish takes everything you have saved and puts it on the live site. The site rebuilds
+itself, which takes a minute or two. You do not need to wait on the page.
 
-Adding or replacing a photo
+Each Publish uses one of 20 rebuilds the hosting plan allows per month. Use all 20 and
+the site cannot rebuild again until the month resets, so nothing new can go live in the
+meantime. The editor shows a meter with the count. The habit that avoids trouble: make
+all of your changes, Save as you go, look at the Preview, then Publish once.
 
-Go to the Photos tab. Each photo has its own card. To replace a photo, choose a new file and fill in the alt text box, which is a short plain sentence describing what is in the photo. This helps the site show up in search and helps anyone using a screen reader. Then press Upload New Photo.
+If you press Publish with unsaved changes, it asks first. Only saved work goes live.
 
-If a photo is the wrong shape for its spot (for example, a very wide photo dropped into a tall frame) the site will reject it and tell you why in plain language. Crop the photo a bit closer to what it is asking for and try again.
+Screen one: the Content Admin, at yoursite.com/admin
 
-To add a brand new resume card instead of replacing one of the four existing ones, press "+ Add a New Resume Card" at the bottom of the Photos tab, then fill it in the same way.
+Works on a phone or a computer. Type the password you were given. You stay logged in
+for 12 hours.
 
-Publishing
+Content tab. Every piece of text on the site, grouped by the section of the page it
+sits in. Click into a box and type. Long passages get a bigger box automatically.
 
-Press Publish Changes once you are happy with your edits. The button will say "Publishing" for about a minute while the site rebuilds itself in the background. You do not need to wait on the page. Check back in a minute or two and your change will be live.
+Two things on this tab are on purpose. The dollar amounts on the pricing card cannot
+be typed over. They are locked to the prices Stripe actually charges, so the page and
+the card reader can never disagree. To change a price, tell your developer, who changes
+both in one go. The wording next to each amount, for example "or $550 paid monthly",
+is yours to edit, but it has to keep saying the same number.
 
-Every change is saved to the site's private history automatically, the same way a word processor saves versions. Nothing is ever lost, even if your phone loses signal partway through.
+Photos tab. Each of the site's photos has a card. Choose a new file, fill in the alt
+text box (one plain sentence saying what is in the photo, for search engines and
+screen readers), and press Upload New Photo. The new photo is held with your draft and
+goes live when you Publish. If the photo is the wrong shape for its spot, the site says
+so in plain words; crop closer to what it asks for and try again.
 
-Seeing your change before it goes live
+"+ Add a New Resume Card" is the one exception: it goes live straight away and uses
+one of the month's rebuilds by itself.
 
-Press Preview at any time to open a new tab showing exactly what your current edits will look like once published, without actually publishing them yet.
+Leads tab. Three kinds of people show up here, newest first.
 
-Backing up your content
+  Enrollment: a parent who paid through the website. The row shows the plan, whether
+  they paid in full or monthly, the amount, the player's name, and a "notice by" date,
+  which is the last day they can give written notice to stop before the term renews.
+  A yellow TEST tag means it came from Stripe's test mode, not real money.
 
-Press Download Backup any time to save a copy of everything on the site as a single file to your phone or computer. Keep this somewhere safe if you want extra peace of mind.
+  Playbook: someone who asked for a free playbook. Name, email, position, focus.
 
-Checking your leads
+  Contact form messages do not appear here. They go straight to your email inbox.
 
-The Leads tab shows everyone who requested a free playbook, newest first, with their name, email, and what they asked for. Type into the filter box to search by name, email, or area. Messages sent through the Contact page arrive straight to your email inbox instead, so you do not need to check two places for those.
+Type in the filter box to search, or use the dropdown to show one kind. Export CSV
+downloads whatever is showing as a spreadsheet.
+
+Enrollment link. At the top of the Leads tab. Pick the plan and the payment option you
+agreed on the call, add the parent's email if you have it, and press Copy. Paste that
+link into your enrollment email. It never expires: the secure checkout page opens when
+the parent clicks it, and they finish on Stripe, where they tick the terms box and type
+their full name to agree, exactly as the agreement asks.
+
+The other buttons. Preview opens a new tab showing the homepage exactly as your current
+edits would look, without publishing. Download Backup saves everything as one file to
+keep somewhere safe.
+
+Screen two: the Editor, at yoursite.com/admin/editor.html
+
+Same password. This one needs a computer; on a phone the panels do not fit and it says
+so. The left side lists the pages and sections. The middle is the site itself. Click
+any text on the page and type in place. Drag and resize the elements on the free-form
+sections. Undo and Redo do what they say, and Revert Section puts a whole section back
+the way it was when you opened it.
+
+Photos panel: add a photo here, crop it, and it is ready to drop into any spot on the
+site, the same way the Photos tab works. Site panel: the page title and description
+that search engines show, and the Motion switches that turn the animations up, down,
+or off.
+
+Save and Publish here are the same two buttons as the other screen, with the same rule.
+
+What happens when a parent enrolls
+
+You get an email for every enrollment with all the details, plus a welcome email
+already written out for you to paste and send. Fill in the two bracketed spots, the
+Zoom recording and the first session, and send it from your own inbox so their YES
+reply lands with you. Stripe has already sent them the receipt.
+
+If a monthly card payment fails, you get an email. The parent gets one from Stripe with
+a link to update their card, so you do not need to chase them unless it keeps failing.
+
+Refunds, card problems, and a parent's payment history live in the Stripe dashboard,
+not in this panel.
 
 If something goes wrong
 
-If a save fails, the screen will tell you exactly what failed. Nothing will publish halfway. If you are ever stuck, take a screenshot of the message and send it to your developer.
+If a save fails, the screen says exactly what failed and nothing publishes halfway. A
+bad edit can only ever reach a draft, never the live site, until you press Publish. If
+you forget the password, your developer resets it. If you are stuck, take a screenshot
+of the message and send it over.

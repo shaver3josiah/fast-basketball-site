@@ -29,8 +29,12 @@
         <span class="prog-tag" data-edit="prog.2.tag">Most Popular</span>
         <div class="prog-top">
           <h3 data-edit="prog.2.title">Group Training Membership</h3>
-          <!-- .prog-price is white-space:nowrap; keep <small> to two short words. -->
-          <div class="prog-price"><span data-edit="prog.2.price">$450&ndash;$1,000</span><small data-edit="prog.2.unit">Per Term</small></div>
+          <!-- .prog-price is white-space:nowrap; keep <small> to two short words.
+               The dollar figures here and in the grid carry NO data-edit hook on purpose: the
+               admin panel could change what the page says but not what Stripe charges, which is
+               decided by src/lib/plans.mjs plus scripts/stripe-catalog.mjs. A price change is a
+               code change. The wording beside each figure stays editable. -->
+          <div class="prog-price"><span>$450&ndash;$1,000</span><small data-edit="prog.2.unit">Per Term</small></div>
         </div>
         <p data-edit="prog.2">60 minute group sessions with players at a similar level. 3-6 month commitment.</p>
         <table class="price-grid">
@@ -39,13 +43,13 @@
           <tbody>
             <tr>
               <th scope="row" data-edit="prog.2.r1">3 months</th>
-              <td><b data-edit="prog.2.r1c1">$450</b><span data-edit="prog.2.r1c1s">or $550 paid monthly</span></td>
-              <td><b data-edit="prog.2.r1c2">$650</b><span data-edit="prog.2.r1c2s">paid in full</span></td>
+              <td><b>$450</b><span data-edit="prog.2.r1c1s">or $550 paid monthly</span></td>
+              <td><b>$650</b><span data-edit="prog.2.r1c2s">paid in full</span></td>
             </tr>
             <tr>
               <th scope="row" data-edit="prog.2.r2">6 months</th>
-              <td><b data-edit="prog.2.r2c1">$750</b><span data-edit="prog.2.r2c1s">or $900 monthly, at $150 a month</span></td>
-              <td><b data-edit="prog.2.r2c2">$1,000</b><span data-edit="prog.2.r2c2s">paid in full</span></td>
+              <td><b>$750</b><span data-edit="prog.2.r2c1s">or $900 monthly, at $150 a month</span></td>
+              <td><b>$1,000</b><span data-edit="prog.2.r2c2s">paid in full</span></td>
             </tr>
           </tbody>
         </table>
