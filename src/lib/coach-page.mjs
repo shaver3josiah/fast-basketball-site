@@ -59,6 +59,7 @@ export function renderCoachPage({ content, responsiveManifest, prelude }) {
   body += '<p>' + escapeHtml(content.text['coach.p1']) + '</p>\n';
   body += '<p>' + escapeHtml(content.text['coach.p2']) + '</p>\n';
   body += '<p>' + escapeHtml(content.text['coach.p3']) + '</p>\n';
+  if (content.text['coach.p4']) body += '<p>' + escapeHtml(content.text['coach.p4']) + '</p>\n';
   body += '<a href="/training/evaluation" class="btn btn-primary">Book Your Call</a>\n';
   body += '</div>\n</div>\n</header>\n';
 

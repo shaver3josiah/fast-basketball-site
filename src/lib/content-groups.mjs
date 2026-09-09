@@ -16,7 +16,7 @@ export const CONTENT_GROUPS = [
   { id: 'rcp', section: 'receipts', label: 'Résumé card', container: 'rcp', item: 'rcp-c', count: 4, renumberVar: true },
   { id: 'prog', section: 'programs', label: 'Program card', container: 'prog', item: 'prog-c', count: 4, renumberVar: false },
   { id: 'cred', section: 'coach', label: 'Credential', container: 'creds', item: 'cred', count: 4, renumberVar: false },
-  { id: 'sb', section: 'coach', label: 'Scoreboard tile', container: 'score', item: 'score-c', count: 4, renumberVar: false },
+  { id: 'sb', section: 'receipts', label: 'Scoreboard tile', container: 'score', item: 'score-c', count: 4, renumberVar: false },
   { id: 'lkr', section: 'resources', label: 'Locker card', container: 'res', item: 'res-c', count: 6, renumberVar: false },
   { id: 'area', section: 'areas', label: 'Area tile', container: 'areas', item: 'area', count: 5, renumberVar: false },
   { id: 'faq', section: 'areas', label: 'FAQ item', container: 'faq', item: 'faq-i', count: 6, renumberVar: false }

@@ -107,7 +107,7 @@ export function drivingProse(suburb) {
 
 export function landmarksProse(suburb) {
   if (!suburb.landmarks || suburb.landmarks.length === 0) return '';
-  return suburb.name + ' sessions get booked around the neighborhoods near ' + joinList(suburb.landmarks) + ' — close enough that a school night session does not eat the whole evening.';
+  return suburb.name + ' sessions get booked around the neighborhoods near ' + joinList(suburb.landmarks) + ', close enough that a school night session does not eat the whole evening.';
 }
 
 export function neighborsProse(suburb) {
@@ -120,7 +120,7 @@ export function whyHereProse(suburb) {
   const tierLine = suburb.tier === 1
     ? suburb.name + ' is core coverage, so weekly recurring slots are easiest to hold here and rarely get bumped.'
     : suburb.name + ' runs on a scheduled rotation, so booking a recurring weekly slot early keeps the same time all season.';
-  return 'Coach Blake came to North Broward straight off the college side of the recruiting table — two staffs, two championships, an NCAA Tournament run. Every ' + suburb.name + ' session gets that same evaluator’s eye. ' +
+  return 'Coach Blake came to North Broward straight off the college side of the recruiting table: two staffs, two championships, an NCAA Tournament run. Every ' + suburb.name + ' session gets the same read a college staff would give. ' +
     tierLine + ' The method does not change by zip code: screen, isolate, load, read, log. A ' + suburb.name + ' player builds the exact same foundation as every player in the program, just closer to home.';
 }
 

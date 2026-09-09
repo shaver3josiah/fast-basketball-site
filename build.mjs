@@ -27,7 +27,7 @@ const TRAINING_PAGES = [
     // No public price: Blake quotes it on the call (September 2026). The amount slot carries the length.
     price: { amount: '60', unit: 'Minutes on Court', line: 'Coach Blake goes over the cost on your intro call, along with the membership options. The call itself is free.' },
     features: ['Movement, handle, and shooting form screen', 'Live reads against a defender', 'Coach Blake gets to know your player and their goals', 'Enrollment call within 24 hours: what we saw, and the plan'],
-    next: 'Bring your player, their shoes, a ball, water, and sixty minutes. Coach Blake watches them move, puts them through live reads, and talks to them about what they want. Then you both decide whether the program fits.'
+    next: 'Bring your player, their shoes, a ball, water, and sixty minutes. Coach Blake screens how they move, puts them through live reads, and talks to them about what they want. Then you both decide whether the program fits.'
   },
   {
     slug: 'group-training', textKey: 'prog.2', title: 'Group Training Membership | Fast Basketball', label: 'Group Training Membership',
@@ -43,7 +43,7 @@ const TRAINING_PAGES = [
     price: { amount: 'Limited', unit: 'Availability', line: 'Pricing available after a consultation. Book a call to talk through your player\'s goals.' },
     cta: 'Book a Consultation',
     features: ['Individualized training built around the athlete\'s specific goals, strengths, and areas for improvement', 'Footwork, handle, finishing, and shooting blocks', 'Same journal and homework standard as the membership', 'Film review and college coaching advice on request'],
-    next: 'Every session is built around the two or three things standing between your player and the next level. Coach Blake sets the schedule with you after the consultation, and the journal and homework standard is the same as the membership, because the standard does not change with the format.'
+    next: 'Every session is built around the two or three things standing between your player and the role they want. Coach Blake sets the schedule with you after the consultation, and the journal and homework standard is the same as the membership, because the standard does not change with the format.'
   }
 ];
 
@@ -439,7 +439,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<p>We use it to reply with open slots, send the playbook or resource you requested, and follow up once. That is the whole list. We do not sell it, rent it, or hand it to anyone else, and we do not add you to anything you did not ask for.</p>\n';
 
   body += '<h2>Parents, and players under 18</h2>\n';
-  body += '<p>These forms are meant for a parent or guardian. We train players from roughly 11 through 18, and the questions that come next — cost, scheduling, health, whether this is even the right fit — are yours to answer. If your player is under 18, please send the form yourself so the conversation starts with you.</p>\n';
+  body += '<p>These forms are meant for a parent or guardian. We train players from roughly 11 through 18, and the questions that come next are yours to answer: cost, scheduling, health, whether this is even the right fit. If your player is under 18, please send the form yourself so the conversation starts with you.</p>\n';
   body += '<p>We do not knowingly collect personal information from a child under 13. If a child under 13 fills in one of these forms without you, we are not going to use it and we will delete it as soon as we know.</p>\n';
   body += '<p>If you think your under-13 child submitted something here, email <a href="mailto:blake.kingsley@gmail.com">blake.kingsley@gmail.com</a> and tell us the email address they used. We will find it, delete it, and write back to confirm it is gone. No form to fill in, no reason needed, and nothing you have to explain.</p>\n';
 

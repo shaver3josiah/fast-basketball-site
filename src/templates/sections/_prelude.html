@@ -112,16 +112,18 @@
       <img class="only-light" src="/brand/logo.svg" alt="" width="250" height="106">
     </div>
     <div class="hero-copy">
-      <div class="eyebrow fade-seq" data-edit="hero.eyebrow">South Florida &nbsp;/&nbsp; Group &amp; Private Skills Training</div>
+      <div class="eyebrow fade-seq" data-edit="hero.eyebrow">South Florida skills training with Coach Blake Kingsley</div>
       <h1>
         <span class="l"><span data-edit="hero.h1a">Elevate to</span></span>
         <span class="l"><span class="hollow" data-edit="hero.h1b">Execute.</span></span>
       </h1>
-      <p class="lede fade-seq d1" data-edit="hero.lede">Your player's level of play goes up. Fast. Weekly sessions with a journal in their hand, homework between them, and a coach who holds them to it. Bench minutes become the minutes a coach cannot do without.</p>
+      <p class="lede fade-seq d1" data-edit="hero.lede">Weekly skills training run by Coach Blake Kingsley, fresh off two championship college staffs. Your player gets a journal, homework between sessions, and a coach who holds them to it. The goal is a player their team cannot afford to sit.</p>
       <div class="hero-cta fade-seq d2">
         <a href="#contact" class="btn btn-primary" data-edit="hero.cta1">Book Your Call</a>
         <a href="#programs" class="btn btn-ghost" data-edit="hero.cta2">See Training &amp; Pricing</a>
         <p class="trust-line" style="flex-basis:100%;margin:0;" data-edit="hero.trust">Limited availability. Replies within one business day.</p>
+        <!-- Who is coaching, readable without opening The Evidence: a parent is buying a person. -->
+        <p class="trust-line" style="flex-basis:100%;margin:0;" data-edit="hero.coachline">Every session is coached by Blake Kingsley, founder. NJCAA Region 16 champions 2024. Horizon League champions 2025.</p>
       </div>
       <!-- THE EVIDENCE. The hero sells the outcome; the résumé waits behind this word. Hover
            or tap evaporates the letters (js/main.js splits them into spans and adds particles)
@@ -134,7 +136,7 @@
         </button>
         <div class="evd-panel" id="evdPanel" hidden>
           <button type="button" class="modal-x evd-close" id="evdClose" aria-label="Close the record"></button>
-          <p class="evd-line" data-edit="evd.line">Two seasons on college staffs. Fifty-one wins, two championships, and a trip to March Madness. Now that eye is on your player.</p>
+          <p class="evd-line" data-edit="evd.line">Two seasons on college staffs. Fifty-one wins, two championships, and an NCAA Tournament. That is the standard your player trains to every week.</p>
           <div class="evd-stats">
             <div class="trust-i"><b data-edit="hero.stat1n">51</b><span data-edit="hero.stat1l">Wins in Two Seasons</span></div>
             <div class="trust-i"><b data-edit="hero.stat2n">2</b><span data-edit="hero.stat2l">Championship Programs</span></div>
@@ -159,22 +161,35 @@
   </div>
 </header>
 
-<!-- TICKER. .wait keeps it hidden until The Evidence is revealed (main.js evdShow adds .on);
-     the noscript block in render.mjs shows it when JavaScript is off. -->
-<div class="ticker wait" aria-hidden="true">
-  <div class="ticker-track">
-    <span class="ticker-i" data-edit="tick.1">Elevate to Execute</span>
-    <span class="ticker-i" data-edit="tick.2">Raise the Standard</span>
-    <span class="ticker-i" data-edit="tick.3">2025 Horizon League Champions</span>
-    <span class="ticker-i" data-edit="tick.4">Details. Discipline. Reps That Count.</span>
-    <span class="ticker-i" data-edit="tick.5">51 Wins in Two Seasons</span>
-    <span class="ticker-i" data-edit="tick.6">Show Up Prepared. Play Confident.</span>
-    <span class="ticker-i" data-edit="tick.1">Elevate to Execute</span>
-    <span class="ticker-i" data-edit="tick.2">Raise the Standard</span>
-    <span class="ticker-i" data-edit="tick.3">2025 Horizon League Champions</span>
-    <span class="ticker-i" data-edit="tick.4">Details. Discipline. Reps That Count.</span>
-    <span class="ticker-i" data-edit="tick.5">51 Wins in Two Seasons</span>
-    <span class="ticker-i" data-edit="tick.6">Show Up Prepared. Play Confident.</span>
+<!-- TICKER. Always on the page. Idle: one technique cue at a time, centered, crossfading on a
+     timer (main.js tkIdle). Record: opening The Evidence swaps in the career track and scrolls
+     it (main.js evdShow -> tkRecord); closing it comes back to idle. The record track is
+     duplicated once so the marquee loops without a seam. With JavaScript off the noscript
+     block in render.mjs shows the record track, matching the evidence panel it also exposes. -->
+<div class="ticker" id="ticker" data-mode="idle" aria-hidden="true">
+  <div class="ticker-track tk-idle">
+    <span class="ticker-i show" data-edit="tick.idle.1">Elevate to Execute</span>
+    <span class="ticker-i" data-edit="tick.idle.2">Feet first. Then the ball.</span>
+    <span class="ticker-i" data-edit="tick.idle.3">Both hands. Every day.</span>
+    <span class="ticker-i" data-edit="tick.idle.4">Balance before speed. Speed before contact.</span>
+    <span class="ticker-i" data-edit="tick.idle.5">Land on two feet, ready to go.</span>
+    <span class="ticker-i" data-edit="tick.idle.6">Same shot, every time.</span>
+    <span class="ticker-i" data-edit="tick.idle.7">Eyes up. Ball low. Decide early.</span>
+    <span class="ticker-i" data-edit="tick.idle.8">Log the number. Beat it next week.</span>
+  </div>
+  <div class="ticker-track tk-record">
+    <span class="ticker-i" data-edit="tick.rec.1">2025 Horizon League Champions</span>
+    <span class="ticker-i" data-edit="tick.rec.2">51 Wins in Two Seasons</span>
+    <span class="ticker-i" data-edit="tick.rec.3">2024 NJCAA Region 16 Champions</span>
+    <span class="ticker-i" data-edit="tick.rec.4">NCAA Tournament, March 2025</span>
+    <span class="ticker-i" data-edit="tick.rec.5">10 Straight Wins Into March</span>
+    <span class="ticker-i" data-edit="tick.rec.6">Two Staffs. Two Titles. One Standard.</span>
+    <span class="ticker-i" data-edit="tick.rec.1">2025 Horizon League Champions</span>
+    <span class="ticker-i" data-edit="tick.rec.2">51 Wins in Two Seasons</span>
+    <span class="ticker-i" data-edit="tick.rec.3">2024 NJCAA Region 16 Champions</span>
+    <span class="ticker-i" data-edit="tick.rec.4">NCAA Tournament, March 2025</span>
+    <span class="ticker-i" data-edit="tick.rec.5">10 Straight Wins Into March</span>
+    <span class="ticker-i" data-edit="tick.rec.6">Two Staffs. Two Titles. One Standard.</span>
   </div>
 </div>
 

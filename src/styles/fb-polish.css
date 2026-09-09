@@ -739,11 +739,36 @@ html.fb-light .evd-line{color:var(--text-body-light);}
 html.fb-light .evd-word{filter:none;}
 @media(prefers-reduced-motion:reduce){.evd-ch.go,.evd-p,.evd-panel.in{animation:none;}}
 
-/* ---------- Ticker waits for The Evidence: main.js evdShow() adds .on ---------- */
-.ticker.wait{display:none;}
-.ticker.wait.on{display:block;animation:tickerIn .6s var(--ease-rush);}
+/* ---------- Ticker: idle technique cues by default, the record while The Evidence is open ----------
+   Both tracks share one grid cell. The idle track stacks its cues in one cell too (grid-area 1/1), so
+   the band is as tall as the longest cue and never moves on rotation; in record mode the idle track
+   is hidden by visibility, not display, so the height holds across the mode switch as well.
+   minmax(0,1fr) keeps the column at the band width: the record track is max-content wide and would
+   otherwise stretch the column to the marquee's full length. The base marquee (base.css .ticker-track
+   animation) still drives the record track, which is what the noscript block relies on. */
+.ticker{display:grid;grid-template-columns:minmax(0,1fr);}
+.ticker .ticker-track{grid-area:1/1;align-self:center;}
+.ticker .tk-idle{display:grid;width:100%;animation:none;}
+.ticker .tk-idle .ticker-i{grid-area:1/1;justify-self:center;text-align:center;white-space:normal;gap:0;opacity:0;transition:opacity .45s var(--ease-rush);}
+.ticker .tk-idle .ticker-i::after{display:none;}
+.ticker .tk-idle .ticker-i.show{opacity:1;}
+.ticker[data-mode="idle"] .tk-record{display:none;}
+.ticker[data-mode="record"] .tk-idle{visibility:hidden;}
+/* The entrance rides the items, not the track: the track's transform belongs to the marquee. */
+.ticker[data-mode="record"] .tk-record .ticker-i{animation:tickerIn .6s var(--ease-rush);}
 @keyframes tickerIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
-@media(prefers-reduced-motion:reduce){.ticker.wait.on{animation:none;}}
+/* Phones: one size for BOTH tracks, so the longest idle cue fits on one line and the band is the
+   same height in idle and record mode (a bigger record line would grow it 3px on the switch). */
+@media(max-width:480px){.ticker .ticker-i{font-size:1rem;}}
+
+/* Scoreboard tiles inside The Résumé (folded in from their own red band). */
+.rcp-score{margin-top:-8px;}
+.rcp-score+.score-src{margin-bottom:44px;color:var(--text-dim-dark);}
+html.fb-light .score-c{background:#fff;border-color:var(--line-light);}
+html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
+
+/* Per-session line under the membership price. */
+.prog-per{font-size:.88rem;margin-top:-4px;}
 
 /* Programs is three cards since the September 2026 sheet retired Private Small Group.
    .prog is a two-column grid, so the third card would sit alone in a half-width column

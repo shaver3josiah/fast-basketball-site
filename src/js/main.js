@@ -267,6 +267,36 @@
     setTimeout(function(){ toast.classList.remove('show'); }, 2400);
   };
 
+  /* Ticker (the red band under the hero). Idle: one technique cue at a time, crossfading
+     every 4.5s. Record: The Evidence swaps in the career track (tkRecord, from evdShow) and
+     closing it comes back to idle (tkIdle, from evdHide). Reduced motion, the ticker setting
+     and a single cue all hold the first cue still; the record marquee itself is CSS. */
+  var ticker = document.getElementById('ticker');
+  var tkItems = ticker ? ticker.querySelectorAll('.tk-idle .ticker-i') : [];
+  var tkIdx = 0;
+  var tkTimer = null;
+  function tkShow(i){
+    Array.prototype.forEach.call(tkItems, function(el, k){ el.classList.toggle('show', k === i); });
+  }
+  function tkIdle(){
+    if(!ticker) return;
+    clearInterval(tkTimer);
+    ticker.setAttribute('data-mode', 'idle');
+    tkShow(tkIdx);
+    var tickerOff = M.ticker === false || document.documentElement.getAttribute('data-ticker') === 'off';
+    if(reduced || tickerOff || tkItems.length < 2) return;
+    tkTimer = setInterval(function(){
+      tkIdx = (tkIdx + 1) % tkItems.length;
+      tkShow(tkIdx);
+    }, 4500);
+  }
+  function tkRecord(){
+    if(!ticker) return;
+    clearInterval(tkTimer);
+    ticker.setAttribute('data-mode', 'record');
+  }
+  tkIdle();
+
   /* The Evidence (hero). The word is split into letters; hover, tap, Enter or Space
      evaporates them with a spray of particles, then the record panel fades in.
      The X in the panel (or Escape) puts the word back, so it can be read again.
@@ -296,9 +326,8 @@
       evdTrig.hidden = true;
       evdPanel.hidden = false;
       evdPanel.classList.add('in');
-      /* The ticker is part of the evidence: it rolls in with the record. */
-      var ticker = document.querySelector('.ticker.wait');
-      if(ticker) ticker.classList.add('on');
+      /* The ticker is part of the evidence: the record track rolls in with the panel. */
+      tkRecord();
     }
     function evdHide(){
       evdDone = false;
@@ -313,8 +342,7 @@
           l.removeAttribute('style');
         });
       }
-      var ticker = document.querySelector('.ticker.wait');
-      if(ticker) ticker.classList.remove('on');
+      tkIdle();
       evdTrig.focus();
     }
     function evdReveal(){

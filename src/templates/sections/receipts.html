@@ -1,10 +1,21 @@
-<section class="band band-dark" id="receipts">
+<section class="band band-ink" id="receipts">
   <div class="shell">
     <div class="head">
       <div class="eyebrow" data-edit="rcp.eyebrow">The Résumé</div>
       <h2 data-edit="rcp.h2">Two championships. Check them yourself.</h2>
       <p class="lede" data-edit="rcp.lede">Two seasons. Two programs. Two championships. Coach Blake was on staff for all of it, and he brought the same standards to South Florida.</p>
     </div>
+    <!-- The scoreboard, folded in from its own red band after the September 2026 review: the record
+         was told four times on one page. It is stated once here, above the photos that prove it.
+         No .rise on the tiles: main.js staggers the data-count counters 160ms apart, and the numbers
+         counting up are the reveal. -->
+    <div class="score rcp-score">
+      <div class="score-c"><span class="score-n" data-count="51" data-edit="sb.1.n">51</span><span class="score-l" data-edit="sb.1.l">Wins in Two Seasons</span></div>
+      <div class="score-c"><span class="score-n" data-count="2" data-edit="sb.2.n">2</span><span class="score-l" data-edit="sb.2.l">Conference Championships</span></div>
+      <div class="score-c"><span class="score-n" data-count="2" data-edit="sb.3.n">2</span><span class="score-l" data-edit="sb.3.l">National Tournaments</span></div>
+      <div class="score-c"><span class="score-n" data-count="10" data-edit="sb.4.n">10</span><span class="score-l" data-edit="sb.4.l">Straight Wins Into March</span></div>
+    </div>
+    <p class="score-src" data-edit="sb.src">Combined across Moberly Area Community College in 2023-24 and Robert Morris in 2024-25, as stated by Coach Kingsley in July 2025. Robert Morris carried a ten game winning streak into the NCAA Tournament.</p>
     <!-- .rise + --i kept: on .rcp-c base.css repurposes them as the photo hook, not a translate
          (.rcp-c.rise{transition:none} then phFlash on the img at --i * 170ms). Strip either and
          the championship photos lose their flash-in entirely. Chronological gallery, so the
@@ -54,7 +65,7 @@
     <!-- Coach Blake's role and title at each program should be confirmed before launch. -->
     <p class="rcp-note"><span data-edit="rcp.note1">Robert Morris finished 26 and 9 and reached the NCAA Tournament for the first time since 2015. Verify the run at </span><a href="https://rmucolonials.com/news/2025/3/12/mens-basketball-horizon-league-champions.aspx" target="_blank" rel="noopener" data-edit="rcp.citelink1">rmucolonials.com</a><span data-edit="rcp.note2"> and the Moberly Area title at </span><a href="https://moberlygreyhounds.com/" target="_blank" rel="noopener" data-edit="rcp.citelink2">moberlygreyhounds.com</a><span data-edit="rcp.note3">.</span></p>
     <div class="rcp-next">
-      <p><b data-edit="rcp.cta.b">That season is over.</b><span data-edit="rcp.cta.rest"> The eyes that watched championship film now watch your player's footwork. It starts with a call.</span></p>
+      <p><b data-edit="rcp.cta.b">That season is over.</b><span data-edit="rcp.cta.rest"> The preparation behind it now goes into your player's footwork, handle, and reads, one week at a time. It starts with a call.</span></p>
       <a href="#contact" class="btn btn-primary" data-edit="rcp.cta">Book Your Call</a>
     </div>
   </div>

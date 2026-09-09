@@ -120,7 +120,7 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
   assert.ok(/<h3[^>]*>Training<\/h3>/.test(footer), 'Training header fallback: ' + footer);
   assert.ok(/<h3[^>]*>Areas<\/h3>/.test(footer), 'Areas header fallback: ' + footer);
   assert.ok(/<h3[^>]*>More<\/h3>/.test(footer), 'More header fallback: ' + footer);
-  assert.ok(footer.includes('Group and private basketball training in South Florida. Built by a college coach for players chasing the next level.'), 'tagline fallback: ' + footer);
+  assert.ok(footer.includes('Group and private basketball training in South Florida, founded by Coach Blake Kingsley. One coach and one standard today, built to add coaches without changing the standard.'), 'tagline fallback: ' + footer);
   assert.ok(footer.includes('Fast Basketball. Elevate to Execute.'), 'bottom line fallback: ' + footer);
   // The Areas column shows the first 4 tiles: the three headline cities, which have no page and
   // so link to the areas section, then the first paged city, which links to its page.

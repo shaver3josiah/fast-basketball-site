@@ -616,8 +616,9 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   // left the resume photos, the portrait and the badge invisible without JS.
   head += '<noscript><style>.zr,.rise{opacity:1 !important;transform:none !important;filter:none !important}'
     + '.rcp-c .rcp-shot img,.coach-img img,.coach-badge{opacity:1 !important;animation:none !important}'
-    // The Evidence and the ticker are revealed by main.js; without it, show the record outright.
-    + '.evd-trigger{display:none !important}.evd-panel[hidden]{display:block !important}.evd-close{display:none !important}.ticker.wait{display:block !important}</style></noscript>\n';
+    // The Evidence is revealed by main.js; without it, show the record outright, and show the
+    // ticker's record track (not the idle cues main.js would rotate) so the band matches the panel.
+    + '.evd-trigger{display:none !important}.evd-panel[hidden]{display:block !important}.evd-close{display:none !important}.ticker .tk-idle{display:none !important}.ticker .tk-record{display:flex !important}</style></noscript>\n';
   for (const data of jsonLd) head += jsonLdScript(data) + '\n';
   head += '</head>\n';
   return head;
@@ -702,7 +703,7 @@ export function buildFooter({ content, anchors = false } = {}) {
   const contactHref = anchors ? '#contact' : '/contact';
   const pricingHref = anchors ? '#programs' : '/#programs';
   const text = (content && content.text) || {};
-  const tagline = escapeHtml(text['ft.tagline'] || 'Group and private basketball training in South Florida. Built by a college coach for players chasing the next level.');
+  const tagline = escapeHtml(text['ft.tagline'] || 'Group and private basketball training in South Florida, founded by Coach Blake Kingsley. One coach and one standard today, built to add coaches without changing the standard.');
   const col1h = escapeHtml(text['ft.col1h'] || 'Training');
   const col2h = escapeHtml(text['ft.col2h'] || 'Areas');
   const col3h = escapeHtml(text['ft.col3h'] || 'More');
