@@ -708,7 +708,7 @@ export function buildFooter({ content, anchors = false } = {}) {
   const col3h = escapeHtml(text['ft.col3h'] || 'More');
   const bot = escapeHtml(text['ft.bot'] || 'Fast Basketball. Elevate to Execute.');
   const city = escapeHtml(text['ft.city'] || 'South Florida');
-  const mob1 = escapeHtml(text['ft.mob1'] || 'Book a Call');
+  const mob1 = escapeHtml(text['ft.mob1'] || 'Book Your Call');
   const mob2 = escapeHtml(text['ft.mob2'] || 'See Pricing');
   const areaNames = deriveAreaNames(content, 4);
   return '<footer class="ft">\n' +
