@@ -443,7 +443,9 @@ html.fb-light .mob-bar{background:rgba(245,243,239,.97);border-top-color:var(--l
 .hero-mark img{width:100%;height:auto;display:block;}
 @media(max-width:1040px){
   .hero-grid{grid-template-areas:"mark" "copy" "card";grid-template-rows:auto;}
-  .hero-grid .hero-mark{width:min(58vw,250px);margin:0 0 6px;align-self:start;}
+  /* 58vw put the lockup at 218px on a 375px phone, under the 250px floor the logo
+     rules set. The shell is 327px wide there, so the floor fits with room to spare. */
+  .hero-grid .hero-mark{width:min(100%,250px);margin:0 0 6px;align-self:start;}
 }
 
 /* 16. Between 861px and 1040px — small laptops, split-screen windows, iPad in
@@ -734,3 +736,18 @@ html.fb-light .evd-word{filter:none;}
 /* ---------- September 2026 copy: multi-paragraph section intros, and the 1-on-1 card subtitle ---------- */
 .head .lede + .lede{margin-top:14px;}
 .prog-sub{font-family:var(--font-eyebrow);font-weight:600;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--red-deep);margin:-4px 0 14px;}
+
+/* 28. THE STACKED BAND SHOWED THE PHOTOS UNCROPPED AND FULL-WIDTH. The 4:3 crop in
+       (b) above is scoped to phones, but the hero and coach grids collapse to one
+       column at 1040px (base.css). Between 521 and 1040 — an iPad either way up, a
+       split-screen laptop — the court card ran the whole shell: 705×1080 at 768 wide,
+       961×1425 at 1024×768, close to two screens of one photo before a parent reaches
+       the copy, and the coach portrait 961×1201. Crop the card the way the phone does
+       and cap both boxes, so a 4:5 portrait stays a portrait rather than a wall. They
+       sit left, on the same edge as the lockup and the copy above them. */
+@media(max-width:1040px){
+  .cc-shot{aspect-ratio:4/3;}
+  .cc-shot img{height:100%;object-fit:cover;object-position:50% 72%;}
+  .hero-grid .court-card{max-width:640px;}
+  .coach .coach-img{max-width:520px;}
+}

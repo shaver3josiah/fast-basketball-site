@@ -53,7 +53,7 @@ export function renderCoachPage({ content, responsiveManifest, prelude }) {
   // band, the band grid-split with a single child, stranding 1.12fr of empty black
   // and squeezing the bio to ~26 characters per line at desktop.
   body += '<header class="band band-dark">\n<div class="shell coach">\n';
-  body += '<div class="coach-img">' + renderImage('coach.portrait', content, responsiveManifest, { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 760px) 90vw, 420px' }) + '</div>\n';
+  body += '<div class="coach-img">' + renderImage('coach.portrait', content, responsiveManifest, { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 580px) 90vw, (max-width: 1040px) 520px, 40vw' }) + '</div>\n';
   body += '<div class="coach-body">\n<div class="eyebrow">Meet Your Coach</div>\n';
   body += '<h1>' + escapeHtml(content.text['coach.name']) + '</h1>\n<p class="lede">' + escapeHtml(content.text['coach.title']) + '</p>\n';
   body += '<p>' + escapeHtml(content.text['coach.p1']) + '</p>\n';

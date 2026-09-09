@@ -64,7 +64,7 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   body += '<p class="lede">' + escapeHtml(suburb.local_paragraph) + '</p>\n';
   body += '<a href="/training/evaluation" class="btn btn-primary">Book Your Call in ' + escapeHtml(suburb.name) + '</a>\n';
   body += '</div>\n';
-  body += '<div class="coach-img">' + renderImage('hero.nets', content, responsiveManifest, { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 760px) 90vw, 640px' }) + '</div>\n';
+  body += '<div class="coach-img">' + renderImage('hero.nets', content, responsiveManifest, { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 580px) 90vw, (max-width: 1040px) 520px, 49vw' }) + '</div>\n';
   body += '</div>\n</header>\n';
 
   body += '<section class="band band-ink">\n<div class="shell">\n<div class="eyebrow rise">Local Schools</div>\n<h2 class="zr">Schools and programs in ' + escapeHtml(suburb.name) + '</h2>\n';
@@ -85,7 +85,7 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   // .rise on .coach-img (base.css hides its <img> until JS adds .in) and so no
   // .coach-badge either, which base.css only reveals on .coach-img.in.
   body += '<section class="band band-dark">\n<div class="shell coach">\n';
-  body += '<div class="coach-img">' + renderImage('coach.portrait', content, responsiveManifest, { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 760px) 90vw, 500px' }) + '</div>\n';
+  body += '<div class="coach-img">' + renderImage('coach.portrait', content, responsiveManifest, { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 580px) 90vw, (max-width: 1040px) 520px, 39vw' }) + '</div>\n';
   body += '<div class="coach-body">\n<div class="eyebrow rise">Meet Your Coach</div>\n<h2 class="zr">The coach</h2>\n';
   body += renderCredentialBlock() + '\n</div>\n</div>\n</section>\n';
 

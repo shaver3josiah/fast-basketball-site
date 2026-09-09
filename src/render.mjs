@@ -18,12 +18,12 @@ export const SECTION_IDS = ['programs', 'enroll', 'coach', 'receipts', 'method',
 export const FOOTER_TEXT_KEYS = ['ft.tagline', 'ft.col1h', 'ft.col2h', 'ft.col3h', 'ft.bot', 'ft.city', 'ft.mob1', 'ft.mob2'];
 
 const IMAGE_RENDER_RULES = {
-  'hero.nets': { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 760px) 88vw, 460px' },
-  'rcp.trophy': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 760px) 45vw, 280px' },
-  'rcp.team': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 760px) 45vw, 280px' },
-  'rcp.juco': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 760px) 45vw, 280px' },
-  'rcp.work': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 760px) 45vw, 280px' },
-  'coach.portrait': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 760px) 90vw, 420px' }
+  'hero.nets': { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 700px) 88vw, (max-width: 1040px) 640px, 42vw' },
+  'rcp.trophy': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 520px) 88vw, (max-width: 1040px) 45vw, 280px' },
+  'rcp.team': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 520px) 88vw, (max-width: 1040px) 45vw, 280px' },
+  'rcp.juco': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 520px) 88vw, (max-width: 1040px) 45vw, 280px' },
+  'rcp.work': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 520px) 88vw, (max-width: 1040px) 45vw, 280px' },
+  'coach.portrait': { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 580px) 90vw, (max-width: 1040px) 520px, 40vw' }
 };
 
 const FAQ_PAIRS = [
@@ -245,7 +245,7 @@ export function injectResumeExtras(html, resumeExtra, responsiveManifest) {
   const marker = '<p class="rcp-note">';
   const markerIndex = html.indexOf(marker);
   if (markerIndex === -1) return html;
-  const rules = { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 760px) 45vw, 280px' };
+  const rules = { loading: 'lazy', fetchpriority: 'auto', sizes: '(max-width: 520px) 88vw, (max-width: 1040px) 45vw, 280px' };
   let cardsHtml = '';
   resumeExtra.forEach((image, i) => {
     if (!responsiveManifest[image.id]) return;
