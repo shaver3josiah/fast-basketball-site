@@ -517,9 +517,13 @@ function heroPreload(content, responsiveManifest) {
   if (!responsive) {
     return '<link rel="preload" as="image" href="' + image.src + '" fetchpriority="high">';
   }
-  const jpegSrcset = responsive.variants.jpeg.map((v) => '/images/' + v.file + ' ' + v.width + 'w').join(', ');
-  const fallback = '/images/' + responsive.variants.jpeg[0].file;
-  return '<link rel="preload" as="image" href="' + fallback + '" imagesrcset="' + jpegSrcset + '" imagesizes="' + rules.sizes + '" fetchpriority="high">';
+  // The <picture> below lists the WebP source first, so every current browser paints the
+  // WebP. Preloading the JPEG candidates fetched a file the page never used and left the
+  // one image that decides LCP to load twice. Preload the WebP set instead; the type
+  // attribute makes a browser without WebP skip the hint and fall through to the <img>.
+  const webpSrcset = responsive.variants.webp.map((v) => '/images/' + v.file + ' ' + v.width + 'w').join(', ');
+  const fallback = '/images/' + responsive.variants.webp[0].file;
+  return '<link rel="preload" as="image" type="image/webp" href="' + fallback + '" imagesrcset="' + webpSrcset + '" imagesizes="' + rules.sizes + '" fetchpriority="high">';
 }
 
 // Motion settings ride content.json's top-level `motion` object (owner-editable through

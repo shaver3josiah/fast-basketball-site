@@ -751,3 +751,9 @@ html.fb-light .evd-word{filter:none;}
   .hero-grid .court-card{max-width:640px;}
   .coach .coach-img{max-width:520px;}
 }
+
+/* 29. THE FOOTER TAGLINE SAT 6px UNDER THE LOCKUP. The logo rules keep 9% of the
+       mark's width clear on every side, 22.5px at the 250px footer lockup; the design
+       system's own footer carries 14px on each side of that gap. render.mjs dropped both
+       margins and left only .brand's 6px padding. 18px restores the kit's 24px. */
+.ft-brand{margin-bottom:18px;}

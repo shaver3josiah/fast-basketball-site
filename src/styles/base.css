@@ -59,7 +59,6 @@ p{text-wrap:pretty;}
 /* The .rcp-* receipt cards are reused inside a light band on the coach page.
    The card surface stays dark (--ink-lift), so copy inside it must stay light;
    the note below sits on chalk, so it and its links must go dark. */
-.band-light .rcp-txt h3{color:var(--bone);}
 /* --line-dark is rgba(255,255,255,.10) — invisible on chalk, so the note's rule
    above the links vanished on the coach page. */
 .band-light .rcp-note{color:var(--text-body-light);border-top-color:var(--line-light);}
@@ -334,7 +333,7 @@ html[data-ticker="off"] .ticker-track{animation-play-state:paused;}
   text-transform:uppercase;color:var(--red-hot);display:inline-block;margin-bottom:8px;
   background:var(--court-black);padding:4px 9px;border-radius:4px;
 }
-.rcp-txt h3{font-size:1.04rem;margin-bottom:7px;}
+.rcp-txt h3{font-size:1.04rem;margin-bottom:7px;color:var(--bone);}
 .rcp-txt p{font-size:.83rem;color:#C4C4CF;line-height:1.42;}
 .rcp-note{
   margin-top:26px;padding-top:20px;border-top:1px solid var(--line-dark);
