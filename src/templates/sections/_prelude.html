@@ -125,13 +125,15 @@
       </div>
       <!-- THE EVIDENCE. The hero sells the outcome; the résumé waits behind this word. Hover
            or tap evaporates the letters (js/main.js splits them into spans and adds particles)
-           and the record fades in. Reduced motion swaps instantly. One-way per page load. -->
+           and the record fades in. Reduced motion swaps instantly. The X in the panel puts the
+           word back (main.js evdHide), so a parent can read the hero again without a reload. -->
       <div class="hero-trust fade-seq d3 evd" id="evd">
         <button type="button" class="evd-trigger" id="evdTrigger" aria-expanded="false" aria-controls="evdPanel">
           <span class="evd-word" data-edit="evd.word">The evidence</span>
           <span class="evd-hint" data-edit="evd.hint">Hover or tap to see the record</span>
         </button>
         <div class="evd-panel" id="evdPanel" hidden>
+          <button type="button" class="modal-x evd-close" id="evdClose" aria-label="Close the record"></button>
           <p class="evd-line" data-edit="evd.line">Two seasons on college staffs. Fifty-one wins, two championships, and a trip to March Madness. Now that eye is on your player.</p>
           <div class="evd-stats">
             <div class="trust-i"><b data-edit="hero.stat1n">51</b><span data-edit="hero.stat1l">Wins in Two Seasons</span></div>

@@ -617,7 +617,7 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   head += '<noscript><style>.zr,.rise{opacity:1 !important;transform:none !important;filter:none !important}'
     + '.rcp-c .rcp-shot img,.coach-img img,.coach-badge{opacity:1 !important;animation:none !important}'
     // The Evidence and the ticker are revealed by main.js; without it, show the record outright.
-    + '.evd-trigger{display:none !important}.evd-panel[hidden]{display:block !important}.ticker.wait{display:block !important}</style></noscript>\n';
+    + '.evd-trigger{display:none !important}.evd-panel[hidden]{display:block !important}.evd-close{display:none !important}.ticker.wait{display:block !important}</style></noscript>\n';
   for (const data of jsonLd) head += jsonLdScript(data) + '\n';
   head += '</head>\n';
   return head;

@@ -269,13 +269,19 @@
 
   /* The Evidence (hero). The word is split into letters; hover, tap, Enter or Space
      evaporates them with a spray of particles, then the record panel fades in.
-     One-way per page load. Reduced motion (or reveals off) swaps instantly. */
+     The X in the panel (or Escape) puts the word back, so it can be read again.
+     Reduced motion (or reveals off) swaps instantly. */
   var evd = document.getElementById('evd');
   if(evd){
     var evdTrig = document.getElementById('evdTrigger');
     var evdPanel = document.getElementById('evdPanel');
     var evdWord = evd.querySelector('.evd-word');
+    var evdClose = document.getElementById('evdClose');
     var evdDone = false;
+    /* After a close the trigger reappears under the pointer that just clicked the X, and
+       the first pixel of movement would fire mouseenter and re-open it. Hover is disarmed
+       by a close and armed again once the pointer has actually left the block. */
+    var evdHoverArmed = true;
     if(evdWord){
       var evdText = evdWord.textContent;
       evdWord.textContent = '';
@@ -293,6 +299,23 @@
       /* The ticker is part of the evidence: it rolls in with the record. */
       var ticker = document.querySelector('.ticker.wait');
       if(ticker) ticker.classList.add('on');
+    }
+    function evdHide(){
+      evdDone = false;
+      evdHoverArmed = false;
+      evdPanel.classList.remove('in');
+      evdPanel.hidden = true;
+      evdTrig.hidden = false;
+      evdTrig.setAttribute('aria-expanded', 'false');
+      if(evdWord){
+        Array.prototype.forEach.call(evdWord.querySelectorAll('.evd-ch'), function(l){
+          l.classList.remove('go');
+          l.removeAttribute('style');
+        });
+      }
+      var ticker = document.querySelector('.ticker.wait');
+      if(ticker) ticker.classList.remove('on');
+      evdTrig.focus();
     }
     function evdReveal(){
       if(evdDone) return;
@@ -322,8 +345,11 @@
       });
       setTimeout(evdShow, letters.length * 45 + 750);
     }
-    evdTrig.addEventListener('mouseenter', evdReveal);
+    evdTrig.addEventListener('mouseenter', function(){ if(evdHoverArmed) evdReveal(); });
     evdTrig.addEventListener('click', evdReveal);
+    evd.addEventListener('mouseleave', function(){ evdHoverArmed = true; });
+    if(evdClose) evdClose.addEventListener('click', evdHide);
+    evd.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !evdPanel.hidden) evdHide(); });
   }
 
   /* /terms contents list ships open; fold it on phones where 13 pills would stack a screen tall. */
