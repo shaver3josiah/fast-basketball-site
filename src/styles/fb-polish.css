@@ -429,6 +429,18 @@ html.fb-light .ft{background:var(--chalk);border-top-color:var(--line-light);}
 html.fb-light .ft-col h3{color:var(--slate);}
 html.fb-light .ft-col a{color:var(--text-soft-light);}
 html.fb-light .ft-col a:hover{color:var(--red-deep);}
+/* Small red labels on light surfaces. Red-hot is a dark-theme colour: 3.5:1 on the white
+   court card, the Locker meta and its button, 3.2:1 on the tinted review box (4.5 needed).
+   The deep red this theme already gives links clears 8:1; the Locker's unlocked teal-dark
+   rule above is more specific and still wins. The flag card turns white in this theme but
+   kept its dark-card caption grey (3.4:1); slate is what its sibling cards use. */
+html.fb-light .cc-label b,html.fb-light .res-meta,html.fb-light .gbp b,html.fb-light .res-get{color:var(--red-deep);}
+html.fb-light .prog-c.flag .prog-price small{color:var(--slate);}
+/* The training-page hero caption used to carry this grey inline, so it stayed a dark-band
+   grey after the light theme turned the band white (3.4:1). Dark keeps it; light gets the
+   caption colour the homepage cards use. */
+.suburb-hero .prog-price small{color:#8A8A96;}
+html.fb-light .suburb-hero .prog-price small{color:var(--slate);}
 html.fb-light .ft-bot{color:var(--slate);border-top-color:var(--line-light);}
 html.fb-light .ft p{color:var(--text-soft-light) !important;}
 html.fb-light .mob-bar{background:rgba(245,243,239,.97);border-top-color:var(--line-light);}
@@ -679,7 +691,7 @@ html[data-night="off"] .net.sway,html[data-night="off"] .net.sway .net-cord,html
 .price-grid tbody th{font-family:var(--font-eyebrow);font-weight:700;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--bone);}
 .price-grid td b{display:block;font-family:var(--font-num);font-size:1.55rem;line-height:1;color:var(--red-hot);letter-spacing:.02em;}
 .price-grid td span{display:block;font-size:.76rem;color:#AFAFBB;margin-top:3px;}
-.fine-print{margin-top:48px;padding:30px 32px;border:1px solid var(--line-light);border-left:4px solid var(--fast-red);border-radius:var(--r-card-light);background:var(--bone);box-shadow:var(--shadow-light);}
+.fine-print{margin-top:48px;padding:30px 32px;border:1px solid var(--line-light);border-radius:var(--r-card-light);background:var(--bone);box-shadow:var(--shadow-light);}
 .fine-print .eyebrow{margin-bottom:16px;}
 .fp-list{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 28px;margin:0 0 18px;padding:0;}
 .fp-list li{font-size:.92rem;color:var(--text-body-light);line-height:1.5;}
@@ -740,6 +752,8 @@ html.fb-light .evd-word{filter:none;}
 @media(min-width:961px){
   .prog-c:nth-child(3):last-child{grid-column:1/-1;}
   .prog-c:nth-child(3):last-child .prog-list{columns:2;column-gap:34px;}
+  /* The spanning card is ~1130px wide; its paragraph ran 146 characters a line. */
+  .prog-c:nth-child(3):last-child > p{max-width:64ch;}
 }
 
 /* ---------- September 2026 copy: multi-paragraph section intros, and the 1-on-1 card subtitle ---------- */

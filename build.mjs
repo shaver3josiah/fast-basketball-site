@@ -296,7 +296,7 @@ function step8_trainingPages(content, prelude) {
     // band is dark and there is no dark-band rule for a bare .prog-price, hence it inline.
     const price = page.price;
     body += '<div class="prog-price" style="margin:22px 0 20px;">' + escapeHtml(price.amount) +
-      '<small style="color:#8A8A96;">' + escapeHtml(price.unit) + '</small></div>\n';
+      '<small>' + escapeHtml(price.unit) + '</small></div>\n';
     body += '<a href="/contact" class="btn btn-primary" data-program="' + escapeHtml(page.label) + '">' + escapeHtml(page.cta || 'Book This Program') + '</a>\n';
     body += '<p class="trust-line">' + escapeHtml(price.line) + '</p>\n';
     body += '</div>\n</header>\n';
