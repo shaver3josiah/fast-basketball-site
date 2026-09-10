@@ -19,5 +19,5 @@ export const CONTENT_GROUPS = [
   { id: 'sb', section: 'receipts', label: 'Scoreboard tile', container: 'score', item: 'score-c', count: 4, renumberVar: false },
   { id: 'lkr', section: 'resources', label: 'Locker card', container: 'res', item: 'res-c', count: 6, renumberVar: false },
   { id: 'area', section: 'areas', label: 'Area tile', container: 'areas', item: 'area', count: 5, renumberVar: false },
-  { id: 'faq', section: 'areas', label: 'FAQ item', container: 'faq', item: 'faq-i', count: 6, renumberVar: false }
+  { id: 'faq', section: 'faq', label: 'FAQ item', container: 'faq', item: 'faq-i', count: 6, renumberVar: false }
 ];

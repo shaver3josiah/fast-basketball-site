@@ -7,14 +7,22 @@ import { CONTENT_GROUPS } from './lib/content-groups.mjs';
 
 // Exported so the editor can list the hand-built sections without keeping its own copy
 // of this order — the drift that has already bitten twice in this codebase.
-// Homepage order: services + pricing, how to enroll, then background and resources, then the
-// second sign-up. 'nights' stays last on purpose: nights.html now ships as a hidden easter-egg
-// overlay (opened from the footer ball / Konami code in main.js), so its DOM position is moot.
-export const SECTION_IDS = ['programs', 'enroll', 'coach', 'receipts', 'method', 'playbook', 'resources', 'areas', 'contact', 'nights'];
+// Homepage order is Blake's, 9 September 2026 ("it is law"): what families say, the four enrol
+// steps, who trains here, the résumé, book a call, the coach, pricing, then the area tiles and
+// the FAQ. 'nights' stays last on purpose: nights.html ships as a hidden easter-egg overlay
+// (opened from the footer ball / Konami code in main.js), so its DOM position is moot.
+export const SECTION_IDS = ['families', 'enroll', 'audience', 'receipts', 'contact', 'coach', 'programs', 'areas', 'faq', 'method', 'playbook', 'resources', 'nights'];
 // The Locker and the Free Playbook left the homepage for /locker in September 2026 (owner's call):
 // the nav's "The Locker" is a page, not a hash. Both stay in SECTION_IDS so loadSections and the
 // editor still know them; only the homepage loop skips them, and build.mjs renders the page.
 export const LOCKER_PAGE_SECTIONS = new Set(['resources', 'playbook']);
+// The Method ("Every session runs these five steps") came off the homepage at Blake's request on
+// 9 September 2026. The template and its mth.* keys stay loadable so it can come back or move.
+// 'families' ("They came to get better.") is hidden until real Google reviews exist (Josiah,
+// 9 September 2026). To show it again: remove it from this set, or, the intended later step, give
+// the admin panel a toggle that drops it from this set instead of a code change. The section
+// stays first in SECTION_IDS so it lands back at the top of the page untouched.
+export const HOMEPAGE_SKIP = new Set([...LOCKER_PAGE_SECTIONS, 'method', 'families']);
 
 // Single source for the footer's editable keys: buildFooter reads these with fallbacks,
 // and build.mjs's footer pseudo-section reports the same list as its hooks, so the two
@@ -32,7 +40,7 @@ const IMAGE_RENDER_RULES = {
 
 const FAQ_PAIRS = [
   { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
-  { question: 'Where do sessions actually happen?', answer: 'Courts across South Florida, with Fort Lauderdale, Miami and Hollywood at the center. You get the exact location when you book.' },
+  { question: 'Where do sessions actually happen?', answer: 'The gym at The Salvation Army Fort Lauderdale Corps, 100 SW 9th Ave, Fort Lauderdale, FL 33312. You get the schedule and what to bring when you book.' },
   { question: 'How long is the commitment, and why?', answer: 'Three months minimum, or six. Coach Blake asks for three because that is how long it takes a new habit to survive speed, contact, and a Friday night. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.' },
   { question: 'Is there a cost for the evaluation session?', answer: 'Yes. Coach Blake goes over it on your call, along with the membership options, so you have the full picture before anything is booked.' },
   { question: 'What happens if we miss a session?', answer: 'Give 24 hours notice and Coach Blake will move it. Miss without notice and the session is forfeited: there are no private makeups and missed sessions do not roll over. All sales are final, so the honest answer is to put every session in the calendar.' },
@@ -688,7 +696,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
 
   let body = bodyMarkup;
   for (const id of SECTION_IDS) {
-    if (LOCKER_PAGE_SECTIONS.has(id)) continue;
+    if (HOMEPAGE_SKIP.has(id)) continue;
     if (id === 'contact') {
       body += trimContactSection(sections[id]);
     } else {

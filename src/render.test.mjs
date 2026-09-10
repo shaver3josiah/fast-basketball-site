@@ -148,7 +148,7 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
 {
   const FAQ_FALLBACK = [
     { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
-    { question: 'Where do sessions actually happen?', answer: 'Courts across South Florida, with Fort Lauderdale, Miami and Hollywood at the center. You get the exact location when you book.' },
+    { question: 'Where do sessions actually happen?', answer: 'The gym at The Salvation Army Fort Lauderdale Corps, 100 SW 9th Ave, Fort Lauderdale, FL 33312. You get the schedule and what to bring when you book.' },
     { question: 'How long is the commitment, and why?', answer: 'Three months minimum, or six. Coach Blake asks for three because that is how long it takes a new habit to survive speed, contact, and a Friday night. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.' },
     { question: 'Is there a cost for the evaluation session?', answer: 'Yes. Coach Blake goes over it on your call, along with the membership options, so you have the full picture before anything is booked.' },
     { question: 'What happens if we miss a session?', answer: 'Give 24 hours notice and Coach Blake will move it. Miss without notice and the session is forfeited: there are no private makeups and missed sessions do not roll over. All sales are final, so the honest answer is to put every session in the calendar.' },

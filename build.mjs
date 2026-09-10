@@ -361,20 +361,6 @@ function step9b_lockerPage(sections, content, playbookTemplates, prelude) {
   return ['/locker'];
 }
 
-// The six item FAQ lives in areas.html for the homepage. Slice that same <section> in rather
-// than copying it, so the two pages can never drift. Behaviour needs nothing extra: /js/main.js
-// wires every .faq-q it finds and already ships on every page, and it assigns the faqA<n> ids
-// per document, so the two pages cannot collide.
-function faqSection(areasHtml) {
-  const anchor = areasHtml.indexOf('<div class="faq">');
-  const start = anchor === -1 ? -1 : areasHtml.lastIndexOf('<section', anchor);
-  const end = anchor === -1 ? -1 : areasHtml.indexOf('</section>', anchor);
-  if (start === -1 || end === -1) {
-    throw new Error('could not locate the FAQ <section> in areas.html — /contact/ would ship without it');
-  }
-  return areasHtml.slice(start, end + '</section>'.length) + '\n';
-}
-
 function step10_contactPage(sections, content, prelude) {
   let body = trimToFirstSectionClose(sections.contact);
   // Full content.text (was a hand-picked {ct.lede, ct.phone, ...} map): applyTextEdits
@@ -385,9 +371,10 @@ function step10_contactPage(sections, content, prelude) {
   body = fixContactForm(body);
   body = fixContactAreaSelect(body, content);
   // FAQ is appended after promoteFirstH2 so the contact heading stays the page's only <h1>.
-  // applyTextEdits here too: faqSection slices the RAW areas.html, so without this the
-  // homepage FAQ would pick up faq.N.q/a edits and /contact/'s copy would not.
-  const faq = applyTextEdits(faqSection(sections.areas), content.text);
+  // The same faq.html the homepage renders, so the two pages can never drift; main.js wires
+  // every .faq-q it finds and assigns faqA<n> ids per document. applyTextEdits here too: this
+  // is the RAW template, so without it /contact/ would miss faq.N.q/a edits.
+  const faq = applyTextEdits(trimToFirstSectionClose(sections.faq), content.text);
   body = '<main id="main">\n' + promoteFirstH2(body) + faq + '</main>\n';
   // FAQ is the only registry group that can appear on this page (sliced in from
   // areas.html above) — applyGroupOrder runs over the whole assembled body so it reorders
@@ -445,7 +432,7 @@ function step11b_privacyPage(content, prelude) {
 
   body += '<h2>What we collect</h2>\n';
   body += '<p>Only what you type into a form. The contact form asks for a name, an email, a phone number, your area, which program you are asking about, and whatever you want to tell us about the player. The playbook form asks for a name, an email, and the player\'s grade, position and skill focus. The Locker asks for an email so we can send you the resource you unlocked.</p>\n';
-  body += '<p>The enrollment form asks for more, because it is the registration for a training program: the athlete\'s name, date of birth, gender, grade, school, experience, and optionally their own email, phone, team, position and goals; the parent or guardian\'s name, relationship, email, phone, home city and preferred way to be contacted; the program, frequency, day and T-shirt size; the athlete\'s health insurance provider and policy number, which is what a coach needs if a player is hurt on the court; the plan chosen; any questions; and the parent\'s drawn signature on the agreement.</p>\n';
+  body += '<p>The enrollment form asks for more, because it is the registration for a training program: the athlete\'s name, date of birth, gender, grade, school, experience, and optionally their own email, phone, team, position and goals; the parent or guardian\'s name, relationship, email, phone, home city and preferred way to be contacted; the program, frequency, day and T-shirt size; the athlete\'s health insurance provider and policy number, which is what a coach needs if a player is hurt on the court; the plan chosen; any questions; and a record that you ticked the two agreement boxes. Your signature itself is not collected here: you sign by typing your full name on Stripe\'s checkout page, and Stripe keeps that.</p>\n';
   body += '<p>One thing gets recorded that you did not type: a playbook request is saved along with the internet address it came from, which is how we stop the form being hammered by a bot. Netlify, which hosts the site, also keeps its own standard server logs, the way every web host does.</p>\n';
 
   body += '<h2>What we do with it</h2>\n';
@@ -460,7 +447,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<p>Two companies, and only because the site cannot work without them.</p>\n';
   body += '<ul class="prog-list">\n';
   body += '<li><b>Netlify</b> hosts this site, receives what the contact, playbook and enrollment forms send, and stores playbook requests and enrollment records where Coach Blake can read them.</li>\n';
-  body += '<li><b>Resend</b> sends the playbook email to you, and sends each enrollment, signature included, to Coach Blake. It gets the email address you gave and the message itself. Nothing else.</li>\n';
+  body += '<li><b>Resend</b> sends the playbook email to you, and sends each enrollment and enquiry to Coach Blake. It gets the email address you gave and the message itself. Nothing else.</li>\n';
   body += '</ul>\n';
   body += '<p>That is the complete list. No mailing list tool, no advertising platform, no data broker, nobody else in the middle.</p>\n';
 
@@ -470,7 +457,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<li>The email you used to open the Locker, so your unlocked resources stay unlocked next time. Hit "Log out" in the Locker and it is gone.</li>\n';
   body += '<li>A count of the shots you have made in the little night court on the homepage. It is a number. That is genuinely all it is.</li>\n';
   body += '<li>Which program you clicked, so the contact form arrives already knowing what you wanted to ask about. It clears when you close the tab.</li>\n';
-  body += '<li>The answers you typed into the enrollment form, so coming back from Stripe\'s checkout does not empty it. The insurance policy number and the signature are not kept. All of it clears when you close the tab.</li>\n';
+  body += '<li>The answers you typed into the enrollment form, so coming back from Stripe\'s checkout does not empty it. The insurance policy number is not kept. All of it clears when you close the tab.</li>\n';
   body += '<li>A note that you have already seen the opening animation, so it does not replay on every page. That clears when you close the tab too.</li>\n';
   body += '</ul>\n';
   body += '<p>There is no analytics on this site, no advertising pixel, no session recording and no third-party script of any kind. Every script and font a page here loads is served from this site. Clearing your browser storage removes everything in that list.</p>\n';
@@ -628,8 +615,8 @@ function step11c_termsPage(content, prelude) {
   return ['/terms'];
 }
 
-// The fine print on /enroll is the homepage block, sliced out of programs.html the way
-// faqSection slices the FAQ, so an owner edit to an fp.* key lands on both pages.
+// The fine print on /enroll is the homepage block, sliced out of programs.html, so an owner
+// edit to an fp.* key lands on both pages.
 function finePrint(programsHtml) {
   const start = programsHtml.indexOf('<div class="fine-print">');
   // A balanced scan, not "the last </div> before </section>": the block now sits inside the
@@ -722,13 +709,13 @@ function step11d_enrollPages(sections, content, prelude) {
   body += '<p><b>Where.</b> The Salvation Army, Fort Lauderdale Corps, 100 SW 9th Ave, Fort Lauderdale, FL 33312.</p>\n';
   body += '<p><b>When.</b> Every Thursday and Friday. 3rd to 5th grade 5:00 to 6:00 PM, 6th to 8th grade 6:00 to 7:00 PM, 9th to 12th grade 7:00 to 8:00 PM.</p>\n';
   body += '<p><b>Registration and payment.</b> Every athlete completes this form and pays to take part. Your athlete\'s spot is not reserved until payment is received. Space is limited, and registration is confirmed first paid, first reserved. All payments are final. FAST Basketball does not offer refunds.</p>\n';
-  body += '<p>What to bring and program expectations follow once you are registered. Read the <a href="/terms">terms and agreement</a> before you sign. Questions: Blake Kingsley Jr., ' + sms + '. Train Fast. Think Fast. Play Fast.</p>\n';
+  body += '<p>What to bring and program expectations follow once you are registered. Read the <a href="/terms">terms and agreement</a> before you enroll. Questions: Blake Kingsley Jr., ' + sms + '. Train Fast. Think Fast. Play Fast.</p>\n';
   body += '</div>\n';
-  // The signature box is drawn by enroll.js, so without JS there is nothing to sign with and
-  // nothing worth sending. The button is hidden rather than left to post thirty answers to a
-  // function that can only turn them away.
-  body += '<noscript><style>#enForm button[type="submit"]{display:none;}</style><p class="trust-line">JavaScript is off, and the signature box needs it. Text ' + sms + ' and Coach Blake will send you the registration another way.</p></noscript>\n';
-  body += '<form id="enForm" class="en-form" method="post" action="/.netlify/functions/checkout">\n';
+  // Works with JavaScript off: enroll.js upgrades this to fetch + location.assign, and without
+  // it the browser posts the form and checkout.mjs answers 303, to Stripe on success and back
+  // to ?err=1#enErr on failure. That path was dead while a drawn signature was required, since
+  // a canvas cannot be filled in without scripting; removing the pad brought it back.
+  body += '<form id="enForm" class="en-form" method="post" action="/api/checkout">\n';
 
   let n = 0;
   for (const s of REGISTRATION_SECTIONS) {
@@ -748,23 +735,21 @@ function step11d_enrollPages(sections, content, prelude) {
   }
   body += '</div>\n</fieldset>\n';
 
-  body += '<fieldset class="en-fs">\n' + legend(++n, 'Review and sign') + '<div class="pb-form">\n';
+  body += '<fieldset class="en-fs">\n' + legend(++n, 'Review and agree') + '<div class="pb-form">\n';
   body += fieldsIn('agreement');
   body += check('enReviewed', 'reviewed', 'I am this athlete\'s parent or guardian. The details above are correct, and I have read the <a href="/terms">player and parent expectations</a>.');
-  // Draw only, like the Jotform's pad. enroll.js paints it white, records the strokes and
-  // exports a PNG into the hidden input; the canvas keeps the .fld error styling of an input.
-  body += '<div class="fld en-sig-fld">\n<label>Parent signature</label>\n' +
-    '<canvas id="enSig" class="en-sig" width="620" height="228" role="img" aria-label="Signature box. Sign with your finger or mouse."></canvas>\n' +
-    '<div class="en-sig-bar"><span>Sign in the box with your finger or mouse.</span><button type="button" class="btn btn-ghost" id="enSigClear">Clear</button></div>\n' +
-    '<input type="hidden" name="signature" id="enSignature">\n</div>\n';
-  body += check('enTerms', 'terms', 'I agree to the <a href="/terms">terms and conditions</a>.');
+  // A drawn signature pad sat here until September 2026. It is gone on purpose: the training
+  // agreement's Step 2 says a family agrees by typing their full name on the checkout form and
+  // ticking the I-agree box, which is what Stripe collects on the next page and stores on the
+  // session. A canvas asked a parent to sign twice, and the second one was the one that counted.
+  body += check('enTerms', 'terms', 'I agree to the <a href="/terms">terms and conditions</a>. I understand I will type my full name to sign on the next page.');
   // Honeypot, hidden exactly as the playbook form hides its own.
   body += '<p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="en-hp" id="enHp" tabindex="-1" autocomplete="off"></label></p>\n';
   // Ships in the page rather than being written by JS: a form POST with JS off comes back to
   // ?err=1#enErr and #enErr:target is what unhides it. enroll.js replaces the text otherwise.
   body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;">That did not go through. Check the highlighted fields and try again, or text Coach Blake at ' + CONTACT.phone + ' and he will take it from there.</p>\n';
   body += '<button type="submit" class="btn btn-primary" style="width:100%;">Continue to Secure Checkout</button>\n';
-  body += '<p class="trust-line">You finish on Stripe\'s secure checkout page. There you tick the terms box and type your full name to agree, exactly as the agreement asks. Card details never touch this site.</p>\n';
+  body += '<p class="trust-line">You finish on Stripe\'s secure checkout page. There you tick the terms box and type your full name to sign, exactly as the agreement asks. That typed name is your signature. Card details never touch this site.</p>\n';
   body += '</div>\n</fieldset>\n</form>\n';
 
   body += applyTextEdits(finePrint(sections.programs), content.text);
