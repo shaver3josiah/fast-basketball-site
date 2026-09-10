@@ -116,38 +116,58 @@ sequenceDiagram
   participant F as checkout.mjs
   participant ST as Stripe
   participant W as stripe-webhook.mjs
-  participant B as Blobs (leads store)
+  participant B as Firestore (leads store)
   participant R as Resend
 
-  P->>S: pick plan + payment option, enter email
-  S->>F: POST JSON {plan, pay, email}
-  F->>F: rate limit, validate against PLANS, resolve price by lookup_key
-  F->>ST: create Checkout Session (consent + custom fields + metadata)
+  P->>S: full registration, plan, pay option, two agreement boxes
+  S->>F: POST JSON (the whole registration)
+  F->>F: rate limit, validateRegistration(), validate plan/pay against PLANS
+  F->>B: addLead('registration:<uuid>', paymentStatus 'pending')
+  F->>R: "new registration, payment pending" to Blake
+  F->>ST: create Checkout Session (consent + agree_name + metadata.registrationId)
   F-->>S: {url}
   S->>ST: location.assign(url)
   P->>ST: pays, ticks "I agree", types full name
   ST-->>P: /enroll/thanks  (static page, not proof of payment)
   ST->>W: checkout.session.completed (signed)
-  W->>W: verify signature, idempotency by event id
+  W->>W: verify signature, idempotency by Checkout Session id
   W->>ST: installment plans: attach subscription schedule (N iterations)
-  W->>B: addLead({type:'enrollment', …})
+  W->>B: complete the SAME registration row, paymentStatus 'paid'
   W->>R: owner alert to Blake with a prefilled welcome email
 ```
 
-The **webhook is the source of truth**. The thanks page is copy only; it never reads
-`session_id` to claim success.
+The **webhook is the source of truth for payment**. The thanks page is copy only; it never
+reads `session_id` to claim success.
+
+Two things about that order, both learned after the Jotform registration replaced the old
+plan-and-email form in September 2026. The registration is written and Blake is emailed
+**before** Stripe is asked anything, because a family who fills in thirty answers and then
+meets a Stripe outage is a family Blake can still call; a lost form is gone. And the record
+starts at `paymentStatus: 'pending'` rather than being created by the webhook, so the webhook
+completes a row instead of writing one. That is why `checkout.session.expired` is handled:
+without it a pending row would sit there forever looking like an enrollment.
 
 ### What gets recorded
 
-One record per completed session, in the existing `leads` store so the admin panel's
-Leads tab shows it beside contact and playbook leads with no new function:
+One record per family, in the existing `leads` store so the admin panel's Leads tab shows it
+beside contact and playbook leads with no new function. It is written by `checkout.mjs` at
+`registration:<uuid>` the moment the form is submitted, carrying every answer and
+`paymentStatus: 'pending'`; the webhook then completes that same row rather than adding a
+second one. A session Blake creates by hand in the Stripe dashboard has no registration id and
+still gets a row of its own under `enrollment:<session id>`, built from what Stripe knows:
 
 ```
-{ type:'enrollment', timestamp, sessionId, customerId, subscriptionId|null,
-  email, phone, name (the typed-to-agree field), playerName,
+{ type:'enrollment', registrationId, timestamp, registeredAt,
+  ...every answer from registration.mjs,   // athlete, parent, program, insurance, notes
+  name,                      // the parent's name as they typed it on OUR form
+  agreeName,                 // the name they typed on STRIPE's form to sign. The two can differ,
+                             // and keeping both is the point: one identifies, one signs
+  playerName, email, phone,  // Stripe's email and phone win, because the receipt went there
+  sessionId, customerId, subscriptionId|null,
   plan, planLabel, pay, amountCents, amount, months, termTotalCents, noticeDays, startDate,
   cancelNoticeBy,            // startDate + months − noticeDays, the blank Blake fills by hand today
-  paymentStatus, termsAccepted, livemode,
+  paymentStatus,             // 'pending' → 'paid' | 'unpaid' | 'abandoned' | 'superseded'
+  reviewed, termsAccepted, livemode,
   notified }                 // true once the owner email went out; a resend retries it if not
 ```
 
@@ -206,11 +226,13 @@ mode end to end, and the catalog script is idempotent.**
 | `package.json` | add `stripe` (the one new dependency; see "Dependencies" below) |
 | `src/lib/plans.mjs` | catalog + `checkoutSpec()`; amounts must match `OFFERS`, `TRAINING_PAGES`, `programs.html`, `/terms` |
 | `src/lib/plans.test.mjs` | `node --test`: every plan × pay produces a whole-cent price, a plan offers exactly the pay options it prices, monthly × months lands within a cent of the published total, monthly always costs more than paying in full, lookup keys unique |
+| `src/lib/registration.mjs` | the enrollment form itself: the 26 typed questions in Jotform order with their placeholders and options, plus `validateRegistration()`. One list drives the page, the server-side validation and the admin CSV. There is no signature field, by design |
 | `scripts/stripe-catalog.mjs` | idempotent: for each spec, find price by `lookup_key`; create product/price if missing; on an amount change, create the new price with `transfer_lookup_key` and archive the old one. Run once per mode (test, then live) with `STRIPE_SECRET_KEY` in the shell, never committed |
+| `scripts/stripe-check.mjs` | the preflight the catalog script cannot be: resolves every lookup key to an active price and compares amount and cadence against `plans.mjs`, creates a Checkout Session with `consent_collection` and immediately expires it (**the only way to learn whether the account's Terms of service URL is set, and without it every session is refused**), then reads the webhook endpoints and their events. Reports everything at once, exits non-zero. Run once per mode |
 | `server/functions/lib/stripe.mjs` | ~10 lines: client from `STRIPE_SECRET_KEY`, `priceByLookupKey()`, 503 helper when the key is unset |
-| `server/functions/checkout.mjs` | POST JSON `{plan, pay, email, en-hp}` → honeypot, `checkRateLimit('checkout:'+ip, 10 per 10 min)`, validate `plan`/`pay` against `PLANS`, resolve price, create session with `consent_collection`, `custom_fields`, `customer_email`, `phone_number_collection`, `metadata`, `expires_at` 23h (an hour under Stripe's 24h ceiling), `success_url /enroll/thanks`, `cancel_url /enroll?plan=…` → `{url}`. Returns 503 `{error:'payments not configured'}` without a key, which the page turns into "Online enrollment opens soon, text Coach Blake" |
-| `build.mjs` | `step11d_enrollPages`: `/enroll` (plan matrix rendered from `plans.mjs`, one form: plan radio group, payment option radio group, parent email, guardian checkbox like the contact form, honeypot) and `/enroll/thanks` (noindex, "check your email for the receipt; Coach Blake's welcome email arrives within 12 hours; reply YES"). `/enroll` in the sitemap, thanks page not |
-| `src/js/enroll.js` | ~40 lines in the `contact-form.js` style: validate, `fetch` the function, `location.assign(url)`, inline error, disabled button while waiting. Reads `?plan=` to preselect |
+| `server/functions/checkout.mjs` | POST the whole registration as JSON, or urlencoded from a browser with JavaScript off → honeypot, `checkRateLimit('checkout:'+ip, 10 per 10 min)`, validate `plan`/`pay` against `PLANS`, resolve price, create session with `consent_collection`, `custom_fields`, `customer_email`, `phone_number_collection`, `metadata`, `expires_at` 23h (an hour under Stripe's 24h ceiling), `success_url /enroll/thanks`, `cancel_url /enroll?plan=…` → `{url}`. Returns 503 `{error:'payments not configured'}` without a key, which the page turns into "Online enrollment opens soon, text Coach Blake" |
+| `build.mjs` | `step11d_enrollPages`: `/enroll`, seven numbered fieldsets rendered from `src/lib/registration.mjs` and `plans.mjs` (athlete, parent, program, health insurance, plan radios, pay radios, review and agree), plus honeypot; and `/enroll/thanks`. **Both are `noindex` and out of the sitemap**: the page shows the evaluation price, which Blake quotes on the call and does not publish |
+| `src/js/enroll.js` | validate every field in page order, `fetch` the endpoint, `location.assign(url)`, inline errors keyed to the server's own error map, disabled button while waiting. Reads `?plan=`, `?pay=` and `?email=` to preselect, and keeps the typed answers in sessionStorage so Stripe's cancel link does not return to an empty form |
 | `src/templates/sections/enroll.html` | step 4 body links to `/enroll`; CTA row gains "Enroll Online" ghost button |
 | `src/templates/sections/programs.html` | evaluation card: secondary link "Already had your call? Book the evaluation" → `/enroll?plan=eval`. Primary CTAs stay "Book Your Call": Blake does not want the call skipped |
 | `firebase.json` | `form-action` gains `https://checkout.stripe.com` so the no-JS POST fallback (function answers 303) is not reported; `/enroll/thanks` gets `X-Robots-Tag: noindex` and `Cache-Control: no-store`. `Permissions-Policy` unchanged: hosted Checkout runs on stripe.com |
@@ -235,11 +257,11 @@ monthly plan bills the term it was sold without anyone tracking the count by han
 |---|---|
 | `server/functions/stripe-webhook.mjs` | `await request.text()` raw body → `stripe.webhooks.constructEvent` with `STRIPE_WEBHOOK_SECRET` (400 on failure). Idempotency: keyed on the **Checkout Session id** in the existing leads store, not on the event id — a dashboard resend is a new event id for the same session, and event-id dedupe would write the enrollment twice. The record carries `notified`, so a resend after a failed owner email retries the email and a resend after a successful one returns `{duplicate:true}`. Anything that throws is answered 500 so Stripe retries. Handles: `checkout.session.completed` (expand `custom_fields`, `customer`, `subscription`; build the record; `addLead`; for `iterations` plans `subscriptionSchedules.create({from_subscription})` then `update({phases:[{items, iterations}], end_behavior})`; owner email), `invoice.payment_failed` (owner alert: who, amount, attempt count; parent already got Stripe's email), `customer.subscription.deleted` (owner alert). Everything else 200 and ignored |
 | `server/functions/lib/notify.mjs` | move `sendEmail` out of `playbook.mjs` into a shared helper with a `to` and `subject`; playbook keeps working unchanged |
-| `admin/admin.js` | `renderLeadsTable`: details column for `type === 'enrollment'` shows plan, pay option, amount; filter dropdown gains "Enrollment" |
+| `admin/admin.js` | `renderLeadsTable`: the enrollment details column shows the payment status (PENDING PAYMENT / NO PAYMENT / REPLACED), plan, pay option, amount, player and grade, program and cancel-by date; `REG_KEYS` mirrors the registration fields into the CSV |
 | `LAUNCH.md` | Stripe section: Phase 0 checklist, `stripe listen` for local, live-mode cutover order (catalog script in live, live restricted key, live webhook endpoint + secret, one $0.50 real test refunded) |
 
 Webhook endpoint registered in the Stripe dashboard as
-`https://<site>/api/stripe-webhook` for the three event types. Locally:
+`https://<site>/api/stripe-webhook` for the four event types. Locally:
 `stripe listen --forward-to localhost:8899/api/stripe-webhook` and
 `stripe trigger checkout.session.completed`; records land in `.local/leads.json`.
 

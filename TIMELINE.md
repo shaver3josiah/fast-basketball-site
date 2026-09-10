@@ -11,17 +11,18 @@ depends on how often you sit down with it, which is yours to decide, not mine to
 
 ## Where it stands, in one line
 
-The site is built and editable; the editor works locally end to end; nothing is hosted
-yet, and that is now a choice rather than a blocker.
+The site is built and editable, the editor works end to end, and the whole thing runs on
+Firebase Hosting. What is left before launch is not code: a billing plan, a service-account
+secret, DNS at Wix, and the Stripe account.
 
 | | |
 |---|---|
-| Pages building | 19 |
+| Pages building | 15 |
 | Canvas element types | 6 (text, image, shape, icon, divider, button) |
-| Hand-built sections editable | 5 of 9 · 23 fields |
-| Golden-output baseline | 54 files locked |
-| Test suites | 10 |
+| Golden-output baseline | 55 files locked |
+| Test suites | 14 · 61 cases, all offline |
 | Phase 2 rubric score | **141 / 160** — passed the 130 bar |
+| Blocking launch | Blaze plan, deploy secret, Wix DNS, Stripe keys. All owner actions |
 
 ---
 
@@ -113,6 +114,29 @@ everything else. A push no longer deploys by itself, so `.github/workflows/deplo
 that, which is what keeps the admin Publish button working. Verified on a real Firebase
 preview channel rather than the emulator, which applies no headers or redirects on this
 machine.
+
+### 9 Sep — enrollment is Blake's real registration form
+**Goal: the form he already uses, on the site, ending at Stripe.** · `e91f649` and `7575172`
+
+Blake's Jotform became `/enroll`: seven numbered fieldsets, 26 questions in his order, driven
+by one list in `src/lib/registration.mjs` that the page renders from, the server validates
+against and the admin CSV mirrors. The order of operations is the part worth keeping: the
+registration is stored and Blake is emailed **before** Stripe is asked anything, so a family
+who fills in thirty answers and meets an outage is still a family he can call. The webhook
+then completes that same row rather than writing a second one, and `checkout.session.expired`
+turns a form filled in and abandoned into a follow-up instead of a row nobody reads.
+
+It shipped with a drawn signature pad and lost it the same day, on purpose. The training
+agreement says a family agrees by typing their full name on the checkout form and ticking the
+I-agree box, which is exactly what Stripe collects and stores on the session; the canvas asked
+a parent to sign twice on a phone and only the second one counted. Removing it also brought
+back the no-JavaScript path, which had been disabled for the single reason that a canvas
+cannot be drawn on without scripting.
+
+`npm run stripe:check` closes the last gap. Four things stop enrollment working and none is
+visible from the site, the worst being a missing Terms of service URL, which makes Stripe
+refuse every session while reporting nothing on the account object. The check asks Stripe for
+a session with the consent box and reads the error, then expires it.
 
 ---
 

@@ -46,17 +46,30 @@ one of the month's rebuilds by itself.
 
 Leads tab. Three kinds of people show up here, newest first.
 
-  Enrollment: a parent who paid through the website. The row shows the plan, whether
-  they paid in full or monthly, the amount, the player's name, and a "notice by" date,
-  which is the last day they can give written notice to stop before the term renews.
+  Enrollment: a family who filled in the registration form. The row shows the plan,
+  whether they are paying in full or monthly, the amount, the player's name and grade,
+  the program, and a "notice by" date, which is the last day they can give written
+  notice to stop before the term renews.
+
+  A row that starts with PENDING PAYMENT is a family who completed the whole form and
+  has not paid yet. That is not a mistake and it is not an enrollment: their spot is
+  not reserved. If they never pay, the row turns to NO PAYMENT about a day later and
+  you get an email about it, because a form filled in and abandoned is usually worth
+  one text message. REPLACED means they started again in a new tab and paid there, so
+  there is nothing to chase.
+
   A yellow TEST tag means it came from Stripe's test mode, not real money.
+
+  Contact: someone who used the "Book Your Call" form. Name, email, phone, the area
+  they are in, and their message. These used to go only to your inbox; now they land
+  here too, so nothing is lost if an email goes astray. You still get the email, and
+  you can reply to it directly to reach the parent.
 
   Playbook: someone who asked for a free playbook. Name, email, position, focus.
 
-  Contact form messages do not appear here. They go straight to your email inbox.
-
 Type in the filter box to search, or use the dropdown to show one kind. Export CSV
-downloads whatever is showing as a spreadsheet.
+downloads whatever is showing as a spreadsheet, with every answer from the
+registration form in its own column.
 
 Enrollment link. At the top of the Leads tab. Pick the plan and the payment option you
 agreed on the call, add the parent's email if you have it, and press Copy. Paste that
@@ -85,10 +98,23 @@ Save and Publish here are the same two buttons as the other screen, with the sam
 
 What happens when a parent enrolls
 
-You get an email for every enrollment with all the details, plus a welcome email
-already written out for you to paste and send. Fill in the two bracketed spots, the
-Zoom recording and the first session, and send it from your own inbox so their YES
-reply lands with you. Stripe has already sent them the receipt.
+Two emails, not one, because there are two moments.
+
+The first arrives the second they finish the registration form, before they have paid.
+It has every answer they gave: the athlete, the parent, the program, the insurance
+details. Nothing is owed at that point and their spot is not reserved, so treat it as a
+heads-up rather than a booking.
+
+The second arrives when Stripe confirms the money, and that one is the enrollment. It
+has the full details plus a welcome email already written out for you to paste and send.
+Fill in the two bracketed spots, the Zoom recording and the first session, and send it
+from your own inbox so their YES reply lands with you. Stripe has already sent them the
+receipt.
+
+Nobody signs anything on our website. A family agrees on Stripe's checkout page, where
+they tick the terms box and type their full name, exactly as your training agreement
+asks for. Stripe keeps that with the payment, so if a family ever disputes it, the
+record is on the payment itself in the Stripe dashboard.
 
 If a monthly card payment fails, you get an email. The parent gets one from Stripe with
 a link to update their card, so you do not need to chase them unless it keeps failing.
