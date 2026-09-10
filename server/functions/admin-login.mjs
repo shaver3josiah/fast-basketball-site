@@ -33,6 +33,8 @@ export default async (request, context) => {
     status: 200,
     headers: {
       'Content-Type': 'application/json',
+      // Never let a shared cache keep a response that carries a session cookie.
+      'Cache-Control': 'private, no-store',
       'Set-Cookie': createSessionCookie()
     }
   });

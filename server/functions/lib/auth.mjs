@@ -1,7 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
-const COOKIE_NAME = 'fb_admin';
+// __session is the only cookie name Firebase Hosting forwards to a function. Any other
+// name is stripped at the CDN, so the admin panel would log in and then be signed out on
+// its very next request. Renaming it is the whole fix.
+const COOKIE_NAME = '__session';
 
 function sign(value, secret) {
   return createHmac('sha256', secret).update(value).digest('hex');
