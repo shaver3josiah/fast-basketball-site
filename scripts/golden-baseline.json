@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-10T01:28:30.165Z",
+  "recorded": "2026-09-10T01:58:55.583Z",
   "files": {
     "404.html": {
       "sha": "5ff4f1b768314692",
@@ -22,8 +22,8 @@
       "bytes": 24242
     },
     "admin/canvas-schema.js": {
-      "sha": "9555b00ebf44e2dc",
-      "bytes": 20950
+      "sha": "987cb5a2bfd089cb",
+      "bytes": 20930
     },
     "admin/editor.css": {
       "sha": "2f8f0b2ef305ce65",
@@ -54,28 +54,28 @@
       "bytes": 245551
     },
     "basketball-training/coconut-creek/index.html": {
-      "sha": "ece7a38e1186769f",
-      "bytes": 19023
+      "sha": "82e334456d004487",
+      "bytes": 19040
     },
     "basketball-training/coral-springs/index.html": {
-      "sha": "9538c3bfbfd3d025",
-      "bytes": 20165
+      "sha": "0ed9de317c2715aa",
+      "bytes": 20182
     },
     "basketball-training/margate/index.html": {
-      "sha": "a49aca07852e2b17",
-      "bytes": 18974
+      "sha": "5146bc7cd144e3f6",
+      "bytes": 18991
     },
     "basketball-training/parkland/index.html": {
-      "sha": "661fb4cd81767fa9",
-      "bytes": 18888
+      "sha": "951564c4c6866c67",
+      "bytes": 18905
     },
     "basketball-training/tamarac/index.html": {
-      "sha": "bf417cd641b05a41",
-      "bytes": 19110
+      "sha": "a06eb2ea648ad13e",
+      "bytes": 19127
     },
     "blog/index.html": {
-      "sha": "596664f5885448d1",
-      "bytes": 7371
+      "sha": "5fd2a0184aca99e5",
+      "bytes": 7388
     },
     "brand/icon-white.svg": {
       "sha": "404c77c0c0250a43",
@@ -102,24 +102,24 @@
       "bytes": 48358
     },
     "coach-blake-kingsley/index.html": {
-      "sha": "fc2de631a57056de",
-      "bytes": 15249
+      "sha": "5b5ba2a8a0977728",
+      "bytes": 15266
     },
     "contact/index.html": {
-      "sha": "ed3396b9e1a05ca4",
-      "bytes": 18411
+      "sha": "7a01684c83663ad7",
+      "bytes": 18428
     },
     "enroll/index.html": {
-      "sha": "58112155ca4992e4",
-      "bytes": 22676
+      "sha": "a1fa30774bdb45a3",
+      "bytes": 22693
     },
     "enroll/thanks/index.html": {
-      "sha": "0b0a03f267f667fa",
-      "bytes": 7764
+      "sha": "30c3e58cff670474",
+      "bytes": 7781
     },
     "index.html": {
-      "sha": "d9e12827722b8527",
-      "bytes": 112453
+      "sha": "774286170d9d9c51",
+      "bytes": 112430
     },
     "js/contact-form.js": {
       "sha": "d0322a5aefe728d7",
@@ -146,24 +146,24 @@
       "bytes": 4851
     },
     "js/theme.js": {
-      "sha": "332987aaa62e0dfc",
-      "bytes": 897
+      "sha": "7cf12dad89658e7c",
+      "bytes": 1074
     },
     "lab/index.html": {
-      "sha": "02fe922940f81890",
-      "bytes": 8398
+      "sha": "a3e0e4ac299c5ad2",
+      "bytes": 8415
     },
     "locker/index.html": {
-      "sha": "7889839104cc737b",
-      "bytes": 27780
+      "sha": "c6ab512c0797fb4c",
+      "bytes": 27797
     },
     "playbook/index.html": {
-      "sha": "821088d22cb2982c",
-      "bytes": 16554
+      "sha": "4344ac4c8377f4a1",
+      "bytes": 16571
     },
     "privacy/index.html": {
-      "sha": "14f057e7ec48395a",
-      "bytes": 13873
+      "sha": "1a3c860880355b5a",
+      "bytes": 13890
     },
     "robots.txt": {
       "sha": "331ea9090db0c9f6",
@@ -206,20 +206,20 @@
       "bytes": 3866
     },
     "terms/index.html": {
-      "sha": "df70496e4a3d4ad1",
-      "bytes": 21657
+      "sha": "4f9bd725f6e4f62c",
+      "bytes": 21674
     },
     "training/evaluation/index.html": {
-      "sha": "6828c8c00091d861",
-      "bytes": 9196
+      "sha": "ce203bfe6ca1e6d2",
+      "bytes": 9213
     },
     "training/group-training/index.html": {
-      "sha": "d9e74a4ed68a9533",
-      "bytes": 9266
+      "sha": "70c1ad66b22109ee",
+      "bytes": 9283
     },
     "training/private/index.html": {
-      "sha": "8d93c710f95563c8",
-      "bytes": 9416
+      "sha": "615cf3ef5adc2b53",
+      "bytes": 9433
     }
   }
 }
