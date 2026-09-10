@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, sta
 import { resolve, join, relative } from 'node:path';
 import { validateSuburbs, formatErrors } from './src/lib/validate-suburbs.mjs';
 import { generateResponsiveImages } from './scripts/responsive-images.mjs';
-import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, promoteFirstH2, scanBalancedElement, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
+import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, promoteFirstH2, scanBalancedElement, stripReviewBlock, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
 import { renderLockerPage } from './src/lib/locker-page.mjs';
 import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
@@ -362,7 +362,7 @@ function step9b_lockerPage(sections, content, playbookTemplates, prelude) {
 }
 
 function step10_contactPage(sections, content, prelude) {
-  let body = trimToFirstSectionClose(sections.contact);
+  let body = stripReviewBlock(trimToFirstSectionClose(sections.contact), content);
   // Full content.text (was a hand-picked {ct.lede, ct.phone, ...} map): applyTextEdits
   // only touches markers actually present, so this also reaches any ct.* attr hooks with
   // no need to keep this list in step with contact.html.
@@ -428,7 +428,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<section class="band band-ink">\n<div class="shell">\n';
 
   body += '<h2>Who is asking</h2>\n';
-  body += '<p>Fast Basketball is Coach Blake Kingsley, training players one on one and in small groups across Coral Springs, Parkland, Coconut Creek, Margate and Tamarac. He is the person who reads what you send. Anything on this page, including a request to delete what we hold, goes to <a href="mailto:blake.kingsley@gmail.com">blake.kingsley@gmail.com</a>.</p>\n';
+  body += '<p>Fast Basketball is Coach Blake Kingsley, training players one on one and in small groups across Coral Springs, Parkland, Coconut Creek, Margate and Tamarac. He is the person who reads what you send. Anything on this page, including a request to delete what we hold, goes to <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a>.</p>\n';
 
   body += '<h2>What we collect</h2>\n';
   body += '<p>Only what you type into a form. The contact form asks for a name, an email, a phone number, your area, which program you are asking about, and whatever you want to tell us about the player. The playbook form asks for a name, an email, and the player\'s grade, position and skill focus. The Locker asks for an email so we can send you the resource you unlocked.</p>\n';
@@ -441,7 +441,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<h2>Parents, and players under 18</h2>\n';
   body += '<p>These forms are meant for a parent or guardian. We train players from roughly 11 through 18, and the questions that come next are yours to answer: cost, scheduling, health, whether this is even the right fit. If your player is under 18, please send the form yourself so the conversation starts with you.</p>\n';
   body += '<p>We do not knowingly collect personal information from a child under 13. If a child under 13 fills in one of these forms without you, we are not going to use it and we will delete it as soon as we know.</p>\n';
-  body += '<p>If you think your under-13 child submitted something here, email <a href="mailto:blake.kingsley@gmail.com">blake.kingsley@gmail.com</a> and tell us the email address they used. We will find it, delete it, and write back to confirm it is gone. No form to fill in, no reason needed, and nothing you have to explain.</p>\n';
+  body += '<p>If you think your under-13 child submitted something here, email <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> and tell us the email address they used. We will find it, delete it, and write back to confirm it is gone. No form to fill in, no reason needed, and nothing you have to explain.</p>\n';
 
   body += '<h2>Who else touches it</h2>\n';
   body += '<p>Two companies, and only because the site cannot work without them.</p>\n';
@@ -469,7 +469,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<p>As long as it is useful for the reason you gave it to us: answering your question, sending what you asked for, running your player\'s sessions. There is no fixed clock on it. If you are not training with us and you would rather we did not hold it, say so and we will not.</p>\n';
 
   body += '<h2>Want it gone?</h2>\n';
-  body += '<p>Email <a href="mailto:blake.kingsley@gmail.com">blake.kingsley@gmail.com</a> and we delete what we hold on you. One message, done, no reason owed. You can also just ask what is on file and we will tell you.</p>\n';
+  body += '<p>Email <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> and we delete what we hold on you. One message, done, no reason owed. You can also just ask what is on file and we will tell you.</p>\n';
 
   body += '<h2>If this page changes</h2>\n';
   body += '<p>The date at the top changes with it. This version is in effect as of ' + LEGAL_EFFECTIVE + '.</p>\n';

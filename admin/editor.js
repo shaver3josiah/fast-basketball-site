@@ -1894,6 +1894,7 @@
     if (document.activeElement !== title) title.value = (state.content.text || {})['meta.title'] || '';
     if (document.activeElement !== desc) desc.value = (state.content.text || {})['meta.desc'] || '';
 
+    $('showReviews').checked = state.content.showReviews === true;
     $('motionEnabled').checked = m.enabled !== false;
     $('motionSpeed').value = m.speed || 1;
     $('motionSpeedVal').textContent = (m.speed || 1) + 'x';
@@ -1984,6 +1985,12 @@
   });
   $('siteDesc').addEventListener('input', function () {
     state.content.text['meta.desc'] = $('siteDesc').value;
+    markDirty();
+  });
+  // Reviews are off unless the flag is exactly true, which is what render.mjs checks too, so
+  // a content file that predates this toggle keeps them hidden.
+  $('showReviews').addEventListener('change', function () {
+    state.content.showReviews = $('showReviews').checked;
     markDirty();
   });
   $('motionEnabled').addEventListener('change', function () { setMotion('enabled', $('motionEnabled').checked); });

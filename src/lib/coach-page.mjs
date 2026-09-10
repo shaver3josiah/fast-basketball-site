@@ -3,6 +3,27 @@ import { founderPerson, breadcrumbList, jsonLdScript } from './structured-data.m
 
 const RESUME_KEYS = ['rcp.trophy', 'rcp.team', 'rcp.juco', 'rcp.work'];
 
+// The scoreboard tiles from the homepage receipts section, which moved here with it in
+// September 2026. data-count still drives the count-up in main.js, exactly as it did there.
+const SCORE_TILES = [
+  { n: 'sb.1.n', l: 'sb.1.l', num: '51', label: 'Wins in Two Seasons' },
+  { n: 'sb.2.n', l: 'sb.2.l', num: '2', label: 'Conference Championships' },
+  { n: 'sb.3.n', l: 'sb.3.l', num: '2', label: 'National Tournaments' },
+  { n: 'sb.4.n', l: 'sb.4.l', num: '10', label: 'Straight Wins Into March' }
+];
+const SCORE_SOURCE = 'Combined across Moberly Area Community College in 2023-24 and Robert Morris in 2024-25, as stated by Coach Kingsley in July 2025. Robert Morris carried a ten game winning streak into the NCAA Tournament.';
+
+function renderScoreboard(text) {
+  let out = '<div class="score rcp-score">\n';
+  for (const tile of SCORE_TILES) {
+    const num = text[tile.n] || tile.num;
+    out += '<div class="score-c"><span class="score-n" data-count="' + escapeHtml(num) + '">' + escapeHtml(num) +
+      '</span><span class="score-l">' + escapeHtml(text[tile.l] || tile.label) + '</span></div>\n';
+  }
+  out += '</div>\n';
+  return out + '<p class="score-src">' + escapeHtml(text['sb.src'] || SCORE_SOURCE) + '</p>\n';
+}
+
 // Same card body copy the homepage receipts section ships, verbatim from
 // src/templates/sections/receipts.html. Cards without an entry (resumeExtra)
 // render caption-only, exactly as they do on the homepage.
@@ -60,10 +81,11 @@ export function renderCoachPage({ content, responsiveManifest, prelude }) {
   body += '<p>' + escapeHtml(content.text['coach.p2']) + '</p>\n';
   body += '<p>' + escapeHtml(content.text['coach.p3']) + '</p>\n';
   if (content.text['coach.p4']) body += '<p>' + escapeHtml(content.text['coach.p4']) + '</p>\n';
-  body += '<a href="/training/evaluation" class="btn btn-primary">Book Your Call</a>\n';
+  body += '<a href="/#contact" class="btn btn-primary">Book Your Call</a>\n';
   body += '</div>\n</div>\n</header>\n';
 
   body += '<section class="band band-light">\n<div class="shell">\n<div class="eyebrow rise">The Résumé</div>\n<h2 class="zr">The record</h2>\n';
+  body += renderScoreboard(content.text);
   body += renderResumeCards(content, responsiveManifest);
   body += '<p class="rcp-note">Verify the Robert Morris title at <a href="https://rmucolonials.com/news/2025/3/12/mens-basketball-horizon-league-champions.aspx" target="_blank" rel="noopener">rmucolonials.com</a> and the Moberly Area title at <a href="https://moberlygreyhounds.com/" target="_blank" rel="noopener">moberlygreyhounds.com</a>.</p>\n';
   body += '</div>\n</section>\n';

@@ -36,7 +36,70 @@
   var btn = form.querySelector('button[type="submit"]');
   var btnLabel = btn ? btn.textContent : '';
 
-  function say(msg){ if(window.fbToast) window.fbToast(msg); }
+  function say(msg, actions){ if(window.fbToast) window.fbToast(msg, actions); }
+
+  /* Start with a call (owner's call, September 2026). The direct text and email options in
+     the contact rows are shown but not clickable until the form has actually been sent, so
+     the request is the front door rather than one option among three. This is done in
+     script, not in the markup: with JavaScript off there is no form to send either, and a
+     page that locks every route to a human is worse than one that locks none. */
+  var direct = [];
+  var rows = document.querySelector('.ct-rows');
+  if(rows){
+    Array.prototype.forEach.call(rows.querySelectorAll('a[href^="sms:"], a[href^="tel:"], a[href^="mailto:"]'), function(a){
+      direct.push(a);
+      a.classList.add('ct-locked');
+      a.setAttribute('aria-disabled', 'true');
+    });
+  }
+
+  function lockedClick(e){
+    var a = e.target.closest && e.target.closest('.ct-locked');
+    if(!a) return;
+    e.preventDefault();
+    say('Send the request first, then these open');
+  }
+  if(direct.length) document.addEventListener('click', lockedClick);
+
+  function unlockDirect(){
+    direct.forEach(function(a){
+      a.classList.remove('ct-locked');
+      a.removeAttribute('aria-disabled');
+    });
+    document.removeEventListener('click', lockedClick);
+  }
+
+  function hrefStarting(prefix){
+    for(var i = 0; i < direct.length; i++){
+      if(direct[i].getAttribute('href').indexOf(prefix) === 0) return direct[i].getAttribute('href');
+    }
+    return '';
+  }
+
+  /* Built from the rendered links rather than hard-coded, so an owner who edits the number
+     or the address in the admin panel gets a contact card that matches the page. */
+  function contactCard(){
+    var tel = hrefStarting('sms:') || hrefStarting('tel:');
+    var mail = hrefStarting('mailto:');
+    var card = ['BEGIN:VCARD', 'VERSION:3.0', 'N:Kingsley;Blake;;;', 'FN:Blake Kingsley',
+      'ORG:Fast Basketball', 'TITLE:Founder and Head Skills Coach'];
+    if(tel) card.push('TEL;TYPE=CELL:' + tel.replace(/^(sms|tel):/, ''));
+    if(mail) card.push('EMAIL;TYPE=INTERNET:' + mail.replace(/^mailto:/, ''));
+    card.push('URL:https://fast-basketball.com', 'END:VCARD');
+    // vCard lines are CRLF separated per RFC 6350, built from char codes so no escape
+    // sequence has to survive a copy between tools.
+    var CRLF = String.fromCharCode(13, 10);
+    return 'data:text/vcard;charset=utf-8,' + encodeURIComponent(card.join(CRLF) + CRLF);
+  }
+
+  function sentToast(){
+    var actions = [{ label: 'Save his contact', href: contactCard(), download: 'blake-kingsley.vcf' }];
+    var tel = hrefStarting('sms:') || hrefStarting('tel:');
+    var mail = hrefStarting('mailto:');
+    if(tel) actions.push({ label: 'Text him', href: tel });
+    if(mail) actions.push({ label: 'Email him', href: mail });
+    say('Request sent. Coach Blake replies within one business day.', actions);
+  }
 
   function showFormErr(msg){
     if(!formErr) return;
@@ -124,10 +187,11 @@
         done.classList.add('show');
         done.focus();
       }
-      say('Message sent. Talk soon.');
+      unlockDirect();
+      sentToast();
     }).catch(function(){
       /* ponytail: typed values stay in the DOM, so a retry costs the visitor nothing. */
-      showFormErr('That did not send. Try once more, or email blake.kingsley@gmail.com and we will pick it up there.');
+      showFormErr('That did not send. Try once more, or email blake@fast-basketball.com and we will pick it up there.');
       say('Send failed. Try again or email us');
     }).finally(function(){
       if(btn){ btn.disabled = false; btn.textContent = btnLabel; }

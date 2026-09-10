@@ -287,12 +287,52 @@
   }
 
   var toast = document.getElementById('toast');
-  window.fbToast = function(msg){
+  var toastTimer = null;
+  function toastHide(){
     if(!toast) return;
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(function(){ toast.classList.remove('show'); }, 2400);
+    clearTimeout(toastTimer);
+    toast.classList.remove('show', 'toast-rich');
+  }
+  /* fbToast(msg) is the plain two-second note it has always been. fbToast(msg, actions)
+     is the actionable form: it stays put until dismissed, because a toast you are meant
+     to click cannot time out under the pointer. Each action is {label, href, download}. */
+  window.fbToast = function(msg, actions){
+    if(!toast) return;
+    clearTimeout(toastTimer);
+    toast.textContent = '';
+    var line = document.createElement('span');
+    line.className = 'toast-msg';
+    line.textContent = msg;
+    toast.appendChild(line);
+    if(!actions || !actions.length){
+      toast.classList.remove('toast-rich');
+      toast.classList.add('show');
+      toastTimer = setTimeout(toastHide, 2400);
+      return;
+    }
+    var row = document.createElement('span');
+    row.className = 'toast-acts';
+    actions.forEach(function(action){
+      var el = document.createElement('a');
+      el.className = 'toast-act';
+      el.href = action.href;
+      if(action.download) el.setAttribute('download', action.download);
+      el.textContent = action.label;
+      row.appendChild(el);
+    });
+    var x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'toast-x';
+    x.setAttribute('aria-label', 'Dismiss');
+    x.textContent = '×';
+    x.addEventListener('click', toastHide);
+    row.appendChild(x);
+    toast.appendChild(row);
+    toast.classList.add('show', 'toast-rich');
   };
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && toast && toast.classList.contains('toast-rich')) toastHide();
+  });
 
   /* Ticker (the red band under the hero). Idle: one technique cue at a time, crossfading
      every 4.5s. Record: The Evidence swaps in the career track (tkRecord, from evdShow) and

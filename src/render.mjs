@@ -22,7 +22,12 @@ export const LOCKER_PAGE_SECTIONS = new Set(['resources', 'playbook']);
 // 9 September 2026). To show it again: remove it from this set, or, the intended later step, give
 // the admin panel a toggle that drops it from this set instead of a code change. The section
 // stays first in SECTION_IDS so it lands back at the top of the page untouched.
-export const HOMEPAGE_SKIP = new Set([...LOCKER_PAGE_SECTIONS, 'method', 'families']);
+// 'coach' and 'receipts' left the homepage for /coach-blake-kingsley in September 2026
+// (owner's call): the nav's "Meet the Coach" is a page, not a hash, exactly like The Locker.
+// That page already renders the bio and the resume cards, and now the scoreboard too, so
+// nothing on it was lost in the move. Both stay in SECTION_IDS so the editor still knows them.
+export const COACH_PAGE_SECTIONS = new Set(['coach', 'receipts']);
+export const HOMEPAGE_SKIP = new Set([...LOCKER_PAGE_SECTIONS, ...COACH_PAGE_SECTIONS, 'method', 'families']);
 
 // Single source for the footer's editable keys: buildFooter reads these with fallbacks,
 // and build.mjs's footer pseudo-section reports the same list as its hooks, so the two
@@ -285,6 +290,25 @@ export function fixAreaLinks(html) {
     out = out.slice(0, hrefStart) + 'href="/basketball-training/' + slug + '"' + out.slice(hrefStart + 'href="#contact"'.length);
   }
   return out;
+}
+
+// Google reviews. The Business Profile is still in verification, so the "reviews are coming"
+// block and the whole families section are off by default. The owner turns them on in the admin
+// panel once real reviews exist, rather than waiting on a code change: content.showReviews.
+export function reviewsOn(content) {
+  return !!(content && content.showReviews);
+}
+
+// Removes the .gbp block from the contact section when reviews are off. Cutting it at build time
+// rather than hiding it in CSS keeps the copy out of the page source, so nothing can announce
+// that the profile is unverified to a search engine or a reader of the markup.
+export function stripReviewBlock(html, content) {
+  if (reviewsOn(content)) return html;
+  const at = html.indexOf('<div class="gbp');
+  if (at === -1) return html;
+  const span = scanBalancedElement(html, at);
+  if (!span) return html;
+  return html.slice(0, at) + html.slice(span.end);
 }
 
 export function trimContactSection(contactHtml) {
@@ -695,10 +719,12 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   });
 
   let body = bodyMarkup;
+  const skip = new Set(HOMEPAGE_SKIP);
+  if (reviewsOn(content)) skip.delete('families');
   for (const id of SECTION_IDS) {
-    if (HOMEPAGE_SKIP.has(id)) continue;
+    if (skip.has(id)) continue;
     if (id === 'contact') {
-      body += trimContactSection(sections[id]);
+      body += stripReviewBlock(trimContactSection(sections[id]), content);
     } else {
       body += sections[id];
     }

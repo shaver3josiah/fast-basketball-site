@@ -41,7 +41,7 @@ export const PROGRAM_PAGES = [
 export const CONTACT = {
   phone: '(503) 686-8371',
   tel: '+15036868371',
-  email: 'blake.kingsley@gmail.com'
+  email: 'blake@fast-basketball.com'
 };
 
 // Published rates, used for the LocalBusiness makesOffer structured data. Amounts must
