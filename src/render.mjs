@@ -600,7 +600,7 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   const canonical = absoluteUrl(canonicalPath);
   const ogImagePath = ogImage ? absoluteUrl(ogImage) : absoluteUrl('/brand/og-image-1200x630.png');
   const motion = deriveMotion(content);
-  let head = '<!DOCTYPE html>\n<html lang="en"' + motionHtmlAttrs(motion) + '>\n<head>\n';
+  let head = '<!DOCTYPE html>\n<html lang="en" class="fb-light"' + motionHtmlAttrs(motion) + '>\n<head>\n';
   head += '<meta charset="UTF-8">\n';
   head += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
   head += '<title>' + escapeHtml(title) + '</title>\n';
@@ -621,7 +621,7 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   head += '<meta name="twitter:title" content="' + escapeHtml(title) + '">\n';
   head += '<meta name="twitter:description" content="' + escapeHtml(description) + '">\n';
   head += '<meta name="twitter:image" content="' + ogImagePath + '">\n';
-  head += '<meta name="theme-color" content="#0A0A0C">\n';
+  head += '<meta name="theme-color" content="#FFFFFF">\n';
   head += '<link rel="icon" href="/favicon.ico" sizes="48x48">\n';
   head += '<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png">\n';
   head += '<link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16.png">\n';

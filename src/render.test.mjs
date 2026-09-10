@@ -88,7 +88,7 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
   const content = { text: {} };
   const head = buildHead({ title: 'T', description: 'D', canonicalPath: '/', includeHeroPreload: false, content, jsonLd: [] });
 
-  assert.ok(head.includes('<html lang="en">'), 'default motion must not add any data-* attribute to <html>: ' + head.slice(0, 200));
+  assert.ok(head.includes('<html lang="en" class="fb-light">'), 'default motion must not add any data-* attribute to <html> (fb-light is the default theme, not a motion attribute): ' + head.slice(0, 200));
   assert.ok(!/data-motion|data-intro|data-ticker|data-reveals|data-night/.test(head), 'no motion attribute at defaults: ' + head.slice(0, 200));
   assert.ok(head.includes('<style id="fb-motion">:root{--motion-speed:1;--t-ticker:38s}</style>'), 'default CSS vars missing: ' + head);
   assert.ok(head.includes('window.__FB_MOTION='), 'motion script tag missing');
@@ -97,7 +97,7 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
 
 {
   const head = buildHead({ title: 'T', description: 'D', canonicalPath: '/', includeHeroPreload: false, content: { text: {}, motion: { enabled: false } }, jsonLd: [] });
-  assert.ok(head.includes('<html lang="en" data-motion="off">'), 'enabled:false must emit data-motion="off": ' + head.slice(0, 200));
+  assert.ok(head.includes('<html lang="en" class="fb-light" data-motion="off">'), 'enabled:false must emit data-motion="off": ' + head.slice(0, 200));
 }
 
 {
