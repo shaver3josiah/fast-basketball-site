@@ -41,9 +41,10 @@ export function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// A record as the owner emails print it: one row per field. The signature is left out
-// because it is a PNG data URL, which no mail client shows inline; signatureAttachment()
-// carries it instead. `notified` is bookkeeping, not something Blake reads.
+// A record as the owner emails print it: one row per field. `notified` is bookkeeping, not
+// something Blake reads. `signature` is still skipped though nothing writes one any more:
+// the enrollment form's drawing pad went in September 2026, and a stray record carrying one
+// would otherwise print a screenful of base64 into an email.
 export function recordTable(record, skip = ['signature', 'notified']) {
   return '<table border="1" cellpadding="4" style="border-collapse:collapse">' +
     Object.entries(record)
@@ -53,8 +54,3 @@ export function recordTable(record, skip = ['signature', 'notified']) {
     '</table>';
 }
 
-// Resend takes attachment content as base64, which is a data URL after its comma.
-export function signatureAttachment(record) {
-  const m = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(record?.signature || '');
-  return m ? [{ filename: 'signature.png', content: m[1] }] : [];
-}

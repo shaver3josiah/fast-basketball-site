@@ -78,6 +78,18 @@ The site is then live at `https://fast-basketball-b3ebe.web.app`.
    anything. Until you do, every canonical URL, the sitemap and the structured data still name
    the `web.app` address.
 
+## The admin cookie must be called `__session`
+
+Firebase Hosting strips every inbound cookie except one named `__session` before it
+forwards a request to a function. Any other name never reaches the handler, so the admin
+panel logs in and is signed out again on its very next request. `COOKIE_NAME` in
+`server/functions/lib/auth.mjs` is `__session` for that reason and must stay that way.
+
+This does not show up locally or under the emulator, because neither has the CDN in front
+of it. It only appears on a deployed site, and it looks like a broken password rather than
+a stripped header. The login response also sends `Cache-Control: private, no-store`, so a
+shared cache can never keep a response that carries a session cookie.
+
 ## Publishing content
 
 Blake edits at `/admin` and presses Publish. That commits to GitHub through the API, and
@@ -133,8 +145,9 @@ gh run list --limit 1
 | `npm run deploy` | Build, then deploy Hosting and the function. |
 | `npm run deploy:hosting` | Content and pages only. What CI runs. |
 | `npm run deploy:functions` | Server code only. Rare. |
+| `npm run stripe:check` | Asks Stripe whether it can actually take an enrollment. Once per mode. |
 | `npm run emulate` | Hosting, the function and Firestore locally. Needs a JDK 21+. |
-| `npm test` | 45 tests. CI runs this before every deploy. |
+| `npm test` | 61 tests. CI runs this before every deploy. |
 
 ## Checking a change before it goes live
 

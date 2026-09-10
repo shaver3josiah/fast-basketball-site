@@ -9,7 +9,7 @@
 
 import Stripe from 'stripe';
 import { addLead, getLead, listLeads } from './lib/leads.mjs';
-import { sendEmail, ownerEmail, escapeHtml, recordTable, signatureAttachment } from './lib/notify.mjs';
+import { sendEmail, ownerEmail, escapeHtml, recordTable } from './lib/notify.mjs';
 import { stripeClient, json } from './lib/stripe.mjs';
 import { getPlan, checkoutSpec, dollars, cancelNoticeBy, PAY_LABELS } from '../../src/lib/plans.mjs';
 import { CONTACT, absoluteUrl } from '../../src/lib/site-config.mjs';
@@ -119,8 +119,7 @@ async function onCheckoutCompleted(event) {
   const sent = await sendEmail({
     to: ownerEmail(),
     subject: (paid ? 'New enrollment: ' : 'UNPAID, do not welcome yet: ') + planLabel + ' (' + (PAY_LABELS[pay] || pay) + ') - ' + (record.name || record.email),
-    html: enrollmentHtml(record, scheduleNote, paid),
-    attachments: signatureAttachment(record)
+    html: enrollmentHtml(record, scheduleNote, paid)
   });
   if (sent) await addLead(key, { ...record, notified: true });
   else console.error('owner email not sent for ' + key + '; the record is saved, and a Stripe resend of this event will try again');
@@ -172,7 +171,6 @@ async function attachSchedule(session, plan, pay) {
 function enrollmentHtml(record, scheduleNote, paid) {
   return '<h2>' + (paid ? 'New enrollment' : 'Enrollment recorded, payment NOT collected') + '</h2>' +
     recordTable(record) +
-    (record.signature ? '<p>The parent\'s signature is attached.</p>' : '') +
     '<p><b>Installment schedule:</b> ' + escapeHtml(scheduleNote) + '</p>' +
     (paid
       ? '<h2>Welcome email to paste</h2>' +

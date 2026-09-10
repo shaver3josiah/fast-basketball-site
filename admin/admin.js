@@ -234,7 +234,7 @@
   // checkout.mjs and the webhook.
   var STATUS = { pending: 'PENDING PAYMENT', abandoned: 'NO PAYMENT', superseded: 'REPLACED', unpaid: 'UNPAID' };
   // The registration's typed answers, in form order, for the CSV. Mirrors FIELDS in
-  // src/lib/registration.mjs; the signature stays out because it is an image, not a cell.
+  // src/lib/registration.mjs.
   var REG_KEYS = ['athleteFirst', 'athleteLast', 'dob', 'gender', 'grade', 'school', 'studentEmail', 'studentPhone',
     'experience', 'team', 'position', 'goals', 'parentFirst', 'parentLast', 'relationship', 'homeCity', 'contactMethod',
     'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'paymentStatus', 'agreeName'];
@@ -461,16 +461,6 @@
           var badge = cell('span', 'TEST');
           badge.className = 'badge-test';
           details.appendChild(badge);
-        }
-        // The parent's drawn signature. Only a PNG data URL is ever put in the src: the
-        // function stored it under that same shape, and a stranger's string that is not one
-        // simply does not render.
-        if(typeof l.signature === 'string' && /^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(l.signature)){
-          var img = document.createElement('img');
-          img.src = l.signature;
-          img.alt = 'Parent signature';
-          img.style.cssText = 'display:block;height:40px;margin-top:6px;border:1px solid #ddd;border-radius:4px;background:#fff;';
-          details.appendChild(img);
         }
         tr.appendChild(details);
         tbody.appendChild(tr);

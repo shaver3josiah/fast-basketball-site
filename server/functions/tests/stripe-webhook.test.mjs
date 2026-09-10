@@ -217,7 +217,7 @@ function records() {
 
 {
   // A session the enroll page opened completes the registration record in place: the form's
-  // answers and signature stay, Stripe's facts land on top, and there is still one row.
+  // answers stay, Stripe's facts land on top, and there is still one row.
   const { addLead } = await import('../lib/leads.mjs');
   const { sampleRegistration } = await import('../../../src/lib/registration.mjs');
   const { registrationRecord } = await import('../checkout.mjs');
@@ -247,7 +247,9 @@ function records() {
   assert.equal(r.playerName, 'Jordan Parent');
   assert.equal(r.email, 'ben@example.com', 'Stripe\'s email wins: the receipt went there');
   assert.equal(r.insurancePolicy, 'XYZ123456', 'the registration\'s answers survive');
-  assert.ok(r.signature.startsWith('data:image/png;base64,'), 'so does the signature');
+  assert.equal(r.signature, undefined, 'the drawing pad was removed; agreement is Stripe consent plus the typed name');
+  assert.equal(r.agreeName, 'Benjamin Parent', 'which is the record of it');
+  assert.equal(r.termsAccepted, true);
   assert.equal(r.registeredAt, '2026-09-07T14:00:00.000Z');
   assert.equal(r.startDate, '2026-09-07');
   assert.equal(r.cancelNoticeBy, '2026-11-30');
@@ -256,8 +258,8 @@ function records() {
   assert.ok(sends[0].subject.startsWith('New enrollment: '), sends[0].subject);
   assert.ok(sends[0].html.includes('Welcome email to paste'));
   assert.ok(sends[0].html.includes('Westglades Middle'), 'the owner email prints the registration too');
-  assert.ok(!sends[0].html.includes('data:image/png'), 'the signature is attached, not pasted');
-  assert.equal(sends[0].attachments?.[0]?.filename, 'signature.png');
+  assert.equal(sends[0].attachments, undefined, 'nothing is attached now the drawing pad is gone');
+  assert.ok(sends[0].html.includes('Benjamin Parent'), 'the typed-to-agree name is in the owner email');
 
   // The expired event: a paid registration is left alone.
   const expiredPaid = JSON.stringify({ id: 'evt_exp1', object: 'event', type: 'checkout.session.expired', created: CREATED, livemode: false,

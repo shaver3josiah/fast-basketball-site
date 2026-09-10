@@ -3,11 +3,12 @@
 // validates a submission against it, and admin/admin.js mirrors its keys for the CSV.
 // Option text is the Jotform's own, minus its em-dashes: visible copy carries none.
 //
-// Three Jotform items are not in this list because they are covered elsewhere: the Square
+// Four Jotform items are not in this list because they are covered elsewhere: the Square
 // product picker is the plan card from plans.mjs, the two free-text "Training Frequency"
-// and "Length / Commitment" boxes are what the plan card already fixes, and the card name
-// fields are Stripe's. The signature, the two agreement boxes and the plan are validated
-// below the loop, since none of them is a typed answer.
+// and "Length / Commitment" boxes are what the plan card already fixes, the card name fields
+// are Stripe's, and the signature pad is Stripe's consent box and typed name (see below).
+// The two agreement boxes and the plan are validated below the loop, since neither is a
+// typed answer.
 
 export const SECTIONS = [
   { id: 'athlete', title: 'The athlete' },
@@ -55,11 +56,6 @@ export const FIELDS = [
 ];
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-// A PNG data URL and nothing else: the admin panel puts this string straight into an
-// <img src>, so the shape is what keeps a stored submission from becoming a script there.
-const SIGNATURE_RE = /^data:image\/png;base64,[A-Za-z0-9+/]+=*$/;
-// A 620 by 228 signature exports at a few kilobytes; this is thirty times that.
-export const SIGNATURE_MAX_CHARS = 100_000;
 const MAX_CHARS = { text: 200, email: 200, tel: 40, date: 10, select: 100, textarea: 2000 };
 
 // Pure, so it runs in a test without a request. Returns every problem at once, keyed by
@@ -81,12 +77,14 @@ export function validateRegistration(body) {
     else if (f.type === 'date' && !pastDate(v)) errors[f.key] = f.label + ' must be a past date';
     else if (f.type === 'select' && !f.options.includes(v)) errors[f.key] = f.label + ' is not one of the choices';
   }
+  // The two agreement boxes. A drawn signature pad sat beside them until September 2026 and
+  // was removed: the training agreement's own Step 2 says a family agrees "by entering your
+  // full name on the checkout form" and ticking the I-agree box, which is Stripe Checkout's
+  // consent_collection plus its agree_name field. That is the record Blake would show in a
+  // dispute, it is collected on Stripe's page rather than ours, and a canvas drawing added
+  // friction on a phone without adding to it.
   if (src.reviewed !== true) errors.reviewed = 'Parent review and agreement is required';
   if (src.terms !== true) errors.terms = 'Agreement to the terms is required';
-  const signature = typeof src.signature === 'string' ? src.signature : '';
-  if (signature.length > SIGNATURE_MAX_CHARS) errors.signature = 'Parent signature is too large';
-  else if (!SIGNATURE_RE.test(signature)) errors.signature = 'Parent signature is required';
-  values.signature = signature;
   return { ok: Object.keys(errors).length === 0, errors, values };
 }
 
@@ -104,7 +102,6 @@ export function sampleRegistration() {
     experience: 'Intermediate', parentFirst: 'Ben', parentLast: 'Parent', relationship: 'Father',
     email: 'parent@example.com', phone: '(954) 555-0100', contactMethod: 'Text', program: '6th to 8th Grade Training',
     insuranceProvider: 'Florida Blue', insurancePolicy: 'XYZ123456',
-    reviewed: true, terms: true,
-    signature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+    reviewed: true, terms: true
   };
 }

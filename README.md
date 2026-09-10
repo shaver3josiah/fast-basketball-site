@@ -27,6 +27,7 @@ Three more commands you will need:
 
 - `npm test` runs every `*.test.mjs` file under `src/lib`, `src`, `scripts`, `server/functions/tests` and `server/functions/lib`. Everything runs offline; no test calls Stripe, Firebase or any other service.
 - `npm run stripe:catalog` (that is `node scripts/stripe-catalog.mjs`) creates the products and prices in Stripe from the catalog in `src/lib/plans.mjs`, each price under a `lookup_key` the endpoints look up at request time. It needs `STRIPE_SECRET_KEY` set in the shell you run it from, never in a file. It is idempotent, so run it again after any price change, and `--dry-run` prints what it would do without writing anything. Run it once per mode, test first and live at cutover.
+- `npm run stripe:check` asks Stripe whether it can actually take an enrollment: every lookup key resolves to an active price at the amount `src/lib/plans.mjs` promises, the account has the Terms of service URL that `consent_collection` requires, and a webhook endpoint is subscribed to all four events the handler acts on. It needs `STRIPE_SECRET_KEY` in the shell, reports every problem at once, and exits non-zero if any of them fails. Run it once per mode.
 - Local webhook testing needs the Stripe CLI: `stripe listen --forward-to localhost:8899/api/stripe-webhook`, then `stripe trigger checkout.session.completed` in a second terminal. Put the signing secret the CLI prints into `STRIPE_WEBHOOK_SECRET` in the shell that runs `npm run dev`. Records land in `.local/leads.json`.
 
 ## Checking the suburb data

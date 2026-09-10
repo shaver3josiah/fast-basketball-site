@@ -232,34 +232,40 @@ one script run and one deploy. Do it in this order.
    will create, then `npm run stripe:catalog`. That makes the products and the eight prices
    under their lookup keys. It is idempotent; running it twice is safe.
 3. `npm run deploy:functions` so the function picks up the new values.
-4. Run the Phase 1 test list from `STRIPE-PLAN.md` with card `4242 4242 4242 4242`: each of
+4. With the test key in the shell, run `npm run stripe:check`. It verifies the four things
+   that silently break enrollment: a lookup key with no active price, a price that drifted
+   from `src/lib/plans.mjs`, a missing Terms of service URL, and a webhook endpoint that is
+   absent or subscribed to the wrong events. Fix anything it reports before going further.
+5. Run the Phase 1 test list from `STRIPE-PLAN.md` with card `4242 4242 4242 4242`: each of
    the eight plan and payment combinations reaches Checkout, the consent box and the
    typed-name field appear, cancelling returns to `/enroll` with the plan preselected and the
    typed answers still there, a tampered plan gets 422, asking for monthly on an Unlimited
    tier gets 422, and the 11th request in 10 minutes gets 429.
-5. Run the Phase 2 test list: the same webhook event delivered twice makes one record; card
+6. Run the Phase 2 test list: the same webhook event delivered twice makes one record; card
    `4000 0000 0000 0341` attaches but fails its first invoice and the failed-payment alert
    arrives; a monthly plan shows a schedule of the term's iterations then `release` in the
    dashboard; a request with a bad signature is a 400 that writes nothing; and the admin Leads
-   tab shows the enrollment with the right cancel-by date and the parent's signature.
+   tab shows the enrollment with the right cancel-by date.
 
 **Live mode**
 
-6. Switch the dashboard to live mode. Repeat checklist steps 6 and 7 there: a live restricted
+7. Switch the dashboard to live mode. Repeat checklist steps 6 and 7 there: a live restricted
    key and a live webhook endpoint with the same URL and the same four events. Replace both
    values in `functions/.env`.
-7. With the live key in the shell, run `npm run stripe:catalog` again. Live mode has its own
+8. With the live key in the shell, run `npm run stripe:catalog` again. Live mode has its own
    products and prices; the script creates them.
-8. `npm run deploy:functions`.
-9. One real checkout: open `/enroll?plan=eval`, pay the evaluation with a real card, then
+9. `npm run deploy:functions`, then `npm run stripe:check` with the **live** key. Test mode
+   passing proves nothing about live: the products, prices, webhook endpoint and its signing
+   secret are all separate, and this is the last chance to find that out cheaply.
+10. One real checkout: open `/enroll?plan=eval`, pay the evaluation with a real card, then
    refund it from the dashboard (Payments → that payment → Refund). This is the only live
    test, and it proves the live key, the live webhook and the live catalog agree.
 
 ### The five-minute check afterwards
 
-1. On `/enroll`, fill the registration, sign the box, pick a plan and submit: Stripe's
-   checkout page opens.
-2. That enrollment appears in the admin Leads tab with its plan, amount and signature.
+1. On `/enroll`, fill the registration, tick both boxes, pick a plan and submit: Stripe's
+   checkout page opens, and the typed-name field on it is where the family signs.
+2. That enrollment appears in the admin Leads tab with its plan and amount.
 3. Blake has the alert email, with the prefilled welcome email in it.
 4. In the Stripe dashboard, that payment's Checkout session shows the terms consent and the
    typed full name. That is the record the agreement's Step 2 asks for.

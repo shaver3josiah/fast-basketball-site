@@ -5,16 +5,17 @@
 // can follow up by hand. Amounts never come from the client; checkoutSpec() resolves the
 // plan and the price is looked up by lookup_key server-side (STRIPE-PLAN.md, security notes).
 //
-// One caller: src/js/enroll.js, JSON in and JSON out. The form cannot be sent without
-// JavaScript, since the signature is drawn, so a urlencoded POST is bounced back to the
-// page where the noscript notice explains.
+// Two callers. src/js/enroll.js sends JSON and reads JSON back. A browser with JavaScript
+// off posts the form itself and gets a 303, to Stripe or back to the page. That second path
+// was disabled between the registration form shipping and the signature pad being removed,
+// because a canvas cannot be drawn on without scripting; nothing else about it changed.
 import { randomUUID } from 'node:crypto';
 import { checkoutSpec, getPlan, totalCents, dollars } from '../../src/lib/plans.mjs';
 import { validateRegistration } from '../../src/lib/registration.mjs';
 import { SITE_URL } from '../../src/lib/site-config.mjs';
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
 import { addLead, getLead } from './lib/leads.mjs';
-import { sendEmail, ownerEmail, escapeHtml, recordTable, signatureAttachment } from './lib/notify.mjs';
+import { sendEmail, ownerEmail, escapeHtml, recordTable } from './lib/notify.mjs';
 import { stripeClient, priceByLookupKey, json } from './lib/stripe.mjs';
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -23,6 +24,16 @@ const RATE_LIMIT_MAX = 10;
 // slack keeps our clock running slightly ahead of theirs from failing every checkout.
 const SESSION_TTL_SECONDS = 23 * 60 * 60;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+const redirect = (location) => new Response(null, { status: 303, headers: { Location: location } });
+
+// The no-JS failure. It keeps the plan and pay the parent picked so the page comes back with
+// their choice still made, and #enErr:target is what reveals the error paragraph.
+function backToForm(body) {
+  const plan = encodeURIComponent(String(body?.plan ?? ''));
+  const pay = encodeURIComponent(String(body?.pay ?? ''));
+  return redirect('/enroll?plan=' + plan + '&pay=' + pay + '&err=1#enErr');
+}
 
 // Pure so the parameter shape is testable without a Stripe account. siteUrl is a
 // parameter for the same reason; the handler passes SITE_URL from site-config.
@@ -96,25 +107,40 @@ export function registrationRecord({ id, timestamp, values, spec }) {
 
 export default async (request, context) => {
   if (request.method !== 'POST') return json(405, { error: 'method not allowed' });
-  if ((request.headers.get('content-type') || '').includes('application/x-www-form-urlencoded')) {
-    return new Response(null, { status: 303, headers: { Location: '/enroll?err=1#enErr' } });
+
+  // Two callers. enroll.js sends JSON and reads JSON back. A browser with JavaScript off
+  // posts the form itself and gets a 303: to Stripe when the session is created, back to the
+  // page with ?err=1#enErr otherwise, where :target reveals the error paragraph the page
+  // already ships. That second path was dead while the form demanded a drawn signature.
+  const isForm = (request.headers.get('content-type') || '').includes('application/x-www-form-urlencoded');
+  let body;
+  if (isForm) {
+    const form = new URLSearchParams(await request.text());
+    body = Object.fromEntries(form.entries());
+    // Checkboxes arrive as the string "yes" or not at all; the validator wants real booleans.
+    body.reviewed = form.get('reviewed') === 'yes';
+    body.terms = form.get('terms') === 'yes';
+  } else {
+    try {
+      body = await request.json();
+    } catch (err) {
+      body = null;
+    }
+    if (!body || typeof body !== 'object') return json(400, { error: 'invalid request body' });
   }
 
-  let body;
-  try {
-    body = await request.json();
-  } catch (err) {
-    body = null;
-  }
-  if (!body || typeof body !== 'object') return json(400, { error: 'invalid request body' });
+  // Every failure below has two shapes, decided once here.
+  const fail = (status, payload) => (isForm ? backToForm(body) : json(status, payload));
 
   // Honeypot, same as the contact and playbook forms: a bot gets the thanks page and
   // neither the store nor Stripe ever hears about it.
-  if (body['en-hp']) return json(200, { url: '/enroll/thanks' });
+  if (body['en-hp']) {
+    return isForm ? redirect('/enroll/thanks') : json(200, { url: '/enroll/thanks' });
+  }
 
   const ip = clientIp(request, context);
   const allowed = await checkRateLimit('checkout:' + ip, { windowMs: RATE_LIMIT_WINDOW_MS, max: RATE_LIMIT_MAX });
-  if (!allowed) return json(429, { error: 'too many requests, try again later' });
+  if (!allowed) return fail(429, { error: 'too many requests, try again later' });
 
   const { errors, values } = validateRegistration(body);
   let spec = null;
@@ -124,7 +150,7 @@ export default async (request, context) => {
     errors.plan = err.message;
   }
   const keys = Object.keys(errors);
-  if (keys.length) return json(422, { error: errors[keys[0]], errors });
+  if (keys.length) return fail(422, { error: errors[keys[0]], errors });
 
   // A parent back from Stripe's cancel link resubmits with the id enroll.js kept, and the
   // pending record is rewritten rather than doubled. Anything else gets a fresh id: a value
@@ -145,7 +171,7 @@ export default async (request, context) => {
     await addLead('registration:' + id, record);
   } catch (err) {
     console.error('registration ' + id + ' not saved: ' + err.message);
-    return json(500, { error: 'registration not saved' });
+    return fail(500, { error: 'registration not saved' });
   }
   await notifyRegistration(record, reused);
 
@@ -153,24 +179,26 @@ export default async (request, context) => {
   // record. 503 means "saved, but Stripe cannot take this plan yet": no key, or a price the
   // catalog script has not created. enroll.js tells the parent Blake will send the link.
   const stripe = stripeClient();
-  if (!stripe) return json(503, { error: 'payments not configured', registrationId: id });
+  // No key yet: the registration is saved and Blake has been emailed, so a no-JS visitor is
+  // sent to the thanks page rather than an error. enroll.js says the same thing in words.
+  if (!stripe) return isForm ? redirect('/enroll/thanks') : json(503, { error: 'payments not configured', registrationId: id });
 
   let session;
   try {
     const price = await priceByLookupKey(stripe, spec.lookupKey);
     if (!price) {
       console.error('no active Stripe price for ' + spec.lookupKey + ': scripts/stripe-catalog.mjs has not been run for this mode (test or live)');
-      return json(503, { error: 'price not configured: ' + spec.lookupKey, registrationId: id });
+      return isForm ? redirect('/enroll/thanks') : json(503, { error: 'price not configured: ' + spec.lookupKey, registrationId: id });
     }
     session = await stripe.checkout.sessions.create(sessionParams(spec, {
       email: values.email, priceId: price.id, siteUrl: SITE_URL, nowSeconds: Math.floor(Date.now() / 1000), registrationId: id
     }));
   } catch (err) {
     console.error('stripe checkout failed: ' + err.message);
-    return json(502, { error: 'checkout unavailable', registrationId: id });
+    return fail(502, { error: 'checkout unavailable', registrationId: id });
   }
 
-  return json(200, { url: session.url, registrationId: id });
+  return isForm ? redirect(session.url) : json(200, { url: session.url, registrationId: id });
 };
 
 // Blake hears about a registration the moment it is saved, paid or not: this is the Jotform
@@ -182,9 +210,8 @@ async function notifyRegistration(record, reused) {
     subject: (reused ? 'Updated registration' : 'New registration') + ', payment pending: ' + record.playerName + ' (' + record.planLabel + ')',
     html: '<h2>' + (reused ? 'Registration updated' : 'New registration') + '</h2>' +
       '<p>' + escapeHtml(record.name) + ' registered ' + escapeHtml(record.playerName) + ' and is on the way to Stripe to pay ' +
-      escapeHtml(record.amount) + (record.pay === 'monthly' ? ' a month' : '') + '. The spot is not reserved until the enrollment email arrives. The signature is attached.</p>' +
-      recordTable(record),
-    attachments: signatureAttachment(record)
+      escapeHtml(record.amount) + (record.pay === 'monthly' ? ' a month' : '') + '. The spot is not reserved until the enrollment email arrives.</p>' +
+      recordTable(record)
   });
   if (!sent) console.error('registration email not sent for ' + record.registrationId + '; the record is saved');
 }

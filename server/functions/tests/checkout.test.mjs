@@ -37,6 +37,14 @@ function records() {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
 }
 
+// records() re-reads the file every call, so emptying the array it returns changes nothing.
+// The tests below count rows to prove a rejected registration was never stored, so a test
+// that legitimately stores one has to clear the store rather than the copy.
+function clearRecords() {
+  const file = path.resolve('.local/leads.json');
+  if (fs.existsSync(file)) fs.writeFileSync(file, '[]');
+}
+
 const VALID = { ...sampleRegistration(), plan: 'group-3m-1x', pay: 'monthly', 'en-hp': '' };
 
 test('sessionParams for a one-off payment (eval, full)', () => {
@@ -102,11 +110,11 @@ test('registrationRecord is an enrollment row awaiting payment, with the shared 
   assert.equal(r.months, 3);
   assert.equal(r.noticeDays, 7);
   assert.equal(r.insurancePolicy, 'XYZ123456');
-  assert.ok(r.signature.startsWith('data:image/png;base64,'));
+  assert.equal(r.signature, undefined, 'the drawing pad was removed in September 2026');
 });
 
 test('GET is 405', async () => {
-  const res = await handler(new Request('http://localhost/.netlify/functions/checkout'), CTX);
+  const res = await handler(new Request('http://localhost/api/checkout'), CTX);
   assert.equal(res.status, 405);
 });
 
@@ -116,11 +124,41 @@ test('malformed JSON is 400', async () => {
   assert.deepEqual(await res.json(), { error: 'invalid request body' });
 });
 
-test('a form POST (JavaScript off) is bounced back to the page, nothing written', async () => {
+// The no-JS path came back when the signature pad went: a canvas cannot be drawn on without
+// scripting, but every other field posts fine. urlencoded in, 303 out.
+test('a form POST with JavaScript off is validated, and a bad one goes back with the plan kept', async () => {
   const res = await handler(post('plan=eval&pay=full', 'application/x-www-form-urlencoded'), CTX);
+  assert.equal(res.status, 303, 'a 422 body of JSON would be a dead end in a browser');
+  assert.equal(res.headers.get('location'), '/enroll?plan=eval&pay=full&err=1#enErr');
+  assert.equal(records().length, 0, 'an invalid registration is never stored');
+});
+
+test('a complete form POST with JavaScript off is stored, and its checkboxes become booleans', async () => {
+  const form = new URLSearchParams({ ...sampleRegistration(), plan: 'group-3m-1x', pay: 'monthly', 'en-hp': '' });
+  // A browser sends a ticked box as its value and omits an unticked one; sampleRegistration
+  // carries real booleans, which URLSearchParams would stringify to "true" and validation
+  // would then reject. This is the shape the markup in build.mjs actually posts.
+  form.set('reviewed', 'yes');
+  form.set('terms', 'yes');
+  const res = await handler(post(form.toString(), 'application/x-www-form-urlencoded'), CTX);
   assert.equal(res.status, 303);
-  assert.equal(res.headers.get('location'), '/enroll?err=1#enErr');
-  assert.equal(records().length, 0);
+  // No Stripe key in this suite, so the parent lands on the thanks page: the registration is
+  // saved and Blake has been emailed, which is the whole of what could happen for them.
+  assert.equal(res.headers.get('location'), '/enroll/thanks');
+  const saved = records().find((r) => r.playerName === 'Jordan Parent' && r.pay === 'monthly');
+  assert.ok(saved, 'the registration was stored');
+  assert.equal(saved.reviewed, true);
+  assert.equal(saved.termsAccepted, true);
+  clearRecords();
+});
+
+test('an unticked box in a form POST is refused, not coerced', async () => {
+  const form = new URLSearchParams({ ...sampleRegistration(), plan: 'group-3m-1x', pay: 'monthly' });
+  form.set('reviewed', 'yes');
+  form.delete('terms');
+  const res = await handler(post(form.toString(), 'application/x-www-form-urlencoded'), CTX);
+  assert.equal(res.status, 303);
+  assert.match(res.headers.get('location'), /err=1#enErr$/);
 });
 
 test('honeypot filled gets the thanks page without writing or touching Stripe', async () => {
@@ -140,11 +178,11 @@ test('tampered plan is 422 naming the plan, before anything is written', async (
   assert.equal(records().length, 0);
 });
 
-test('a missing answer, an unticked box or a bad signature is 422 naming every field, nothing written', async () => {
-  const res = await handler(post({ ...VALID, email: 'nope', insuranceProvider: '', terms: 'yes', signature: 'data:text/html,x' }), CTX);
+test('a missing answer or an unticked box is 422 naming every field, nothing written', async () => {
+  const res = await handler(post({ ...VALID, email: 'nope', insuranceProvider: '', terms: 'yes' }), CTX);
   assert.equal(res.status, 422);
   const body = await res.json();
-  assert.deepEqual(Object.keys(body.errors).sort(), ['email', 'insuranceProvider', 'signature', 'terms']);
+  assert.deepEqual(Object.keys(body.errors).sort(), ['email', 'insuranceProvider', 'terms']);
   assert.equal(body.error, body.errors.email, 'the first problem is the headline');
   assert.equal(records().length, 0);
 });
@@ -169,7 +207,7 @@ test('a valid registration with no STRIPE_SECRET_KEY is saved first, then answer
   assert.equal(r.school, 'Westglades Middle');
   assert.equal(r.reviewed, true);
   assert.equal(r.termsAccepted, true);
-  assert.ok(r.signature.startsWith('data:image/png;base64,'), 'the signature travels with the record');
+  assert.equal(r.signature, undefined, 'no signature is collected any more');
   assert.equal(r['en-hp'], undefined, 'the honeypot is not stored');
   assert.equal(r.registrationId, body.registrationId);
 
@@ -186,7 +224,7 @@ test('a valid registration with no STRIPE_SECRET_KEY is saved first, then answer
   assert.equal(records().length, 2);
 });
 
-test('the registration email goes to the owner with the signature attached', async () => {
+test('the registration email goes to the owner with every answer in it', async () => {
   process.env.RESEND_API_KEY = 'test-key';
   process.env.PLAYBOOK_FROM_EMAIL = 'from@example.test';
   process.env.ENROLL_NOTIFY_EMAIL = 'blake@example.test';
@@ -201,10 +239,7 @@ test('the registration email goes to the owner with the signature attached', asy
     assert.deepEqual(mail.to, ['blake@example.test']);
     assert.equal(mail.subject, 'New registration, payment pending: Jordan Parent (Group Training Membership, 6 months, unlimited)');
     assert.ok(mail.html.includes('Florida Blue'), 'every answer is in the table');
-    assert.ok(!mail.html.includes('data:image/png'), 'the signature is not dumped into the table');
-    assert.equal(mail.attachments.length, 1);
-    assert.equal(mail.attachments[0].filename, 'signature.png');
-    assert.ok(/^[A-Za-z0-9+/=]+$/.test(mail.attachments[0].content), 'base64, not a data URL');
+    assert.equal(mail.attachments, undefined, 'nothing is attached now the drawing pad is gone');
   } finally {
     globalThis.fetch = realFetch;
     delete process.env.RESEND_API_KEY;

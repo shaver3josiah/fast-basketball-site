@@ -1,20 +1,19 @@
 // Run: node --test src/lib/registration.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FIELDS, validateRegistration, sampleRegistration, SIGNATURE_MAX_CHARS } from './registration.mjs';
+import { FIELDS, validateRegistration, sampleRegistration } from './registration.mjs';
 
 test('the sample registration is valid and every field comes back trimmed', () => {
   const r = validateRegistration({ ...sampleRegistration(), school: '  Westglades Middle  ' });
   assert.equal(r.ok, true, JSON.stringify(r.errors));
   assert.equal(r.values.school, 'Westglades Middle');
   assert.equal(r.values.goals, '', 'an optional field left out is an empty string, not undefined');
-  assert.ok(r.values.signature.startsWith('data:image/png;base64,'));
 });
 
 test('every required field is reported, all at once', () => {
   const r = validateRegistration({});
   assert.equal(r.ok, false);
-  const required = FIELDS.filter((f) => f.required).map((f) => f.key).concat(['reviewed', 'terms', 'signature']);
+  const required = FIELDS.filter((f) => f.required).map((f) => f.key).concat(['reviewed', 'terms']);
   assert.deepEqual(Object.keys(r.errors).sort(), required.sort());
 });
 
@@ -29,16 +28,22 @@ test('shape checks: email, phone digits, past date, select membership, length', 
   }
 });
 
-test('the agreement boxes must be literally true and the signature a PNG data URL', () => {
-  const cases = [
-    { reviewed: 'yes' }, { terms: 1 }, { signature: '' },
-    { signature: 'data:text/html;base64,PHNjcmlwdD4=' },
-    { signature: 'data:image/png;base64,' + 'A'.repeat(SIGNATURE_MAX_CHARS) }
-  ];
-  for (const bad of cases) {
+test('the agreement boxes must be literally true, not merely truthy', () => {
+  for (const bad of [{ reviewed: 'yes' }, { terms: 1 }, { reviewed: undefined }, { terms: 'true' }]) {
     const r = validateRegistration({ ...sampleRegistration(), ...bad });
-    assert.deepEqual(Object.keys(r.errors), Object.keys(bad), JSON.stringify(bad).slice(0, 60));
+    assert.deepEqual(Object.keys(r.errors), Object.keys(bad), JSON.stringify(bad));
   }
+});
+
+// The signature pad was removed in September 2026: agreement is Stripe's consent box and
+// typed name. Anything a stale page or a crafted request still sends under that name must be
+// dropped rather than stored, or it would land in the leads store and the admin panel.
+test('a signature field is no longer collected, required, or kept', () => {
+  const r = validateRegistration({ ...sampleRegistration(), signature: 'data:image/png;base64,AAAA' });
+  assert.equal(r.ok, true, 'a stale page sending one is still a valid registration');
+  assert.equal(r.values.signature, undefined, 'and the value is not carried into the record');
+  assert.equal(validateRegistration({}).errors.signature, undefined, 'nor is it required');
+  assert.ok(!FIELDS.some((f) => f.key === 'signature'));
 });
 
 test('a non-object body is every required error, not a throw', () => {
