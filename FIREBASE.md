@@ -96,11 +96,11 @@ Blake edits at `/admin` and presses Publish. That commits to GitHub through the 
 `.github/workflows/deploy.yml` builds and deploys Hosting on the push. Netlify used to watch
 the repo itself; Firebase does not, so **that workflow is what makes the Publish button work.**
 
-It needs one repository secret holding the JSON key of a service account with the Firebase
-Hosting Admin role: `FIREBASE_SERVICE_ACCOUNT` if you set it by hand, or
-`FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE`, the name the Firebase CLI gives it. The
-workflow reads either. Creating that key needs your Google account in a browser, so it cannot
-be scripted from here.
+It needs one repository secret, `FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE`, holding the
+JSON key of a service account with the Firebase Hosting Admin role. That is the name the
+Firebase CLI gives it (the project id, upper-cased), and the workflow reads exactly that name.
+Creating the key needs your Google account in a browser, so it cannot be scripted from here.
+Set up on 10 September 2026; the service account is `github-action-1323255805`.
 
 **The one-command way.** From `build/site`:
 
@@ -108,12 +108,16 @@ be scripted from here.
 npx firebase-tools init hosting:github
 ```
 
-It opens a browser to authorise GitHub, creates the service account and its key in the
-project, and sets the repository secret for you. Answer the repo as
-`shaver3josiah/fast-basketball-site`. **Say no when it offers to overwrite the workflow
-file** — `.github/workflows/deploy.yml` is already written, and its version deploys on every
-push to main rather than only on pull requests. Say no to the PR preview workflow too unless
-you want one. The only thing you want out of that command is the secret.
+Run it from `build/site`, not the project root: the root is not a git repository and has no
+Firebase config, so the CLI cannot find the project or the GitHub remote there. It opens a
+browser to authorise GitHub, creates the service account and its key in the project, and sets
+the repository secret for you. Answer the repo as `shaver3josiah/fast-basketball-site`, then
+**say no to both "run a build script" and "deploy when a PR is merged"**:
+`.github/workflows/deploy.yml` already deploys on every push to main. It still writes
+`.github/workflows/firebase-hosting-pull-request.yml` and pretty-prints `firebase.json`
+without changing it; delete the first and `git checkout -- firebase.json`. The only thing you
+want out of that command is the secret. Afterwards revoke the CLI's GitHub authorisation at
+the link it prints.
 
 **The manual way,** if the command's browser step is awkward:
 
@@ -124,7 +128,7 @@ you want one. The only thing you want out of that command is the secret.
 4. Store it as the secret and then delete the file:
 
 ```bash
-gh secret set FIREBASE_SERVICE_ACCOUNT --repo shaver3josiah/fast-basketball-site < ~/Downloads/that-file.json
+gh secret set FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE --repo shaver3josiah/fast-basketball-site < ~/Downloads/that-file.json
 ```
 
 That key is a live credential with rights to publish to the site, and this repository is

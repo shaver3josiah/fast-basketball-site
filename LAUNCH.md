@@ -127,7 +127,7 @@ npx firebase-tools init hosting:github
 
 Answer `shaver3josiah/fast-basketball-site`, and **decline its offer to overwrite the
 existing workflow file** — `.github/workflows/deploy.yml` is already written. All you want
-from it is the `FIREBASE_SERVICE_ACCOUNT` repository secret it creates.
+from it is the `FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE` repository secret it creates.
 
 Then, in order:
 

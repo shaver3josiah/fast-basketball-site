@@ -8,10 +8,9 @@
 # Hosting only, on purpose. The Cloud Function changes rarely and deploying it needs wider
 # permissions, so it stays a deliberate `npm run deploy:functions` from a laptop.
 #
-# ONE SECRET IS REQUIRED: the JSON key of a service account with the Firebase Hosting Admin
-# role, either as FIREBASE_SERVICE_ACCOUNT (set by hand with `gh secret set`) or under the
-# name `firebase init hosting:github` gives it, FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE.
-# Either works; see FIREBASE.md.
+# ONE SECRET IS REQUIRED: FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE, the JSON key of a
+# service account with the Firebase Hosting Admin role. That is the name `firebase init
+# hosting:github` gives it (the project id, upper-cased); see FIREBASE.md.
 
 name: Deploy to Firebase Hosting
 
@@ -58,6 +57,6 @@ jobs:
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT || secrets.FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE }}
           channelId: live
           projectId: fast-basketball-b3ebe
