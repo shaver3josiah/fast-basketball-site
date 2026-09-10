@@ -96,9 +96,11 @@ Blake edits at `/admin` and presses Publish. That commits to GitHub through the 
 `.github/workflows/deploy.yml` builds and deploys Hosting on the push. Netlify used to watch
 the repo itself; Firebase does not, so **that workflow is what makes the Publish button work.**
 
-It needs one repository secret, `FIREBASE_SERVICE_ACCOUNT`, holding the JSON key of a service
-account with the Firebase Hosting Admin role. Creating that key needs your Google account in
-a browser, so it cannot be scripted from here.
+It needs one repository secret holding the JSON key of a service account with the Firebase
+Hosting Admin role: `FIREBASE_SERVICE_ACCOUNT` if you set it by hand, or
+`FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE`, the name the Firebase CLI gives it. The
+workflow reads either. Creating that key needs your Google account in a browser, so it cannot
+be scripted from here.
 
 **The one-command way.** From `build/site`:
 
