@@ -981,6 +981,9 @@ html.fb-light .rv-stars{fill:#C8860D;}
 .rv-more{
   color:var(--red-hot);font-family:var(--font-eyebrow);font-size:.78rem;letter-spacing:.1em;
   text-transform:uppercase;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;
+  /* 28x14 is a mean target on a phone. Padding grows the hit area to about 40x34 without
+     changing the line box; the negative side margin keeps the inline flow where it was. */
+  padding:10px 6px;margin:0 -6px;
 }
 
 /* Slogan ribbon between the pricing fold and the service areas (14 September 2026). It borrows

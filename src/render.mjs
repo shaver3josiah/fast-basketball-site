@@ -7,21 +7,25 @@ import { CONTENT_GROUPS } from './lib/content-groups.mjs';
 
 // Exported so the editor can list the hand-built sections without keeping its own copy
 // of this order — the drift that has already bitten twice in this codebase.
-// Homepage order is Blake's, 9 September 2026 ("it is law"): what families say, the four enrol
+// Homepage order was Blake's, 9 September 2026 ("it is law"): what families say, the four enrol
 // steps, who trains here, the résumé, book a call, the coach, pricing, then the area tiles and
-// the FAQ. 'nights' stays last on purpose: nights.html ships as a hidden easter-egg overlay
-// (opened from the footer ball / Konami code in main.js), so its DOM position is moot.
-export const SECTION_IDS = ['families', 'enroll', 'audience', 'receipts', 'contact', 'coach', 'programs', 'areas', 'faq', 'method', 'playbook', 'resources', 'nights'];
+// the FAQ. ONE CHANGE since, on 14 September 2026 (Josiah): the reviews band moved off the top
+// of the page to sit directly above "book a call", so a visitor reads what other people said and
+// then hits the form, instead of meeting strangers' quotes before they know what the program is.
+// Everything else keeps Blake's order. 'nights' stays last on purpose: nights.html ships as a
+// hidden easter-egg overlay (opened from the footer ball / Konami code in main.js), so its DOM
+// position is moot.
+export const SECTION_IDS = ['enroll', 'audience', 'receipts', 'families', 'contact', 'coach', 'programs', 'areas', 'faq', 'method', 'playbook', 'resources', 'nights'];
 // The Locker and the Free Playbook left the homepage for /locker in September 2026 (owner's call):
 // the nav's "The Locker" is a page, not a hash. Both stay in SECTION_IDS so loadSections and the
 // editor still know them; only the homepage loop skips them, and build.mjs renders the page.
 export const LOCKER_PAGE_SECTIONS = new Set(['resources', 'playbook']);
 // The Method ("Every session runs these five steps") came off the homepage at Blake's request on
 // 9 September 2026. The template and its mth.* keys stay loadable so it can come back or move.
-// 'families' ("They came to get better.") is hidden until real Google reviews exist (Josiah,
-// 9 September 2026). To show it again: remove it from this set, or, the intended later step, give
-// the admin panel a toggle that drops it from this set instead of a code change. The section
-// stays first in SECTION_IDS so it lands back at the top of the page untouched.
+// 'families' ("They came to get better.") was hidden until real Google reviews existed. They do
+// since 14 September 2026, and `reviewsOn` drops it from this set when content.showReviews is
+// true, which is the toggle that was always intended. It still sits in this set so that turning
+// showReviews off hides the band again without touching SECTION_IDS.
 // 'coach' and 'receipts' left the homepage for /coach-blake-kingsley in September 2026
 // (owner's call): the nav's "Meet the Coach" is a page, not a hash, exactly like The Locker.
 // That page already renders the bio and the resume cards, and now the scoreboard too, so

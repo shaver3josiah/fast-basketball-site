@@ -16,6 +16,11 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 
 .shell{width:100%;max-width:var(--shell);margin:0 auto;padding:0 24px;}
 .band{padding:clamp(72px,9vw,132px) 0;position:relative;}
+/* The clamp never adapts DOWN: at 375px 9vw is 34px, so every band takes the 72px floor and
+   the page carries 144px of empty space between every section. That is the "break" a phone
+   shows between a closed fold and the next heading (Josiah, 14 September 2026). Desktop is
+   untouched on purpose; the rhythm there was signed off. */
+@media(max-width:640px){.band{padding:48px 0;}}
 .band-dark{background:var(--court-black);}
 .band-ink{background:var(--ink);}
 .band-light{background:var(--chalk);color:var(--court-black);overflow:hidden;}
@@ -615,11 +620,15 @@ body.adm-live [data-img]{outline:2px dashed rgba(230,12,32,.6);outline-offset:2p
   padding:14px 22px;border-radius:0 0 12px 12px;transition:top .2s var(--ease-rush);
 }
 .skip-link:focus{top:0;}
+/* align-items was center, which is invisible on one line and wrong on two. On a phone the
+   hero trust line wraps to three, and a centred dot sat beside the MIDDLE line as if it were
+   bulleting the wrong sentence. flex-start plus half a line of offset puts the dot on the first
+   line at any wrap and looks identical when there is only one. */
 .trust-line{
-  display:flex;align-items:center;gap:9px;margin-top:14px;
+  display:flex;align-items:flex-start;gap:9px;margin-top:14px;
   font-size:.8rem;color:#8F8F9C;
 }
-.trust-line::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--fast-red);flex-shrink:0;}
+.trust-line::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--fast-red);flex-shrink:0;margin-top:.5em;}
 .band-light .trust-line{color:#5B5B66;}
 .prog-c.flag .btn-ghost{border-color:rgba(255,255,255,.3);color:var(--bone);}
 .coach-body p{max-width:64ch;}
