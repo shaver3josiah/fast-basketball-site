@@ -51,7 +51,9 @@ export const PLANS = {
     label: 'Group Training Membership, 6 months, once a week',
     frequency: 'once a week',
     months: 6, noticeDays: 60, kind: 'membership',
-    totals: { full: 75000, monthly: 90000 }
+    // 14 September 2026: Blake set this back to $800 and reframed the pitch from "one month
+    // free" to "pay in full and save $100", which is true of both once-a-week terms.
+    totals: { full: 80000, monthly: 90000 }
   },
   'group-6m-unlimited': {
     label: 'Group Training Membership, 6 months, unlimited',

@@ -53,7 +53,7 @@ export const TEXT_LABELS = {
   'prog.2.r1c1s': '3 months, once a week: wording beside $450',
   'prog.2.r1c2s': '3 months, Unlimited: wording beside $650',
   'prog.2.r2': 'Price grid row 2 term',
-  'prog.2.r2c1s': '6 months, once a week: wording beside $750',
+  'prog.2.r2c1s': '6 months, once a week: wording beside $800',
   'prog.2.r2c2s': '6 months, Unlimited: wording beside $1,000',
   'fp.eyebrow': 'Fine print eyebrow',
   'fp.1b': 'Fine print 1 label',

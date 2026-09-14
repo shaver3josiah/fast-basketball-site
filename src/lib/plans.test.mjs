@@ -42,7 +42,9 @@ test('paying monthly costs more than paying up front — the September 2026 rule
     assert.ok(plan.totals.monthly > plan.totals.full, key + ' monthly must exceed full');
   }
   assert.equal(PLANS['group-3m-1x'].totals.monthly - PLANS['group-3m-1x'].totals.full, 10000, '3 month uplift is $100');
-  assert.equal(PLANS['group-6m-1x'].totals.monthly - PLANS['group-6m-1x'].totals.full, 15000, '6 month uplift is $150');
+  // 14 September 2026: $800 in full against $900 monthly. The pitch on both once-a-week
+  // terms is 'pay in full and save $100', so both uplifts are $100.
+  assert.equal(PLANS['group-6m-1x'].totals.monthly - PLANS['group-6m-1x'].totals.full, 10000, '6 month uplift is $100');
 });
 
 test('published totals: full is exact, monthly sums within a cent per month', () => {
@@ -64,7 +66,7 @@ test('the rates on the page', () => {
   assert.equal(checkoutSpec('eval-call', 'full').amountCents, 3500);
   assert.equal(checkoutSpec('group-3m-1x', 'full').amountCents, 45000);
   assert.equal(checkoutSpec('group-3m-unlimited', 'full').amountCents, 65000);
-  assert.equal(checkoutSpec('group-6m-1x', 'full').amountCents, 75000);
+  assert.equal(checkoutSpec('group-6m-1x', 'full').amountCents, 80000);
   assert.equal(checkoutSpec('group-6m-unlimited', 'full').amountCents, 100000);
   // $900 over 6 months is exactly $150, the figure printed on the price sheet.
   assert.equal(checkoutSpec('group-6m-1x', 'monthly').amountCents, 15000);
