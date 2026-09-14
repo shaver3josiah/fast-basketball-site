@@ -1,7 +1,7 @@
 ﻿import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
-import { absoluteUrl, AREA_SERVED, HEADLINE_AREAS, PROGRAM_PAGES, CONTACT, OFFERS } from './lib/site-config.mjs';
+import { absoluteUrl, AREA_SERVED, HEADLINE_AREAS, PROGRAM_PAGES, OFFERS } from './lib/site-config.mjs';
 import { faqPage, jsonLdScript, breadcrumbList, businessEntity } from './lib/structured-data.mjs';
 import { CONTENT_GROUPS } from './lib/content-groups.mjs';
 
@@ -324,7 +324,9 @@ export function fixContactForm(html) {
     // method + action so a no-JS submit still posts; server/functions/contact.mjs answers
     // that shape with a 303 back to #ctDone. Until September 2026 this carried data-netlify
     // and a hidden form-name, and Netlify captured the submission with no code of ours.
-    '<form id="ctForm" name="contact" method="POST" action="/api/contact" novalidate><p class="ct-hp-wrap" style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="ct-hp" tabindex="-1" autocomplete="off"></label></p>'
+    // `ts` is empty in the markup; contact-form.js stamps the load time into it and
+    // contact.mjs flags a JSON post that arrives without one or too soon after it.
+    '<form id="ctForm" name="contact" method="POST" action="/api/contact" novalidate><p class="ct-hp-wrap" style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="ct-hp" tabindex="-1" autocomplete="off"></label></p><input type="hidden" name="ts" id="ctTs" value="">'
   );
   return out;
 }
@@ -712,7 +714,9 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
     jsonLd: [
       // The canonical business entity. It lived in _prelude.html's <head>, which the
       // build never emits, so the homepage shipped no business identity at all.
-      businessEntity({ description: HOMEPAGE_DESCRIPTION, email: CONTACT.email, telephone: CONTACT.tel, offers: OFFERS, suburbs, extraAreas: HEADLINE_AREAS }),
+      // No email or telephone on the entity since September 2026: JSON-LD is the first
+      // thing a harvester parses, and the Google Business Profile carries both anyway.
+      businessEntity({ description: HOMEPAGE_DESCRIPTION, offers: OFFERS, suburbs, extraAreas: HEADLINE_AREAS }),
       faqPage(deriveFaqPairs(content)),
       breadcrumbList([{ name: 'Home', path: '/' }])
     ]

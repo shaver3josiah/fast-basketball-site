@@ -24,7 +24,7 @@ export function founderPerson() {
 // premises, and asserting one it does not have is what the per-city version did wrong.
 // areaServed comes from the suburb records rather than a parallel city list, so the
 // entity can never drift out of sync with the pages that actually exist.
-export function businessEntity({ description, email, telephone, offers = [], suburbs, extraAreas = [] }) {
+export function businessEntity({ description, offers = [], suburbs, extraAreas = [] }) {
   return {
     '@context': 'https://schema.org',
     '@type': ['LocalBusiness', 'SportsActivityLocation'],
@@ -33,8 +33,6 @@ export function businessEntity({ description, email, telephone, offers = [], sub
     slogan: 'Elevate to Execute',
     description,
     url: absoluteUrl('/'),
-    email,
-    telephone,
     priceRange: '$$',
     // Published rates as offers, so a rich result can quote a price without inventing one.
     makesOffer: offers.map((o) => ({

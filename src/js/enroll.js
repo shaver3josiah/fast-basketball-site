@@ -13,8 +13,8 @@
   var formErr = document.getElementById('enErr');
   var btn = form.querySelector('button[type="submit"]');
   var btnLabel = btn ? btn.textContent : '';
-  var PHONE = '(503) 686-8371';
-  var RETRY = 'That did not go through. Try again, or text Coach Blake at ' + PHONE + ' and he will take it from there.';
+  /* No number here since September 2026: scrapers read script files too. */
+  var RETRY = 'That did not go through. Try again, or send a note through the contact page and Coach Blake will take it from there.';
   var STORE = 'fb_enroll';
   /* Server error keys that are not registration fields, and the element each one marks. */
   var FIXED = { reviewed: 'enReviewed', terms: 'enTerms' };

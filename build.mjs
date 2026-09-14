@@ -428,7 +428,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<section class="band band-ink">\n<div class="shell">\n';
 
   body += '<h2>Who is asking</h2>\n';
-  body += '<p>Fast Basketball is Coach Blake Kingsley, training players one on one and in small groups across Coral Springs, Parkland, Coconut Creek, Margate and Tamarac. He is the person who reads what you send. Anything on this page, including a request to delete what we hold, goes to <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a>.</p>\n';
+  body += '<p>Fast Basketball is Coach Blake Kingsley, training players one on one and in small groups across Coral Springs, Parkland, Coconut Creek, Margate and Tamarac. He is the person who reads what you send. Anything on this page, including a request to delete what we hold, goes to him through the <a href="/contact">contact form</a>.</p>\n';
 
   body += '<h2>What we collect</h2>\n';
   body += '<p>Only what you type into a form. The contact form asks for a name, an email, a phone number, your area, which program you are asking about, and whatever you want to tell us about the player. The playbook form asks for a name, an email, and the player\'s grade, position and skill focus. The Locker asks for an email so we can send you the resource you unlocked.</p>\n';
@@ -441,7 +441,9 @@ function step11b_privacyPage(content, prelude) {
   body += '<h2>Parents, and players under 18</h2>\n';
   body += '<p>These forms are meant for a parent or guardian. We train players from roughly 11 through 18, and the questions that come next are yours to answer: cost, scheduling, health, whether this is even the right fit. If your player is under 18, please send the form yourself so the conversation starts with you.</p>\n';
   body += '<p>We do not knowingly collect personal information from a child under 13. If a child under 13 fills in one of these forms without you, we are not going to use it and we will delete it as soon as we know.</p>\n';
-  body += '<p>If you think your under-13 child submitted something here, email <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> and tell us the email address they used. We will find it, delete it, and write back to confirm it is gone. No form to fill in, no reason needed, and nothing you have to explain.</p>\n';
+  // The address left every public page in September 2026 (harvesters); the contact form is
+  // the route now, and contact.mjs hands the address back to whoever sends it.
+  body += '<p>If you think your under-13 child submitted something here, <a href="/contact">send us a note</a> with the email address they used. We will find it, delete it, and write back to confirm it is gone. No reason needed, and nothing you have to explain.</p>\n';
 
   body += '<h2>Who else touches it</h2>\n';
   body += '<p>Two companies, and only because the site cannot work without them.</p>\n';
@@ -469,7 +471,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<p>As long as it is useful for the reason you gave it to us: answering your question, sending what you asked for, running your player\'s sessions. There is no fixed clock on it. If you are not training with us and you would rather we did not hold it, say so and we will not.</p>\n';
 
   body += '<h2>Want it gone?</h2>\n';
-  body += '<p>Email <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> and we delete what we hold on you. One message, done, no reason owed. You can also just ask what is on file and we will tell you.</p>\n';
+  body += '<p><a href="/contact">Send us a note</a> and we delete what we hold on you. One message, done, no reason owed. You can also just ask what is on file and we will tell you.</p>\n';
 
   body += '<h2>If this page changes</h2>\n';
   body += '<p>The date at the top changes with it. This version is in effect as of ' + LEGAL_EFFECTIVE + '.</p>\n';
@@ -633,7 +635,9 @@ function finePrint(programsHtml) {
 // chosen plan to the two pay-option amounts. /enroll/thanks is copy only: the webhook,
 // not the redirect, is the record of a payment, so the page never says one succeeded.
 function step11d_enrollPages(sections, content, prelude) {
-  const sms = '<a href="sms:' + CONTACT.tel + '">' + CONTACT.phone + '</a>';
+  // Was an sms: link with the number. /enroll is noindex but a harvester does not care, so
+  // since September 2026 the only way to the number is a sent contact form.
+  const note = '<a href="/contact">send a note</a>';
   const payLine = (key, pay) => {
     const spec = checkoutSpec(key, pay);
     if (pay === 'full') return dollars(spec.amountCents) + ' today';
@@ -709,7 +713,7 @@ function step11d_enrollPages(sections, content, prelude) {
   body += '<p><b>Where.</b> The Salvation Army, Fort Lauderdale Corps, 100 SW 9th Ave, Fort Lauderdale, FL 33312.</p>\n';
   body += '<p><b>When.</b> Every Thursday and Friday. 3rd to 5th grade 5:00 to 6:00 PM, 6th to 8th grade 6:00 to 7:00 PM, 9th to 12th grade 7:00 to 8:00 PM.</p>\n';
   body += '<p><b>Registration and payment.</b> Every athlete completes this form and pays to take part. Your athlete\'s spot is not reserved until payment is received. Space is limited, and registration is confirmed first paid, first reserved. All payments are final. FAST Basketball does not offer refunds.</p>\n';
-  body += '<p>What to bring and program expectations follow once you are registered. Read the <a href="/terms">terms and agreement</a> before you enroll. Questions: Blake Kingsley Jr., ' + sms + '. Train Fast. Think Fast. Play Fast.</p>\n';
+  body += '<p>What to bring and program expectations follow once you are registered. Read the <a href="/terms">terms and agreement</a> before you enroll. Questions: ' + note + ' and Blake Kingsley Jr. replies himself. Train Fast. Think Fast. Play Fast.</p>\n';
   body += '</div>\n';
   // Works with JavaScript off: enroll.js upgrades this to fetch + location.assign, and without
   // it the browser posts the form and checkout.mjs answers 303, to Stripe on success and back
@@ -747,7 +751,7 @@ function step11d_enrollPages(sections, content, prelude) {
   body += '<p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="en-hp" id="enHp" tabindex="-1" autocomplete="off"></label></p>\n';
   // Ships in the page rather than being written by JS: a form POST with JS off comes back to
   // ?err=1#enErr and #enErr:target is what unhides it. enroll.js replaces the text otherwise.
-  body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;">That did not go through. Check the highlighted fields and try again, or text Coach Blake at ' + CONTACT.phone + ' and he will take it from there.</p>\n';
+  body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;">That did not go through. Check the highlighted fields and try again, or ' + note + ' and Coach Blake will take it from there.</p>\n';
   body += '<button type="submit" class="btn btn-primary" style="width:100%;">Continue to Secure Checkout</button>\n';
   body += '<p class="trust-line">You finish on Stripe\'s secure checkout page. There you tick the terms box and type your full name to sign, exactly as the agreement asks. That typed name is your signature. Card details never touch this site.</p>\n';
   body += '</div>\n</fieldset>\n</form>\n';
@@ -777,7 +781,7 @@ function step11d_enrollPages(sections, content, prelude) {
   thanks += '<section class="band band-ink">\n<div class="shell">\n';
   thanks += '<h2>What happens next</h2>\n';
   thanks += '<p>Coach Blake sends the welcome email within 12 hours, Monday to Friday. Reply YES to it so he knows you have it. Your first session date and place are in it.</p>\n';
-  thanks += '<p>Questions, or no receipt: text ' + sms + '.</p>\n';
+  thanks += '<p>Questions, or no receipt: ' + note + '.</p>\n';
   thanks += '<p><a href="/" class="btn btn-ghost">Back to the site</a></p>\n';
   thanks += '</div>\n</section>\n</main>\n';
   writeHtml(resolve(DIST, 'enroll', 'thanks', 'index.html'), buildSimplePage({

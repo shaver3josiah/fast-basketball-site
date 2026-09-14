@@ -894,5 +894,31 @@ html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
 }
 .toast-x:hover,.toast-x:focus-visible{background:rgba(255,255,255,.16);}
 
-/* Direct contact rows are shown but inert until the request form has been sent. */
-.ct-locked{opacity:.55;cursor:not-allowed;text-decoration:none;}
+/* The contact form runs as three steps when JavaScript is on (contact-form.js adds
+   .stepped); with it off every fieldset shows in order and the plain POST still works.
+   The slide is a keyframe, so base.css's reduced-motion and data-motion="off" resets
+   already kill it. */
+/* Both set their own display, so the UA [hidden] rule loses to them (see the project notes). */
+.ct-steps[hidden],.ct-direct[hidden]{display:none;}
+.ct-steps{display:flex;align-items:center;gap:10px;margin:0 0 18px;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:#8E8E9B;}
+.ct-steps b{flex:0 0 auto;font-weight:600;}
+.ct-steps span{flex:1;height:3px;border-radius:3px;background:var(--line-dark);}
+.ct-steps span.on{background:var(--fast-red);}
+.step{border:0;padding:0;margin:0;min-width:0;}
+.step legend{font-family:var(--font-display);font-size:1.15rem;text-transform:uppercase;margin-bottom:14px;color:var(--bone);}
+.stepped .step[hidden]{display:none;}
+.stepped .step{animation:stepIn .32s ease-out both;}
+@keyframes stepIn{from{opacity:0;transform:translateX(24px);}to{opacity:1;transform:none;}}
+.stepped .step.back{animation-name:stepBack;}
+@keyframes stepBack{from{opacity:0;transform:translateX(-24px);}to{opacity:1;transform:none;}}
+.step-nav{display:flex;gap:10px;margin-top:4px;}
+.step-nav .btn{flex:1;}
+.step-nav .btn-ghost{flex:0 0 auto;}
+/* Direct contact details, written in by contact-form.js after a send. */
+.ct-direct{display:flex;flex-wrap:wrap;gap:8px 18px;margin:0 0 14px;font-size:.95rem;}
+.ct-direct a{color:var(--bone);text-decoration:underline;text-underline-offset:3px;}
+/* The kit has no light theme, so these were measured on the site: bone on the bone form
+   surface is invisible, and the dark track vanishes too. */
+html.fb-light .step legend,html.fb-light .ct-direct a{color:var(--court-black);}
+html.fb-light .ct-steps span{background:var(--chalk-2);}
+html.fb-light .ct-steps span.on{background:var(--fast-red);}

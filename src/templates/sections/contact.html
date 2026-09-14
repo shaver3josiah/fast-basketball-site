@@ -3,11 +3,12 @@
     <div class="ct-side">
       <div class="eyebrow rise" data-edit="ct.eyebrow">Start Here</div>
       <h2 class="zr"><span data-edit="ct.h2a">Start with a </span><br><span class="hollow" data-edit="ct.h2b">call.</span></h2>
-      <p class="lede rise" data-edit="ct.lede">Send the form or text Coach Blake directly. You hear back within one business day to set a 15 to 20 minute call, and nothing is booked until you say yes to a time.</p>
+      <p class="lede rise" data-edit="ct.lede">Three quick steps. You hear back within one business day to set a 15 to 20 minute call, and nothing is booked until you say yes to a time.</p>
       <div class="ct-rows rise">
-        <!-- Number and email are the ones printed on the signed training agreement. -->
-        <div class="ct-r"><b data-edit="ct.row.phone">Text or Call</b><a href="sms:+15036868371" data-edit="ct.phone">(503) 686-8371</a></div>
-        <div class="ct-r"><b data-edit="ct.row.email">Email</b><a href="mailto:blake@fast-basketball.com" data-edit="ct.email">blake@fast-basketball.com</a></div>
+        <!-- No number and no address anywhere in public markup since September 2026 (Blake:
+             harvesters). server/functions/contact.mjs returns both to a sent request and
+             contact-form.js writes them into #ctDirect. The ct.phone / ct.email keys stay in
+             content-schema and content.json so a saved admin draft still validates. -->
         <div class="ct-r"><b data-edit="ct.row.ig">Instagram</b><span data-edit="ct.ig">@blakekingsleyjr</span></div>
         <div class="ct-r"><b data-edit="ct.row.area">Service Area</b><span data-edit="ct.area">South Florida: Fort Lauderdale, Miami, Hollywood</span></div>
       </div>
@@ -27,33 +28,48 @@
            inject the Netlify attributes and honeypot — do not edit it. -->
       <form id="ctForm" novalidate>
         <p class="pb-note" style="margin:0 0 18px;" data-edit="ct.gatenote">Parents and guardians, send this one yourself. Coach Blake replies to you, and nothing gets booked until you say yes to a time.</p>
-        <div class="fld-row">
-          <div class="fld"><label for="cName" data-edit="ct.lbl.name">Parent or Guardian Name</label><input type="text" id="cName" name="name" autocomplete="name" placeholder="Your name" data-edit-attr="placeholder:ct.ph.name" required></div>
-          <div class="fld"><label for="cPhone" data-edit="ct.lbl.phone">Your Phone</label><input type="tel" id="cPhone" name="phone" autocomplete="tel" placeholder="(954) 555 0100" data-edit-attr="placeholder:ct.ph.phone"></div>
-        </div>
-        <div class="fld"><label for="cEmail" data-edit="ct.lbl.email">Parent or Guardian Email</label><input type="email" id="cEmail" name="email" autocomplete="email" placeholder="you@email.com" data-edit-attr="placeholder:ct.ph.email" required></div>
-        <div class="fld">
-          <label for="cArea" data-edit="ct.lbl.area">Area</label>
-          <select id="cArea" name="area">
-            <option>Coral Springs</option><option>Parkland</option><option>Coconut Creek</option>
-            <option>Margate</option><option>Tamarac</option>
-            <option>Other</option>
-          </select>
-        </div>
-        <div class="fld"><label for="cMsg" data-edit="ct.lbl.msg">Tell us about the player</label><textarea id="cMsg" name="message" placeholder="Grade, position, current team, and where they want to be playing in two years." data-edit-attr="placeholder:ct.ph.msg"></textarea></div>
-        <input type="hidden" name="program" id="cProgram" value="">
-        <p class="trust-line" id="ctProgramLine" style="display:none;"></p>
-        <!-- Parent gate. .fld wrapper is deliberate: contact-form.js finds the error slot with
-             input.closest('.fld'). Inline styles only (src/styles/ is frozen this round) — see the
-             base.css owner note in playbook.html about the missing checkbox focus ring. -->
-        <div class="fld">
-          <label for="ctGuardian" style="display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;">
-            <input type="checkbox" id="ctGuardian" name="guardian-confirmed" value="yes" required style="width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;">
-            <span data-edit="ct.consent">I'm the player's parent or guardian, or I'm 18 or older, and these are my own contact details.</span>
-          </label>
-        </div>
-        <p class="f-err" id="ctErr" role="alert" style="display:none;margin:0 0 12px;"></p>
-        <button type="submit" class="btn btn-primary" style="width:100%;" data-edit="ct.submit">Request My Call</button>
+        <!-- Three steps, September 2026 (Blake asked for a "slider step form"). Plain
+             fieldsets: contact-form.js hides all but one, adds Back / Next and unhides the
+             progress row; with JavaScript off the three show in order and the POST still
+             works. Legends are hard-coded copy with no data-edit, the same call as the fold
+             pills: a new ct.* key would have to reach TEXT_KEYS and every saved draft first. -->
+        <div class="ct-steps" id="ctSteps" hidden aria-hidden="true"><span class="on"></span><span></span><span></span><b id="ctStepN">Step 1 of 3</b></div>
+        <fieldset class="step">
+          <legend>Who is asking</legend>
+          <div class="fld-row">
+            <div class="fld"><label for="cName" data-edit="ct.lbl.name">Parent or Guardian Name</label><input type="text" id="cName" name="name" autocomplete="name" placeholder="Your name" data-edit-attr="placeholder:ct.ph.name" required></div>
+            <div class="fld"><label for="cPhone" data-edit="ct.lbl.phone">Your Phone</label><input type="tel" id="cPhone" name="phone" autocomplete="tel" placeholder="(954) 555 0100" data-edit-attr="placeholder:ct.ph.phone"></div>
+          </div>
+          <div class="fld"><label for="cEmail" data-edit="ct.lbl.email">Parent or Guardian Email</label><input type="email" id="cEmail" name="email" autocomplete="email" placeholder="you@email.com" data-edit-attr="placeholder:ct.ph.email" required></div>
+        </fieldset>
+        <fieldset class="step">
+          <legend>The player</legend>
+          <div class="fld">
+            <label for="cArea" data-edit="ct.lbl.area">Area</label>
+            <select id="cArea" name="area">
+              <option>Coral Springs</option><option>Parkland</option><option>Coconut Creek</option>
+              <option>Margate</option><option>Tamarac</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="fld"><label for="cMsg" data-edit="ct.lbl.msg">Tell us about the player</label><textarea id="cMsg" name="message" placeholder="Grade, position, current team, and where they want to be playing in two years." data-edit-attr="placeholder:ct.ph.msg"></textarea></div>
+        </fieldset>
+        <fieldset class="step">
+          <legend>Send it</legend>
+          <input type="hidden" name="program" id="cProgram" value="">
+          <p class="trust-line" id="ctProgramLine" style="display:none;"></p>
+          <!-- Parent gate. .fld wrapper is deliberate: contact-form.js finds the error slot with
+               input.closest('.fld'). Inline styles only (src/styles/ is frozen this round) — see the
+               base.css owner note in playbook.html about the missing checkbox focus ring. -->
+          <div class="fld">
+            <label for="ctGuardian" style="display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;">
+              <input type="checkbox" id="ctGuardian" name="guardian-confirmed" value="yes" required style="width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;">
+              <span data-edit="ct.consent">I'm the player's parent or guardian, or I'm 18 or older, and these are my own contact details.</span>
+            </label>
+          </div>
+          <p class="f-err" id="ctErr" role="alert" style="display:none;margin:0 0 12px;"></p>
+          <div class="step-nav"><button type="submit" class="btn btn-primary" style="width:100%;" data-edit="ct.submit">Request My Call</button></div>
+        </fieldset>
         <p class="trust-line" data-edit="ct.trust">You hear back within one business day. The call is free.</p>
         <p class="pb-note" style="margin-top:4px;"><span data-edit="ct.note1">What we do with it: </span><a href="/privacy" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;" data-edit="ct.notelink1">Privacy</a><span data-edit="ct.note2"> and </span><a href="/terms" style="text-decoration:underline;text-underline-offset:3px;display:inline-block;padding:14px 0;" data-edit="ct.notelink2">Terms</a><span data-edit="ct.note3">.</span></p>
       </form>
@@ -65,7 +81,9 @@
              straight down from the /contact/ h1. -->
         <h2 data-edit="ct.done.h2">Got it. Message received.</h2>
         <p data-edit="ct.done.p1">Coach Blake reads these himself. You will hear back within one business day with call times, and nothing is booked until you say yes to one.</p>
-        <p><span data-edit="ct.done.p2a">If it has not landed by then, check your spam folder for </span><a href="mailto:blake@fast-basketball.com" data-edit="ct.email">blake@fast-basketball.com</a><span data-edit="ct.done.p2b">, then email us directly and we will sort it out.</span></p>
+        <p><span data-edit="ct.done.p2a">If it has not landed by then, check your spam folder</span><span data-edit="ct.done.p2b">, then reach him directly with the details below.</span></p>
+        <!-- Filled by contact-form.js from the /api/contact response; never in the markup. -->
+        <p class="ct-direct" id="ctDirect" hidden></p>
         <!-- Hard-coded label on purpose: a new ct.* key would have to reach TEXT_KEYS, the labels and
              every saved draft before the admin could save again (validateContentShape). Same call as
              the fold pills. -->

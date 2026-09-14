@@ -14,6 +14,7 @@
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
 import { addLead } from './lib/leads.mjs';
 import { sendEmail, ownerEmail, escapeHtml, recordTable } from './lib/notify.mjs';
+import { CONTACT } from '../../src/lib/site-config.mjs';
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -21,6 +22,25 @@ const RATE_LIMIT_MAX = 10;
 // Long enough for a parent who wants to explain everything, short enough that the store
 // is never where somebody pastes a novel.
 const MAX = { name: 120, email: 200, phone: 40, area: 120, program: 160, message: 4000 };
+// Bot filter, September 2026 (Blake: "thousands of bots scanning your site"). The number
+// and the address are no longer in any public HTML; this endpoint hands them out only after
+// a request that passes. Two cheap tells, neither of which drops the lead: a flagged record
+// is still stored, with `spam` naming the reason, so a real parent who tripped one shows in
+// the admin leads list. It is just not emailed. contact-form.js sets `ts` at page load; a
+// JSON post with no `ts` never loaded the page, and one under MIN_FILL_MS was not typed by
+// a person. The no-JS form post has no `ts` and is exempt, because it cannot have one.
+// ponytail: client-set timestamp, forgeable on purpose. A signed token needs an endpoint to
+// issue it; add one if flagged rows show bots learning to wait.
+const MIN_FILL_MS = 3000;
+const LINK_RE = /https?:\/\/|www\./gi;
+export function spamReason(body, { isForm, now = Date.now() } = {}) {
+  if (!isForm) {
+    const ts = Number(body.ts);
+    if (!ts || now - ts < MIN_FILL_MS) return 'fast';
+  }
+  if ((String(body.message || '').match(LINK_RE) || []).length >= 2) return 'links';
+  return '';
+}
 
 const json = (status, body) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json' }
@@ -79,6 +99,7 @@ export default async (request, context) => {
   if (body.guardianConfirmed !== true) return fail(422, 'guardian confirmation is required');
 
   const timestamp = new Date().toISOString();
+  const spam = spamReason(body, { isForm });
   const record = {
     type: 'contact',
     timestamp,
@@ -88,7 +109,8 @@ export default async (request, context) => {
     area: text('area'),
     program: text('program'),
     message: text('message'),
-    guardianConfirmed: true
+    guardianConfirmed: true,
+    ...(spam ? { spam } : {})
   };
 
   // Store first, notify second, for the reason checkout.mjs gives: an email that fails to
@@ -101,6 +123,10 @@ export default async (request, context) => {
     return fail(500, 'that did not send');
   }
 
+  // A flagged request is stored and thanked like any other, so a bot learns nothing from
+  // the response. It gets no email and no contact details.
+  if (spam) return isForm ? redirect(backTo(request, '#ctDone')) : json(200, { ok: true });
+
   const sent = await sendEmail({
     to: ownerEmail(),
     replyTo: email,
@@ -112,5 +138,7 @@ export default async (request, context) => {
   });
   if (!sent) console.error('contact email not sent for ' + email + '; the lead is saved');
 
-  return isForm ? redirect(backTo(request, '#ctDone')) : json(200, { ok: true });
+  // The only place the site gives out the number and the address: to a person who just
+  // sent a request. contact-form.js writes them into the confirmation box and the toast.
+  return isForm ? redirect(backTo(request, '#ctDone')) : json(200, { ok: true, phone: CONTACT.phone, tel: CONTACT.tel, email: CONTACT.email });
 };
