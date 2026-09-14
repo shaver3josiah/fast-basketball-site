@@ -1,18 +1,98 @@
-<!-- SOCIAL PROOF — the three placeholder testimonial cards that used to sit here were deleted.
-     Do NOT put invented quotes back. Any quote printed here must be copied from a real Google
-     review, with the reviewer's own name, and must stay readable at the link below.
-     The profile cleared verification and reviews exist as of 14 September 2026, so the band is
-     live (content.showReviews). It carries no star rating and no review count on purpose: a
-     number printed here is stale the moment the next review lands, and the link never is.
+<!-- SOCIAL PROOF — the three placeholder testimonial cards that used to sit here were deleted
+     for being invented. The cards below are the opposite: every quote is copied verbatim from a
+     real Google review on the profile linked at the foot of the section, under the reviewer's
+     own name, so anyone can click through and check the wording against the source.
+     RULES FOR ADDING ONE (14 September 2026):
+       1. Copy the words exactly. Only whitespace artifacts are normalised, never spelling,
+          grammar or word choice. Trent's "alot" and "their" are his and they stay.
+       2. Never print a review left by Coach Blake or anyone working on the business. Blake
+          reviewed his own profile on 14 September; that review is deliberately NOT here,
+          because a business quoting its owner as a customer is a lie told with real words.
+       3. A truncated review ends in an ellipsis and links out, rather than being completed
+          from imagination. Andrew Lyle's is cut off at source.
+       4. The five gold stars on a card are a claim about that review. All three were taken as
+          five star on Josiah's word, since Google blocks automated reads from the build
+          machine and the pasted text carried no per review rating. Check a card against the
+          profile before trusting the stars, and drop the star row from any review that is not
+          actually five.
+     No star rating average and no review count anywhere: a number is stale the moment the next
+     review lands, and the link never is. It also keeps the site clear of aggregateRating markup,
+     which Google reads as a business reviewing itself.
+     The eyebrow says "What People Say", not "What Families Say": a player, a coach and the site
+     builder wrote these, and not one of them is a parent. Change it back when a parent reviews.
      The same profile URL is in contact.html; both are plain hrefs, no config indirection.
-     First on the homepage since 9 September 2026: Blake's section order puts what families say
-     ahead of everything else. Split out of areas.html for that; the fam.* keys did not change. -->
+     First on the homepage since 9 September 2026: Blake's section order puts this band ahead of
+     everything else. Split out of areas.html for that; the fam.* keys did not change. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <path id="rvStar" d="M8 .8l2.2 4.46 4.92.72-3.56 3.47.84 4.9L8 12.03l-4.4 2.32.84-4.9L.88 5.98l4.92-.72z"/>
+</defs></svg>
 <section class="band band-ink">
   <div class="shell">
     <div class="head">
-      <div class="eyebrow" data-edit="fam.eyebrow">What Families Say</div>
+      <div class="eyebrow" data-edit="fam.eyebrow">What People Say</div>
       <h2 data-edit="fam.h2">They came to get better.</h2>
-      <p class="lede" data-edit="fam.lede">Families are reviewing the program on Google. Read them where they were left, in their own words.</p>
+      <p class="lede" data-edit="fam.lede">Every word below was left on Google by someone who has worked with Coach Blake. Read them there in full.</p>
+    </div>
+    <div class="rv-grid">
+      <figure class="rv-c rise">
+        <div class="rv-top">
+          <!-- Basketball profile circle: the brand mark is not used here, so a red ball with white
+               seams is fine. Keep the initial matching the name key beside it. -->
+          <svg class="rv-av" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <circle cx="24" cy="24" r="24" fill="var(--fast-red)"/>
+            <g fill="none" stroke="#fff" stroke-width="1.5" opacity=".38">
+              <path d="M24 0v48M0 24h48"/><path d="M7.5 4.2c6 6.4 6 33.2 0 39.6"/><path d="M40.5 4.2c-6 6.4-6 33.2 0 39.6"/>
+            </g>
+            <text x="24" y="30" text-anchor="middle" font-size="17" fill="#fff">T</text>
+          </svg>
+          <div class="rv-id">
+            <b class="rv-name" data-edit="fam.n1">Trent Ferrelli</b>
+            <svg class="rv-stars" viewBox="0 0 92 16" role="img" aria-label="Rated 5 out of 5">
+              <use href="#rvStar" x="0"/><use href="#rvStar" x="19"/><use href="#rvStar" x="38"/><use href="#rvStar" x="57"/><use href="#rvStar" x="76"/>
+            </svg>
+          </div>
+        </div>
+        <blockquote data-edit="fam.q1">Amazing! Wonderful experience learned alot while i was down their for a few months. Would 100 percent recommend working with Blake.</blockquote>
+        <figcaption class="rv-src">Google review</figcaption>
+      </figure>
+      <figure class="rv-c rise">
+        <div class="rv-top">
+          <svg class="rv-av" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <circle cx="24" cy="24" r="24" fill="var(--fast-red)"/>
+            <g fill="none" stroke="#fff" stroke-width="1.5" opacity=".38">
+              <path d="M24 0v48M0 24h48"/><path d="M7.5 4.2c6 6.4 6 33.2 0 39.6"/><path d="M40.5 4.2c-6 6.4-6 33.2 0 39.6"/>
+            </g>
+            <text x="24" y="30" text-anchor="middle" font-size="17" fill="#fff">A</text>
+          </svg>
+          <div class="rv-id">
+            <b class="rv-name" data-edit="fam.n2">Andrew Lyle</b>
+            <svg class="rv-stars" viewBox="0 0 92 16" role="img" aria-label="Rated 5 out of 5">
+              <use href="#rvStar" x="0"/><use href="#rvStar" x="19"/><use href="#rvStar" x="38"/><use href="#rvStar" x="57"/><use href="#rvStar" x="76"/>
+            </svg>
+          </div>
+        </div>
+        <blockquote data-edit="fam.q2">Blake knows the game on a player development level exceptionally well. Great instincts, intense work ethic, and the journey of ball has driven his life for a long time.</blockquote>
+        <figcaption class="rv-src">Google review, read the rest on Google</figcaption>
+      </figure>
+      <figure class="rv-c rise">
+        <div class="rv-top">
+          <svg class="rv-av" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+            <circle cx="24" cy="24" r="24" fill="var(--fast-red)"/>
+            <g fill="none" stroke="#fff" stroke-width="1.5" opacity=".38">
+              <path d="M24 0v48M0 24h48"/><path d="M7.5 4.2c6 6.4 6 33.2 0 39.6"/><path d="M40.5 4.2c-6 6.4-6 33.2 0 39.6"/>
+            </g>
+            <text x="24" y="30" text-anchor="middle" font-size="17" fill="#fff">J</text>
+          </svg>
+          <div class="rv-id">
+            <b class="rv-name" data-edit="fam.n3">Josiah Shaver</b>
+            <svg class="rv-stars" viewBox="0 0 92 16" role="img" aria-label="Rated 5 out of 5">
+              <use href="#rvStar" x="0"/><use href="#rvStar" x="19"/><use href="#rvStar" x="38"/><use href="#rvStar" x="57"/><use href="#rvStar" x="76"/>
+            </svg>
+          </div>
+        </div>
+        <blockquote data-edit="fam.q3">Detail oriented. The coach is passionate to lead men well with discipline towards wins that matter.</blockquote>
+        <figcaption class="rv-src">Google review</figcaption>
+      </figure>
     </div>
     <div class="gbp" style="max-width:62ch;">
       <b data-edit="fam.source">Google Reviews</b>

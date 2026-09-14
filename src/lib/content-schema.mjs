@@ -137,6 +137,14 @@ export const TEXT_LABELS = {
   'fam.lede': "Families intro paragraph",
   'fam.source': "Families source label",
   'fam.body': "Families body text",
+  // Real Google reviews. Editing a quote changes what a named person is shown saying, so
+  // only ever paste a review verbatim from the profile. See the top of families.html.
+  'fam.n1': "Review 1 reviewer name",
+  'fam.q1': "Review 1 quote (verbatim from Google)",
+  'fam.n2': "Review 2 reviewer name",
+  'fam.q2': "Review 2 quote (verbatim from Google)",
+  'fam.n3': "Review 3 reviewer name",
+  'fam.q3': "Review 3 quote (verbatim from Google)",
   'faq.eyebrow': "FAQ eyebrow",
   'faq.h2': "FAQ heading",
   'faq.1.q': "FAQ 1 question",
