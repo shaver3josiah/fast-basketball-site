@@ -554,7 +554,10 @@ html.fb-light .f-err{color:var(--fast-red);}
 .ct-r{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid var(--line-dark);flex-wrap:wrap;}
 .ct-r b{font-family:var(--font-eyebrow);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:#7C7C89;min-width:96px;padding-top:3px;}
 .ct-r span{font-size:1.02rem;}
-.gbp{margin-top:26px;border:1px solid rgba(230,12,32,.36);border-radius:11px;padding:18px 20px;background:rgba(230,12,32,.07);}
+/* Was a tinted, red-bordered card. On the light theme that reads as a pink rectangle, and
+   with real review cards above it the box was competing with them for the same attention
+   (Josiah, 14 September 2026). The label and the copy stand on their own. */
+.gbp{margin-top:26px;}
 .gbp b{font-family:var(--font-eyebrow);letter-spacing:.14em;text-transform:uppercase;font-size:.78rem;color:var(--red-hot);display:block;margin-bottom:6px;}
 .gbp p{font-size:.88rem;color:#A8A8B4;}
 

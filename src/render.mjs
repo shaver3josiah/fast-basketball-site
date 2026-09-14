@@ -303,16 +303,25 @@ export function reviewsOn(content) {
   return !!(content && content.showReviews);
 }
 
-// Removes the .gbp block from the contact section when reviews are off. Cutting it at build time
-// rather than hiding it in CSS keeps the copy out of the page source, so nothing can announce
-// that the profile is unverified to a search engine or a reader of the markup.
-export function stripReviewBlock(html, content) {
-  if (reviewsOn(content)) return html;
+// Cuts the review block out unconditionally. The homepage uses this on the contact section since
+// 14 September 2026: the reviews band sits immediately above "book a call" now, so keeping the
+// contact section's copy printed the same "Google Reviews" note and the same link twice within
+// one screen (Josiah). /contact is its own page with no reviews band, so it keeps its copy
+// through stripReviewBlock below.
+export function cutReviewBlock(html) {
   const at = html.indexOf('<div class="gbp');
   if (at === -1) return html;
   const span = scanBalancedElement(html, at);
   if (!span) return html;
   return html.slice(0, at) + html.slice(span.end);
+}
+
+// Removes the .gbp block from the contact section when reviews are off. Cutting it at build time
+// rather than hiding it in CSS keeps the copy out of the page source, so nothing can announce
+// that the profile is unverified to a search engine or a reader of the markup.
+export function stripReviewBlock(html, content) {
+  if (reviewsOn(content)) return html;
+  return cutReviewBlock(html);
 }
 
 // Slogan ribbon, 14 September 2026. The pricing fold ships closed, so its band's bottom padding
@@ -335,11 +344,30 @@ const RIBBON_SLOGANS = [
   ['slog.6', 'Compete Every Possession']
 ];
 
-export function sloganRibbon() {
-  const items = RIBBON_SLOGANS
+// One line, not a list, so it has to be repeated enough times to overflow the widest screen:
+// the track is translated by -50%, so HALF of it must be wider than the viewport or the loop
+// shows a bare stretch. Eight copies measures about 3.2k pixels a half, which clears a 2560px
+// monitor with room. Measure the track if the wording ever gets shorter.
+const AREA_SLOGANS = [['slog.area', 'Local to your area. Accessible courts.']];
+
+function ribbonMarkup(slogans, repeats) {
+  const items = slogans
     .map(([key, text]) => '<span class="ticker-i" data-edit="' + key + '">' + escapeHtml(text) + '</span>')
-    .join('');
+    .join('').repeat(repeats);
   return '<div class="ticker ribbon" aria-hidden="true">\n<div class="ticker-track">' + items + items + '</div>\n</div>\n';
+}
+
+export function sloganRibbon() {
+  // Two passes of the six, not one: half the track has to be wider than the widest viewport or
+  // the -50% loop runs off the end of the content. One pass measured 1535px a half, which gaps
+  // on anything over that.
+  return ribbonMarkup(RIBBON_SLOGANS, 2);
+}
+
+// Sits under the area tiles, where the page used to run straight from the last city into the
+// FAQ (Josiah, 14 September 2026). Same shell and same marquee as the slogan ribbon.
+export function areaRibbon() {
+  return ribbonMarkup(AREA_SLOGANS, 8);
 }
 
 export function trimContactSection(contactHtml) {
@@ -759,12 +787,13 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   for (const id of SECTION_IDS) {
     if (skip.has(id)) continue;
     if (id === 'contact') {
-      body += stripReviewBlock(trimContactSection(sections[id]), content);
+      body += cutReviewBlock(trimContactSection(sections[id]));
     } else {
       body += sections[id];
     }
     // Fills the empty stretch the closed pricing fold leaves above the service areas.
     if (id === 'programs') body += sloganRibbon();
+    if (id === 'areas') body += areaRibbon();
   }
   body = applyTextEdits(body, content.text);
   body = applyAttrEdits(body, content.text);

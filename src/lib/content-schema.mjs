@@ -145,6 +145,7 @@ export const TEXT_LABELS = {
   'slog.4': "Ribbon slogan 4",
   'slog.5': "Ribbon slogan 5",
   'slog.6': "Ribbon slogan 6",
+  'slog.area': "Area ribbon line (under the city tiles)",
   // Real Google reviews. Editing a quote changes what a named person is shown saying, so
   // only ever paste a review verbatim from the profile. See the top of families.html.
   'fam.n1': "Review 1 reviewer name",
