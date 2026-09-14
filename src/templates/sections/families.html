@@ -8,8 +8,10 @@
        2. Never print a review left by Coach Blake or anyone working on the business. Blake
           reviewed his own profile on 14 September; that review is deliberately NOT here,
           because a business quoting its owner as a customer is a lie told with real words.
-       3. A truncated review ends in an ellipsis and links out, rather than being completed
-          from imagination. Andrew Lyle's is cut off at source.
+       3. A truncated review carries a "More" link to the profile rather than being completed
+          from imagination. Andrew Lyle's is cut off at source. NOTE the shape: the quote sits
+          in its own <span data-edit>, with the link as a SIBLING. applyTextEdits splices from
+          a hooked tag's ">" to the next "</", so an <a> nested inside the hook is destroyed.
        4. The five gold stars on a card are a claim about that review. All three were taken as
           five star on Josiah's word, since Google blocks automated reads from the build
           machine and the pasted text carried no per review rating. Check a card against the
@@ -71,8 +73,8 @@
             </svg>
           </div>
         </div>
-        <blockquote data-edit="fam.q2">Blake knows the game on a player development level exceptionally well. Great instincts, intense work ethic, and the journey of ball has driven his life for a long time.</blockquote>
-        <figcaption class="rv-src">Google review, read the rest on Google</figcaption>
+        <blockquote><span data-edit="fam.q2">Blake knows the game on a player development level exceptionally well. Great instincts, intense work ethic, and the journey of ball has driven his life for a long time.</span> <a class="rv-more" href="https://www.google.com/maps?cid=8149558339790634144" target="_blank" rel="noopener">More</a></blockquote>
+        <figcaption class="rv-src">Google review</figcaption>
       </figure>
       <figure class="rv-c rise">
         <div class="rv-top">

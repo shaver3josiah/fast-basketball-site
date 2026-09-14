@@ -434,7 +434,7 @@ html.fb-light .ft-col a:hover{color:var(--red-deep);}
    The deep red this theme already gives links clears 8:1; the Locker's unlocked teal-dark
    rule above is more specific and still wins. The flag card turns white in this theme but
    kept its dark-card caption grey (3.4:1); slate is what its sibling cards use. */
-html.fb-light .cc-label b,html.fb-light .res-meta,html.fb-light .gbp b,html.fb-light .res-get{color:var(--red-deep);}
+html.fb-light .cc-label b,html.fb-light .res-meta,html.fb-light .gbp b,html.fb-light .res-get,html.fb-light .rv-more{color:var(--red-deep);}
 html.fb-light .prog-c.flag .prog-price small{color:var(--slate);}
 /* The training-page hero caption used to carry this grey inline, so it stayed a dark-band
    grey after the light theme turned the band white (3.4:1). Dark keeps it; light gets the
@@ -967,3 +967,11 @@ html.fb-light .rv-src{color:var(--text-soft-light);}
    for one this small, so the light theme takes a deeper gold. Checked on the site, not the kit. */
 html.fb-light .rv-stars{fill:#C8860D;}
 @media(max-width:900px){.rv-grid{grid-template-columns:1fr;}}
+
+/* Google's own "More" affordance on a truncated review. It is a SIBLING of the quote span,
+   never a child of it: applyTextEdits splices from a hooked tag's ">" to the next "</", so an
+   anchor nested inside a data-edit hook would be destroyed at build time. */
+.rv-more{
+  color:var(--red-hot);font-family:var(--font-eyebrow);font-size:.78rem;letter-spacing:.1em;
+  text-transform:uppercase;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;
+}
