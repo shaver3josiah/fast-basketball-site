@@ -24,9 +24,9 @@
     "ct.ig": "@blakekingsleyjr",
     "fam.eyebrow": "What Families Say",
     "fam.h2": "They came to get better.",
-    "fam.lede": "First families are in the gym right now. Verified Google reviews land here as they come in.",
+    "fam.lede": "Families are reviewing the program on Google. Read them where they were left, in their own words.",
     "fam.source": "Google Reviews",
-    "fam.body": "The Business Profile is in verification. Until it clears we are not printing quotes you cannot go and check for yourself. Ask on your call and we will put you in touch with families already training with us.",
+    "fam.body": "Reviews sit on the Google Business Profile, where Coach Blake cannot edit them or choose which ones show. Open it and read every one.",
     "coach.eyebrow": "Meet Your Coach",
     "coach.h2": "He builds the player you are trying to become.",
     "coach.cred1.title": "Robert Morris",
@@ -48,7 +48,7 @@
     "ct.h2a": "Start with a ",
     "ct.h2b": "call.",
     "ct.rev.source": "Google Reviews",
-    "ct.rev.body": "The Google Business Profile is in verification right now. Once it clears, parent reviews land right here. Until then, ask on your call and we will put you in touch with families already training with us.",
+    "ct.rev.body": "Parents review the program on Google, where we cannot edit what they wrote. Read them there, or ask on your call and we will put you in touch with families already training with us.",
     "ct.gatenote": "Parents and guardians, send this one yourself. Coach Blake replies to you, and nothing gets booked until you say yes to a time.",
     "ct.lbl.name": "Parent or Guardian Name",
     "ct.lbl.phone": "Your Phone",
@@ -320,5 +320,6 @@
     "reveals": true,
     "countUp": true,
     "nightAmbient": true
-  }
+  },
+  "showReviews": true
 }
