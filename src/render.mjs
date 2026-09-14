@@ -311,6 +311,33 @@ export function stripReviewBlock(html, content) {
   return html.slice(0, at) + html.slice(span.end);
 }
 
+// Slogan ribbon, 14 September 2026. The pricing fold ships closed, so its band's bottom padding
+// ran straight into the service areas heading with nothing between them, which read as an
+// unfinished page on a phone (Josiah, with a screenshot).
+//
+// It reuses the hero ticker wholesale: same `.ticker` shell, same `.ticker-track` marquee, same
+// `@keyframes tick`. So hover to pause and `data-ticker="off"` govern this one too, and there is
+// no second animation to own. main.js only ever touches `#ticker` by id, so the ribbon is inert
+// to the idle/record swapping. The list is emitted TWICE because the keyframe translates the
+// track by exactly -50%; a single copy would visibly seam at the loop point.
+//
+// Unlike the hero ticker, `.ribbon` flips colour with the theme (see fb-polish.css).
+const RIBBON_SLOGANS = [
+  ['slog.1', 'Get Results'],
+  ['slog.2', 'Train Fast. Think Fast. Play Fast.'],
+  ['slog.3', 'Outwork Yesterday'],
+  ['slog.4', 'Reps Do Not Lie'],
+  ['slog.5', 'Earn Your Minutes'],
+  ['slog.6', 'Compete Every Possession']
+];
+
+export function sloganRibbon() {
+  const items = RIBBON_SLOGANS
+    .map(([key, text]) => '<span class="ticker-i" data-edit="' + key + '">' + escapeHtml(text) + '</span>')
+    .join('');
+  return '<div class="ticker ribbon" aria-hidden="true">\n<div class="ticker-track">' + items + items + '</div>\n</div>\n';
+}
+
 export function trimContactSection(contactHtml) {
   const end = contactHtml.indexOf('</section>');
   if (end === -1) return contactHtml;
@@ -732,6 +759,8 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
     } else {
       body += sections[id];
     }
+    // Fills the empty stretch the closed pricing fold leaves above the service areas.
+    if (id === 'programs') body += sloganRibbon();
   }
   body = applyTextEdits(body, content.text);
   body = applyAttrEdits(body, content.text);

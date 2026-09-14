@@ -434,8 +434,8 @@ html.fb-light .ft-col a:hover{color:var(--red-deep);}
    The deep red this theme already gives links clears 8:1; the Locker's unlocked teal-dark
    rule above is more specific and still wins. The flag card turns white in this theme but
    kept its dark-card caption grey (3.4:1); slate is what its sibling cards use. */
-html.fb-light .cc-label b,html.fb-light .res-meta,html.fb-light .gbp b,html.fb-light .res-get,html.fb-light .rv-more{color:var(--red-deep);}
-html.fb-light .prog-c.flag .prog-price small{color:var(--slate);}
+html.fb-light .cc-label b,html.fb-light .res-meta,html.fb-light .gbp b,html.fb-light .res-get,html.fb-light .rv-more,html.fb-light .enr-bring b{color:var(--red-deep);}
+html.fb-light .prog-c.flag .prog-price small{color:#8A8A96;}
 /* The training-page hero caption used to carry this grey inline, so it stayed a dark-band
    grey after the light theme turned the band white (3.4:1). Dark keeps it; light gets the
    caption colour the homepage cards use. */
@@ -703,7 +703,9 @@ html[data-night="off"] .net.sway,html[data-night="off"] .net.sway .net-cord,html
   .price-grid tbody th{font-size:.72rem;letter-spacing:.06em;}
 }
 .fine-print{margin-top:48px;padding:30px 32px;border:1px solid var(--line-light);border-radius:var(--r-card-light);background:var(--bone);box-shadow:var(--shadow-light);}
-.fine-print .eyebrow{margin-bottom:16px;}
+/* The box is --bone in both themes, so the eyebrow must not inherit the dark section's bone
+   text: in dark mode it measured white on white. */
+.fine-print .eyebrow{margin-bottom:16px;color:var(--court-black);}
 .fp-list{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 28px;margin:0 0 18px;padding:0;}
 .fp-list li{font-size:.92rem;color:var(--text-body-light);line-height:1.5;}
 .fp-list b{color:var(--court-black);font-family:var(--font-eyebrow);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.84rem;}
@@ -731,7 +733,7 @@ html.fb-light .enr-bring p{color:var(--text-soft-light);}
 @keyframes evdGo{to{transform:translate(var(--dx,0),var(--dy,-60px)) scale(.55);opacity:0;filter:blur(7px);}}
 .evd-p{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--red-hot);box-shadow:0 0 8px var(--glow-red);pointer-events:none;opacity:0;animation:evdP 1.4s ease-out forwards;animation-delay:var(--d,0ms);}
 @keyframes evdP{0%{opacity:1;transform:none}100%{opacity:0;transform:translate(var(--dx,0),var(--dy,-80px)) scale(.2)}}
-.evd-hint{font-family:var(--font-eyebrow);font-weight:600;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-mute-dark);}
+.evd-hint{font-family:var(--font-eyebrow);font-weight:600;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint-dark);}
 /* Author display on the trigger outranks the UA [hidden] rule, the same trap as .modal-ovl:
    without this the "Hover or tap" hint and the evaporated word kept their space above the record. */
 .evd-trigger[hidden]{display:none;}
@@ -776,6 +778,10 @@ html.fb-light .evd-word{filter:none;}
 .rcp-score+.score-src{margin-bottom:44px;color:var(--text-dim-dark);}
 html.fb-light .score-c{background:#fff;border-color:var(--line-light);}
 html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
+/* .band-light is light in BOTH themes (base.css), so --text-dim-dark inside one measured
+   2.45:1 on the coach page. The homepage keeps the same selector inside a dark band, which is
+   why this scopes by band rather than by theme. */
+.band-light .rcp-score+.score-src{color:var(--text-soft-light);}
 
 /* Per-session line under the membership price. */
 .prog-per{font-size:.88rem;margin-top:-4px;}
@@ -931,6 +937,7 @@ html.fb-light .rcp-score+.score-src{color:var(--text-soft-light);}
 /* The kit has no light theme, so these were measured on the site: bone on the bone form
    surface is invisible, and the dark track vanishes too. */
 html.fb-light .step legend,html.fb-light .ct-direct a{color:var(--court-black);}
+html.fb-light .ct-steps{color:var(--text-soft-light);}
 html.fb-light .ct-steps span{background:var(--chalk-2);}
 html.fb-light .ct-steps span.on{background:var(--fast-red);}
 
@@ -957,7 +964,7 @@ html.fb-light .ct-steps span.on{background:var(--fast-red);}
 .rv-c blockquote{margin:0;font-size:.97rem;line-height:1.6;color:#C4C4CE;}
 .rv-src{
   margin-top:auto;font-family:var(--font-eyebrow);font-size:.68rem;letter-spacing:.16em;
-  text-transform:uppercase;color:#7E7E8A;
+  text-transform:uppercase;color:#9C9CA8;
 }
 html.fb-light .rv-c{background:var(--bone);border-color:var(--chalk-2);box-shadow:var(--shadow-light);}
 html.fb-light .rv-name{color:var(--court-black);}
@@ -975,3 +982,12 @@ html.fb-light .rv-stars{fill:#C8860D;}
   color:var(--red-hot);font-family:var(--font-eyebrow);font-size:.78rem;letter-spacing:.1em;
   text-transform:uppercase;text-decoration:underline;text-underline-offset:3px;white-space:nowrap;
 }
+
+/* Slogan ribbon between the pricing fold and the service areas (14 September 2026). It borrows
+   the hero ticker's whole marquee, so only the colour is new here. Unlike the hero ticker it
+   flips with the theme, which is the point: red is the brand accent against a dark page, and on
+   the light page a black bar is crisper and stops the page carrying two identical red bars.
+   Measured, not assumed: white on #0A0A0C is 19:1, white on --fast-red is 4.6:1, and the ticker
+   type is 1.12rem uppercase display, which clears AA large text at 3:1. */
+.ribbon{background:var(--court-black);border-top-color:rgba(255,255,255,.14);border-bottom-color:rgba(255,255,255,.14);}
+html:not(.fb-light) .ribbon{background:var(--fast-red);border-top-color:rgba(0,0,0,.2);border-bottom-color:rgba(0,0,0,.2);}

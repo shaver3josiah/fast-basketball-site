@@ -190,7 +190,9 @@ html:not(.fb-light) .en-card .prog-price small{color:#8A8A96;}
 .pb-out:target{display:block;}
 .en-intro{display:grid;gap:14px;max-width:72ch;margin-bottom:44px;font-size:.95rem;line-height:1.6;color:var(--text-body-dark);}
 .en-intro b{color:var(--bone);}
-.en-opt{font-size:.62rem;letter-spacing:.12em;color:var(--text-label-dark);}
+/* --text-label-dark (#6E6E7C) measured 3.41:1 on the form surface, under AA. This was its
+   only consumer, so the fix lives here rather than in the token scale. */
+.en-opt{font-size:.62rem;letter-spacing:.12em;color:var(--text-dim-dark);}
 /* A select still on "Please select" reads as a placeholder, in the placeholder grey. */
 .fld select:has(option[value=""]:checked){color:#8F8F9C;}
 html.fb-light .fld select:has(option[value=""]:checked){color:var(--slate);}

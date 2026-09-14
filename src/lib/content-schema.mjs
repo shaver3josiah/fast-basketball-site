@@ -137,6 +137,14 @@ export const TEXT_LABELS = {
   'fam.lede': "Families intro paragraph",
   'fam.source': "Families source label",
   'fam.body': "Families body text",
+  // Slogan ribbon between the pricing fold and the service areas. Short lines only: they run
+  // as a single scrolling row and a long one leaves a visible hole in the loop.
+  'slog.1': "Ribbon slogan 1",
+  'slog.2': "Ribbon slogan 2",
+  'slog.3': "Ribbon slogan 3",
+  'slog.4': "Ribbon slogan 4",
+  'slog.5': "Ribbon slogan 5",
+  'slog.6': "Ribbon slogan 6",
   // Real Google reviews. Editing a quote changes what a named person is shown saying, so
   // only ever paste a review verbatim from the profile. See the top of families.html.
   'fam.n1': "Review 1 reviewer name",
