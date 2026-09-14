@@ -307,7 +307,9 @@ function step8_trainingPages(content, prelude) {
     for (const f of page.features) body += '<li>' + escapeHtml(f) + '</li>\n';
     body += '</ul>\n';
     body += '<h2>How it works</h2>\n<p style="max-width:70ch;">' + escapeHtml(page.next) + '</p>\n';
-    body += '<p>Sessions run at courts across South Florida, with Fort Lauderdale, Miami and Hollywood at the center. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
+    // Was "Sessions run at courts across South Florida", which was not true of any session.
+    // See the note above venuesProse in src/lib/suburb-copy.mjs.
+    body += '<p>Every session runs at the Salvation Army Fort Lauderdale Corps gym, 100 SW 9th Ave, and families drive in from Miami, Hollywood and north Broward. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
     body += '</div>\n</section>\n</main>\n';
     const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }])];
     const html = buildSimplePage({

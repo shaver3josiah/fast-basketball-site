@@ -70,7 +70,9 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   body += '<section class="band band-ink">\n<div class="shell">\n<div class="eyebrow rise">Local Schools</div>\n<h2 class="zr">Schools and programs in ' + escapeHtml(suburb.name) + '</h2>\n';
   body += '<p class="rise">' + schoolsProse(suburb) + '</p>\n</div>\n</section>\n';
 
-  body += '<section class="band band-light">\n<div class="shell">\n<div class="eyebrow rise">The Courts</div>\n<h2 class="zr">Where we train in ' + escapeHtml(suburb.name) + '</h2>\n';
+  // "Where we train in <city>" was false: training happens at one gym in Fort Lauderdale and
+  // nowhere else. The heading now separates the two things venuesProse says.
+  body += '<section class="band band-light">\n<div class="shell">\n<div class="eyebrow rise">The Courts</div>\n<h2 class="zr">Where we train, and the ' + escapeHtml(suburb.name) + ' courts we recommend</h2>\n';
   body += '<p class="rise">' + venuesProse(suburb) + '</p>\n';
   const driving = drivingProse(suburb);
   if (driving) body += '<p class="rise">' + driving + '</p>\n';

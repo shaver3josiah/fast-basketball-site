@@ -22,7 +22,11 @@ const clean = (s) => assert.ok(!/[,—] *\./.test(s) && !/ {2}/.test(s) && !/—
 
 // 0 records
 assert.equal(schoolsProse({ name: 'Nowhere' }), '');
-assert.equal(venuesProse({ name: 'Nowhere', training_venues: [] }), '');
+// A city with no recommended courts on file still has to say where sessions actually run.
+assert.equal(
+  venuesProse({ name: 'Nowhere', training_venues: [] }),
+  'Every session runs at the Salvation Army Fort Lauderdale Corps gym, 100 SW 9th Ave, Fort Lauderdale.'
+);
 
 // 1 high school + 1 middle school
 const one = schoolsProse({
@@ -117,5 +121,18 @@ for (const v of [
 // "both" must not render as "with both courts"
 assert.ok(venuesProse({ name: 'X', training_venues: [{ name: 'P', type: 'rec center', courts: 'both' }] })
   .includes('a rec center with indoor and outdoor courts'));
+
+// The 14 September 2026 correction, pinned. Every suburb page used to open its courts section
+// with "In <city>, sessions run at <city park>", which named the wrong address in the wrong
+// city. The parks stay on the page as recommendations; they must never again be described as
+// where a session happens.
+for (const venues of [[], [{ name: 'Some Park', address: '1 Main St' }], [{ name: 'A Park' }, { name: 'B Park' }]]) {
+  const out = venuesProse({ name: 'Testville', training_venues: venues });
+  ends(out);
+  clean(out);
+  assert.ok(out.startsWith('Every session runs at the Salvation Army'), 'must lead with the real gym: ' + out);
+  assert.ok(!/sessions run at (?!the Salvation Army)/.test(out), 'no session may be placed anywhere else: ' + out);
+  if (venues.length) assert.ok(/courts? we recommend in Testville/.test(out), 'parks must read as recommendations: ' + out);
+}
 
 console.log('suburb-copy: ok');

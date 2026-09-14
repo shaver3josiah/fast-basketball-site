@@ -74,10 +74,23 @@ export function schoolsProse(suburb) {
   return parts.join(' ');
 }
 
+// NOBODY TRAINS AT THESE PARKS. Corrected 14 September 2026 on the owner's word: the only place
+// Coach Blake or anyone from Fast Basketball meets a player is the gym named below. Until that
+// day every suburb page opened "In <city>, sessions run at <five city parks>", which was simply
+// untrue and sent families to the wrong address. The city courts in suburbs.json are kept and
+// reframed as recommendations for the homework the program sets between sessions, which is what
+// they were always good for. Same gym as faq.2.a in faq.html, FAQ_PAIRS in render.mjs and the
+// /enroll page; four hand-typed copies now, so change them together.
+const HOME_GYM = 'the Salvation Army Fort Lauderdale Corps gym, 100 SW 9th Ave, Fort Lauderdale';
+
 export function venuesProse(suburb) {
   const venues = (suburb.training_venues || []).filter((v) => v && v.name);
-  if (venues.length === 0) return '';
-  const opener = 'In ' + suburb.name + ', sessions run at ';
+  // Stated even when a city has no recommended courts on file: a family landing on this page
+  // from search has to learn where they would actually be driving.
+  const home = endSentence('Every session runs at ' + HOME_GYM);
+  if (venues.length === 0) return home;
+  const opener = (venues.length === 1 ? 'The court we recommend in ' : 'The courts we recommend in ')
+    + suburb.name + ' for work between sessions' + (venues.length === 1 ? ' is ' : ' are ');
 
   // A single venue reads better folded into the opener than repeated in a
   // second sentence, and that is how 11 of the 12 records are shaped.
@@ -86,10 +99,10 @@ export function venuesProse(suburb) {
     const detail = venueDetail(v);
     // Colon, matching schoolsProse. Promoting the detail to its own sentence
     // instead would strand a subject-less fragment ("A rec center with ...").
-    return endSentence(opener + v.name + (v.address ? ', ' + v.address : '') + (detail ? ': ' + detail : ''));
+    return home + ' ' + endSentence(opener + v.name + (v.address ? ', ' + v.address : '') + (detail ? ': ' + detail : ''));
   }
 
-  const parts = [endSentence(opener + joinList(venues.map((v) => v.name)))];
+  const parts = [home, endSentence(opener + joinList(venues.map((v) => v.name)))];
   for (const v of venues) {
     const detail = venueDetail(v);
     if (v.address && detail) parts.push(endSentence(v.name + ' is at ' + v.address + ': ' + detail));
@@ -107,7 +120,9 @@ export function drivingProse(suburb) {
 
 export function landmarksProse(suburb) {
   if (!suburb.landmarks || suburb.landmarks.length === 0) return '';
-  return suburb.name + ' sessions get booked around the neighborhoods near ' + joinList(suburb.landmarks) + ', close enough that a school night session does not eat the whole evening.';
+  // Was "<city> sessions get booked around the neighborhoods near ...", which put the sessions
+  // in the wrong city along with everything else. Where families travel from, not where they train.
+  return suburb.name + ' families come from the neighborhoods near ' + joinList(suburb.landmarks) + ', and a standing weekly slot is what keeps the drive predictable.';
 }
 
 export function neighborsProse(suburb) {
@@ -121,7 +136,9 @@ export function whyHereProse(suburb) {
     ? suburb.name + ' is core coverage, so weekly recurring slots are easiest to hold here and rarely get bumped.'
     : suburb.name + ' runs on a scheduled rotation, so booking a recurring weekly slot early keeps the same time all season.';
   return 'Coach Blake came to North Broward straight off the college side of the recruiting table: two staffs, two championships, an NCAA Tournament run. Every ' + suburb.name + ' session gets the same read a college staff would give. ' +
-    tierLine + ' The method does not change by zip code: screen, isolate, load, read, log. A ' + suburb.name + ' player builds the exact same foundation as every player in the program, just closer to home.';
+    // "just closer to home" went with the same correction: the gym is in Fort Lauderdale, so for
+    // most of these cities it is a drive, and the page should not pretend otherwise.
+    tierLine + ' The method does not change by zip code: screen, isolate, load, read, log. A ' + suburb.name + ' player builds the exact same foundation as every player in the program.';
 }
 
 export function slugToName(slug) {

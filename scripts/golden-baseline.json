@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-14T15:37:12.318Z",
+  "recorded": "2026-09-14T20:16:51.558Z",
   "files": {
     "404.html": {
       "sha": "5ff4f1b768314692",
@@ -54,24 +54,24 @@
       "bytes": 245551
     },
     "basketball-training/coconut-creek/index.html": {
-      "sha": "de0e8168ed26e35e",
-      "bytes": 19057
+      "sha": "45824245fbf389cc",
+      "bytes": 19235
     },
     "basketball-training/coral-springs/index.html": {
-      "sha": "0e9bbd9c43c9bce8",
-      "bytes": 20199
+      "sha": "f4c45c29f7289252",
+      "bytes": 20346
     },
     "basketball-training/margate/index.html": {
-      "sha": "2552718c9d049f7f",
-      "bytes": 19008
+      "sha": "39a28a7f16c8152c",
+      "bytes": 19140
     },
     "basketball-training/parkland/index.html": {
-      "sha": "a6464749d79bef2b",
-      "bytes": 18922
+      "sha": "8655c5cdb307b539",
+      "bytes": 19084
     },
     "basketball-training/tamarac/index.html": {
-      "sha": "0c0b9750d17ecf66",
-      "bytes": 19144
+      "sha": "347f83d83902d3d1",
+      "bytes": 19261
     },
     "blog/index.html": {
       "sha": "87f8709b15138c9a",
@@ -106,8 +106,8 @@
       "bytes": 16037
     },
     "contact/index.html": {
-      "sha": "d18b5e3471bc1599",
-      "bytes": 19125
+      "sha": "c238946d271a6213",
+      "bytes": 19908
     },
     "enroll/index.html": {
       "sha": "5e32d5ae826bdc70",
@@ -118,8 +118,8 @@
       "bytes": 7782
     },
     "index.html": {
-      "sha": "77881c6d72fa821e",
-      "bytes": 100307
+      "sha": "1aac0f706d5a8742",
+      "bytes": 103046
     },
     "js/contact-form.js": {
       "sha": "dc3c1ffe003a05aa",
@@ -210,16 +210,16 @@
       "bytes": 21699
     },
     "training/evaluation/index.html": {
-      "sha": "e552ef7517224aec",
-      "bytes": 9230
+      "sha": "0422cfb82c75cc2e",
+      "bytes": 9275
     },
     "training/group-training/index.html": {
-      "sha": "320f4e08fc888667",
-      "bytes": 9334
+      "sha": "d707b5bda2856b42",
+      "bytes": 9379
     },
     "training/private/index.html": {
-      "sha": "6552dd7cb7907a4c",
-      "bytes": 9450
+      "sha": "bafd46e993b3fe66",
+      "bytes": 9495
     }
   }
 }

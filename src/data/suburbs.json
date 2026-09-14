@@ -4,129 +4,338 @@
     "slug": "coral-springs",
     "county": "Broward",
     "tier": 1,
-    "zip_codes": ["33065", "33067", "33071", "33076"],
+    "zip_codes": [
+      "33065",
+      "33067",
+      "33071",
+      "33076"
+    ],
     "drive_time_from_base_min": null,
     "high_schools": [
-      { "name": "Coral Springs High School", "type": "public", "note": "Serves the area from 7201 W Sample Rd, 2,177 students" },
-      { "name": "Coral Glades High School", "type": "public", "note": "Serves the area from 2700 Sportsplex Dr" },
-      { "name": "J.P. Taravella High School", "type": "public", "note": "Serves the area from 10600 Riverside Dr, 2,436 students" }
+      {
+        "name": "Coral Springs High School",
+        "type": "public",
+        "note": "Serves the area from 7201 W Sample Rd, 2,177 students"
+      },
+      {
+        "name": "Coral Glades High School",
+        "type": "public",
+        "note": "Serves the area from 2700 Sportsplex Dr"
+      },
+      {
+        "name": "J.P. Taravella High School",
+        "type": "public",
+        "note": "Serves the area from 10600 Riverside Dr, 2,436 students"
+      }
     ],
     "middle_schools": [
-      { "name": "Forest Glen Middle School", "type": "public", "note": "Every one of its eighth graders goes on to Coral Springs High" },
-      { "name": "Sawgrass Springs Middle School", "type": "public", "note": "Its eighth graders go on to Coral Glades High, all of them" },
-      { "name": "Ramblewood Middle School", "type": "public", "note": "Sends the whole eighth grade on to J.P. Taravella High" },
-      { "name": "Coral Springs Middle School", "type": "public", "note": "Splits almost exactly down the middle, half to Coral Glades and half to Stoneman Douglas" }
+      {
+        "name": "Forest Glen Middle School",
+        "type": "public",
+        "note": "Every one of its eighth graders goes on to Coral Springs High"
+      },
+      {
+        "name": "Sawgrass Springs Middle School",
+        "type": "public",
+        "note": "Its eighth graders go on to Coral Glades High, all of them"
+      },
+      {
+        "name": "Ramblewood Middle School",
+        "type": "public",
+        "note": "Sends the whole eighth grade on to J.P. Taravella High"
+      },
+      {
+        "name": "Coral Springs Middle School",
+        "type": "public",
+        "note": "Splits almost exactly down the middle, half to Coral Glades and half to Stoneman Douglas"
+      }
     ],
     "training_venues": [
-      { "name": "Mullins Park", "address": "10000 Ben Geiger Drive, Coral Springs, FL 33065", "type": "city park", "courts": "outdoor", "note": "Outdoor courts open until 10pm, and one of the two sites the city Basketball Club plays at" },
-      { "name": "Betti Stradling Park", "address": "10301 Wiles Road, Coral Springs, FL 33076", "type": "city park", "courts": "outdoor", "note": "Outdoor courts open until 10:30pm most nights" },
-      { "name": "Forest Hills Park", "address": "2500 Forest Hills Boulevard, Coral Springs, FL 33065", "type": "city park", "courts": "outdoor", "note": "Outdoor courts in the Forest Hills neighbourhood" },
-      { "name": "North Community Park", "address": "5601 Coral Springs Drive, Coral Springs, FL 33076", "type": "city park", "courts": "outdoor", "note": "Outdoor courts on the north end of Coral Springs Drive" },
-      { "name": "Cypress Hammock", "address": "1300 Coral Springs Drive, Coral Springs, FL 33071", "type": "city park", "courts": "outdoor", "note": "Outdoor courts open until 10:30pm most nights" }
+      {
+        "name": "Mullins Park",
+        "address": "10000 Ben Geiger Drive, Coral Springs, FL 33065",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor courts open until 10pm, and one of the two sites the city Basketball Club plays at"
+      },
+      {
+        "name": "Betti Stradling Park",
+        "address": "10301 Wiles Road, Coral Springs, FL 33076",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor courts open until 10:30pm most nights"
+      },
+      {
+        "name": "Forest Hills Park",
+        "address": "2500 Forest Hills Boulevard, Coral Springs, FL 33065",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor courts in the Forest Hills neighbourhood"
+      },
+      {
+        "name": "North Community Park",
+        "address": "5601 Coral Springs Drive, Coral Springs, FL 33076",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor courts on the north end of Coral Springs Drive"
+      },
+      {
+        "name": "Cypress Hammock",
+        "address": "1300 Coral Springs Drive, Coral Springs, FL 33071",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor courts open until 10:30pm most nights"
+      }
     ],
     "local_paragraph": "Three public high schools sit inside Coral Springs, and most of the middle schools feed them cleanly. Forest Glen sends its eighth graders to Coral Springs High, Sawgrass Springs to Coral Glades, Ramblewood to Taravella. Coral Springs Middle is the odd one out, splitting almost down the middle between Coral Glades and Stoneman Douglas, so a family there cannot assume which gym they end up in. The courts are all outdoor and all open late. Mullins Park runs until ten, Betti Stradling on Wiles Road and Cypress Hammock until ten thirty, with more at Forest Hills and North Community Park. There is no YMCA here and no Boys and Girls Club, so outside the seasonal rec league there is nothing to fall into.",
-    "landmarks": ["Coral Square Mall", "Sawgrass Nature Center and Wildlife Hospital", "Sample Road corridor"],
-    "nearest_neighbors": ["parkland", "coconut-creek", "margate"],
+    "landmarks": [
+      "Coral Square Mall",
+      "Sawgrass Nature Center and Wildlife Hospital",
+      "Sample Road corridor"
+    ],
+    "nearest_neighbors": [
+      "parkland",
+      "coconut-creek",
+      "margate"
+    ],
     "testimonial_slot": null,
     "meta_title": "Coral Springs Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Coral Springs players 11 to 18 at Mullins Park and Betti Stradling, from a coach who evaluated college recruits."
+    "meta_description": "Basketball training for Coral Springs players 11 to 18 with a coach who read college recruits. Sessions run at the Salvation Army gym, Fort Lauderdale."
   },
   {
     "name": "Parkland",
     "slug": "parkland",
     "county": "Broward",
     "tier": 1,
-    "zip_codes": ["33067", "33076"],
+    "zip_codes": [
+      "33067",
+      "33076"
+    ],
     "drive_time_from_base_min": null,
     "high_schools": [
-      { "name": "Marjory Stoneman Douglas High School", "type": "public", "note": "Serves the area from 5901 Pine Island Rd" }
+      {
+        "name": "Marjory Stoneman Douglas High School",
+        "type": "public",
+        "note": "Serves the area from 5901 Pine Island Rd"
+      }
     ],
     "middle_schools": [
-      { "name": "Westglades Middle School", "type": "public" }
+      {
+        "name": "Westglades Middle School",
+        "type": "public"
+      }
     ],
     "training_venues": [
-      { "name": "Parkland Recreation and Enrichment Center", "address": "10559 Trails End, Parkland, FL 33076", "type": "indoor city facility", "courts": "indoor", "note": "24,700 square foot air conditioned center with a full indoor court" },
-      { "name": "Pine Trails Park", "address": "10555 Trails End, Parkland, FL 33076", "type": "city park", "courts": "outdoor", "note": "The city's largest park, with outdoor basketball among its facilities" }
+      {
+        "name": "Parkland Recreation and Enrichment Center",
+        "address": "10559 Trails End, Parkland, FL 33076",
+        "type": "indoor city facility",
+        "courts": "indoor",
+        "note": "24,700 square foot air conditioned center with a full indoor court"
+      },
+      {
+        "name": "Pine Trails Park",
+        "address": "10555 Trails End, Parkland, FL 33076",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "The city's largest park, with outdoor basketball among its facilities"
+      }
     ],
-    "local_paragraph": "Parkland runs on one public high school. Marjory Stoneman Douglas sits on Pine Island Road, and for a player who wants to be seen at school, that is the whole path. Nearly everything else is on Trails End. Pine Trails Park, the biggest park the city has, keeps the outdoor hoops, and the recreation and enrichment center next door wraps 24,700 air conditioned square feet around a full indoor court. Parkland puts its own residents first in that building, so access gets confirmed before a session is booked, not after. One high school and one indoor court fill up fast, which is the argument for holding a weekly slot instead of hunting an opening every week.",
-    "landmarks": ["Trails End recreation corridor", "Pine Island Road", "Parkland City Hall on University Drive"],
-    "nearest_neighbors": ["coral-springs", "coconut-creek", "margate"],
+    "local_paragraph": "Parkland runs on one public high school. Marjory Stoneman Douglas sits on Pine Island Road, and for a player who wants to be seen at school, that is the whole path. Nearly everything else is on Trails End. Pine Trails Park, the biggest park the city has, keeps the outdoor hoops, and the recreation and enrichment center next door wraps 24,700 air conditioned square feet around a full indoor court. Parkland puts its own residents first in that building, so a player who wants court time there should check access before counting on it. One high school and one indoor court fill up fast, which is the argument for holding a weekly slot instead of hunting an opening every week.",
+    "landmarks": [
+      "Trails End recreation corridor",
+      "Pine Island Road",
+      "Parkland City Hall on University Drive"
+    ],
+    "nearest_neighbors": [
+      "coral-springs",
+      "coconut-creek",
+      "margate"
+    ],
     "testimonial_slot": null,
     "meta_title": "Parkland Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Parkland players 11 to 18 near Pine Trails Park and Stoneman Douglas, built around an already full school week."
+    "meta_description": "Basketball training for Parkland players 11 to 18, built around an already full school week. Sessions run at the Salvation Army gym, Fort Lauderdale."
   },
   {
     "name": "Coconut Creek",
     "slug": "coconut-creek",
     "county": "Broward",
     "tier": 1,
-    "zip_codes": ["33063", "33066", "33073"],
+    "zip_codes": [
+      "33063",
+      "33066",
+      "33073"
+    ],
     "drive_time_from_base_min": null,
     "high_schools": [
-      { "name": "Monarch High School", "type": "public", "note": "Serves the area from 5050 Wiles Rd, 2,213 students" },
-      { "name": "Coconut Creek High School", "type": "public", "note": "Serves the area from 1400 NW 44th Ave, 1,972 students" }
+      {
+        "name": "Monarch High School",
+        "type": "public",
+        "note": "Serves the area from 5050 Wiles Rd, 2,213 students"
+      },
+      {
+        "name": "Coconut Creek High School",
+        "type": "public",
+        "note": "Serves the area from 1400 NW 44th Ave, 1,972 students"
+      }
     ],
     "middle_schools": [
-      { "name": "Margate Middle School", "type": "public" }
+      {
+        "name": "Margate Middle School",
+        "type": "public"
+      }
     ],
     "training_venues": [
-      { "name": "Windmill Park", "address": "700 Lyons Rd, Coconut Creek, FL 33063", "type": "city park", "courts": "outdoor", "note": "Outdoor basketball courts, open to 10pm on weeknights" },
-      { "name": "Winston Park", "address": "5201 NW 49 Ave, Coconut Creek, FL 33073", "type": "city park", "courts": "outdoor", "note": "Outdoor basketball alongside a nature trail" }
+      {
+        "name": "Windmill Park",
+        "address": "700 Lyons Rd, Coconut Creek, FL 33063",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor basketball courts, open to 10pm on weeknights"
+      },
+      {
+        "name": "Winston Park",
+        "address": "5201 NW 49 Ave, Coconut Creek, FL 33073",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor basketball alongside a nature trail"
+      }
     ],
-    "local_paragraph": "The city that calls itself the Butterfly Capital of the World runs two public high schools: Monarch on Wiles Road with 2,213 students, and Coconut Creek High on NW 44th Avenue with 1,972. The MainStreet district, boxed in by Wiles, Lyons, Sample and State Road 7, is the city's own name for its centre. Basketball here is simpler than that. Windmill Park on Lyons Road keeps outdoor courts lit until ten on weeknights, and Winston Park has more beside its nature trail. The indoor gym at the recreation complex sits behind a CreekFit membership, and the city publishes no way to rent a basketball court, so we plan around daylight, dinner, and a court nobody can reserve ahead of us.",
-    "landmarks": ["Seminole Casino Coconut Creek", "the MainStreet district", "Lyons Road recreation corridor"],
-    "nearest_neighbors": ["margate", "coral-springs", "tamarac"],
+    "local_paragraph": "The city that calls itself the Butterfly Capital of the World runs two public high schools: Monarch on Wiles Road with 2,213 students, and Coconut Creek High on NW 44th Avenue with 1,972. The MainStreet district, boxed in by Wiles, Lyons, Sample and State Road 7, is the city's own name for its centre. Basketball here is simpler than that. Windmill Park on Lyons Road keeps outdoor courts lit until ten on weeknights, and Winston Park has more beside its nature trail. The indoor gym at the recreation complex sits behind a CreekFit membership, and the city publishes no way to rent a basketball court, so a player getting shots up here plans around daylight and a court nobody can reserve ahead of them.",
+    "landmarks": [
+      "Seminole Casino Coconut Creek",
+      "the MainStreet district",
+      "Lyons Road recreation corridor"
+    ],
+    "nearest_neighbors": [
+      "margate",
+      "coral-springs",
+      "tamarac"
+    ],
     "testimonial_slot": null,
     "meta_title": "Coconut Creek Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Coconut Creek players 11 to 18 at Windmill and Winston Park, scheduled around Monarch and Creek practice."
+    "meta_description": "Basketball training for Coconut Creek players 11 to 18, around Monarch and Creek practice. Sessions run at the Salvation Army gym, Fort Lauderdale."
   },
   {
     "name": "Margate",
     "slug": "margate",
     "county": "Broward",
     "tier": 2,
-    "zip_codes": ["33063"],
+    "zip_codes": [
+      "33063"
+    ],
     "drive_time_from_base_min": null,
     "high_schools": [],
     "middle_schools": [
-      { "name": "Margate Middle School", "type": "public", "note": "Serves the area from 500 NW 65th Ave" }
+      {
+        "name": "Margate Middle School",
+        "type": "public",
+        "note": "Serves the area from 500 NW 65th Ave"
+      }
     ],
     "training_venues": [
-      { "name": "Firefighters Park", "address": "2500 Rock Island Rd, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "Full size lighted courts that host every Margate Youth Basketball League game and practice, open to 10pm" },
-      { "name": "Coral Gate Park", "address": "5650 Coral Lake Drive, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "Three half courts, open to 10pm" },
-      { "name": "Centennial Park", "address": "7800 Royal Palm Blvd, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "One full size ADA accessible court" },
-      { "name": "Andrews Field", "address": "500 NW 65th Ave, Margate, FL 33063", "type": "city park", "courts": "outdoor", "note": "Outdoor courts and a quarter mile track, sharing an address with Margate Middle School" }
+      {
+        "name": "Firefighters Park",
+        "address": "2500 Rock Island Rd, Margate, FL 33063",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Full size lighted courts that host every Margate Youth Basketball League game and practice, open to 10pm"
+      },
+      {
+        "name": "Coral Gate Park",
+        "address": "5650 Coral Lake Drive, Margate, FL 33063",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Three half courts, open to 10pm"
+      },
+      {
+        "name": "Centennial Park",
+        "address": "7800 Royal Palm Blvd, Margate, FL 33063",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "One full size ADA accessible court"
+      },
+      {
+        "name": "Andrews Field",
+        "address": "500 NW 65th Ave, Margate, FL 33063",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor courts and a quarter mile track, sharing an address with Margate Middle School"
+      }
     ],
     "local_paragraph": "No public high school sits inside Margate, and no indoor gym either. Every court in this city is outdoors. Margate Middle on NW 65th Avenue is where essentially every player here comes up, and Andrews Field shares its address, so the courts and the quarter mile track sit a walk from the school door. Firefighters Park on Rock Island Road runs until ten and hosts every Margate Youth Basketball League game and practice. Coral Gate Park has three half courts, Centennial one full ADA accessible court. Median age in Margate is 45, so the kids who play here play on purpose, and the league charges non-residents 150 dollars rather than turning them away.",
-    "landmarks": ["Margate Boulevard", "Calypso Cove at Royal Palm Park", "State Road 7"],
-    "nearest_neighbors": ["coconut-creek", "coral-springs", "tamarac"],
+    "landmarks": [
+      "Margate Boulevard",
+      "Calypso Cove at Royal Palm Park",
+      "State Road 7"
+    ],
+    "nearest_neighbors": [
+      "coconut-creek",
+      "coral-springs",
+      "tamarac"
+    ],
     "testimonial_slot": null,
     "meta_title": "Margate Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Margate players 11 to 18 at Firefighters Park, built around the city youth league and Margate Middle School."
+    "meta_description": "Basketball training for Margate players 11 to 18, built around the city youth league. Sessions run at the Salvation Army gym, Fort Lauderdale."
   },
   {
     "name": "Tamarac",
     "slug": "tamarac",
     "county": "Broward",
     "tier": 2,
-    "zip_codes": ["33321"],
+    "zip_codes": [
+      "33321"
+    ],
     "drive_time_from_base_min": null,
     "high_schools": [
-      { "name": "Millennium 6-12 Collegiate Academy", "type": "public", "note": "Serves the area from 5803 NW 94th Ave, grades six through twelve, 1,435 students" }
+      {
+        "name": "Millennium 6-12 Collegiate Academy",
+        "type": "public",
+        "note": "Serves the area from 5803 NW 94th Ave, grades six through twelve, 1,435 students"
+      }
     ],
     "middle_schools": [
-      { "name": "Millennium 6-12 Collegiate Academy", "type": "public" }
+      {
+        "name": "Millennium 6-12 Collegiate Academy",
+        "type": "public"
+      }
     ],
     "training_venues": [
-      { "name": "Tamarac Community Center", "address": "8601 W Commercial Blvd, Tamarac, FL", "type": "indoor city facility", "courts": "indoor", "note": "Indoor gymnasium that hosts city youth basketball, open to 8:30pm on weeknights" },
-      { "name": "Tamarac Sports Complex", "address": "9901 NW 77th St, Tamarac, FL 33321", "type": "city complex", "courts": "outdoor", "note": "Outdoor basketball courts sharing a gate with the skate park, tennis and ball fields" },
-      { "name": "Waters Edge Park", "address": "7508 NW 61st St, Tamarac, FL 33321", "type": "city park", "courts": "outdoor", "note": "Outdoor courts, open until dusk" }
+      {
+        "name": "Tamarac Community Center",
+        "address": "8601 W Commercial Blvd, Tamarac, FL",
+        "type": "indoor city facility",
+        "courts": "indoor",
+        "note": "Indoor gymnasium that hosts city youth basketball, open to 8:30pm on weeknights"
+      },
+      {
+        "name": "Tamarac Sports Complex",
+        "address": "9901 NW 77th St, Tamarac, FL 33321",
+        "type": "city complex",
+        "courts": "outdoor",
+        "note": "Outdoor basketball courts sharing a gate with the skate park, tennis and ball fields"
+      },
+      {
+        "name": "Waters Edge Park",
+        "address": "7508 NW 61st St, Tamarac, FL 33321",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor courts, open until dusk"
+      }
     ],
     "local_paragraph": "Millennium 6-12 Collegiate Academy on NW 94th Avenue is the only public school in Tamarac that carries a player to twelfth grade, 1,435 students across seven grades. After that, high school ball belongs to somebody else's city. The community center on West Commercial Boulevard holds the indoor gym, open to eight thirty on weeknights, and it hosts the city league at 90 dollars for residents and 110 for everybody else. A four week fundamentals class for ages seven through thirteen runs 40 dollars. Outdoors, the sports complex on NW 77th Street shares a gate with the skate park, and Waters Edge off NW 61st Street runs until dusk. Tamarac carries a large retirement population, so a player who wants real competition is usually driving to find it.",
-    "landmarks": ["Colony West Country Club", "Woodmont Country Club", "the Sunday farmers market at Veterans Park"],
-    "nearest_neighbors": ["margate", "coconut-creek", "coral-springs"],
+    "landmarks": [
+      "Colony West Country Club",
+      "Woodmont Country Club",
+      "the Sunday farmers market at Veterans Park"
+    ],
+    "nearest_neighbors": [
+      "margate",
+      "coconut-creek",
+      "coral-springs"
+    ],
     "testimonial_slot": null,
     "meta_title": "Tamarac Basketball Training | Fast Basketball",
-    "meta_description": "Private basketball training for Tamarac players 11 to 18 near the Tamarac Sports Complex and Millennium 6-12, indoor and outdoor courts."
+    "meta_description": "Basketball training for Tamarac players 11 to 18, including Millennium 6-12. Sessions run at the Salvation Army gym, Fort Lauderdale."
   }
 ]
