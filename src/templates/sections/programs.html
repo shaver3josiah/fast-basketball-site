@@ -11,7 +11,7 @@
          leave it closed (owner's call). The pill label and the fact beside it are hard-coded: to make them editable,
          hook a leaf span inside the summary, never the summary itself (applyTextEdits splices leaves). -->
     <details class="fold">
-      <summary><span class="btn btn-ghost fold-pill"><img class="fold-mark" src="/brand/icon.svg" width="24" height="24" alt="" decoding="async"><span class="fold-show">See pricing</span><span class="fold-hide">Hide pricing</span><svg class="fold-ic" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path class="fold-v" d="M6 1v10"/><path d="M1 6h10"/></svg></span><span class="fold-fact">$450 to $1,000 a term</span></summary>
+      <summary><span class="btn btn-ghost fold-pill"><img class="fold-mark" src="/brand/icon.svg" width="24" height="24" alt="" decoding="async"><span class="fold-show">See pricing</span><span class="fold-hide">Hide pricing</span><svg class="fold-ic" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path class="fold-v" d="M6 1v10"/><path d="M1 6h10"/></svg></span><span class="fold-fact"><span data-price="range-to">$450 to $1,000</span> a term</span></summary>
     <!-- Three parallel options, no stagger. Group amounts trace to docs/source-of-truth/fast-basketball-facts.md
          and must match PLANS in src/lib/plans.mjs, TRAINING_PAGES in build.mjs and OFFERS in
          src/lib/site-config.mjs. The evaluation and the 1-on-1 carry NO public price by Blake's
@@ -41,7 +41,7 @@
                admin panel could change what the page says but not what Stripe charges, which is
                decided by src/lib/plans.mjs plus scripts/stripe-catalog.mjs. A price change is a
                code change. The wording beside each figure stays editable. -->
-          <div class="prog-price"><span>$450&ndash;$1,000</span><small data-edit="prog.2.unit">Per Term</small></div>
+          <div class="prog-price"><span data-price="range">$450&ndash;$1,000</span><small data-edit="prog.2.unit">Per Term</small></div>
         </div>
         <!-- The number a parent can compare. A 3 month term holds 12 or 13 weekly sessions depending on
              the calendar, hence the range; "elsewhere" keeps it from reading as the 1-on-1 rate, which has
@@ -54,13 +54,13 @@
           <tbody>
             <tr>
               <th scope="row" data-edit="prog.2.r1">3 months</th>
-              <td><b>$450</b><span data-edit="prog.2.r1c1s">Pay in full and save $100, or $550 total with monthly payments</span></td>
-              <td><b>$650</b><span data-edit="prog.2.r1c2s">paid in full</span></td>
+              <td><b data-price="group-3m-1x:full">$450</b><span data-edit="prog.2.r1c1s">Pay in full and save $100, or $550 total with monthly payments</span></td>
+              <td><b data-price="group-3m-unlimited:full">$650</b><span data-edit="prog.2.r1c2s">paid in full</span></td>
             </tr>
             <tr>
               <th scope="row" data-edit="prog.2.r2">6 months</th>
-              <td><b>$800</b><span data-edit="prog.2.r2c1s">Pay in full and save $100, or $900 total at $150 a month</span></td>
-              <td><b>$1,000</b><span data-edit="prog.2.r2c2s">paid in full</span></td>
+              <td><b data-price="group-6m-1x:full">$800</b><span data-edit="prog.2.r2c1s">Pay in full and save $100, or $900 total at $150 a month</span></td>
+              <td><b data-price="group-6m-unlimited:full">$1,000</b><span data-edit="prog.2.r2c2s">paid in full</span></td>
             </tr>
           </tbody>
         </table>

@@ -1,7 +1,7 @@
 // Run: node --test src/lib/plans.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PLANS, catalog, checkoutSpec, payOptionsFor, totalCents, cancelNoticeBy, dollars, monthlyCents } from './plans.mjs';
+import { PLANS, catalog, checkoutSpec, payOptionsFor, totalCents, cancelNoticeBy, dollars, monthlyCents, applyOwnerPrices, validPriceCents } from './plans.mjs';
 
 test('catalog is 8 specs with unique lookup keys and whole-cent amounts', () => {
   const specs = catalog();
@@ -116,4 +116,45 @@ test('dollars formats cents the way the page prints them', () => {
   assert.equal(dollars(100000), '$1,000');
   assert.equal(dollars(18333), '$183.33');
   assert.equal(dollars(15000), '$150');
+});
+
+// Owner-edited prices. This is the payment path and the value arrives from a saved admin
+// draft, so the question each case asks is "what can a bad draft do", not "does the happy
+// path work".
+test('owner prices override only what is already priced, and only with whole sane cents', () => {
+  const fresh = () => ({
+    'eval': { label: 'E', cents: 5000, kind: 'once' },
+    'group-3m-1x': { label: 'G', kind: 'membership', totals: { full: 45000, monthly: 55000 } },
+    'group-3m-unlimited': { label: 'U', kind: 'membership', totals: { full: 65000 } }
+  });
+
+  // The happy path: a one-off and one leg of a membership.
+  let p = applyOwnerPrices(fresh(), { 'eval': { full: 6000 }, 'group-3m-1x': { full: 47500 } });
+  assert.equal(p['eval'].cents, 6000);
+  assert.equal(p['group-3m-1x'].totals.full, 47500);
+  assert.equal(p['group-3m-1x'].totals.monthly, 55000, 'an untouched pay option keeps its published figure');
+
+  // A pay option the plan does not offer stays not offered. Whether Unlimited can be paid
+  // monthly is an owner decision made in plans.mjs, not one made in a text box.
+  p = applyOwnerPrices(fresh(), { 'group-3m-unlimited': { monthly: 20000 } });
+  assert.equal(p['group-3m-unlimited'].totals.monthly, undefined);
+
+  // A plan that does not exist cannot be invented.
+  p = applyOwnerPrices(fresh(), { 'group-99y-free': { full: 100 } });
+  assert.ok(!Object.hasOwn(p, 'group-99y-free'));
+
+  // Everything a bad draft could carry, and none of it may land.
+  for (const bad of [0, -1, 50, 2000001, 45.5, '45000', null, undefined, NaN, Infinity, {}, []]) {
+    const q = applyOwnerPrices(fresh(), { 'group-3m-1x': { full: bad } });
+    assert.equal(q['group-3m-1x'].totals.full, 45000, 'a price of ' + JSON.stringify(bad) + ' must be ignored');
+  }
+
+  // Junk in place of the map itself must not throw the catalog at import time.
+  for (const bad of [null, undefined, 'nope', 7, []]) {
+    assert.doesNotThrow(() => applyOwnerPrices(fresh(), bad));
+  }
+  assert.equal(applyOwnerPrices(fresh(), { 'eval': null })['eval'].cents, 5000);
+
+  assert.equal(validPriceCents(100), true);
+  assert.equal(validPriceCents(99), false, 'a dollar is the floor: nothing on this site is free');
 });

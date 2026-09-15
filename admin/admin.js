@@ -145,6 +145,108 @@
       });
       root.appendChild(section);
     });
+    var pricing = renderPricing();
+    if(pricing) root.appendChild(pricing);
+  }
+
+  // The price fields. Built from /admin/plans.js (window.FB_PLANS), which build.mjs
+  // generates from src/lib/plans.mjs, so the panel never carries its own copy of the
+  // catalog and cannot offer a pay option a plan does not price.
+  //
+  // These write content.json's top-level `prices` in CENTS. plans.mjs reads that back and
+  // validates every entry before it overrides anything, so what is typed here can only
+  // ever change a figure that already exists.
+  function renderPricing(){
+    var PLANS = window.FB_PLANS;
+    if(!PLANS || !PLANS.plans) return null;
+    if(!state.content.prices || typeof state.content.prices !== 'object') state.content.prices = {};
+
+    var section = document.createElement('details');
+    section.className = 'field-group';
+    var summary = document.createElement('summary');
+    summary.appendChild(document.createTextNode('Prices'));
+    var count = cell('span', PLANS.plans.length + ' plans');
+    count.className = 'count';
+    summary.appendChild(count);
+    section.appendChild(summary);
+    var body = document.createElement('div');
+    body.className = 'group-body';
+    section.appendChild(body);
+
+    // Said where the fields are, not in a guide nobody has open: the website changes when
+    // you publish, the card reader does not change until the catalog is pushed.
+    var warn = document.createElement('p');
+    warn.className = 'price-warn';
+    warn.textContent = 'Changing a price here updates the pricing table, the pricing card and the '
+      + 'checkout page when you Publish. Two things it does NOT do, so tell your developer whenever '
+      + 'you change one: a card is still charged whatever Stripe has on file until they run the '
+      + 'catalog sync, and the sentences that talk about a price in words (the per-session line, the '
+      + 'published rates on the terms page, the group training page) are written by hand.';
+    body.appendChild(warn);
+
+    PLANS.plans.forEach(function(plan){
+      plan.payOptions.forEach(function(opt){
+        var wrap = document.createElement('div');
+        wrap.className = 'field';
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.inputMode = 'decimal';
+        input.id = 'price' + (++uid);
+        var label = document.createElement('label');
+        // Both evaluations carry the same label, because it is the product name Stripe
+        // shows the parent. The link builder tells them apart the same way.
+        var name = plan.key === 'eval-call' ? plan.label + ' (48-hour rate)' : plan.label;
+        label.textContent = name + (plan.payOptions.length > 1 ? ' · ' + opt.label : '');
+        label.htmlFor = input.id;
+
+        var saved = state.content.prices[plan.key] && state.content.prices[plan.key][opt.pay];
+        input.value = centsToInput(typeof saved === 'number' ? saved : opt.amountCents);
+
+        var note = document.createElement('p');
+        note.className = 'price-note';
+        note.textContent = opt.mode === 'subscription'
+          ? 'Charged ' + opt.amount + ' a month, ' + opt.iterations + ' times.'
+          : 'Charged once.';
+
+        input.addEventListener('input', function(){
+          var cents = inputToCents(input.value);
+          if(cents === null){
+            note.textContent = 'Type a dollar amount, like 450 or 183.33.';
+            wrap.classList.add('bad');
+            return;
+          }
+          wrap.classList.remove('bad');
+          note.textContent = 'Saves as ' + dollarsFromCents(cents) + '.';
+          if(!state.content.prices[plan.key]) state.content.prices[plan.key] = {};
+          state.content.prices[plan.key][opt.pay] = cents;
+          state.dirty = true;
+          setStatus('Unsaved', 'dirty');
+        });
+
+        wrap.appendChild(label);
+        wrap.appendChild(input);
+        wrap.appendChild(note);
+        body.appendChild(wrap);
+      });
+    });
+    return section;
+  }
+
+  // Dollars in the box, cents in the file. Stripe takes integers and so does plans.mjs;
+  // the panel is the only place a human should ever see a decimal point.
+  function centsToInput(cents){
+    return (cents % 100) ? (cents / 100).toFixed(2) : String(cents / 100);
+  }
+  function inputToCents(raw){
+    var text = String(raw).replace(/[$,\s]/g, '');
+    if(!/^\d+(\.\d{1,2})?$/.test(text)) return null;
+    var cents = Math.round(parseFloat(text) * 100);
+    return (cents >= 100 && cents <= 2000000) ? cents : null;
+  }
+  function dollarsFromCents(cents){
+    var whole = String(Math.floor(cents / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    var frac = cents % 100;
+    return '$' + whole + (frac ? '.' + String(frac).padStart(2, '0') : '');
   }
 
   function fileToDataUrl(file){

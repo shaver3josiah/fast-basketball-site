@@ -336,3 +336,14 @@ select{
 @media(prefers-reduced-motion:reduce){
   *{transition:none !important;}
 }
+
+/* --- prices ------------------------------------------------ */
+/* Stated where the fields are, not in a guide nobody has open. */
+.price-warn{
+  margin:0 0 18px;padding:12px 14px;
+  background:var(--red-tint);border:1px solid var(--red-line);
+  border-radius:10px;color:var(--fg-2);font-size:.92rem;
+}
+.price-note{margin:6px 0 0;color:var(--fg-3);font-size:.85rem;}
+.field.bad input{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,196,61,.2);}
+.field.bad .price-note{color:var(--amber);}

@@ -1,17 +1,17 @@
 {
-  "recorded": "2026-09-15T14:49:52.653Z",
+  "recorded": "2026-09-15T14:59:46.811Z",
   "files": {
     "404.html": {
       "sha": "5ff4f1b768314692",
       "bytes": 5729
     },
     "admin/admin.css": {
-      "sha": "7b190ddb7a18acfb",
-      "bytes": 13489
+      "sha": "77a428e3e784dc14",
+      "bytes": 13989
     },
     "admin/admin.js": {
-      "sha": "fa3582e9146b8704",
-      "bytes": 29452
+      "sha": "2234b68ceb0a4eb3",
+      "bytes": 34203
     },
     "admin/canvas-frame.html": {
       "sha": "bf2a2df9d8d7943c",
@@ -122,8 +122,8 @@
       "bytes": 7782
     },
     "index.html": {
-      "sha": "7f2bb19a7216e63f",
-      "bytes": 111525
+      "sha": "01068399f1a854dc",
+      "bytes": 111713
     },
     "js/contact-form.js": {
       "sha": "dc3c1ffe003a05aa",

@@ -22,6 +22,10 @@
 // deliberately absent. Blake schedules those by hand and bills them from the Stripe
 // dashboard (Invoicing), no site code needed.
 
+import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 export const PLANS = {
   'eval': {
     label: 'Evaluation Session',
@@ -65,6 +69,65 @@ export const PLANS = {
 
 // Page order, and the order the pay radios render in. A plan offers a subset of these.
 export const PAY_OPTIONS = ['full', 'monthly'];
+
+// ---------------------------------------------------------------- owner prices
+//
+// The amounts above are the defaults AND the fallback. content.json's top-level `prices`
+// overrides them, which is what makes the admin panel's Pricing section real: one number,
+// edited once, and /enroll, the training pages, /terms, the admin link builder and
+// scripts/stripe-catalog.mjs all read it, because they all read it through getPlan().
+//
+// What this CANNOT do is change what a card is charged. checkout.mjs sends Stripe a price
+// id resolved by lookup_key and Stripe's own price object holds the amount, so until
+// `npm run stripe:catalog` pushes these figures the site advertises one number and Stripe
+// would collect another. That is why the panel says so next to the fields, and why
+// `npm run stripe:check` exists to answer "do they agree", per mode.
+//
+// The validation is strict on purpose. This file is on the payment path and the value
+// arrives from a saved admin draft. Anything that is not a whole number of cents inside a
+// sane band, for a plan and a pay option that ALREADY EXIST, is ignored and the published
+// default stands. A bad draft cannot make a plan free, cannot invent a plan, and cannot
+// add a monthly price to a pay-in-full-only tier — that last one stays an owner decision
+// made in this file, not an arithmetic one made in a text box.
+const PRICE_MIN_CENTS = 100;
+const PRICE_MAX_CENTS = 2000000;
+
+export function validPriceCents(value) {
+  return Number.isInteger(value) && value >= PRICE_MIN_CENTS && value <= PRICE_MAX_CENTS;
+}
+
+export function applyOwnerPrices(plans, prices) {
+  if (!prices || typeof prices !== 'object') return plans;
+  for (const key of Object.keys(prices)) {
+    if (!Object.hasOwn(plans, key)) continue;
+    const plan = plans[key];
+    const entry = prices[key];
+    if (!entry || typeof entry !== 'object') continue;
+    if (plan.kind === 'once') {
+      if (validPriceCents(entry.full)) plan.cents = entry.full;
+      continue;
+    }
+    for (const pay of Object.keys(plan.totals)) {
+      if (validPriceCents(entry[pay])) plan.totals[pay] = entry[pay];
+    }
+  }
+  return plans;
+}
+
+// src/data/ is packed into the Cloud Function (scripts/functions-pack.mjs), and the copy
+// mirrors the original depth, so this relative path resolves in the build, the dev server
+// and the deployed function alike. Any failure at all leaves the defaults standing: a
+// catalog that throws at import would take checkout down with it.
+function readOwnerPrices() {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    return JSON.parse(readFileSync(resolve(here, '../data/content.json'), 'utf8')).prices || null;
+  } catch {
+    return null;
+  }
+}
+
+applyOwnerPrices(PLANS, readOwnerPrices());
 
 export const PAY_LABELS = {
   full: 'Pay in full',

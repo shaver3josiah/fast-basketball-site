@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, sta
 import { resolve, join, relative } from 'node:path';
 import { validateSuburbs, formatErrors } from './src/lib/validate-suburbs.mjs';
 import { generateResponsiveImages } from './scripts/responsive-images.mjs';
-import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, promoteFirstH2, scanBalancedElement, stripReviewBlock, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
+import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyPriceFigures, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, promoteFirstH2, scanBalancedElement, stripReviewBlock, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
 import { renderLockerPage } from './src/lib/locker-page.mjs';
 import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
@@ -336,7 +336,7 @@ function step9_playbookPage(sections, content, playbookTemplates, prelude) {
   // Full content.text rather than a hand-picked {pb.lede} map: applyTextEdits/applyAttrEdits
   // only touch markers that are actually present, so this also picks up any pb.* attr hooks
   // (e.g. a placeholder) without this call site needing to know their names in advance.
-  body = applyTextEdits(body, content.text);
+  body = applyPriceFigures(applyTextEdits(body, content.text));
   body = applyAttrEdits(body, content.text);
   body = fixPlaybookForm(body, playbookTemplates);
   body = applyGroupOrder(body, content.order);
@@ -368,7 +368,7 @@ function step10_contactPage(sections, content, prelude) {
   // Full content.text (was a hand-picked {ct.lede, ct.phone, ...} map): applyTextEdits
   // only touches markers actually present, so this also reaches any ct.* attr hooks with
   // no need to keep this list in step with contact.html.
-  body = applyTextEdits(body, content.text);
+  body = applyPriceFigures(applyTextEdits(body, content.text));
   body = applyAttrEdits(body, content.text);
   body = fixContactForm(body);
   body = fixContactAreaSelect(body, content);
@@ -376,7 +376,7 @@ function step10_contactPage(sections, content, prelude) {
   // The same faq.html the homepage renders, so the two pages can never drift; main.js wires
   // every .faq-q it finds and assigns faqA<n> ids per document. applyTextEdits here too: this
   // is the RAW template, so without it /contact/ would miss faq.N.q/a edits.
-  const faq = applyTextEdits(trimToFirstSectionClose(sections.faq), content.text);
+  const faq = applyPriceFigures(applyTextEdits(trimToFirstSectionClose(sections.faq), content.text));
   body = '<main id="main">\n' + promoteFirstH2(body) + faq + '</main>\n';
   // FAQ is the only registry group that can appear on this page (sliced in from
   // areas.html above) — applyGroupOrder runs over the whole assembled body so it reorders
@@ -758,7 +758,7 @@ function step11d_enrollPages(sections, content, prelude) {
   body += '<p class="trust-line">You finish on Stripe\'s secure checkout page. There you tick the terms box and type your full name to sign, exactly as the agreement asks. That typed name is your signature. Card details never touch this site.</p>\n';
   body += '</div>\n</fieldset>\n</form>\n';
 
-  body += applyTextEdits(finePrint(sections.programs), content.text);
+  body += applyPriceFigures(applyTextEdits(finePrint(sections.programs), content.text));
   body += '</div>\n</section>\n</main>\n';
 
   writeHtml(resolve(DIST, 'enroll', 'index.html'), buildSimplePage({

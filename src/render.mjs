@@ -8,6 +8,7 @@ import { CONTENT_GROUPS } from './lib/content-groups.mjs';
 // it and the nudge CSS below writes its media queries from it, so a phone nudged in the
 // editor lands in the same band of widths on the built page.
 import { BREAKPOINTS } from './lib/canvas-schema.mjs';
+import { PLANS, dollars } from './lib/plans.mjs';
 
 // Exported so the editor can list the hand-built sections without keeping its own copy
 // of this order — the drift that has already bitten twice in this codebase.
@@ -705,6 +706,59 @@ function nudgeMedia(bp) {
   return parts.length ? '@media ' + parts.join(' and ') : '';
 }
 
+// Figures the templates print but the CATALOG owns. The template declares which figure it
+// wants with data-price, exactly as data-edit declares which string, and the build fills it
+// in from plans.mjs.
+//
+// This is what makes the admin panel's price fields honest. Without it an owner could set
+// $475 in the panel and get $475 on /enroll — which renders from the catalog — while the
+// homepage grid, whose figures were typed into the template, still said $450. A checkout
+// page that disagrees with the price grid is worse than a price nobody can edit.
+//
+//   data-price="group-3m-1x:full"   one plan, one pay option
+//   data-price="range"              cheapest to dearest membership, en dash
+//   data-price="range-to"           the same pair, worded "to"
+//
+// Still owner copy, on purpose: the sentence beside a figure (prog.2.persession and the
+// prog.2.*s cells). Those carry reasoning about the number, not the number, and rewriting
+// English from a cents value is not something this should try to do.
+function membershipFulls() {
+  return Object.keys(PLANS)
+    .filter((k) => PLANS[k].kind === 'membership' && PLANS[k].totals && typeof PLANS[k].totals.full === 'number')
+    .map((k) => PLANS[k].totals.full)
+    .sort((a, b) => a - b);
+}
+
+export function priceFigure(spec) {
+  if (spec === 'range' || spec === 'range-to') {
+    const fulls = membershipFulls();
+    if (!fulls.length) return null;
+    const join = spec === 'range' ? '&ndash;' : ' to ';
+    return dollars(fulls[0]) + join + dollars(fulls[fulls.length - 1]);
+  }
+  const [key, pay] = String(spec).split(':');
+  const plan = Object.hasOwn(PLANS, key) ? PLANS[key] : null;
+  if (!plan) return null;
+  if (plan.kind === 'once') return typeof plan.cents === 'number' ? dollars(plan.cents) : null;
+  const cents = plan.totals && plan.totals[pay];
+  return typeof cents === 'number' ? dollars(cents) : null;
+}
+
+// An unknown spec leaves the template's own figure alone rather than blanking it: a page
+// that prints a stale price is recoverable, a page that prints nothing where a price goes
+// is not.
+export function applyPriceFigures(html) {
+  return String(html).replace(
+    // No backreference to the tag name: [^<]* already stops at the first tag after the
+    // opening one, and every hook is a leaf element holding nothing but the figure.
+    /(<[a-z]+(?=[\s>])[^>]*\sdata-price="([^"]+)"[^>]*>)([^<]*)(<\/[a-z]+>)/g,
+    (whole, open, spec, inner, close) => {
+      const figure = priceFigure(spec);
+      return figure === null ? whole : open + figure + close;
+    }
+  );
+}
+
 export function nudgeStyleTag(content) {
   const store = (content && content.nudges) || {};
   let css = '';
@@ -858,7 +912,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
     if (id === 'programs') body += sloganRibbon();
     if (id === 'areas') body += areaRibbon();
   }
-  body = applyTextEdits(body, content.text);
+  body = applyPriceFigures(applyTextEdits(body, content.text));
   body = applyAttrEdits(body, content.text);
   body = applyImageEdits(body, content.images, responsiveManifest);
   body = fixAreaLinks(body);
