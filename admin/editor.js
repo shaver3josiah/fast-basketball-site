@@ -27,6 +27,10 @@
     dirty: false,
     mode: 'canvas',
     legacyId: null,
+    // Which width the artboard is previewing, and whether a click on a field is a grab
+    // rather than an edit. Both are view state: neither is saved with the content.
+    device: 'desktop',
+    moveMode: false,
     activeField: null,
     // Values of the open legacy section's hook keys, taken the moment it was opened —
     // not part of undo history, just a baseline "Revert section" restores to.
@@ -86,6 +90,22 @@
   // visit. Guarding here rather than at each caller: they all route through these two.
   function currentPage() { return state.site ? state.site.pages[state.pageIndex] : null; }
   function currentSection() { var page = currentPage(); return page ? page.sections[state.sectionIndex] : null; }
+  // Device preview widths. The ids are BREAKPOINTS ids from canvas-schema.mjs, which is
+  // also what render.mjs writes the nudge media queries from, so a field moved on the
+  // phone artboard lands in the same band of widths on the built page. 390 is the
+  // iPhone 14/15/16 logical width; the phone band is everything up to 750.
+  var DEVICES = { desktop: { label: 'Desktop', width: 1440 }, mobile: { label: 'Phone', width: 390 } };
+  function deviceWidth() {
+    return state.device === 'mobile' ? DEVICES.mobile.width : (SCHEMA.designWidth || DEVICES.desktop.width);
+  }
+  // The offsets for the device currently on screen, created on first use so a content
+  // file that predates this feature needs no migration.
+  function nudgeSet() {
+    if (!state.content.nudges || typeof state.content.nudges !== 'object') state.content.nudges = {};
+    if (!state.content.nudges[state.device]) state.content.nudges[state.device] = {};
+    return state.content.nudges[state.device];
+  }
+
   function legacySection() {
     return (SCHEMA.legacySections || []).filter(function (s) { return s.id === state.legacyId; })[0] || null;
   }
@@ -1122,6 +1142,7 @@
         // there is nothing here to get subtly wrong.
         legacyFrameHeight = measureLegacyHeight();
         fitCanvas();
+        pushFrameMode();
         updateStageNotice([]);
       }).catch(function (err) {
         console.error('[legacy render]', err);
@@ -1197,6 +1218,15 @@
   var lastCoalesceAt = 0;
 
   function handleFrameEvent(e) {
+    if (e.type === 'nudge') {
+      var set = nudgeSet();
+      // Zero is not an offset, it is the absence of one. Storing it would leave dead
+      // entries in the file and a CSS rule that does nothing on every page.
+      if (!e.x && !e.y) delete set[e.key];
+      else set[e.key] = { x: e.x, y: e.y };
+      markDirty();
+      return;
+    }
     if (e.type === 'select') {
       // Idempotence guard. Cheap, and it means a stray echo can never cost the owner
       // the field they are typing in.
@@ -1948,13 +1978,18 @@
     var designHeight = state.mode === 'legacy' ? legacyFrameHeight : ((section && section.designHeight) || 720);
     frame.style.height = designHeight + 'px';
 
+    // The artboard is the device width, not the pane width — see the note above. A phone
+    // artboard is 390 wide and so never needs scaling down; a desktop one almost always does.
+    var width = deviceWidth();
+    frame.style.width = width + 'px';
+
     var available = wrap.clientWidth - 40;
-    var scale = Math.min(1, available / SCHEMA.designWidth);
+    var scale = Math.min(1, available / width);
     if (!isFinite(scale) || scale <= 0) scale = 1;
     scaler.style.transform = 'scale(' + scale + ')';
     // The scaled box still occupies its unscaled size in layout, so reserve the real
     // footprint or the pane scrolls to a height nothing is drawn in.
-    scaler.style.width = SCHEMA.designWidth * scale + 'px';
+    scaler.style.width = width * scale + 'px';
     scaler.style.height = designHeight * scale + 'px';
     $('zoomLabel').textContent = Math.round(scale * 100) + '%';
   }
@@ -1986,9 +2021,64 @@
       ? 'Live site  ·  ' + ((legacySection() || {}).label || 'section')
       : (currentPage() ? currentPage().path : '—') + '  ·  ' + (currentSection() ? currentSection().name : 'no section');
     renderInspector();
+    renderStageBar();
     renderCanvas();
     applyMotionPreview();
   }
+
+  // ------------------------------------------------------------------ stage controls
+
+  // The frame needs both halves after every load: which offsets are in play for the
+  // device on screen, and whether a click is a grab or an edit. Canvas sections get
+  // neither — they have Moveable, which is a real layout tool, not a nudge.
+  function pushFrameMode() {
+    if (!frameWin || !frameWin.CanvasFrame || !frameWin.CanvasFrame.setNudges) return;
+    var legacy = state.mode === 'legacy';
+    frameWin.CanvasFrame.setNudges(legacy ? nudgeSet() : {});
+    frameWin.CanvasFrame.setMove(legacy && state.moveMode);
+  }
+
+  function renderStageBar() {
+    Array.prototype.forEach.call(document.querySelectorAll('#deviceSwitch button'), function (b) {
+      b.setAttribute('aria-pressed', b.dataset.device === state.device ? 'true' : 'false');
+    });
+    var legacy = state.mode === 'legacy';
+    var toggle = $('moveToggle');
+    toggle.disabled = !legacy;
+    toggle.setAttribute('aria-pressed', state.moveMode && legacy ? 'true' : 'false');
+    toggle.textContent = state.moveMode && legacy ? 'Done moving' : 'Move fields';
+    $('stageNote').textContent = !legacy
+      ? 'Drag, resize and rotate anything on this canvas.'
+      : state.moveMode
+        ? 'Drag any field to nudge it. Saved for ' + (state.device === 'mobile' ? 'phone' : 'desktop') + ' widths only.'
+        : 'Click any text to edit it.';
+  }
+
+  $('moveToggle').addEventListener('click', function () {
+    state.moveMode = !state.moveMode;
+    pushFrameMode();
+    renderStageBar();
+  });
+
+  $('deviceSwitch').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-device]');
+    if (!btn || btn.dataset.device === state.device) return;
+    state.device = btn.dataset.device;
+    // Two passes. fitCanvas sets the new width, and reading scrollHeight straight after
+    // forces the frame to lay out again before we measure it — without that we would
+    // size the artboard from the width it just stopped being. The second pass catches
+    // the rest: a phone layout is far taller than the desktop one and the images and
+    // fonts inside it settle a frame later.
+    fitCanvas();
+    if (state.mode === 'legacy') legacyFrameHeight = measureLegacyHeight();
+    fitCanvas();
+    requestAnimationFrame(function () {
+      if (state.mode === 'legacy') legacyFrameHeight = measureLegacyHeight();
+      fitCanvas();
+    });
+    pushFrameMode();
+    renderStageBar();
+  });
 
   $('saveBtn').addEventListener('click', save);
   $('publishBtn').addEventListener('click', publish);

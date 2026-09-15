@@ -152,9 +152,15 @@
 
     <main class="ed-stage">
       <div class="ed-stage-bar">
-        <span class="ed-stage-label">Desktop 1440</span>
+        <div class="ed-devices" id="deviceSwitch" role="group" aria-label="Preview width">
+          <button type="button" class="ed-device" data-device="desktop" aria-pressed="true">Desktop</button>
+          <button type="button" class="ed-device" data-device="mobile" aria-pressed="false">Phone</button>
+        </div>
         <span class="ed-zoom" id="zoomLabel">100%</span>
-        <span class="ed-stage-note">Tablet and phone stack automatically. Per&#8209;breakpoint layout is next.</span>
+        <!-- Move mode is a mode, not a tool, so it is a switch you can see the state of
+             rather than a thing you hold a key down for. -->
+        <button type="button" class="ed-btn ed-move-toggle" id="moveToggle" aria-pressed="false">Move fields</button>
+        <span class="ed-stage-note" id="stageNote">Click any text to edit it.</span>
       </div>
       <!-- Section-level problems live here, above the canvas and always visible.
            They used to be written into the inspector's field list, which is

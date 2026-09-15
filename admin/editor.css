@@ -839,3 +839,39 @@ input[type="range"] { width: 100%; }
 .ed-thumbgrid-lg { grid-template-columns: repeat(auto-fill, 90px); max-height: 420px; }
 
 .ed-modal.ed-modal-wide { width: min(640px, calc(100vw - 32px)); }
+
+/* ---------------------------------------------------------------- device switch */
+
+.ed-devices { display: flex; gap: 2px; }
+.ed-device {
+  padding: 5px 12px;
+  border: 1px solid var(--ed-line-strong);
+  border-radius: var(--ed-r);
+  background: transparent;
+  color: var(--ed-ink-3);
+  font-family: var(--cond);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--ed-t), color var(--ed-t), border-color var(--ed-t);
+}
+.ed-device[aria-pressed="true"] {
+  background: var(--ed-accent-soft);
+  border-color: var(--ed-accent-line);
+  color: var(--ed-ink);
+}
+.ed-device:hover:not([aria-pressed="true"]) { background: var(--ed-hover); color: var(--ed-ink); }
+
+/* Pressed reads as filled, not tinted: move mode changes what a click DOES, which is a
+   bigger claim than "this tab is selected" and should not look the same as one. */
+.ed-move-toggle[aria-pressed="true"] {
+  background: var(--ed-accent);
+  border-color: var(--ed-accent);
+  color: #fff;
+}
+.ed-move-toggle[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--red-hot);
+  border-color: var(--red-hot);
+}

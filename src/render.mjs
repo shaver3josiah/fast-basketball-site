@@ -4,6 +4,10 @@ import { resolve } from 'node:path';
 import { absoluteUrl, AREA_SERVED, HEADLINE_AREAS, PROGRAM_PAGES, OFFERS } from './lib/site-config.mjs';
 import { faqPage, jsonLdScript, breadcrumbList, businessEntity } from './lib/structured-data.mjs';
 import { CONTENT_GROUPS } from './lib/content-groups.mjs';
+// One list of breakpoints for the whole product: the editor draws its device switch from
+// it and the nudge CSS below writes its media queries from it, so a phone nudged in the
+// editor lands in the same band of widths on the built page.
+import { BREAKPOINTS } from './lib/canvas-schema.mjs';
 
 // Exported so the editor can list the hand-built sections without keeping its own copy
 // of this order — the drift that has already bitten twice in this codebase.
@@ -668,6 +672,61 @@ function motionHtmlAttrs(motion) {
   return attrs;
 }
 
+// Owner nudges ride content.json's top-level `nudges`, the way `motion` does, keyed by
+// breakpoint id and then by the same data-edit / data-img hook the templates already
+// carry: { desktop: { "hero.lede": { x: 4, y: -8 } }, mobile: { ... } }.
+//
+// Relative offsets, never a transform. Two reasons, both learned the hard way elsewhere
+// in this codebase: the reveal animations already own `transform` on these elements and
+// a second one would silently win or lose depending on cascade order, and `transform`
+// does nothing at all on an inline box, which several hooks are. `position:relative`
+// with left/top works on inline boxes, composes with any transform, and — the point —
+// moves NOTHING else on the page. That is what "slight adjustment" has to mean: the
+// owner shifts one line and cannot reflow the section by accident.
+//
+// Inert by default. No nudges, no style tag, so every page that has never been nudged
+// emits exactly the bytes it emitted before this existed.
+const NUDGE_LIMIT = 200;
+// The key is interpolated into a CSS attribute selector, and it arrives from a saved
+// draft. Our own keys are all of this shape; anything else is dropped rather than
+// escaped, because there is no legitimate hook it could name.
+const NUDGE_KEY = /^[A-Za-z0-9_.:-]+$/;
+
+function nudgePx(value) {
+  const n = Math.round(Number(value) || 0);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(-NUDGE_LIMIT, Math.min(NUDGE_LIMIT, n));
+}
+
+function nudgeMedia(bp) {
+  const parts = [];
+  if (bp.min) parts.push('(min-width:' + bp.min + 'px)');
+  if (bp.max) parts.push('(max-width:' + bp.max + 'px)');
+  return parts.length ? '@media ' + parts.join(' and ') : '';
+}
+
+export function nudgeStyleTag(content) {
+  const store = (content && content.nudges) || {};
+  let css = '';
+  for (const bp of BREAKPOINTS) {
+    const set = store[bp.id];
+    if (!set || typeof set !== 'object') continue;
+    let body = '';
+    for (const key of Object.keys(set)) {
+      if (!NUDGE_KEY.test(key)) continue;
+      const x = nudgePx(set[key] && set[key].x);
+      const y = nudgePx(set[key] && set[key].y);
+      if (x === 0 && y === 0) continue;
+      body += '[data-edit="' + key + '"],[data-img="' + key + '"]' +
+        '{position:relative;left:' + x + 'px;top:' + y + 'px;}';
+    }
+    if (!body) continue;
+    const media = nudgeMedia(bp);
+    css += media ? media + '{' + body + '}' : body;
+  }
+  return css ? '<style>' + css + '</style>' : '';
+}
+
 // The motion object is owner data, not visitor data, but it still reaches a <script>
 // tag verbatim — JSON.stringify already quotes everything, so the only character that
 // could break out of the tag is a literal "<" (as in "</script>"), which < defuses
@@ -721,6 +780,10 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   // never read as undefined.
   head += '<style id="fb-motion">:root{--motion-speed:' + motion.speed + ';--t-ticker:' + motion.tickerSeconds + 's}</style>\n';
   head += motionScriptTag(motion) + '\n';
+  // Only when there is something to say. Appending the empty string plus a newline put
+  // one stray byte on all 23 pages, which is not what "inert by default" means.
+  const nudgeCss = nudgeStyleTag(content);
+  if (nudgeCss) head += nudgeCss + '\n';
   // The second selector is not redundant: .rcp-c.rise:not(.in) .rcp-shot img and
   // .coach-img.rise:not(.in) img hide the DESCENDANT image, so unhiding .rise alone
   // left the resume photos, the portrait and the badge invisible without JS.

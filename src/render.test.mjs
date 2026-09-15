@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict';
 import {
   applyTextEdits, applyAttrEdits, escapeHtml, escapeAttr,
-  buildHead, buildFooter, fixContactAreaSelect, deriveFaqPairs, fixAreaLinks } from './render.mjs';
+  buildHead, buildFooter, fixContactAreaSelect, deriveFaqPairs, fixAreaLinks, nudgeStyleTag } from './render.mjs';
 import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
 
 // ---------------------------------------------------------------- applyTextEdits: replace-all
@@ -171,6 +171,41 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
   const linked = fixAreaLinks(tiles);
   assert.ok(linked.includes('<a href="/basketball-training/coral-springs" class="area"><b data-edit="area.4.name">Coral Springs</b>'), 'paged city tile must link to its page: ' + linked);
   assert.ok(linked.includes('<a href="#contact" class="area"><b data-edit="area.1.name">Fort Lauderdale</b>'), 'headline city without a page must stay on #contact: ' + linked);
+}
+
+{
+  // Owner nudges. The rule that matters most is the first one: a site nobody has nudged
+  // must emit nothing at all, or every page grows bytes for a feature it is not using.
+  assert.equal(nudgeStyleTag({}), '', 'no nudges must emit no tag');
+  assert.equal(nudgeStyleTag({ nudges: {} }), '', 'an empty nudge map must emit no tag');
+  assert.equal(nudgeStyleTag({ nudges: { desktop: { 'hero.lede': { x: 0, y: 0 } } } }), '',
+    'a zero offset is the absence of an offset and must emit nothing');
+
+  const desktop = nudgeStyleTag({ nudges: { desktop: { 'hero.lede': { x: 4, y: -8 } } } });
+  assert.ok(desktop.includes('@media (min-width:1001px)'), 'desktop nudges belong to the desktop band: ' + desktop);
+  assert.ok(desktop.includes('[data-edit="hero.lede"],[data-img="hero.lede"]{position:relative;left:4px;top:-8px;}'),
+    'must offset by position, never transform, and cover both hook attributes: ' + desktop);
+
+  const phone = nudgeStyleTag({ nudges: { mobile: { 'ct.lede': { x: -3, y: 2 } } } });
+  assert.ok(phone.includes('@media (min-width:320px) and (max-width:750px)'), 'phone nudges take the phone band: ' + phone);
+
+  // Both at once, each in its own query, so one device never leaks into the other.
+  const both = nudgeStyleTag({ nudges: { desktop: { 'a.b': { x: 1, y: 0 } }, mobile: { 'a.b': { x: 9, y: 0 } } } });
+  assert.ok(both.includes('left:1px') && both.includes('left:9px'), 'both bands must be emitted: ' + both);
+
+  // The offset is clamped: this is a nudge tool, and a stray drag must not be able to
+  // throw a heading off the page.
+  const far = nudgeStyleTag({ nudges: { desktop: { 'a.b': { x: 99999, y: -99999 } } } });
+  assert.ok(far.includes('left:200px') && far.includes('top:-200px'), 'offsets must clamp to +/-200px: ' + far);
+
+  // The key is interpolated into a CSS attribute selector and arrives from a saved draft.
+  const hostile = nudgeStyleTag({ nudges: { desktop: { 'a"]{display:none}[x="': { x: 5, y: 0 } } } });
+  assert.equal(hostile, '', 'a key that is not a plain hook name must be dropped, not escaped');
+
+  // Junk in the file must not throw the whole build.
+  assert.equal(nudgeStyleTag({ nudges: { desktop: { 'a.b': null } } }), '', 'a null entry must be skipped');
+  assert.equal(nudgeStyleTag({ nudges: { nosuchdevice: { 'a.b': { x: 5, y: 5 } } } }), '',
+    'an unknown breakpoint id has no media query and must be ignored');
 }
 
 console.log('render: ok');

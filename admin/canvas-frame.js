@@ -26,7 +26,9 @@
     onEvent: function () {},
     load: load,
     select: select,
-    refresh: refresh
+    refresh: refresh,
+    setMove: setMove,
+    setNudges: setNudges
   };
   window.CanvasFrame = api;
 
@@ -109,6 +111,100 @@
   }
 
   function refresh() { if (moveable) moveable.updateRect(); }
+
+  // ------------------------------------------------------------------ move mode
+  //
+  // A hand-built section is real page markup laid out by CSS. There are no boxes to drag
+  // in the canvas sense, and turning one into an absolutely positioned element to allow
+  // it would throw away the responsive layout that section already has. What the owner
+  // actually wants is smaller than that: shift this one line a few pixels and move
+  // nothing else. So a drag here records a RELATIVE OFFSET against the field's own hook,
+  // which shifts the painted box and leaves every sibling exactly where it was.
+  //
+  // The offsets are per breakpoint. The parent decides which set is in play by handing a
+  // different map over when it switches device, so the same hook can sit differently on
+  // desktop and on a phone without either edit touching the other.
+  var moveMode = false;
+  var nudges = {};
+  var nudgeCss = null;
+  var NUDGE_LIMIT = 200;
+
+  function clampNudge(n) {
+    return Math.max(-NUDGE_LIMIT, Math.min(NUDGE_LIMIT, Math.round(n)));
+  }
+
+  function paintNudges() {
+    if (!nudgeCss) {
+      nudgeCss = document.createElement('style');
+      document.head.appendChild(nudgeCss);
+    }
+    var css = '';
+    Object.keys(nudges).forEach(function (key) {
+      var n = nudges[key];
+      if (!n || (!n.x && !n.y)) return;
+      css += '[data-edit="' + key + '"],[data-img="' + key + '"]' +
+        '{position:relative;left:' + n.x + 'px;top:' + n.y + 'px;}';
+    });
+    nudgeCss.textContent = css;
+  }
+
+  function setNudges(map) {
+    nudges = {};
+    Object.keys(map || {}).forEach(function (k) {
+      nudges[k] = { x: clampNudge((map[k] && map[k].x) || 0), y: clampNudge((map[k] && map[k].y) || 0) };
+    });
+    paintNudges();
+  }
+
+  function setMove(on) {
+    moveMode = !!on;
+    document.body.classList.toggle('is-moving', moveMode);
+    // Leaving a field mid-edit into move mode would leave a caret in a box that is about
+    // to become draggable, so hand the edit back first.
+    if (moveMode && inlineState && inlineState.node) inlineState.node.blur();
+  }
+
+  // Capture phase, so this runs before the per-field click handlers markLegacyFields()
+  // attached. In move mode those must not fire at all: a click is a grab, not an edit.
+  stage.addEventListener('mousedown', function (e) {
+    if (!moveMode || e.button !== 0) return;
+    var node = e.target.closest && e.target.closest('[data-edit],[data-img]');
+    if (!node) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    var key = node.getAttribute('data-edit') || node.getAttribute('data-img');
+    var from = nudges[key] || { x: 0, y: 0 };
+    var ox = e.clientX;
+    var oy = e.clientY;
+    var moved = false;
+
+    // No scale maths here on purpose. The artboard is scaled by a transform on an
+    // ancestor in the PARENT document, and the browser maps pointer coordinates back
+    // through that transform before reporting clientX/clientY inside this frame. The
+    // delta is already in page pixels, so the field tracks the cursor exactly; dividing
+    // by the zoom would make it drift away from the pointer.
+    function onMove(ev) {
+      moved = true;
+      nudges[key] = { x: clampNudge(from.x + (ev.clientX - ox)), y: clampNudge(from.y + (ev.clientY - oy)) };
+      paintNudges();
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      if (!moved) return;
+      emit('nudge', { key: key, x: nudges[key].x, y: nudges[key].y });
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, true);
+
+  stage.addEventListener('click', function (e) {
+    if (!moveMode) return;
+    if (!(e.target.closest && e.target.closest('[data-edit],[data-img]'))) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
 
   // The rendered height of an element as a percentage of its section. Text and buttons
   // store h:null because they size to their own content, so the parent has no number to
@@ -314,11 +410,25 @@
   function injectFieldStyles() {
     var style = document.createElement('style');
     style.textContent =
+      // The artboard is sized to the content, so this frame never needs to scroll — but
+      // the browser reserved a scrollbar anyway, and on the 390px phone artboard that
+      // left the page laying out at 375. A preview whose width is 15px off the device it
+      // claims to be is worse than no preview: that is exactly the band where a line
+      // either wraps or does not. Admin-only file, so no visitor sees this.
+      'html { scrollbar-width: none; }' +
+      'html::-webkit-scrollbar { display: none; }' +
       '.is-legacy .is-field-text { cursor: text; }' +
       '.is-legacy .is-field-img, .is-legacy .is-field-attr { cursor: pointer; }' +
       '.is-legacy .is-field-img:hover, .is-legacy .is-field-img:focus-visible,' +
       '.is-legacy .is-field-attr:hover, .is-legacy .is-field-attr:focus-visible { background: transparent; }' +
-      '.is-legacy [contenteditable] { cursor: text; outline: 2px solid var(--fast-red); outline-offset: 3px; background: rgba(212, 13, 31, 0.06); }';
+      '.is-legacy [contenteditable] { cursor: text; outline: 2px solid var(--fast-red); outline-offset: 3px; background: rgba(212, 13, 31, 0.06); }' +
+      // Move mode. Every field shows its own box, because the thing an owner most needs
+      // to know before dragging is where the box they are about to drag actually ends —
+      // a line of text gives no clue, and half of these hooks are inline spans.
+      '.is-moving [data-edit], .is-moving [data-img] { cursor: move; outline: 1px dashed rgba(255, 58, 65, .55); outline-offset: 2px; }' +
+      '.is-moving [data-edit]:hover, .is-moving [data-img]:hover { outline: 2px solid var(--fast-red); background: rgba(230, 12, 32, .08); }' +
+      // A drag that starts on text would otherwise select the text instead of moving it.
+      '.is-moving [data-edit], .is-moving [data-img] { -webkit-user-select: none; user-select: none; }';
     document.head.appendChild(style);
   }
 
