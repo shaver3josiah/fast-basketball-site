@@ -27,6 +27,21 @@
     setTimeout(function(){ toast.classList.remove('show'); }, 2600);
   }
 
+  // One line in the top bar carries the whole save story: amber while there is work
+  // the site has not seen, green once it has.
+  function setStatus(text, cls){
+    var el = document.getElementById('saveStatus');
+    el.textContent = text;
+    el.className = 'status' + (cls ? ' ' + cls : '');
+  }
+
+  var uid = 0;
+  function cell(tag, text){
+    var el = document.createElement(tag);
+    el.textContent = text == null ? '' : String(text);
+    return el;
+  }
+
   function api(path, options){
     options = options || {};
     options.credentials = 'same-origin';
@@ -75,6 +90,12 @@
       btn.classList.add('active');
       var name = btn.dataset.tab;
       document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.remove('hidden');
+      document.getElementById('tabTitle').textContent = btn.textContent;
+      // Save, Publish and the tools belong to Content and Photos. Leads has nothing to
+      // save, so hiding them there gives the list the bottom of the screen back. The
+      // class, not the hidden attribute: .actions sets its own display and would win.
+      document.getElementById('actionBar').classList.toggle('hidden', name === 'leads');
+      document.getElementById('tools').classList.toggle('hidden', name === 'leads');
       if(name === 'leads') loadLeads();
     });
   });
@@ -82,12 +103,23 @@
   function renderContentTab(){
     var root = document.getElementById('tabContent');
     root.innerHTML = '';
-    Object.keys(TEXT_GROUPS).forEach(function(group){
-      var section = document.createElement('div');
+    // One <details> per section rather than a wall of boxes: on a phone the whole list
+    // of sections fits on one screen and you open the one you came for. The first is
+    // open so the tab never loads looking empty.
+    Object.keys(TEXT_GROUPS).forEach(function(group, i){
+      var section = document.createElement('details');
       section.className = 'field-group';
-      var h2 = document.createElement('h2');
-      h2.textContent = group;
-      section.appendChild(h2);
+      section.open = i === 0;
+      var summary = document.createElement('summary');
+      summary.appendChild(document.createTextNode(group.charAt(0).toUpperCase() + group.slice(1)));
+      var n = TEXT_GROUPS[group].length;
+      var count = cell('span', n + (n === 1 ? ' field' : ' fields'));
+      count.className = 'count';
+      summary.appendChild(count);
+      section.appendChild(summary);
+      var body = document.createElement('div');
+      body.className = 'group-body';
+      section.appendChild(body);
       TEXT_GROUPS[group].forEach(function(key){
         var wrap = document.createElement('div');
         wrap.className = 'field';
@@ -96,15 +128,20 @@
         var value = state.content.text[key] || '';
         var input = document.createElement(value.length > 70 ? 'textarea' : 'input');
         if(input.tagName === 'INPUT') input.type = 'text';
+        // Size the box to the paragraph. A fixed-height textarea on a phone is a
+        // four-line peephole onto copy that has to be read whole to be edited.
+        else input.rows = Math.min(10, Math.ceil(value.length / 34) + 1);
+        input.id = 'f' + (++uid);
+        label.htmlFor = input.id;
         input.value = value;
         input.addEventListener('input', function(){
           state.content.text[key] = input.value;
           state.dirty = true;
-          document.getElementById('saveStatus').textContent = 'Unsaved changes';
+          setStatus('Unsaved', 'dirty');
         });
         wrap.appendChild(label);
         wrap.appendChild(input);
-        section.appendChild(wrap);
+        body.appendChild(wrap);
       });
       root.appendChild(section);
     });
@@ -123,33 +160,58 @@
     var card = document.createElement('div');
     card.className = 'photo-card';
 
-    var img = document.createElement('img');
-    img.src = image ? image.src : '';
-    card.appendChild(img);
+    // No <img> at all when there is nothing to show: an empty src re-requests the page
+    // and draws a broken-image glyph.
+    if(image && image.src){
+      var img = document.createElement('img');
+      img.src = image.src;
+      img.alt = '';
+      card.appendChild(img);
+    }
 
     var h3 = document.createElement('h3');
     h3.textContent = IMAGE_LABELS[key] || (isExtra ? 'Additional resume card' : key);
     card.appendChild(h3);
 
-    var altInput = document.createElement('input');
-    altInput.placeholder = 'Alt text (required, describes the photo for screen readers and search)';
-    altInput.value = image ? image.alt : '';
-    card.appendChild(altInput);
+    // Labels, not placeholders: a placeholder disappears the moment you type, which on a
+    // phone is exactly when you look up to check which box you are in.
+    function textField(labelText, value, placeholder){
+      var wrap = document.createElement('div');
+      wrap.className = 'field';
+      var input = document.createElement('input');
+      input.type = 'text';
+      input.id = 'p' + (++uid);
+      input.value = value || '';
+      input.placeholder = placeholder;
+      var label = document.createElement('label');
+      label.textContent = labelText;
+      label.htmlFor = input.id;
+      wrap.appendChild(label);
+      wrap.appendChild(input);
+      card.appendChild(wrap);
+      return input;
+    }
+    var altInput = textField('Alt text (required)', image && image.alt, 'One sentence saying what is in the photo');
+    var captionInput = textField('Caption', image && image.caption, 'Optional');
+    var sourceInput = textField('Source or date', image && image.source, 'Optional');
 
-    var captionInput = document.createElement('input');
-    captionInput.placeholder = 'Caption (optional)';
-    captionInput.value = image && image.caption ? image.caption : '';
-    card.appendChild(captionInput);
-
-    var sourceInput = document.createElement('input');
-    sourceInput.placeholder = 'Source or date (optional)';
-    sourceInput.value = image && image.source ? image.source : '';
-    card.appendChild(sourceInput);
-
+    // The native file button is a 20px target with no room for the file name. A label
+    // wrapping a hidden input is the same control at full width, and it can say which
+    // file is chosen.
+    var fileLabel = document.createElement('label');
+    fileLabel.className = 'file';
+    var fileName = cell('span', 'Choose a photo');
     var fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
-    card.appendChild(fileInput);
+    fileInput.addEventListener('change', function(){
+      var chosen = fileInput.files[0];
+      fileLabel.classList.toggle('has', !!chosen);
+      fileName.textContent = chosen ? chosen.name : 'Choose a photo';
+    });
+    fileLabel.appendChild(fileName);
+    fileLabel.appendChild(fileInput);
+    card.appendChild(fileLabel);
 
     var errorLine = document.createElement('div');
     errorLine.className = 'upload-error';
@@ -239,6 +301,22 @@
     'experience', 'team', 'position', 'goals', 'parentFirst', 'parentLast', 'relationship', 'homeCity', 'contactMethod',
     'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'paymentStatus', 'agreeName'];
 
+  // "3 hours ago" answers the only question a glance asks. Intl does the words; the exact
+  // timestamp stays on the element's title for when it matters.
+  var RTF = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+  var UNITS = [['year', 31536e6], ['month', 2592e6], ['week', 6048e5], ['day', 864e5], ['hour', 36e5], ['minute', 6e4]];
+  function ago(ts){
+    var d = new Date(ts);
+    if(isNaN(d.getTime())) return '';
+    var ms = d.getTime() - Date.now();
+    if(Math.abs(ms) < 6e4) return 'just now';
+    for(var i = 0; i < UNITS.length; i++){
+      if(Math.abs(ms) >= UNITS[i][1] || i === UNITS.length - 1){
+        return RTF.format(Math.round(ms / UNITS[i][1]), UNITS[i][0]);
+      }
+    }
+  }
+
   function detailsText(l){
     if(l.type === 'playbook') return (l.position || '') + ' / ' + (l.focus || '');
     if(l.type === 'enrollment'){
@@ -285,14 +363,18 @@
     var PLANS = window.FB_PLANS;
     if(!PLANS || !PLANS.plans) return null;
 
-    var box = document.createElement('div');
+    // Closed by default: the list of leads is what the tab is for, and this is a tool you
+    // reach for once a call is done.
+    var box = document.createElement('details');
     box.className = 'field-group link-builder';
-    var h2 = document.createElement('h2');
-    h2.textContent = 'Enrollment link';
-    box.appendChild(h2);
+    var summary = cell('summary', 'Enrollment link');
+    box.appendChild(summary);
+    var body = document.createElement('div');
+    body.className = 'group-body';
+    box.appendChild(body);
     var fields = document.createElement('div');
     fields.className = 'fields';
-    box.appendChild(fields);
+    body.appendChild(fields);
 
     function field(labelText, control){
       var wrap = document.createElement('div');
@@ -325,7 +407,7 @@
 
     var row = document.createElement('div');
     row.className = 'link-row';
-    box.appendChild(row);
+    body.appendChild(row);
     var out = document.createElement('input');
     out.className = 'link-out';
     out.readOnly = true;
@@ -337,7 +419,7 @@
     var help = document.createElement('p');
     help.className = 'help';
     help.textContent = "Paste this in the enrollment email. It never expires; Stripe's checkout opens when the parent clicks it. For the 48-hour evaluation rate pick Evaluation Session (48-hour rate).";
-    box.appendChild(help);
+    body.appendChild(help);
 
     function update(){
       var email = emailIn.value.trim();
@@ -383,13 +465,101 @@
     api('leads-list').then(function(res){ return res.json(); }).then(function(data){
       leadsCache = data.leads || [];
       status.remove();
-      renderLeadsTable(leadsCache);
+      renderLeads(leadsCache);
     }).catch(function(){
       status.textContent = 'Could not load leads.';
     });
   }
 
-  function renderLeadsTable(leads){
+  // One card per lead instead of a five-column table. A table on a 375px screen either
+  // scrolls sideways or crushes every column, and the column that lost most was Details,
+  // which is where the message a parent actually typed lives.
+  function leadCard(l){
+    var card = document.createElement('div');
+    card.className = 'lead';
+
+    var top = document.createElement('div');
+    top.className = 'lead-top';
+    var chip = cell('span', l.type || 'lead');
+    chip.className = 'chip ' + (l.type || '');
+    top.appendChild(chip);
+    if(l.livemode === false){
+      var test = cell('span', 'Test');
+      test.className = 'chip flag';
+      test.title = 'Came from Stripe test mode, not real money.';
+      top.appendChild(test);
+    }
+    if(l.spam){
+      var flagged = cell('span', 'Filtered');
+      flagged.className = 'chip flag';
+      flagged.title = 'The contact form filter flagged this (' + l.spam + '). It was stored but not emailed.';
+      top.appendChild(flagged);
+    }
+    var when = cell('span', ago(l.timestamp));
+    when.className = 'lead-when';
+    if(l.timestamp) when.title = new Date(l.timestamp).toLocaleString();
+    top.appendChild(when);
+    card.appendChild(top);
+
+    var name = cell('h3', l.name || '(no name given)');
+    name.className = 'lead-name';
+    card.appendChild(name);
+
+    function meta(label, value){
+      if(!value) return;
+      var p = document.createElement('p');
+      p.className = 'lead-meta';
+      p.appendChild(cell('b', label + ': '));
+      p.appendChild(document.createTextNode(String(value)));
+      card.appendChild(p);
+    }
+
+    if(l.type === 'enrollment'){
+      if(STATUS[l.paymentStatus]){
+        var st = cell('p', STATUS[l.paymentStatus]);
+        st.className = 'lead-status';
+        card.appendChild(st);
+      }
+      // Same wording as the CSV: a monthly amount is the first invoice, not the term.
+      meta('Plan', [l.planLabel || l.plan, PAY_LABELS[l.pay] || l.pay,
+        l.amount ? l.amount + (l.pay === 'monthly' ? ' a month' : '') : ''].filter(Boolean).join(SEP));
+      meta('Player', l.playerName ? l.playerName + (l.grade ? ', ' + l.grade : '') : '');
+      meta('Program', l.program);
+      meta('Notice by', l.cancelNoticeBy);
+    } else if(l.type === 'contact'){
+      meta('Area', l.area);
+      meta('Program', l.program);
+      if(l.message){
+        var msg = cell('div', l.message);
+        msg.className = 'lead-msg';
+        card.appendChild(msg);
+      }
+    } else if(l.type === 'playbook'){
+      meta('Position', l.position);
+      meta('Focus', l.focus);
+      meta('Grade', l.grade);
+    } else {
+      meta('Details', detailsText(l));
+    }
+
+    // Built here at runtime, and only ever the parent's own address or number, so the
+    // rule that keeps mailto:/sms: out of the site's HTML (bots scrape them) is untouched.
+    var links = document.createElement('div');
+    links.className = 'lead-links';
+    function link(href, text){
+      var a = document.createElement('a');
+      a.href = href;
+      a.textContent = text;
+      links.appendChild(a);
+    }
+    if(l.email) link('mailto:' + l.email, l.email);
+    if(l.phone) link('tel:' + String(l.phone).replace(/[^\d+]/g, ''), l.phone);
+    if(links.children.length) card.appendChild(links);
+
+    return card;
+  }
+
+  function renderLeads(leads){
     var root = document.getElementById('tabLeads');
     var shown = leads;
 
@@ -413,9 +583,9 @@
     bar.appendChild(exportBtn);
     root.appendChild(bar);
 
-    var tableWrap = document.createElement('div');
-    tableWrap.id = 'leadsTableWrap';
-    root.appendChild(tableWrap);
+    var listWrap = document.createElement('div');
+    listWrap.id = 'leadsList';
+    root.appendChild(listWrap);
 
     function applyFilters(){
       var q = filter.value.toLowerCase();
@@ -423,7 +593,7 @@
       shown = leads.filter(function(l){
         return (!type || l.type === type) && (!q || JSON.stringify(l).toLowerCase().indexOf(q) !== -1);
       });
-      buildTable(shown);
+      buildList(shown);
     }
     filter.addEventListener('input', applyFilters);
     typeSel.addEventListener('change', applyFilters);
@@ -435,40 +605,20 @@
       a.click();
     });
 
-    function cell(tag, text){
-      var el = document.createElement(tag);
-      el.textContent = text == null ? '' : String(text);
-      return el;
+    function buildList(rows){
+      listWrap.textContent = '';
+      var count = cell('p', rows.length + (rows.length === 1 ? ' lead' : ' leads'));
+      count.className = 'leads-count';
+      listWrap.appendChild(count);
+      if(!rows.length){
+        var empty = cell('p', leads.length ? 'Nothing matches that filter.' : 'No leads yet.');
+        empty.className = 'lead-meta';
+        listWrap.appendChild(empty);
+        return;
+      }
+      rows.forEach(function(l){ listWrap.appendChild(leadCard(l)); });
     }
-    function buildTable(rows){
-      tableWrap.textContent = '';
-      var table = document.createElement('table');
-      table.className = 'leads';
-      var thead = document.createElement('thead');
-      var hr = document.createElement('tr');
-      ['Date', 'Name', 'Email', 'Type', 'Details'].forEach(function(h){ hr.appendChild(cell('th', h)); });
-      thead.appendChild(hr);
-      table.appendChild(thead);
-      var tbody = document.createElement('tbody');
-      rows.forEach(function(l){
-        var tr = document.createElement('tr');
-        tr.appendChild(cell('td', l.timestamp ? new Date(l.timestamp).toLocaleString() : ''));
-        tr.appendChild(cell('td', l.name));
-        tr.appendChild(cell('td', l.email));
-        tr.appendChild(cell('td', l.type));
-        var details = cell('td', detailsText(l));
-        if(l.livemode === false){
-          var badge = cell('span', 'TEST');
-          badge.className = 'badge-test';
-          details.appendChild(badge);
-        }
-        tr.appendChild(details);
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-      tableWrap.appendChild(table);
-    }
-    buildTable(leads);
+    buildList(leads);
   }
 
   // Save and Publish are two buttons because they are two different things now. A save
@@ -493,10 +643,10 @@
       }
       state.dirty = false;
       if(result.data.draft){
-        document.getElementById('saveStatus').textContent = 'Saved as draft';
+        setStatus('Saved as draft', 'ok');
         say('Saved. Press Publish to put it on the site.');
       } else {
-        document.getElementById('saveStatus').textContent = 'Saved, rebuilding';
+        setStatus('Saved, rebuilding', 'ok');
         say('Saved. The site is rebuilding.');
       }
     }).catch(function(){
@@ -520,7 +670,7 @@
           say(result.data.error || 'Publish failed.');
           return;
         }
-        document.getElementById('saveStatus').textContent = result.data.local ? 'Live' : 'Published, rebuilding';
+        setStatus(result.data.local ? 'Live' : 'Published, rebuilding', 'ok');
         say(result.data.message || 'Published.');
       }).catch(function(){
         say('Could not reach the server. Nothing was published.');

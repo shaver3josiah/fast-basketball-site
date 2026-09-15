@@ -26,8 +26,15 @@ Screen one: the Content Admin, at yoursite.com/admin
 Works on a phone or a computer. Type the password you were given. You stay logged in
 for 12 hours.
 
+The panel is built for a phone. The three tabs and the Save and Publish buttons sit
+in a bar across the bottom, where your thumb already is; the bar tells you which tab
+you are on. The line at the top right says where your work stands: amber "Unsaved"
+while there is typing the site has not seen, green once it has.
+
 Content tab. Every piece of text on the site, grouped by the section of the page it
-sits in. Click into a box and type. Long passages get a bigger box automatically.
+sits in. Each section is a row you tap to open, with the number of boxes in it, so the
+whole site fits on one screen and you open the one you came for. Click into a box and
+type. Long passages get a bigger box automatically.
 
 Two things on this tab are on purpose. The dollar amounts on the pricing card cannot
 be typed over. They are locked to the prices Stripe actually charges, so the page and
@@ -44,24 +51,28 @@ so in plain words; crop closer to what it asks for and try again.
 "+ Add a New Resume Card" is the one exception: it goes live straight away and uses
 one of the month's rebuilds by itself.
 
-Leads tab. Three kinds of people show up here, newest first.
+Leads tab. Three kinds of people show up here, newest first, one card each. Every
+card is tagged with its kind and how long ago it arrived, and an email address or a
+phone number on a card is a button: tap it to write or to call.
 
-  Enrollment: a family who filled in the registration form. The row shows the plan,
+  Enrollment: a family who filled in the registration form. The card shows the plan,
   whether they are paying in full or monthly, the amount, the player's name and grade,
   the program, and a "notice by" date, which is the last day they can give written
   notice to stop before the term renews.
 
-  A row that starts with PENDING PAYMENT is a family who completed the whole form and
+  A card marked PENDING PAYMENT is a family who completed the whole form and
   has not paid yet. That is not a mistake and it is not an enrollment: their spot is
-  not reserved. If they never pay, the row turns to NO PAYMENT about a day later and
+  not reserved. If they never pay, the card turns to NO PAYMENT about a day later and
   you get an email about it, because a form filled in and abandoned is usually worth
   one text message. REPLACED means they started again in a new tab and paid there, so
   there is nothing to chase.
 
-  A yellow TEST tag means it came from Stripe's test mode, not real money.
+  A TEST tag means it came from Stripe's test mode, not real money. A FILTERED tag on
+  a contact card means the form's spam filter flagged it, so it was kept here but not
+  emailed to you. Read it: a real parent can trip a filter.
 
   Contact: someone who used the "Book Your Call" form. Name, email, phone, the area
-  they are in, and their message. These used to go only to your inbox; now they land
+  they are in, and their message in full on the card. These used to go only to your inbox; now they land
   here too, so nothing is lost if an email goes astray. You still get the email, and
   you can reply to it directly to reach the parent.
 
@@ -77,9 +88,11 @@ link into your enrollment email. It never expires: the secure checkout page open
 the parent clicks it, and they finish on Stripe, where they tick the terms box and type
 their full name to agree, exactly as the agreement asks.
 
-The other buttons. Preview opens a new tab showing the homepage exactly as your current
-edits would look, without publishing. Download Backup saves everything as one file to
-keep somewhere safe.
+The other buttons. Preview, beside Save and Publish at the bottom, opens a new tab
+showing the homepage exactly as your current edits would look, without publishing.
+"More", just above that bar, holds the three you need less often: Preview the Locker,
+Download backup, which saves everything as one file to keep somewhere safe, and a link
+to the full Editor.
 
 Screen two: the Editor, at yoursite.com/admin/editor.html
 

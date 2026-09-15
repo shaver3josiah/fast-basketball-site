@@ -2,49 +2,66 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0A0A0C">
 <title>Fast Basketball Content Admin</title>
+<link rel="icon" href="/brand/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon-180.png">
+<!-- The site's own font files. Unhashed on purpose: this page is no-store, and a
+     stale copy costs at worst a fallback face, never a broken panel. -->
+<link rel="stylesheet" href="/styles/fonts.css">
 <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
 <div id="loginScreen" class="screen">
-  <div class="login-card">
-    <h1>Fast Basketball</h1>
-    <p>Content Admin</p>
-    <form id="loginForm">
-      <label for="loginPassword">Password</label>
-      <input type="password" id="loginPassword" autocomplete="current-password" required>
-      <button type="submit">Log In</button>
-      <p id="loginError" class="error"></p>
-    </form>
-  </div>
+  <form class="login-card" id="loginForm">
+    <h1><img src="/brand/logo-white.svg" alt="Fast Basketball" width="250" height="106"></h1>
+    <p class="login-kicker">Content Admin</p>
+    <label for="loginPassword">Password</label>
+    <input type="password" id="loginPassword" autocomplete="current-password" required>
+    <button type="submit" class="btn primary">Log In</button>
+    <p id="loginError" class="error" role="alert"></p>
+  </form>
 </div>
 
 <div id="adminScreen" class="screen hidden">
   <header class="admin-top">
-    <h1>Content Admin</h1>
-    <nav>
-      <button data-tab="content" class="tab active">Content</button>
-      <button data-tab="photos" class="tab">Photos</button>
-      <button data-tab="leads" class="tab">Leads</button>
-    </nav>
-    <div class="admin-top-actions">
-      <span id="saveStatus"></span>
-      <button id="backupBtn">Download Backup</button>
-      <button id="previewBtn">Preview</button>
-      <button id="previewLockerBtn">Preview the Locker</button>
-      <button id="saveBtn">Save</button>
-      <button id="publishBtn" class="primary">Publish</button>
-    </div>
+    <img class="bar-mark" src="/brand/icon.svg" alt="" width="28" height="28">
+    <h1 id="tabTitle">Content</h1>
+    <span id="saveStatus" class="status"></span>
   </header>
 
   <main id="tabContent" class="tab-panel"></main>
   <main id="tabPhotos" class="tab-panel hidden"></main>
   <main id="tabLeads" class="tab-panel hidden"></main>
+
+  <!-- Outside the three panels because admin.js empties those on every render, and
+       these three buttons are wired up once at load. -->
+  <details class="tools" id="tools">
+    <summary>More</summary>
+    <div class="tools-body">
+      <button id="previewLockerBtn" class="btn" type="button">Preview the Locker</button>
+      <button id="backupBtn" class="btn" type="button">Download backup</button>
+      <a class="btn" href="/admin/editor.html">Full editor (computer)</a>
+    </div>
+  </details>
+
+  <div class="dock">
+    <div class="actions" id="actionBar">
+      <button id="previewBtn" class="btn" type="button">Preview</button>
+      <button id="saveBtn" class="btn" type="button">Save</button>
+      <button id="publishBtn" class="btn primary" type="button">Publish</button>
+    </div>
+    <nav class="tabbar">
+      <button data-tab="content" class="tab active" type="button">Content</button>
+      <button data-tab="photos" class="tab" type="button">Photos</button>
+      <button data-tab="leads" class="tab" type="button">Leads</button>
+    </nav>
+  </div>
 </div>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script src="/admin/schema.js"></script>
 <script src="/admin/plans.js"></script>
