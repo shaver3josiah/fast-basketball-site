@@ -43,6 +43,11 @@
     future: []
   };
 
+  // On a phone the 1440 artboard scales to about a quarter of size and nothing on it can
+  // be dragged accurately. The phone artboard is 390, which is very nearly 1:1 on the
+  // screen being held, so a narrow screen opens on that one.
+  if (window.matchMedia && window.matchMedia('(max-width: 900px)').matches) state.device = 'mobile';
+
   var frame = document.getElementById('canvasFrame');
   var frameWin = null;
   var renderTimer = null;
@@ -356,18 +361,49 @@
       } else {
         note.textContent = sec.hooks.length + (sec.hooks.length === 1 ? ' field' : ' fields');
         btn.setAttribute('aria-current', state.mode === 'legacy' && state.legacyId === sec.id ? 'true' : 'false');
-        btn.addEventListener('click', function () {
-          state.mode = 'legacy';
-          state.legacyId = sec.id;
-          state.selectedId = null;
-          state.legacySnapshot = snapshotLegacySection(sec);
-          renderAll();
-        });
+        btn.addEventListener('click', function () { openLegacy(sec); });
       }
       btn.appendChild(note);
       li.appendChild(btn);
       list.appendChild(li);
     });
+  }
+
+  // One way in to a hand-built section, used by the rail on a desktop and by the narrow
+  // screen's picker. Two copies of this drifted into existence once already elsewhere in
+  // this file; one function means the picker can never open a section differently.
+  function openLegacy(sec) {
+    state.mode = 'legacy';
+    state.legacyId = sec.id;
+    state.selectedId = null;
+    state.legacySnapshot = snapshotLegacySection(sec);
+    renderAll();
+  }
+
+  // The rails are hidden below 900px, so the section list comes back as a native select:
+  // it is one tap, it is already a wheel on a phone, and it needs no scroll container of
+  // its own. Only sections that actually carry fields are listed — the four that carry
+  // none are a dead end here, with no room to explain why.
+  function renderSectionPick() {
+    var pick = $('sectionPick');
+    var sections = (SCHEMA.legacySections || []).filter(function (s) { return s.hooks.length; });
+    if (pick.options.length !== sections.length + 1) {
+      pick.textContent = '';
+      // A placeholder, because the editor opens on the canvas lab and an empty select
+      // just looks broken. Disabled: it is a prompt, not a destination.
+      var head = document.createElement('option');
+      head.value = '';
+      head.textContent = 'Choose a section to edit';
+      head.disabled = true;
+      pick.appendChild(head);
+      sections.forEach(function (sec) {
+        var o = document.createElement('option');
+        o.value = sec.id;
+        o.textContent = sec.label;
+        pick.appendChild(o);
+      });
+    }
+    pick.value = state.mode === 'legacy' ? state.legacyId : '';
   }
 
   // ------------------------------------------------------------------ layers
@@ -2081,6 +2117,7 @@
       : (currentPage() ? currentPage().path : '—') + '  ·  ' + (currentSection() ? currentSection().name : 'no section');
     renderInspector();
     renderStageBar();
+    renderSectionPick();
     renderCanvas();
     applyMotionPreview();
   }
@@ -2112,6 +2149,11 @@
         ? 'Drag any field to nudge it. Saved for ' + (state.device === 'mobile' ? 'phone' : 'desktop') + ' widths only.'
         : 'Click any text to edit it.';
   }
+
+  $('sectionPick').addEventListener('change', function () {
+    var sec = (SCHEMA.legacySections || []).filter(function (s) { return s.id === $('sectionPick').value; })[0];
+    if (sec) openLegacy(sec);
+  });
 
   $('moveToggle').addEventListener('click', function () {
     state.moveMode = !state.moveMode;

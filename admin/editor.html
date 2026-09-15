@@ -151,7 +151,11 @@
     </aside>
 
     <main class="ed-stage">
+      <!-- Narrow screens only (CSS). The rails are hidden there, so the section list has
+           to come back as something that fits one column. -->
+      <p class="ed-narrow-note">Full editing needs a computer. Here you can move fields and save.</p>
       <div class="ed-stage-bar">
+        <select class="ed-section-pick" id="sectionPick" aria-label="Section to edit"></select>
         <div class="ed-devices" id="deviceSwitch" role="group" aria-label="Preview width">
           <button type="button" class="ed-device" data-device="desktop" aria-pressed="true">Desktop</button>
           <button type="button" class="ed-device" data-device="mobile" aria-pressed="false">Phone</button>

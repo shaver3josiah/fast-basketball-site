@@ -166,8 +166,14 @@
 
   // Capture phase, so this runs before the per-field click handlers markLegacyFields()
   // attached. In move mode those must not fire at all: a click is a grab, not an edit.
-  stage.addEventListener('mousedown', function (e) {
-    if (!moveMode || e.button !== 0) return;
+  //
+  // Pointer events, not mouse events. One code path covers a mouse, a finger and a pen,
+  // which is less code than mouse plus touch handlers and is the only way this works on a
+  // phone or a touchscreen laptop at all — a finger fires no mousedown until it has already
+  // decided the gesture was a tap. setPointerCapture then keeps the whole drag on the node
+  // that started it, so sliding off the element mid-drag does not silently drop the gesture.
+  stage.addEventListener('pointerdown', function (e) {
+    if (!moveMode || !e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
     var node = e.target.closest && e.target.closest('[data-edit],[data-img]');
     if (!node) return;
     e.preventDefault();
@@ -179,24 +185,33 @@
     var oy = e.clientY;
     var moved = false;
 
-    // No scale maths here on purpose. The artboard is scaled by a transform on an
-    // ancestor in the PARENT document, and the browser maps pointer coordinates back
-    // through that transform before reporting clientX/clientY inside this frame. The
-    // delta is already in page pixels, so the field tracks the cursor exactly; dividing
-    // by the zoom would make it drift away from the pointer.
+    try { node.setPointerCapture(e.pointerId); } catch (err) { /* not captureable; the
+      document listeners below still see the move */ }
+
+    // No scale maths here on purpose. The artboard is scaled by a transform on an ancestor
+    // in the PARENT document, and the browser maps pointer coordinates back through that
+    // transform before reporting clientX/clientY inside this frame. The delta is already in
+    // page pixels, so the field tracks the pointer exactly; dividing by the zoom would make
+    // it drift away.
     function onMove(ev) {
+      if (ev.pointerId !== e.pointerId) return;
       moved = true;
       nudges[key] = { x: clampNudge(from.x + (ev.clientX - ox)), y: clampNudge(from.y + (ev.clientY - oy)) };
       paintNudges();
     }
-    function onUp() {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+    function onUp(ev) {
+      if (ev.pointerId !== e.pointerId) return;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
       if (!moved) return;
       emit('nudge', { key: key, x: nudges[key].x, y: nudges[key].y });
     }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    // A finger can have its gesture taken away by the browser (a scroll, a system edge
+    // swipe). Without this the listeners would leak and the next tap would keep dragging.
+    document.addEventListener('pointercancel', onUp);
   }, true);
 
   stage.addEventListener('click', function (e) {
@@ -449,7 +464,7 @@
       // Move mode. Every field shows its own box, because the thing an owner most needs
       // to know before dragging is where the box they are about to drag actually ends —
       // a line of text gives no clue, and half of these hooks are inline spans.
-      '.is-moving [data-edit], .is-moving [data-img] { cursor: move; outline: 1px dashed rgba(255, 58, 65, .55); outline-offset: 2px; }' +
+      '.is-moving [data-edit], .is-moving [data-img] { cursor: move; outline: 1px dashed rgba(255, 58, 65, .55); outline-offset: 2px; touch-action: none; }' +
       '.is-moving [data-edit]:hover, .is-moving [data-img]:hover { outline: 2px solid var(--fast-red); background: rgba(230, 12, 32, .08); }' +
       // A drag that starts on text would otherwise select the text instead of moving it.
       '.is-moving [data-edit], .is-moving [data-img] { -webkit-user-select: none; user-select: none; }';

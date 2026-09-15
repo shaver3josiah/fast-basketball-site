@@ -514,22 +514,59 @@ input:focus, textarea:focus, select:focus {
 .ed-toast.is-on { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
 .ed-toast[data-tone="error"] { border-left-color: var(--ed-danger); }
 
+.ed-narrow-note {
+  display: none;
+  padding: 10px 12px;
+  background: var(--ed-accent-soft);
+  border-bottom: 1px solid var(--ed-accent-line);
+  font-size: 0.8125rem;
+  color: var(--ed-ink-2);
+}
+.ed-section-pick {
+  display: none;
+  width: 100%;
+  min-height: 44px;
+  font-size: 1rem;
+}
+
 /* ---------------------------------------------------------------- narrow */
 
-/* The editor is a desktop tool. Below this the three panes stop being usable side by
-   side, so say that plainly instead of shipping a cramped layout that half works. */
+/* The full editor is a desktop tool: three panes side by side, drag-and-resize on a
+   1440px artboard, a layers list. None of that survives a phone and it is not worth
+   pretending otherwise.
+   MOVE MODE does survive, though, and that is the whole reason this stops being a wall.
+   The phone artboard is 390px, which at 1:1 is very nearly the width of the screen the
+   owner is holding, so nudging a field with a thumb is genuinely the same gesture it is
+   with a mouse. So: hide the rails, keep the stage, and give the section list back as a
+   picker, because the one thing the stage cannot do without is choosing what to edit. */
 @media (max-width: 900px) {
   .ed-body { grid-template-columns: 1fr; }
   .ed-rail, .ed-inspector { display: none; }
-  .ed-stage::before {
-    content: 'The canvas editor needs a wider screen. Open it on a laptop or desktop.';
-    display: block;
-    padding: 16px;
-    background: var(--ed-accent-soft);
-    border-bottom: 1px solid var(--ed-accent-line);
-    font-weight: 600;
+  .ed-narrow-note { display: block; }
+  .ed-section-pick { display: block; }
+  .ed-stage-bar {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
   }
+  .ed-stage-note, .ed-zoom { display: none; }
+  .ed-frame-wrap { padding: 10px; }
+  /* Thumb targets, not pointer targets. */
+  .ed-device, .ed-move-toggle { min-height: 44px; }
+  .ed-top { padding-left: 12px; padding-right: 12px; }
+  .ed-top .ed-btn { min-height: 44px; }
+  /* Undo/Redo are for a keyboard workflow and cost two of the four slots on this bar. */
+  #undoBtn, #redoBtn { display: none; }
+  /* The crumb and the status line were pushing the top bar 56px past the screen. The
+     picker below already names the section, so the crumb is saying it twice. */
+  .ed-crumb, .ed-status { display: none; }
+  /* The wordmark goes too: it was the last 2px pushing Save off the right edge. The icon
+     beside it carries the brand, which is what the design system says to use below the
+     lockup's 250px minimum anyway. */
+  .ed-mark { display: none; }
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 1ms !important; }

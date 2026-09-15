@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-15T15:39:22.817Z",
+  "recorded": "2026-09-15T15:48:01.558Z",
   "files": {
     "404.html": {
       "sha": "5ff4f1b768314692",
@@ -18,24 +18,24 @@
       "bytes": 4814
     },
     "admin/canvas-frame.js": {
-      "sha": "91a4c3e87780c7b7",
-      "bytes": 30657
+      "sha": "08f30b70699b93eb",
+      "bytes": 31717
     },
     "admin/canvas-schema.js": {
       "sha": "d3f279af7e230c35",
       "bytes": 20930
     },
     "admin/editor.css": {
-      "sha": "12630a9ea6ed1c3c",
-      "bytes": 26757
+      "sha": "560da4bec53438f9",
+      "bytes": 28292
     },
     "admin/editor.html": {
-      "sha": "dce2ac61721f6876",
-      "bytes": 12197
+      "sha": "9a82e9877ed2bc6f",
+      "bytes": 12548
     },
     "admin/editor.js": {
-      "sha": "38e650f7107b637a",
-      "bytes": 96532
+      "sha": "d0eb376f9c56bc22",
+      "bytes": 98572
     },
     "admin/index.html": {
       "sha": "1660163f09faac71",
