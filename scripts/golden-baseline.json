@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-14T22:41:04.572Z",
+  "recorded": "2026-09-15T14:09:30.229Z",
   "files": {
     "404.html": {
       "sha": "5ff4f1b768314692",
@@ -34,8 +34,8 @@
       "bytes": 11175
     },
     "admin/editor.js": {
-      "sha": "01d5d4558707b6c7",
-      "bytes": 87909
+      "sha": "a2bf030ee2ead670",
+      "bytes": 89408
     },
     "admin/index.html": {
       "sha": "f4417189fa0d0fc0",

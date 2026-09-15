@@ -81,8 +81,14 @@
 
   function clone(v) { return JSON.parse(JSON.stringify(v)); }
 
-  function currentPage() { return state.site.pages[state.pageIndex]; }
-  function currentSection() { return currentPage().sections[state.sectionIndex]; }
+  // Null until admin-site answers. fitCanvas() runs before that on a cold load and used to
+  // throw "Cannot read properties of null (reading 'pages')" behind the login card on every
+  // visit. Guarding here rather than at each caller: they all route through these two.
+  function currentPage() { return state.site ? state.site.pages[state.pageIndex] : null; }
+  function currentSection() { var page = currentPage(); return page ? page.sections[state.sectionIndex] : null; }
+  function legacySection() {
+    return (SCHEMA.legacySections || []).filter(function (s) { return s.id === state.legacyId; })[0] || null;
+  }
 
   function selectedElement() {
     if (!state.selectedId) return null;
@@ -1407,7 +1413,7 @@
     state.activeField = { key: key, kind: kind, groupId: groupId, gi: gi, excludedReason: excludedReason };
     $('inspectorEmpty').hidden = true;
     $('inspector').hidden = false;
-    $('inspType').textContent = (SCHEMA.legacySections.find(function (s) { return s.id === state.legacyId; }) || {}).label || 'Section';
+    $('inspType').textContent = (legacySection() || {}).label || 'Section';
     $('deleteBtn').hidden = true;
     // Neither delete nor duplicate means anything for a hand-built section's fields.
     $('duplicateBtn').hidden = true;
@@ -1875,7 +1881,15 @@
     var m = motion();
     var setOff = function (attr, off) { if (off) docEl.setAttribute(attr, 'off'); else docEl.removeAttribute(attr); };
     setOff('data-motion', m.enabled === false);
-    setOff('data-intro', m.intro === false);
+    // The intro is a one-shot overlay that main.js takes down, and main.js is deliberately
+    // not in this frame. So an intro that is switched ON never leaves the canvas: it sits
+    // position:fixed at z 500 over the whole artboard, and the hero section's 52 fields
+    // with it, which made the busiest section on the site impossible to edit here. base.css
+    // already hides it for html[data-intro="off"], so the canvas always shows the page as
+    // it looks once the intro has played. The switch still decides what a visitor gets; it
+    // just cannot blind the editor. The cost is the two hooks inside the overlay,
+    // intro.sub and intro.skip, which are not clickable on the canvas.
+    docEl.setAttribute('data-intro', 'off');
     setOff('data-ticker', m.ticker === false);
     setOff('data-reveals', m.reveals === false);
     setOff('data-night', m.nightAmbient === false);
@@ -1965,7 +1979,12 @@
     renderMedia();
     renderSite();
     fitCanvas();
-    $('crumb').textContent = currentPage().path + '  ·  ' + (currentSection() ? currentSection().name : 'no section');
+    // In legacy mode the canvas is showing a live-site section, not a canvas page. The
+    // crumb kept naming whichever canvas page was open last, so it said "/lab · Lab hero"
+    // while you were editing Coach, and nothing on screen told you otherwise.
+    $('crumb').textContent = state.mode === 'legacy'
+      ? 'Live site  ·  ' + ((legacySection() || {}).label || 'section')
+      : (currentPage() ? currentPage().path : '—') + '  ·  ' + (currentSection() ? currentSection().name : 'no section');
     renderInspector();
     renderCanvas();
     applyMotionPreview();
