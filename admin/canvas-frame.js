@@ -337,6 +337,30 @@
       }
     });
 
+    // data-price hooks a figure the CATALOG owns, not a string. There is nothing to type
+    // into on the page, because the number has to stay whatever Stripe will be told to
+    // charge, so a click opens the price field in the inspector instead of a caret. It is
+    // wired here rather than left alone because "click the thing you want to change" is
+    // the only rule this editor has, and a price that ignored a click broke it.
+    Array.prototype.forEach.call(stage.querySelectorAll('[data-price]'), function (node) {
+      var spec = node.getAttribute('data-price') || '';
+      node.classList.add('is-field', 'is-field-price');
+      node.setAttribute('tabindex', '0');
+      node.setAttribute('role', 'button');
+      node.setAttribute('aria-label', 'Change price: ' + spec);
+      node.addEventListener('click', function (e) {
+        if (moveMode) return;
+        e.preventDefault();
+        e.stopPropagation();
+        emit('field', { key: spec, kind: 'price' });
+      });
+      node.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        emit('field', { key: spec, kind: 'price' });
+      });
+    });
+
     // data-edit-attr hooks a form placeholder, not a text node — there is nothing to
     // place a caret into, so these open the inspector like an image does rather than
     // going inline.
@@ -418,7 +442,7 @@
       'html { scrollbar-width: none; }' +
       'html::-webkit-scrollbar { display: none; }' +
       '.is-legacy .is-field-text { cursor: text; }' +
-      '.is-legacy .is-field-img, .is-legacy .is-field-attr { cursor: pointer; }' +
+      '.is-legacy .is-field-img, .is-legacy .is-field-attr, .is-legacy .is-field-price { cursor: pointer; }' +
       '.is-legacy .is-field-img:hover, .is-legacy .is-field-img:focus-visible,' +
       '.is-legacy .is-field-attr:hover, .is-legacy .is-field-attr:focus-visible { background: transparent; }' +
       '.is-legacy [contenteditable] { cursor: text; outline: 2px solid var(--fast-red); outline-offset: 3px; background: rgba(212, 13, 31, 0.06); }' +

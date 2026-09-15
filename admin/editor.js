@@ -1453,6 +1453,35 @@
     var box = $('inspFields');
     box.innerHTML = '';
 
+    // A price figure. The catalog owns the number, so there is no caret on the page: the
+    // field lives here and writes content.prices in cents, exactly as the content panel's
+    // Prices section does. Same file, same validation in plans.mjs, either door.
+    if (kind === 'price') {
+      var plan = priceSpec(key);
+      if (!plan) {
+        var gone = document.createElement('p');
+        gone.className = 'ed-help';
+        gone.textContent = 'This figure is worked out from the other prices, so there is nothing to type here. Change the plan prices and it follows.';
+        box.appendChild(gone);
+        return;
+      }
+      box.appendChild(fieldRow('Price, in dollars', centsToInput(currentPriceCents(plan)), function (v) {
+        var cents = inputToCents(v);
+        if (cents === null) return;
+        if (!state.content.prices || typeof state.content.prices !== 'object') state.content.prices = {};
+        if (!state.content.prices[plan.key]) state.content.prices[plan.key] = {};
+        state.content.prices[plan.key][plan.pay] = cents;
+        markDirty();
+      }, true));
+      var note = document.createElement('p');
+      note.className = 'ed-help';
+      note.textContent = 'Publishing changes the pricing table, the pricing card and the checkout page. '
+        + 'It does not change what a card is charged until your developer runs the Stripe sync, and the '
+        + 'sentences that mention a price in words are still written by hand.';
+      box.appendChild(note);
+      return;
+    }
+
     if (kind === 'image') {
       var img = (state.content.images || {})[key] || {};
 
@@ -1503,6 +1532,36 @@
     if (!state.activeField || state.activeField.key !== key) return;
     var input = $('inspFields').querySelector('textarea, input[type="text"]');
     if (input && document.activeElement !== input) input.value = value;
+  }
+
+  // data-price is "plan:pay", or a derived figure like "range" that is worked out from the
+  // others and so has nothing to type into.
+  function priceSpec(spec) {
+    var parts = String(spec).split(':');
+    if (parts.length !== 2) return null;
+    var PLANS = window.FB_PLANS;
+    if (!PLANS || !PLANS.plans) return null;
+    var plan = PLANS.plans.filter(function (p) { return p.key === parts[0]; })[0];
+    if (!plan) return null;
+    var opt = plan.payOptions.filter(function (o) { return o.pay === parts[1]; })[0];
+    if (!opt) return null;
+    return { key: parts[0], pay: parts[1], amountCents: opt.amountCents };
+  }
+
+  function currentPriceCents(plan) {
+    var saved = state.content.prices && state.content.prices[plan.key] && state.content.prices[plan.key][plan.pay];
+    return typeof saved === 'number' ? saved : plan.amountCents;
+  }
+
+  // Dollars in the box, cents in the file, same rules the content panel uses.
+  function centsToInput(cents) {
+    return (cents % 100) ? (cents / 100).toFixed(2) : String(cents / 100);
+  }
+  function inputToCents(raw) {
+    var text = String(raw).replace(/[$,\s]/g, '');
+    if (!/^\d+(\.\d{1,2})?$/.test(text)) return null;
+    var cents = Math.round(parseFloat(text) * 100);
+    return (cents >= 100 && cents <= 2000000) ? cents : null;
   }
 
   function fieldRow(label, value, onInput, primary, multiline) {
