@@ -34,7 +34,7 @@ function sign(value, secret) {
 // this can never drop Secure on a deployed site.
 const SECURE = process.env.FB_LOCAL === 'true' ? '' : ' Secure;';
 
-export function createSessionCookie(ttlMs) {
+export function createSessionCookie(ttlMs, persist = true) {
   const secret = process.env.ADMIN_SESSION_SECRET;
   if (!secret) throw new Error('ADMIN_SESSION_SECRET is not configured');
   const life = Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : SESSION_DURATIONS[DEFAULT_DURATION];
@@ -42,7 +42,11 @@ export function createSessionCookie(ttlMs) {
   const value = String(expires);
   const signature = sign(value, secret);
   const cookieValue = value + '.' + signature;
-  return COOKIE_NAME + '=' + cookieValue + '; Path=/; HttpOnly;' + SECURE + ' SameSite=Strict; Max-Age=' + Math.floor(life / 1000);
+  // persist=false makes a browser-session cookie: no Max-Age, so the browser drops it when the
+  // session ends (the "This visit" option). The signed expiry inside still caps it server-side
+  // either way, so a session cookie a browser chooses to keep alive still dies on schedule.
+  const age = persist ? '; Max-Age=' + Math.floor(life / 1000) : '';
+  return COOKIE_NAME + '=' + cookieValue + '; Path=/; HttpOnly;' + SECURE + ' SameSite=Strict' + age;
 }
 
 export function clearSessionCookie() {

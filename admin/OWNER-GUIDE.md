@@ -24,10 +24,17 @@ If you press Publish with unsaved changes, it asks first. Only saved work goes l
 Screen one: the Content Admin, at yoursite.com/admin
 
 Works on a phone or a computer. There is no password any more. You pick how long to stay
-signed in (this visit, a day, a week, or 30 days), then press "Email me a sign-in code."
-A 6-digit code arrives in your email (blake@fast-basketball.com) within a few seconds and
-is good for 10 minutes. Type it in and you are in. When your chosen time is up, you are
-signed out automatically and just get a new code to come back.
+signed in, then press "Email me a sign-in code." A 6-digit code arrives in your email
+(blake@fast-basketball.com) within a few seconds and is good for 10 minutes. Type it in and
+you are in. When your chosen time is up, you are signed out automatically and just get a new
+code to come back.
+
+The duration you pick decides what happens when you leave. "This visit" (the default) signs
+you out the moment you close the tab or the browser, which is the safe choice on a shared or
+public computer. "1 day", "1 week" and "30 days" keep you signed in on that same device for
+that long, even after you close it, so you do not re-enter a code every time. Pick a longer
+one only on your own phone or computer. Every sign-in code is also copied to a backup inbox,
+so you are never locked out if you lose access to your email.
 
 Because the code goes to your inbox, only you can sign in, and only a device you have signed
 in on can publish. On a brand-new phone or computer, it is the same steps: press the button,

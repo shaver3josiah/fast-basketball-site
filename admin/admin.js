@@ -50,9 +50,14 @@
 
   // ---- Sign-in is an emailed code now, not a password. A device that just entered a code is
   // the "recognized device": every session starts from one, so publishing always does too.
-  var LOGOUT_KEY = 'fb_admin_until';
-  var KNOWN_KEY = 'fb_admin_known';
+  var LOGOUT_KEY = 'fb_admin_until';   // persist sessions: expiry lives in localStorage
+  var KNOWN_KEY = 'fb_admin_known';    // has this browser ever signed in (greeting only)
+  var MODE_KEY = 'fb_admin_mode';      // 'persist' or 'visit'
+  var LIVE_KEY = 'fb_admin_live';      // sessionStorage flag: this tab owns a visit session
   var logoutTimer = null;
+
+  function ssGet(k){ try { return sessionStorage.getItem(k); } catch(e){ return null; } }
+  function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
 
   function el(id){ return document.getElementById(id); }
   function loginError(msg){ el('loginError').textContent = msg || ''; }
@@ -102,7 +107,21 @@
       .then(function(r){
         if(!r.ok){ loginError(r.data.error || 'Wrong code. Try again.'); return; }
         try { localStorage.setItem(KNOWN_KEY, '1'); } catch(e){}
-        if(r.data.until){ try { localStorage.setItem(LOGOUT_KEY, String(r.data.until)); } catch(e){} }
+        // persist=false ("This visit") is scoped to this tab: its expiry lives in sessionStorage
+        // and the tab is flagged live, so closing the tab ends it. The longer choices persist in
+        // localStorage and survive a close, which is the whole reason to pick them.
+        var persist = r.data.persist !== false;
+        try {
+          localStorage.setItem(MODE_KEY, persist ? 'persist' : 'visit');
+          if(persist){
+            if(r.data.until) localStorage.setItem(LOGOUT_KEY, String(r.data.until));
+            sessionStorage.removeItem(LOGOUT_KEY); sessionStorage.removeItem(LIVE_KEY);
+          } else {
+            if(r.data.until) sessionStorage.setItem(LOGOUT_KEY, String(r.data.until));
+            sessionStorage.setItem(LIVE_KEY, '1');
+            localStorage.removeItem(LOGOUT_KEY);
+          }
+        } catch(e){}
         loginError('');
         el('loginCode').value = '';
         loadAdmin();
@@ -116,8 +135,8 @@
   // this instant the signed cookie has lapsed, so every request would 401 anyway.
   function scheduleAutoLogout(){
     if(logoutTimer){ clearTimeout(logoutTimer); logoutTimer = null; }
-    var until = 0;
-    try { until = Number(localStorage.getItem(LOGOUT_KEY)) || 0; } catch(e){}
+    // A visit session keeps its expiry per-tab (sessionStorage); a persistent one in localStorage.
+    var until = Number(ssGet(LOGOUT_KEY)) || Number(lsGet(LOGOUT_KEY)) || 0;
     if(!until) return;
     var ms = until - Date.now();
     if(ms <= 0){ signedOut(); return; }
@@ -127,7 +146,9 @@
   }
   function signedOut(){
     if(logoutTimer){ clearTimeout(logoutTimer); logoutTimer = null; }
-    try { localStorage.removeItem(LOGOUT_KEY); } catch(e){}
+    try { localStorage.removeItem(LOGOUT_KEY); sessionStorage.removeItem(LOGOUT_KEY); sessionStorage.removeItem(LIVE_KEY); } catch(e){}
+    // Best-effort: drop the cookie server-side too, so a lapsed session cannot be reused.
+    try { api('admin-logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); } catch(e){}
     adminScreen.classList.add('hidden');
     loginScreen.classList.remove('hidden');
     el('codeStep').hidden = true;
@@ -902,5 +923,21 @@
     if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
   });
 
-  loadAdmin();
+  // On load, decide whether to resume. A "This visit" session belongs to the tab that made it:
+  // a fresh or reopened tab (no LIVE flag in this tab's sessionStorage) must not inherit it, so
+  // its cookie is dropped and the login screen is shown. That is what makes closing the tab a
+  // real logout. Persistent sessions resume normally, which is what picking a longer time means.
+  function resumeOrLogin(){
+    if(lsGet(MODE_KEY) === 'visit' && ssGet(LIVE_KEY) !== '1'){
+      api('admin-logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .catch(function(){})
+        .finally(function(){
+          loginScreen.classList.remove('hidden');
+          adminScreen.classList.add('hidden');
+        });
+      return;
+    }
+    loadAdmin();
+  }
+  resumeOrLogin();
 })();

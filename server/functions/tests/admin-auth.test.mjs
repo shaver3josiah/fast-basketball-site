@@ -68,6 +68,26 @@ test('the right code with a valid duration mints a session cookie of that length
   assert.equal(await getOtp(), null, 'the code is single-use: burned on success');
 });
 
+test('"This visit" is a browser-session cookie (no Max-Age) and reports persist:false', async () => {
+  await setOtp({ hash: hashOtp('333333'), expires: Date.now() + 60000, tries: 0 });
+  const res = await post(login, { code: '333333', ttl: 'visit' });
+  assert.equal(res.status, 200);
+  const data = await res.clone().json();
+  assert.equal(data.persist, false, 'the client is told this session does not persist');
+  const setCookie = res.headers.get('set-cookie');
+  assert.ok(setCookie.startsWith('__session='), 'still sets the session cookie');
+  assert.equal(maxAge(setCookie), null, 'but with no Max-Age, so the browser drops it on close');
+  assert.equal(verifyRequestSession(withCookie(setCookie)), true, 'and it still verifies while the tab lives');
+});
+
+test('a longer choice persists: Max-Age is set and persist is true', async () => {
+  await setOtp({ hash: hashOtp('444444'), expires: Date.now() + 60000, tries: 0 });
+  const res = await post(login, { code: '444444', ttl: 'month' });
+  const data = await res.clone().json();
+  assert.equal(data.persist, true);
+  assert.equal(maxAge(res.headers.get('set-cookie')), Math.floor(SESSION_DURATIONS.month / 1000));
+});
+
 test('a duration off the allowlist is refused', async () => {
   await setOtp({ hash: hashOtp('222222'), expires: Date.now() + 60000, tries: 0 });
   const res = await post(login, { code: '222222', ttl: 'forever' });

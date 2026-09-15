@@ -14,6 +14,7 @@ const HANDLERS = {
   'admin-content': () => import('./functions/admin-content.mjs'),
   'admin-login': () => import('./functions/admin-login.mjs'),
   'admin-otp-request': () => import('./functions/admin-otp-request.mjs'),
+  'admin-logout': () => import('./functions/admin-logout.mjs'),
   'admin-media': () => import('./functions/admin-media.mjs'),
   'admin-publish': () => import('./functions/admin-publish.mjs'),
   'admin-site': () => import('./functions/admin-site.mjs'),

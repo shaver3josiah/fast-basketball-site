@@ -49,8 +49,11 @@ export default async (request, context) => {
 
   // Single use: burn the code the moment it works.
   await clearOtp();
-  return json(200, { ok: true, until: Date.now() + ttlMs }, {
+  // "This visit" is a browser-session cookie that does not outlive the browser; the longer
+  // choices persist. The client is told which so it can end a visit session on tab close too.
+  const persist = payload.ttl !== 'visit';
+  return json(200, { ok: true, until: Date.now() + ttlMs, persist }, {
     'Cache-Control': 'private, no-store',
-    'Set-Cookie': createSessionCookie(ttlMs)
+    'Set-Cookie': createSessionCookie(ttlMs, persist)
   });
 };

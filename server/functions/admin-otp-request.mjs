@@ -31,8 +31,15 @@ export default async (request, context) => {
   // Local dev has no mail: print the code so a developer can sign in. Never logged in prod.
   if (process.env.FB_LOCAL === 'true') console.log('[admin] sign-in code: ' + code);
 
+  // The code goes to the owner and, if set, a backup address (ADMIN_BACKUP_EMAIL), so a lost
+  // inbox does not lock the panel out for good. Deduped so one address is never mailed twice.
+  const seen = new Set();
+  const recipients = [ownerEmail(), process.env.ADMIN_BACKUP_EMAIL]
+    .filter(Boolean)
+    .filter((e) => { const k = e.trim().toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+
   await sendEmail({
-    to: ownerEmail(),
+    to: recipients,
     subject: 'Your Fast Basketball admin code: ' + code,
     html: '<h2>Sign-in code</h2>' +
       '<p>Your code is <b style="font-size:1.4em;letter-spacing:2px">' + code + '</b></p>' +
