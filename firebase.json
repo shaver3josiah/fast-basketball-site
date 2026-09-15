@@ -71,6 +71,14 @@
         ]
       },
       {
+        "source": "/admin/canvas-frame.html",
+        "headers": [
+          { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+          { "key": "Cache-Control", "value": "no-store" },
+          { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+        ]
+      },
+      {
         "source": "/api{,/**}",
         "headers": [{ "key": "Cache-Control", "value": "no-store" }]
       },
