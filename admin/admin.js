@@ -146,7 +146,7 @@
   }
   function signedOut(){
     if(logoutTimer){ clearTimeout(logoutTimer); logoutTimer = null; }
-    try { localStorage.removeItem(LOGOUT_KEY); sessionStorage.removeItem(LOGOUT_KEY); sessionStorage.removeItem(LIVE_KEY); } catch(e){}
+    try { localStorage.removeItem(LOGOUT_KEY); localStorage.removeItem(MODE_KEY); sessionStorage.removeItem(LOGOUT_KEY); sessionStorage.removeItem(LIVE_KEY); } catch(e){}
     // Best-effort: drop the cookie server-side too, so a lapsed session cannot be reused.
     try { api('admin-logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); } catch(e){}
     adminScreen.classList.add('hidden');
@@ -918,6 +918,7 @@
   }
   document.getElementById('previewBtn').addEventListener('click', function(){ openPreview('home'); });
   document.getElementById('previewLockerBtn').addEventListener('click', function(){ openPreview('locker'); });
+  document.getElementById('signOutBtn').addEventListener('click', function(){ signedOut(); });
 
   window.addEventListener('beforeunload', function(e){
     if(state.dirty){ e.preventDefault(); e.returnValue = ''; }

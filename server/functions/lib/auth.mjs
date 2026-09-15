@@ -23,6 +23,12 @@ export function resolveTtlMs(label) {
 // second cookie would never reach the function.
 const COOKIE_NAME = '__session';
 
+// Bump to invalidate every existing session at once (a scheme change, a forced sign-out). The
+// version is inside the signed payload, so a cookie minted under an older version fails to
+// verify and the owner simply signs in again. v2: added the browser-session ("This visit")
+// cookie shape, so pre-v2 persistent cookies must not survive the change.
+const COOKIE_VERSION = '2';
+
 function sign(value, secret) {
   return createHmac('sha256', secret).update(value).digest('hex');
 }
@@ -39,7 +45,8 @@ export function createSessionCookie(ttlMs, persist = true) {
   if (!secret) throw new Error('ADMIN_SESSION_SECRET is not configured');
   const life = Number.isFinite(ttlMs) && ttlMs > 0 ? ttlMs : SESSION_DURATIONS[DEFAULT_DURATION];
   const expires = Date.now() + life;
-  const value = String(expires);
+  // The version is part of the signed value, so bumping COOKIE_VERSION retires old cookies.
+  const value = COOKIE_VERSION + '.' + expires;
   const signature = sign(value, secret);
   const cookieValue = value + '.' + signature;
   // persist=false makes a browser-session cookie: no Max-Age, so the browser drops it when the
@@ -61,12 +68,16 @@ export function verifyRequestSession(request) {
   if (!match) return false;
   const cookieValue = match.slice(COOKIE_NAME.length + 1);
   const parts = cookieValue.split('.');
-  if (parts.length !== 2) return false;
-  const [value, signature] = parts;
+  // v2 cookies are version.expires.signature. A pre-v2 cookie (two parts) or any other
+  // version fails here, which is how a version bump signs everyone out.
+  if (parts.length !== 3) return false;
+  const [version, expiresStr, signature] = parts;
+  if (version !== COOKIE_VERSION) return false;
+  const value = version + '.' + expiresStr;
   const expected = sign(value, secret);
   if (expected.length !== signature.length) return false;
   if (!timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) return false;
-  const expires = Number(value);
+  const expires = Number(expiresStr);
   return Number.isFinite(expires) && expires > Date.now();
 }
 
