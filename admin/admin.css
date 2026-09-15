@@ -4,34 +4,10 @@
    bottom dock inside thumb reach, every target clears 44px, and every text field
    is 16px because anything smaller makes iOS zoom the page on focus.
 
-   The palette and type mirror src/styles/tokens.css. They are copied rather than
-   linked because /styles/** is served immutable for a year while /admin/** is
-   no-store, so a linked token file would go stale in this panel long after the
-   site had moved on. The font FILES are shared (index.html links
-   /styles/fonts.css); worst case a newly added weight falls back to system-ui
-   here until that cache expires.
+   The palette and type live in tokens.css, shared with the canvas editor.
    ponytail: no build step, no framework. One stylesheet, native controls. */
 
 :root{
-  --bg:#0A0A0C;          /* court black */
-  --bar:#131318;         /* ink */
-  --card:#15151B;
-  --lift:#1B1B22;
-  --field:#0C0C11;
-  --line:rgba(255,255,255,.10);
-  --line-2:rgba(255,255,255,.22);
-  --fg:#FFFFFF;
-  --fg-2:#B4B4C0;
-  --fg-3:#82828F;
-  /* Brand red is a BACKGROUND here. As text on a dark surface it measures 4.2:1,
-     so small red type uses --red-hot (5.6:1), the same rule the site follows. */
-  --red:#E60C20;
-  --red-hot:#FF3A41;
-  --amber:#FFC43D;
-  --green:#39D98A;
-  --teal:#25E0D0;        /* the one supporting hue the brand allows */
-  --cond:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
-  --body:"Barlow",system-ui,-apple-system,sans-serif;
   --r:14px;
   --bar-h:56px;
   /* Actions row + tab row. The panels reserve this much at the bottom; on Leads the

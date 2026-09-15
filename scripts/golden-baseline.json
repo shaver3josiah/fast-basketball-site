@@ -1,13 +1,13 @@
 {
-  "recorded": "2026-09-15T14:09:30.229Z",
+  "recorded": "2026-09-15T14:20:23.535Z",
   "files": {
     "404.html": {
       "sha": "5ff4f1b768314692",
       "bytes": 5729
     },
     "admin/admin.css": {
-      "sha": "f027372df673abff",
-      "bytes": 14515
+      "sha": "7b190ddb7a18acfb",
+      "bytes": 13489
     },
     "admin/admin.js": {
       "sha": "fa3582e9146b8704",
@@ -26,20 +26,20 @@
       "bytes": 20930
     },
     "admin/editor.css": {
-      "sha": "2f8f0b2ef305ce65",
-      "bytes": 22877
+      "sha": "29440367587a5b5e",
+      "bytes": 25585
     },
     "admin/editor.html": {
-      "sha": "fa0cd7b31b464447",
-      "bytes": 11175
+      "sha": "b93546712e7e9017",
+      "bytes": 11471
     },
     "admin/editor.js": {
       "sha": "a2bf030ee2ead670",
       "bytes": 89408
     },
     "admin/index.html": {
-      "sha": "f4417189fa0d0fc0",
-      "bytes": 2884
+      "sha": "1660163f09faac71",
+      "bytes": 2933
     },
     "admin/plans.js": {
       "sha": "e5818abca7623e3b",
@@ -48,6 +48,10 @@
     "admin/schema.js": {
       "sha": "9a39048d3146bce2",
       "bytes": 18055
+    },
+    "admin/tokens.css": {
+      "sha": "3fb7311556e8309a",
+      "bytes": 1656
     },
     "admin/vendor/moveable.min.js": {
       "sha": "6c6c78751303afd6",

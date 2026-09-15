@@ -1,31 +1,46 @@
 /* Canvas editor chrome.
  *
- * Product register, not brand: the site is where the personality lives, and a tool
- * that competes with the artwork for attention is a tool you fight. One system sans,
- * a fixed rem scale, restrained neutrals, and the brand red reserved for exactly two
- * jobs — the current selection and the primary action.
+ * Dark, on the site's own palette and type (tokens.css, shared with the content
+ * panel). The chrome used to be light on the argument that a dark editor would blur
+ * the line between "the tool" and "the page". That line is real, but light-vs-dark is
+ * not what draws it — elevation is. The stage sits at --hover, the lightest surface
+ * on screen; the panels sit two steps below it at --bar; the artboard is the site's
+ * own near-black with a lit edge and a deep shadow. The artboard is the darkest thing
+ * in the window and the only thing with a shadow, so it reads as a sheet on a table.
  *
- * Light chrome around a dark canvas is deliberate. The site is near-black; a dark
- * editor would blur the line between "the tool" and "the page", and the artboard has
- * to read as the artboard. Every canvas editor worth using makes this same call.
+ * The brand red still has exactly two jobs: the current selection and the primary
+ * action. Destructive work takes --coral so Delete never reads as Save.
  */
 
 :root {
-  --ed-bg: #F4F4F6;
-  --ed-surface: #FFFFFF;
-  --ed-rail: #FAFAFB;
-  --ed-line: #E2E2E7;
-  --ed-line-strong: #CFCFD6;
-  --ed-ink: #1A1A20;
-  --ed-ink-2: #55555F;
-  /* #7C7C88 measured 4.12:1 on white, 3.95 on the rail and 3.75 on the page — under
-     the 4.5:1 floor on every surface it is used on, and it carries real text (panel
-     headings, field help, the crumb, list notes). #67676F is 5.61 / 5.37 / 5.10. */
-  --ed-ink-3: #67676F;
-  --ed-accent: #D40D1F;
-  --ed-accent-soft: #FDEBEC;
-  --ed-danger: #B3261E;
-  --ed-focus: #0B63CE;
+  /* Surfaces, lightest to darkest: stage, panels, artboard. */
+  --ed-bg: var(--hover);
+  --ed-surface: var(--bar);
+  --ed-rail: #101015;
+  --ed-line: var(--line);
+  --ed-line-strong: var(--line-2);
+  --ed-ink: var(--fg);
+  --ed-ink-2: var(--fg-2);
+  /* Panel headings, field help, the crumb and list notes all use this, and some of
+     them sit on the stage rather than a panel. --fg-3 is only AA down to --lift, so
+     this is the brighter --fg-4, which clears 4.5:1 on every surface here. */
+  --ed-ink-3: var(--fg-4);
+  --ed-accent: var(--red);
+  --ed-accent-text: var(--red-hot);
+  --ed-accent-soft: var(--red-tint);
+  --ed-accent-line: var(--red-line);
+  --ed-danger: var(--coral);
+  --ed-ok: var(--green);
+  /* Hover and press as translucent white, so one pair works on the rail, the panels
+     and the stage without a token per surface. */
+  --ed-hover: rgba(255, 255, 255, .06);
+  --ed-press: rgba(255, 255, 255, .11);
+  /* Publish is the consequential button. On light chrome it was the darkest control;
+     on dark chrome the heaviest thing available is bone, so it inverts. */
+  --ed-invert: var(--fg);
+  --ed-invert-ink: var(--bg);
+  --ed-focus: var(--red-hot);
+  --ed-scrim: rgba(0, 0, 0, .72);
 
   --ed-r: 6px;
   --ed-r-lg: 9px;
@@ -40,8 +55,21 @@
 
   --ed-t: 160ms cubic-bezier(0.16, 1, 0.3, 1);
 
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--body);
   font-size: 16px;
+}
+
+/* Condensed uppercase for the labels the tool puts on things, body for the content
+   you are editing — the same split the site and the content panel use. */
+.ed-mark,
+.ed-panel-h,
+.ed-sub,
+.ed-stage-label,
+.ed-insp-type,
+.ed-btn {
+  font-family: var(--cond);
+  text-transform: uppercase;
+  letter-spacing: .12em;
 }
 
 * { box-sizing: border-box; }
@@ -77,7 +105,9 @@ body {
   inset: 0;
   display: grid;
   place-items: center;
-  background: var(--ed-bg);
+  /* Court black, not the stage colour: this is the same door as /admin and should
+     look like it. The stage tone only makes sense once there is an artboard on it. */
+  background: var(--bg);
   z-index: 50;
 }
 
@@ -89,12 +119,36 @@ body {
   padding: 28px;
   display: grid;
   gap: 10px;
-  box-shadow: 0 12px 32px -20px rgba(10, 10, 20, 0.4);
+  box-shadow: 0 24px 60px -28px #000;
 }
 
-.ed-gate-card h1 { margin: 0; font-size: 1.125rem; letter-spacing: -0.01em; }
-.ed-gate-card > p { margin: 0 0 8px; color: var(--ed-ink-3); font-size: 0.8125rem; }
-.ed-gate-card label { font-weight: 600; font-size: 0.8125rem; }
+/* The lockup has a 250px minimum width and 9% clear space (design system). The card is
+   340px, so it fits; below that width the icon is the mark to use, which is what the top
+   bar does. */
+.ed-gate-card h1 { margin: 0 0 4px; }
+.ed-gate-card h1 img { width: 250px; max-width: 100%; height: auto; display: block; margin: 0 auto; padding: 4% 9%; }
+.ed-gate-card > p {
+  margin: 0 0 12px;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--ed-ink-3);
+  text-align: center;
+}
+.ed-gate-card label {
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ed-ink-3);
+}
+.ed-gate-card input { font-size: 1rem; }
+.ed-gate-card .ed-btn { padding: 11px 12px; font-size: 0.875rem; }
+
+.ed-mark-icon { width: 22px; height: 22px; flex: none; display: block; }
 
 /* ---------------------------------------------------------------- shell */
 
@@ -125,8 +179,8 @@ body {
 }
 
 .ed-status { color: var(--ed-ink-3); font-size: 0.8125rem; white-space: nowrap; }
-.ed-status[data-state="dirty"] { color: var(--ed-accent); font-weight: 600; }
-.ed-status[data-state="saved"] { color: #1F7A3D; }
+.ed-status[data-state="dirty"] { color: var(--ed-accent-text); font-weight: 600; }
+.ed-status[data-state="saved"] { color: var(--ed-ok); }
 
 .ed-body {
   flex: 1;
@@ -176,11 +230,11 @@ body {
   transition: background var(--ed-t), border-color var(--ed-t);
 }
 
-.ed-item:hover { background: #EDEDF1; }
+.ed-item:hover { background: var(--ed-hover); }
 
 .ed-item[aria-current="true"] {
   background: var(--ed-accent-soft);
-  border-color: #F3C6C9;
+  border-color: var(--ed-accent-line);
   font-weight: 600;
 }
 
@@ -250,8 +304,8 @@ body {
 .ed-alert {
   flex: none;
   padding: 8px 16px;
-  background: #FDEBEC;
-  border-bottom: 1px solid #F3C6C9;
+  background: var(--ed-accent-soft);
+  border-bottom: 1px solid var(--ed-accent-line);
   color: var(--ed-danger);
   font-size: 0.8125rem;
   font-weight: 600;
@@ -291,7 +345,7 @@ body {
   border: 1px solid var(--ed-line-strong);
   border-radius: var(--ed-r-lg);
   background: #0A0A0C;
-  box-shadow: 0 10px 30px -22px rgba(10, 10, 20, 0.5);
+  box-shadow: 0 26px 64px -26px #000;
 }
 
 /* ---------------------------------------------------------------- inspector */
@@ -345,7 +399,7 @@ input:hover, textarea:hover, select:hover { border-color: var(--ed-ink-3); }
 input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: var(--ed-focus);
-  box-shadow: 0 0 0 3px rgba(11, 99, 206, 0.14);
+  box-shadow: 0 0 0 3px rgba(255, 58, 65, .25);
 }
 
 /* Attribute-only: the surrounding rules style input, textarea and select alike, and
@@ -358,7 +412,7 @@ input:focus, textarea:focus, select:focus {
   width: 22px;
   height: 22px;
   padding: 0;
-  border: 1px solid rgba(10, 10, 20, 0.22);
+  border: 1px solid var(--ed-line-strong);
   border-radius: 4px;
   cursor: pointer;
   transition: transform var(--ed-t), box-shadow var(--ed-t);
@@ -381,15 +435,20 @@ input:focus, textarea:focus, select:focus {
   border-radius: var(--ed-r);
   background: var(--ed-surface);
   color: var(--ed-ink);
-  font: inherit;
+  /* NOT `font: inherit` — the shorthand resets font-family, which quietly beat the
+     condensed stack the typography rule at the top sets for every tool label. The
+     other controls here keep `font: inherit` on purpose: they hold content, not
+     labels, so they should read in the body face. */
+  font-family: var(--cond);
+  line-height: 1.45;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
   transition: background var(--ed-t), border-color var(--ed-t), opacity var(--ed-t);
 }
 
-.ed-btn:hover:not(:disabled) { background: #EDEDF1; border-color: var(--ed-ink-3); }
-.ed-btn:active:not(:disabled) { background: #E4E4EA; }
+.ed-btn:hover:not(:disabled) { background: var(--ed-hover); border-color: var(--ed-ink-3); }
+.ed-btn:active:not(:disabled) { background: var(--ed-press); }
 
 .ed-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
@@ -400,19 +459,20 @@ input:focus, textarea:focus, select:focus {
   font-weight: 600;
 }
 
-.ed-btn-primary:hover:not(:disabled) { background: #B80A1A; border-color: #B80A1A; }
-.ed-btn-primary:active:not(:disabled) { background: #A00915; }
+.ed-btn-primary:hover:not(:disabled) { background: var(--red-hot); border-color: var(--red-hot); }
+.ed-btn-primary:active:not(:disabled) { background: var(--red-deep); }
 
-/* Publish is the consequential button, so it is the darker one — Save is routine and
-   free, Publish spends a deploy and reaches real visitors. */
+/* Publish is the consequential button — Save is routine and free, Publish spends a
+   deploy and reaches real visitors — so it is the heaviest control on screen. That
+   was the darkest one on light chrome and is the lightest one here. */
 .ed-btn-publish {
-  background: var(--ed-ink);
-  border-color: var(--ed-ink);
-  color: #fff;
+  background: var(--ed-invert);
+  border-color: var(--ed-invert);
+  color: var(--ed-invert-ink);
   font-weight: 600;
 }
 
-.ed-btn-publish:hover:not(:disabled) { background: #000; border-color: #000; }
+.ed-btn-publish:hover:not(:disabled) { background: var(--chalk, #F5F3EF); border-color: var(--chalk, #F5F3EF); }
 
 .ed-meter {
   font-size: 0.75rem;
@@ -422,8 +482,8 @@ input:focus, textarea:focus, select:focus {
 
 .ed-meter[data-warn] { color: var(--ed-danger); font-weight: 600; }
 
-.ed-btn-danger { color: var(--ed-danger); border-color: #E8C4C1; }
-.ed-btn-danger:hover:not(:disabled) { background: #FCEDEC; border-color: var(--ed-danger); }
+.ed-btn-danger { color: var(--ed-danger); border-color: rgba(255, 122, 110, .42); }
+.ed-btn-danger:hover:not(:disabled) { background: rgba(255, 122, 110, .14); border-color: var(--ed-danger); }
 
 .ed-error { color: var(--ed-danger); font-size: 0.8125rem; margin: 0; min-height: 1.2em; }
 
@@ -437,8 +497,10 @@ input:focus, textarea:focus, select:focus {
   max-width: min(520px, calc(100vw - 32px));
   padding: 10px 16px;
   border-radius: var(--ed-r);
-  background: var(--ed-ink);
-  color: #fff;
+  background: var(--lift);
+  border: 1px solid var(--ed-line-strong);
+  border-left: 3px solid var(--ed-accent);
+  color: var(--ed-ink);
   font-size: 0.8125rem;
   opacity: 0;
   /* visibility, not just opacity: an opacity-0 toast stays in the accessibility tree,
@@ -450,7 +512,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 .ed-toast.is-on { opacity: 1; visibility: visible; transform: translate(-50%, 0); }
-.ed-toast[data-tone="error"] { background: var(--ed-danger); }
+.ed-toast[data-tone="error"] { border-left-color: var(--ed-danger); }
 
 /* ---------------------------------------------------------------- narrow */
 
@@ -464,7 +526,7 @@ input:focus, textarea:focus, select:focus {
     display: block;
     padding: 16px;
     background: var(--ed-accent-soft);
-    border-bottom: 1px solid #F3C6C9;
+    border-bottom: 1px solid var(--ed-accent-line);
     font-weight: 600;
   }
 }
@@ -500,8 +562,8 @@ input:focus, textarea:focus, select:focus {
   border-radius: var(--ed-r);
 }
 
-.ed-layer:hover { background: #EDEDF1; }
-.ed-layer.is-on { background: var(--ed-accent-soft); border-color: #F3C6C9; }
+.ed-layer:hover { background: var(--ed-hover); }
+.ed-layer.is-on { background: var(--ed-accent-soft); border-color: var(--ed-accent-line); }
 
 .ed-layer-name {
   grid-area: name;
@@ -655,7 +717,7 @@ input:focus, textarea:focus, select:focus {
 .ed-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 10, 20, 0.5);
+  background: var(--ed-scrim);
   display: grid;
   place-items: center;
   z-index: 70;
@@ -685,7 +747,7 @@ input:focus, textarea:focus, select:focus {
   position: absolute;
   border: 2px solid var(--ed-accent);
   /* A giant outset shadow dims everything outside the box without a second element. */
-  box-shadow: 0 0 0 2000px rgba(10, 10, 20, 0.45);
+  box-shadow: 0 0 0 2000px var(--ed-scrim);
   cursor: move;
 }
 
@@ -764,13 +826,13 @@ input[type="range"] { width: 100%; }
   line-height: 1.2;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--ed-accent);
+  color: var(--ed-accent-text);
   border-style: dashed;
   border-color: var(--ed-accent);
   background: var(--ed-accent-soft);
 }
 
-.ed-thumb-add:hover { background: #FDEBEC; }
+.ed-thumb-add:hover { background: var(--ed-accent-soft); }
 
 /* Fixed 90px tiles in the sheet, not the sidebar's cramped 3-column squeeze — the sheet
    has room, so every photo gets a size an alt tooltip is worth reading over. */

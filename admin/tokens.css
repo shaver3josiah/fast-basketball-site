@@ -1,0 +1,39 @@
+/* The admin palette and type, shared by both screens: the content panel (admin.css)
+   and the canvas editor (editor.css).
+
+   These mirror src/styles/tokens.css rather than linking it. /styles/** is served
+   immutable for a year while /admin/** is no-store, so a linked token file would go
+   stale in the panels long after the site had moved on. The font FILES are shared for
+   real, via /styles/fonts.css, where the worst case is a fallback face.
+
+   One copy, not two: this started as a :root block inside admin.css, and a second
+   hand-typed copy in editor.css is exactly the drift this codebase has already paid
+   for once with the admin schema. */
+
+:root{
+  --bg:#0A0A0C;          /* court black */
+  --bar:#131318;         /* ink */
+  --card:#15151B;
+  --lift:#1B1B22;
+  --hover:#20202A;
+  --field:#0C0C11;
+  --line:rgba(255,255,255,.10);
+  --line-2:rgba(255,255,255,.22);
+  --fg:#FFFFFF;
+  --fg-2:#B4B4C0;
+  --fg-3:#82828F;
+  --fg-4:#9C9CA9;        /* --fg-3 is only AA down to --lift; this one holds on --hover too */
+  /* Brand red is a BACKGROUND here. As text on a dark surface it measures 4.2:1,
+     so small red type uses --red-hot (5.6:1), the same rule the site follows. */
+  --red:#E60C20;
+  --red-hot:#FF3A41;
+  --red-deep:#C00A1B;
+  --red-tint:rgba(230,12,32,.16);
+  --red-line:rgba(230,12,32,.42);
+  --amber:#FFC43D;
+  --green:#39D98A;
+  --coral:#FF7A6E;       /* destructive. Warmer than the brand red so Delete never reads as Save. */
+  --teal:#25E0D0;        /* the one supporting hue the brand allows */
+  --cond:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,sans-serif;
+}
