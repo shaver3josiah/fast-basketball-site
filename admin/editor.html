@@ -17,9 +17,20 @@
   <form class="ed-gate-card" id="gateForm">
     <h1><img src="/brand/logo-white.svg" alt="Fast Basketball" width="250" height="106"></h1>
     <p>Canvas Editor</p>
-    <label for="gatePassword">Password</label>
-    <input type="password" id="gatePassword" autocomplete="current-password" autofocus required>
-    <button type="submit" class="ed-btn ed-btn-primary">Log in</button>
+    <label for="gateDuration">Stay signed in for</label>
+    <select id="gateDuration">
+      <option value="visit">This visit (2 hours)</option>
+      <option value="day" selected>1 day</option>
+      <option value="week">1 week</option>
+      <option value="month">30 days</option>
+    </select>
+    <button type="button" id="gateSendBtn" class="ed-btn ed-btn-primary">Email me a sign-in code</button>
+    <div id="gateCodeStep" hidden>
+      <label for="gateCode">6-digit code</label>
+      <input type="text" id="gateCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="6" placeholder="123456">
+      <button type="submit" class="ed-btn ed-btn-primary">Verify and sign in</button>
+      <button type="button" id="gateResendBtn" class="ed-btn">Send a new code</button>
+    </div>
     <p class="ed-error" id="gateError" role="alert"></p>
   </form>
 </div>

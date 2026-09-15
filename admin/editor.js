@@ -247,15 +247,37 @@
     if (message) $('gateError').textContent = message;
   }
 
+  // Sign-in is an emailed code now, same as /admin. Step 1 sends it, step 2 verifies it.
+  function gateRequestCode(btnId) {
+    $('gateError').textContent = '';
+    var b = $(btnId); var label = b.textContent;
+    b.disabled = true; b.textContent = 'Sending...';
+    api('admin-otp-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function (res) {
+        if (!res.ok) throw new Error();
+        $('gateCodeStep').hidden = false;
+        $('gateSendBtn').hidden = true;
+        var c = $('gateCode'); if (c) c.focus();
+      })
+      .catch(function () { $('gateError').textContent = 'Could not send the code. Check your connection and try again.'; })
+      .finally(function () { b.disabled = false; b.textContent = label; });
+  }
+  $('gateSendBtn').addEventListener('click', function () { gateRequestCode('gateSendBtn'); });
+  $('gateResendBtn').addEventListener('click', function () { gateRequestCode('gateResendBtn'); });
+
   $('gateForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    $('gateError').textContent = '';
+    if ($('gateCodeStep').hidden) { gateRequestCode('gateSendBtn'); return; }
+    var code = ($('gateCode').value || '').trim();
+    if (!/^\d{6}$/.test(code)) { $('gateError').textContent = 'Enter the 6-digit code from your email.'; return; }
     api('admin-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: $('gatePassword').value })
+      body: JSON.stringify({ code: code, ttl: $('gateDuration').value })
     }).then(function (res) {
-      if (!res.ok) { $('gateError').textContent = 'That password did not work.'; return; }
+      return res.json().catch(function () { return {}; }).then(function (d) { return { ok: res.ok, data: d }; });
+    }).then(function (r) {
+      if (!r.ok) { $('gateError').textContent = r.data.error || 'That code did not work.'; return; }
       boot();
     }).catch(function () {
       $('gateError').textContent = 'Could not reach the server. Is `npm run dev` running?';

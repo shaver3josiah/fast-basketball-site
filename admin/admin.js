@@ -48,24 +48,92 @@
     return fetch('/api/' + path, options);
   }
 
-  document.getElementById('loginForm').addEventListener('submit', function(e){
+  // ---- Sign-in is an emailed code now, not a password. A device that just entered a code is
+  // the "recognized device": every session starts from one, so publishing always does too.
+  var LOGOUT_KEY = 'fb_admin_until';
+  var KNOWN_KEY = 'fb_admin_known';
+  var logoutTimer = null;
+
+  function el(id){ return document.getElementById(id); }
+  function loginError(msg){ el('loginError').textContent = msg || ''; }
+
+  // The greeting mirrors whether this browser has signed in before, which is what "recognized
+  // device" versus "new device" means to the owner. It is a convenience only; the real check
+  // is the emailed code, which every device must pass.
+  (function(){
+    var known = false;
+    try { known = localStorage.getItem(KNOWN_KEY) === '1'; } catch(e){}
+    el('deviceNote').textContent = known
+      ? 'Welcome back. Pick how long to stay signed in, and we will email you a fresh code.'
+      : 'New device. Pick how long to stay signed in, and we will email a setup code to recognize it.';
+  })();
+
+  function requestCode(which){
+    loginError('');
+    var b = el(which);
+    var label = b.textContent;
+    b.disabled = true; b.textContent = 'Sending...';
+    api('admin-otp-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function(res){
+        if(!res.ok) throw new Error();
+        el('codeStep').hidden = false;
+        el('sendCodeBtn').hidden = true;
+        el('deviceNote').textContent = 'We emailed a 6-digit code. It expires in 10 minutes.';
+        var c = el('loginCode'); if(c) c.focus();
+      })
+      .catch(function(){ loginError('Could not send the code. Check your connection and try again.'); })
+      .finally(function(){ b.disabled = false; b.textContent = label; });
+  }
+  el('sendCodeBtn').addEventListener('click', function(){ requestCode('sendCodeBtn'); });
+  el('resendBtn').addEventListener('click', function(){ requestCode('resendBtn'); });
+
+  el('loginForm').addEventListener('submit', function(e){
     e.preventDefault();
-    var password = document.getElementById('loginPassword').value;
-    api('admin-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: password })
-    }).then(function(res){
-      if(!res.ok){
-        document.getElementById('loginError').textContent = 'Wrong password. Try again.';
-        return;
-      }
-      document.getElementById('loginError').textContent = '';
-      loadAdmin();
-    }).catch(function(){
-      document.getElementById('loginError').textContent = 'Could not reach the server. Check your connection.';
-    });
+    // Enter pressed before a code was sent just sends one.
+    if(el('codeStep').hidden){ requestCode('sendCodeBtn'); return; }
+    var code = (el('loginCode').value || '').trim();
+    var ttl = el('loginDuration').value;
+    if(!/^\d{6}$/.test(code)){ loginError('Enter the 6-digit code from your email.'); return; }
+    var vb = el('verifyBtn');
+    var vlabel = vb.textContent;
+    vb.disabled = true; vb.textContent = 'Signing in...';
+    api('admin-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: code, ttl: ttl }) })
+      .then(function(res){ return res.json().catch(function(){ return {}; }).then(function(data){ return { ok: res.ok, data: data }; }); })
+      .then(function(r){
+        if(!r.ok){ loginError(r.data.error || 'Wrong code. Try again.'); return; }
+        try { localStorage.setItem(KNOWN_KEY, '1'); } catch(e){}
+        if(r.data.until){ try { localStorage.setItem(LOGOUT_KEY, String(r.data.until)); } catch(e){} }
+        loginError('');
+        el('loginCode').value = '';
+        loadAdmin();
+      })
+      .catch(function(){ loginError('Could not reach the server. Check your connection.'); })
+      .finally(function(){ vb.disabled = false; vb.textContent = vlabel; });
   });
+
+  // Auto-logout at the chosen moment. The stored `until` survives a reload so the timer is
+  // right even after refreshing, and the server enforces the same expiry independently: at
+  // this instant the signed cookie has lapsed, so every request would 401 anyway.
+  function scheduleAutoLogout(){
+    if(logoutTimer){ clearTimeout(logoutTimer); logoutTimer = null; }
+    var until = 0;
+    try { until = Number(localStorage.getItem(LOGOUT_KEY)) || 0; } catch(e){}
+    if(!until) return;
+    var ms = until - Date.now();
+    if(ms <= 0){ signedOut(); return; }
+    // setTimeout tops out near 24.8 days; the 30-day option exceeds that, so cap each wait
+    // and re-check rather than overflow to an immediate fire.
+    logoutTimer = setTimeout(scheduleAutoLogout, Math.min(ms, 20 * 24 * 60 * 60 * 1000));
+  }
+  function signedOut(){
+    if(logoutTimer){ clearTimeout(logoutTimer); logoutTimer = null; }
+    try { localStorage.removeItem(LOGOUT_KEY); } catch(e){}
+    adminScreen.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
+    el('codeStep').hidden = true;
+    el('sendCodeBtn').hidden = false;
+    loginError('You were signed out. Sign in again to continue.');
+  }
 
   function loadAdmin(){
     api('admin-content').then(function(res){
@@ -77,7 +145,10 @@
       adminScreen.classList.remove('hidden');
       renderContentTab();
       renderPhotosTab();
+      scheduleAutoLogout();
     }).catch(function(){
+      // Not signed in (or the session lapsed). Show the login screen and drop any stale timer.
+      if(logoutTimer){ clearTimeout(logoutTimer); logoutTimer = null; }
       loginScreen.classList.remove('hidden');
       adminScreen.classList.add('hidden');
     });

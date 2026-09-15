@@ -19,9 +19,26 @@
   <form class="login-card" id="loginForm">
     <h1><img src="/brand/logo-white.svg" alt="Fast Basketball" width="250" height="106"></h1>
     <p class="login-kicker">Content Admin</p>
-    <label for="loginPassword">Password</label>
-    <input type="password" id="loginPassword" autocomplete="current-password" required>
-    <button type="submit" class="btn primary">Log In</button>
+    <p id="deviceNote" class="login-note"></p>
+
+    <label for="loginDuration">Stay signed in for</label>
+    <select id="loginDuration">
+      <option value="visit">This visit (2 hours)</option>
+      <option value="day" selected>1 day</option>
+      <option value="week">1 week</option>
+      <option value="month">30 days</option>
+    </select>
+
+    <!-- Step 1: ask for a code. Step 2 (the code field) appears once it is sent. -->
+    <button type="button" id="sendCodeBtn" class="btn primary">Email me a sign-in code</button>
+
+    <div id="codeStep" hidden>
+      <label for="loginCode">6-digit code</label>
+      <input type="text" id="loginCode" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="6" placeholder="123456">
+      <button type="submit" id="verifyBtn" class="btn primary">Verify and sign in</button>
+      <button type="button" id="resendBtn" class="btn ghost">Send a new code</button>
+    </div>
+
     <p id="loginError" class="error" role="alert"></p>
   </form>
 </div>
