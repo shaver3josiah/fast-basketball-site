@@ -419,7 +419,16 @@
     }
   }
 
+  // "6m 12s" from a millisecond dwell, for a visit card and its CSV cell.
+  function humanDwell(ms){
+    if(typeof ms !== 'number' || ms < 0) return '';
+    var s = Math.round(ms / 1000);
+    if(s < 60) return s + 's';
+    return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+  }
+
   function detailsText(l){
+    if(l.type === 'visit') return (l.ref || 'untagged') + SEP + (l.submitted ? 'submitted' : 'left without submitting') + (l.dwellMs ? SEP + humanDwell(l.dwellMs) : '');
     if(l.type === 'playbook') return (l.position || '') + ' / ' + (l.focus || '');
     if(l.type === 'enrollment'){
       // A monthly enrollment's amount is the first invoice, not the term: say "a month" so
@@ -506,6 +515,10 @@
     var emailIn = field('Parent email (optional)', document.createElement('input'));
     emailIn.type = 'email';
     emailIn.placeholder = 'parent@example.com';
+    // The family tag rides in the link as ?ref=. It ties every open of this link to a family
+    // in the Leads tab, and it is what an "opened, did not finish" email names.
+    var refIn = field('Family tag (optional)', document.createElement('input'));
+    refIn.placeholder = 'Smith family';
 
     var row = document.createElement('div');
     row.className = 'link-row';
@@ -520,13 +533,15 @@
     row.appendChild(copyBtn);
     var help = document.createElement('p');
     help.className = 'help';
-    help.textContent = "Paste this in the enrollment email. It never expires; Stripe's checkout opens when the parent clicks it. For the 48-hour evaluation rate pick Evaluation Session (48-hour rate).";
+    help.textContent = "Paste this in the enrollment email. It never expires; Stripe's checkout opens when the parent clicks it. For the 48-hour evaluation rate pick Evaluation Session (48-hour rate). Add a family tag and the Leads tab shows when they open it and how long they stay, and emails you if they look but do not finish.";
     body.appendChild(help);
 
     function update(){
       var email = emailIn.value.trim();
+      var refv = refIn.value.trim();
       out.value = PLANS.siteUrl.replace(/\/$/, '') + '/enroll?plan=' + planSel.value + '&pay=' + paySel.value +
-        (email ? '&email=' + encodeURIComponent(email) : '');
+        (email ? '&email=' + encodeURIComponent(email) : '') +
+        (refv ? '&ref=' + encodeURIComponent(refv) : '');
     }
     function fillPay(){
       paySel.textContent = '';
@@ -538,6 +553,7 @@
     planSel.addEventListener('change', fillPay);
     paySel.addEventListener('change', update);
     emailIn.addEventListener('input', update);
+    refIn.addEventListener('input', update);
     copyBtn.addEventListener('click', function(){
       function fallback(){
         out.select();
@@ -640,6 +656,10 @@
       meta('Position', l.position);
       meta('Focus', l.focus);
       meta('Grade', l.grade);
+    } else if(l.type === 'visit'){
+      meta('Opened', l.timestamp ? new Date(l.timestamp).toLocaleString() : '');
+      meta('Time on page', typeof l.dwellMs === 'number' ? (l.dwellMs ? humanDwell(l.dwellMs) : 'left right away, or still open') : '');
+      meta('Outcome', l.submitted ? 'Submitted the form' : 'Left without submitting');
     } else {
       meta('Details', detailsText(l));
     }
@@ -672,7 +692,7 @@
     filter.placeholder = 'Filter by suburb, name, or email';
     bar.appendChild(filter);
     var typeSel = document.createElement('select');
-    [['', 'All types'], ['contact', 'contact'], ['playbook', 'playbook'], ['enrollment', 'enrollment']].forEach(function(pair){
+    [['', 'All types'], ['contact', 'contact'], ['playbook', 'playbook'], ['enrollment', 'enrollment'], ['visit', 'link opens']].forEach(function(pair){
       var o = document.createElement('option');
       o.value = pair[0];
       o.textContent = pair[1];

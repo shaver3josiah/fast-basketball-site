@@ -19,6 +19,11 @@
   /* Server error keys that are not registration fields, and the element each one marks. */
   var FIXED = { reviewed: 'enReviewed', terms: 'enTerms' };
 
+  /* Flipped true the moment the form is on its way to Stripe (or saved when Stripe is not
+     ready yet), so the leave beacon below does not ping Blake that a family "did not finish"
+     when they did. */
+  var submitted = false;
+
   function say(msg){ if(window.fbToast) window.fbToast(msg); }
 
   function showFormErr(msg){
@@ -139,6 +144,33 @@
   }
   syncPay();
 
+  /* ---- Engagement beacon. Blake shares a private /enroll link per family, with a ?ref= tag
+     the admin link builder adds. This tells him it was opened and for how long, and pings him
+     if a tagged family looks and leaves without submitting. First-party, no cookies, no third
+     party. A dropped beacon just misses a data point, so every branch is wrapped and quiet. */
+  (function(){
+    var vid = '';
+    try { vid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ''; } catch(e){}
+    if(!vid) vid = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    var reff = q ? (q.get('ref') || '') : '';
+    function send(event){
+      var payload = JSON.stringify({ vid: vid, event: event, ref: reff, submitted: submitted });
+      try {
+        if(navigator.sendBeacon && navigator.sendBeacon('/api/enroll-visit', new Blob([payload], { type: 'application/json' }))) return;
+      } catch(e){}
+      try { fetch('/api/enroll-visit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }); } catch(e){}
+    }
+    send('open');
+    /* One leave per hidden transition; the flag resets if they come back, and the server
+       takes the longest dwell it sees and emails at most once. */
+    var leftSent = false;
+    function leave(){ if(leftSent) return; leftSent = true; send('leave'); }
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'hidden') leave(); else leftSent = false;
+    });
+    window.addEventListener('pagehide', leave);
+  })();
+
   form.addEventListener('change', function(e){
     if(e.target.name === 'plan') syncPay();
   });
@@ -224,10 +256,12 @@
     }).then(function(res){
       return res.json().catch(function(){ return {}; }).then(function(r){
         if(r.registrationId){ try { sessionStorage.setItem(STORE + '_id', r.registrationId); } catch(err){} }
-        if(res.status === 200 && r.url){ window.location.assign(r.url); return; }
+        if(res.status === 200 && r.url){ submitted = true; window.location.assign(r.url); return; }
         if(res.status === 503){
           /* Saved, but Stripe cannot take this plan yet. Say so and leave the button down:
-             a second click would only save the same registration again. */
+             a second click would only save the same registration again. Counts as submitted:
+             Blake already got the registration email, so no "did not finish" ping. */
+          submitted = true;
           showFormErr('Your registration is saved. Online payment opens soon, and Coach Blake will text you the payment link. Nothing more to do here.');
           say('Registration saved');
           if(btn) btn.textContent = 'Registration saved';

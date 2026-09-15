@@ -19,6 +19,7 @@ const HANDLERS = {
   'admin-upload': () => import('./functions/admin-upload.mjs'),
   checkout: () => import('./functions/checkout.mjs'),
   contact: () => import('./functions/contact.mjs'),
+  'enroll-visit': () => import('./functions/enroll-visit.mjs'),
   'leads-list': () => import('./functions/leads-list.mjs'),
   playbook: () => import('./functions/playbook.mjs'),
   preview: () => import('./functions/preview.mjs'),
