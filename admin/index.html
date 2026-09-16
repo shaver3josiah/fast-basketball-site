@@ -50,18 +50,25 @@
     <span id="saveStatus" class="status"></span>
   </header>
 
+  <!-- The Canvas Editor is a separate screen, not a tab, so it needs its own way in, and it
+       sits ABOVE the panels: below them it was at the bottom of a 26-field scroll, which is
+       how it went unfound inside "More" labelled "Full editor". -->
+  <div class="tools-link" id="canvasLink">
+    <a class="btn" id="canvasBtn" href="/admin/editor.html">Open the Canvas Editor</a>
+    <p class="tools-hint">Edit the site by clicking the words on the page itself. Best on a computer; on a phone you can still drag things to move them.</p>
+  </div>
+
   <main id="tabContent" class="tab-panel"></main>
   <main id="tabPhotos" class="tab-panel hidden"></main>
   <main id="tabLeads" class="tab-panel hidden"></main>
 
   <!-- Outside the three panels because admin.js empties those on every render, and
-       these three buttons are wired up once at load. -->
+       these buttons are wired up once at load. -->
   <details class="tools" id="tools">
     <summary>More</summary>
     <div class="tools-body">
       <button id="previewLockerBtn" class="btn" type="button">Preview the Locker</button>
       <button id="backupBtn" class="btn" type="button">Download backup</button>
-      <a class="btn" href="/admin/editor.html">Full editor (computer)</a>
       <button id="signOutBtn" class="btn" type="button">Sign out</button>
     </div>
   </details>

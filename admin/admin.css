@@ -173,6 +173,11 @@ select{
 }
 
 /* --- tools ------------------------------------------------ */
+/* Always visible, above "More": the Canvas Editor is its own screen and was unfindable
+   folded inside that block. Full width so it reads as a destination, not a minor action. */
+.tools-link{max-width:960px;margin:0 auto;padding:16px 14px 0;}
+.tools-link .btn{width:100%;}
+.tools-hint{margin:8px 0 0;font-size:.88rem;line-height:1.45;color:var(--fg-3);}
 .tools{max-width:960px;margin:0 auto 16px;padding:0 14px;}
 .tools>summary{
   list-style:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;
@@ -323,6 +328,9 @@ select{
      box so a short paragraph is not surrounded by empty field. */
   textarea{max-height:200px;}
   .tools{padding:0 24px;}
+  .tools-link{padding:24px 24px 0;}
+  /* On a wide screen the button does not need the full 960px to be obvious. */
+  .tools-link .btn{width:auto;min-width:260px;}
   .dock{
     left:50%;right:auto;transform:translateX(-50%);width:min(960px,100%);
     display:flex;border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0;

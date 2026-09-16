@@ -188,6 +188,8 @@
       // class, not the hidden attribute: .actions sets its own display and would win.
       document.getElementById('actionBar').classList.toggle('hidden', name === 'leads');
       document.getElementById('tools').classList.toggle('hidden', name === 'leads');
+      // Leads is for reading enquiries, not editing the page, and the list wants the screen.
+      document.getElementById('canvasLink').classList.toggle('hidden', name === 'leads');
       if(name === 'leads') loadLeads();
     });
   });
