@@ -12,6 +12,7 @@
 import { randomUUID } from 'node:crypto';
 import { checkoutSpec, getPlan, totalCents, dollars } from '../../src/lib/plans.mjs';
 import { validateRegistration } from '../../src/lib/registration.mjs';
+import { approvedCampaign } from '../../src/lib/commission.mjs';
 import { SITE_URL } from '../../src/lib/site-config.mjs';
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
 import { addLead, getLead } from './lib/leads.mjs';
@@ -167,6 +168,13 @@ export default async (request, context) => {
   if (!id) id = randomUUID();
 
   const record = registrationRecord({ id, timestamp: new Date().toISOString(), values, spec });
+  // The campaign tag off the link (`?camp=`), and the one place an untrusted one is filtered.
+  // Deliberately NOT a FIELDS answer: it is a fact about the link, not something the parent
+  // typed, so it is not in `values` and validateRegistration never sees it. Only an APPROVED
+  // slug is stored, in its canonical spelling; anything else is dropped silently, because an
+  // invented tag is a stranger's guess at a query parameter, not a registration error.
+  const campaign = approvedCampaign(body.campaign);
+  if (campaign) record.campaign = campaign;
   try {
     await addLead('registration:' + id, record);
   } catch (err) {

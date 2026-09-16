@@ -12,6 +12,8 @@ import {
   ATTRIBUTION_MONTHS,
   HEAR_ABOUT_CHOICES,
   ATTRIBUTING_ANSWER,
+  APPROVED_CAMPAIGNS,
+  approvedCampaign,
   isAttributed,
   rateFor,
   commissionCents,
@@ -69,9 +71,53 @@ test('only the search answer attributes, and every other answer does not', () =>
   assert.equal(isAttributed({ hearAbout: 'google or online search' }), false, 'case must match the signed wording');
 });
 
+// A `?camp=` tag is a query parameter, so an open one would let anybody who can read a URL
+// switch themselves from 2.5% to 8%. These pin that only the approved list can do that.
+// LIST is the test's own, because no real campaign has been approved yet; APPROVED_CAMPAIGNS
+// is asserted empty separately, which is the fact that matters in production today.
+const LIST = ['spring-search-ads'];
+
+test('no campaign is approved yet, so the answer is the only route to 8%', () => {
+  assert.deepEqual(APPROVED_CAMPAIGNS, [], 'adding a slug here is a contract decision, not a tidy-up');
+  assert.equal(isAttributed({ hearAbout: 'Coach Blake directly', campaign: 'spring-search-ads' }), false);
+});
+
 test('an approved Developer campaign attributes on its own', () => {
-  assert.equal(isAttributed({ hearAbout: 'Coach Blake directly', campaign: 'spring-ads' }), true);
-  assert.equal(isAttributed({ campaign: '   ' }), false, 'blank is not a campaign');
+  assert.equal(isAttributed({ hearAbout: 'Coach Blake directly', campaign: 'spring-search-ads' }, LIST), true);
+  assert.equal(isAttributed({ campaign: 'spring-search-ads' }, LIST), true);
+});
+
+test('an unapproved campaign is ignored, and never disqualifies the answer', () => {
+  // Section 7's default: unclear evidence is 2.5%, and a bad tag is not a registration error.
+  assert.equal(isAttributed({ hearAbout: 'Coach Blake directly', campaign: 'made-up' }, LIST), false);
+  // The attributing ANSWER still stands on its own next to a junk tag.
+  assert.equal(isAttributed({ hearAbout: ATTRIBUTING_ANSWER, campaign: 'made-up' }, LIST), true);
+});
+
+test('approvedCampaign returns the canonical slug, or null', () => {
+  // Case and surrounding space are forgiven: a link gets pasted through mail and keyboards.
+  assert.equal(approvedCampaign('  Spring-Search-Ads  ', LIST), 'spring-search-ads');
+  assert.equal(approvedCampaign('spring-search-ads', LIST), 'spring-search-ads');
+  // Membership is not forgiven.
+  assert.equal(approvedCampaign('spring-search-ad', LIST), null, 'near miss is not a match');
+  assert.equal(approvedCampaign('', LIST), null);
+  assert.equal(approvedCampaign('   ', LIST), null, 'blank is not a campaign');
+  assert.equal(approvedCampaign(undefined, LIST), null);
+  assert.equal(approvedCampaign(null, LIST), null);
+  assert.equal(approvedCampaign(42, LIST), null, 'a non-string must not throw');
+  assert.equal(approvedCampaign({ toString: () => 'spring-search-ads' }, LIST), null);
+});
+
+test('a campaign tag cannot smuggle anything into the ledger or the statement', () => {
+  // The slug shape is the guard: these are rejected on shape, before membership is consulted,
+  // so nothing long or strange can ride a query parameter into an email or a spreadsheet.
+  for (const bad of [
+    '=SUM(A1)', 'spring ads', 'spring/ads', '<b>x</b>', '../../etc',
+    'spring' + String.fromCharCode(10) + 'ads', 'spring' + String.fromCharCode(9) + 'ads',
+    "spring';--", 'a'.repeat(65), '-leading-dash'
+  ]) {
+    assert.equal(approvedCampaign(bad, [...LIST, bad.trim().toLowerCase()]), null, bad + ' must be refused');
+  }
 });
 
 // --- Section 6: the arithmetic ----------------------------------------------------------

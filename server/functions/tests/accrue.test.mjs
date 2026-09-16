@@ -301,7 +301,12 @@ test('every non-attributing answer is the base rate', async () => {
   }
 });
 
-test('an approved Developer campaign attributes even when the answer does not', async () => {
+// No campaign is approved yet (APPROVED_CAMPAIGNS is empty and commission.test.mjs pins that),
+// so the live behaviour of a campaign tag is that it changes nothing. This is the money-path
+// half of that: a row carrying a tag nobody approved is priced on the ANSWER alone, and the
+// tag does not survive onto the ledger, because the monthly statement prints that field beside
+// a customer's name and must never name a campaign that was never agreed.
+test('an unapproved campaign tag changes neither the rate nor the ledger row', async () => {
   clear();
   await addLead('registration:reg-c', {
     type: 'enrollment', name: 'Cam Parent', email: 'cam@example.test',
@@ -309,6 +314,20 @@ test('an approved Developer campaign attributes even when the answer does not', 
   });
   await accrueFromSession(paymentSession({ metadata: { registrationId: 'reg-c' } }), EVENT);
   const [e] = await all();
+  assert.equal(e.rate, 0.025);
+  assert.equal(e.attributed, false);
+  assert.equal(e.campaign, null);
+});
+
+test('an unapproved tag cannot take the 8% away from a family who answered for it', async () => {
+  clear();
+  await addLead('registration:reg-c2', {
+    type: 'enrollment', name: 'Dee Parent', email: 'dee@example.test',
+    hearAbout: 'Google or online search', campaign: 'made-up-by-anyone'
+  });
+  await accrueFromSession(paymentSession({ metadata: { registrationId: 'reg-c2' } }), EVENT);
+  const [e] = await all();
   assert.equal(e.rate, 0.08);
-  assert.equal(e.campaign, 'spring-search-ads');
+  assert.equal(e.attributed, true);
+  assert.equal(e.campaign, null);
 });

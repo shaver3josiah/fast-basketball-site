@@ -142,6 +142,17 @@
     if(emailInput && q.get('email')) emailInput.value = q.get('email');
     if(q.get('err') === '1') showFormErr(RETRY);
   }
+
+  /* The campaign tag off an approved tracked link. Kept for the tab because Stripe's cancel
+     link comes back to /enroll?plan=..&pay=.. and drops everything else, so without this a
+     family who reached Stripe and changed their mind would lose the tag on the try that
+     counts. The URL wins when it has one; the stored value only fills a gap. Whether the tag
+     means anything at all is decided server-side against the approved list, never here. */
+  var campaign = '';
+  try {
+    campaign = (q && q.get('camp')) || sessionStorage.getItem(STORE + '_camp') || '';
+    if(campaign) sessionStorage.setItem(STORE + '_camp', campaign);
+  } catch(e){ campaign = (q && q.get('camp')) || ''; }
   syncPay();
 
   /* ---- Engagement beacon. Blake shares a private /enroll link per family, with a ?ref= tag
@@ -245,6 +256,7 @@
     data.reviewed = document.getElementById('enReviewed').checked === true;
     data.terms = document.getElementById('enTerms').checked === true;
     data['en-hp'] = hp ? hp.value : '';
+    if(campaign) data.campaign = campaign;
     /* The id from an earlier try in this tab, so a return from Stripe's cancel link rewrites
        the same pending registration instead of adding a second one. */
     try { data.registrationId = sessionStorage.getItem(STORE + '_id') || ''; } catch(err){}

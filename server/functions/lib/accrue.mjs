@@ -17,7 +17,7 @@
 // took: session.amount_total once paid, or invoice.amount_paid. Never the term total, which
 // is a promise rather than cash, and never a sum of catalog figures, which does not match
 // anyway (monthlyCents rounds: 18333 * 3 is 54999 against a published 55000).
-import { commissionCents, rateFor, isAttributed, withinAttributionWindow } from '../../../src/lib/commission.mjs';
+import { commissionCents, rateFor, isAttributed, withinAttributionWindow, approvedCampaign } from '../../../src/lib/commission.mjs';
 import { getLead } from './leads.mjs';
 import { getEntry, putEntry, listEntries } from './ledger.mjs';
 
@@ -149,7 +149,7 @@ export async function accrueFromSession(session, event) {
       registrationId: meta.registrationId || null,
       customerKey,
       hearAbout: reg?.hearAbout || null,
-      campaign: reg?.campaign || null,
+      campaign: approvedCampaign(reg?.campaign),
       familyName: reg?.name || null,
       playerName: reg?.playerName || null,
       planLabel: reg?.planLabel || null,
@@ -196,7 +196,7 @@ export async function accrueFromInvoice(inv, event) {
       registrationId: meta.registrationId || null,
       customerKey,
       hearAbout: reg?.hearAbout || null,
-      campaign: reg?.campaign || null,
+      campaign: approvedCampaign(reg?.campaign),
       familyName: reg?.name || inv.customer_name || null,
       playerName: reg?.playerName || null,
       planLabel: reg?.planLabel || null,

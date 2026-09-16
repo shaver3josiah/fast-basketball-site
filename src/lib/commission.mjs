@@ -39,6 +39,43 @@ export const ATTRIBUTING_ANSWER = 'Google or online search';
 export const ATTRIBUTION_MONTHS = 12;
 
 /**
+ * The campaigns both Parties have approved, Section 7.
+ *
+ * A campaign attributes only where Developer "created and both Parties approved" it, so this
+ * cannot be free text: `?camp=` is a query parameter, and anyone who can read a URL can invent
+ * one. An open parameter would be a self-serve switch from 2.5% to 8%, which is precisely the
+ * self-dealing Section 7 rules out, so nothing attributes unless its slug is listed HERE.
+ *
+ * THE LIST IS THE APPROVAL RECORD. Adding a slug is a commit with both names on the pull
+ * request, which is the paper trail the agreement asks for. Empty is the correct state until a
+ * campaign is actually agreed: today the intake answer is the only route to 8%.
+ */
+export const APPROVED_CAMPAIGNS = [];
+
+// A slug, not a sentence: lower-case letters, digits, dash and underscore, starting with a
+// letter or digit. Bounded so nothing long or strange rides a query parameter into the ledger,
+// the statement email or the spreadsheet.
+const CAMPAIGN_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+
+/**
+ * The canonical slug for an approved campaign, or null for everything else.
+ *
+ * Case and surrounding space are forgiven because a link gets pasted through mail clients and
+ * phone keyboards; membership is not. Returning the canonical form rather than a boolean means
+ * the value STORED is the one on the list, so a row can never carry a variant spelling that
+ * later fails to match.
+ *
+ * `list` is a seam for tests only, so the positive path can be proved without inventing a live
+ * campaign. Production always uses APPROVED_CAMPAIGNS.
+ */
+export function approvedCampaign(value, list = APPROVED_CAMPAIGNS) {
+  if (typeof value !== 'string') return null;
+  const slug = value.trim().toLowerCase();
+  if (!CAMPAIGN_RE.test(slug)) return null;
+  return list.includes(slug) ? slug : null;
+}
+
+/**
  * Is this customer an Attributed Customer (Section 7)?
  *
  * Two of the three routes in the agreement are decidable here: the intake answer, and a
@@ -48,10 +85,12 @@ export const ATTRIBUTION_MONTHS = 12;
  * parties and recorded deliberately.
  *
  * Note what does NOT attribute, because the agreement says so in as many words: searching for
- * FAST by name, visiting the site, or paying online. Only the answer, or a named campaign.
+ * FAST by name, visiting the site, or paying online. Only the answer, or an APPROVED campaign.
+ * An unapproved campaign is not an error and does not disqualify anybody: it is simply ignored,
+ * and the answer decides, which is the "if the evidence is unclear, 2.5% applies" default.
  */
-export function isAttributed({ hearAbout, campaign } = {}) {
-  if (typeof campaign === 'string' && campaign.trim()) return true;
+export function isAttributed({ hearAbout, campaign } = {}, list = APPROVED_CAMPAIGNS) {
+  if (approvedCampaign(campaign, list)) return true;
   return hearAbout === ATTRIBUTING_ANSWER;
 }
 

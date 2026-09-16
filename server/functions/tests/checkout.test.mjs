@@ -247,3 +247,28 @@ test('the registration email goes to the owner with every answer in it', async (
     delete process.env.ENROLL_NOTIFY_EMAIL;
   }
 });
+
+// A `?camp=` tag reaches the handler as an ordinary body key, so it is exactly as trustworthy
+// as anything else a stranger can type into a URL. APPROVED_CAMPAIGNS is empty today, so the
+// only correct behaviour is to drop every tag, and to drop it WITHOUT failing the parent's
+// registration: a bad tag is somebody guessing at a query parameter, not a form error.
+test('an unapproved campaign tag is dropped, and the registration still saves', async () => {
+  const res = await handler(post({ ...sampleRegistration(), plan: 'group-3m-1x', pay: 'full', campaign: 'made-up' }), CTX);
+  assert.equal(res.status, 503, 'saved, then stopped at Stripe as usual');
+  const row = records().find((r) => r.type === 'enrollment' && r.playerName === 'Jordan Parent');
+  assert.ok(row, 'the registration was written');
+  assert.equal(row.campaign, undefined, 'an unapproved tag never reaches the stored row');
+});
+
+test('a campaign tag is not a typed answer and cannot overwrite one', async () => {
+  // It must never ride in through `values`: FIELDS drives that object, and a key outside it
+  // has to be ignored rather than merged over a real answer.
+  const res = await handler(post({
+    ...sampleRegistration(), plan: 'group-3m-1x', pay: 'full',
+    campaign: 'made-up', hearAbout: 'Friend, family, or referral'
+  }), CTX);
+  assert.equal(res.status, 503);
+  const row = records().filter((r) => r.type === 'enrollment').pop();
+  assert.equal(row.hearAbout, 'Friend, family, or referral', 'the answer is the parent\'s, untouched');
+  assert.equal(row.campaign, undefined);
+});
