@@ -21,3 +21,7 @@ Thumbs.db
 *-adminsdk-*.json
 firebase-adminsdk*.json
 gha-creds-*.json
+
+# The per-build IndexNow change list. Written by the build, read by the post-deploy
+# step in the same job; it describes one deploy and is not history worth keeping.
+indexnow-changed.json

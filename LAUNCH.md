@@ -285,6 +285,49 @@ one script run and one deploy. Do it in this order.
 
 ---
 
+## Step 6 — Search engines
+
+The site has to be *in* an index before ranking means anything, and a new domain with no
+inbound links is not found quickly on its own.
+
+**Google: Search Console, and it needs your login.** Add a **Domain** property for
+`fast-basketball.com` (the left-hand box, not URL prefix — that one covers only the exact
+string). Verification may need no DNS work at all: the domain already carries two
+`google-site-verification` TXT records, and Google issues one token per account-and-domain
+pair, so signing in as the account that created either one verifies instantly. If it hands
+you a new token instead, add it in Wix as a TXT on `@` and leave the existing two alone —
+one of them is holding up Blake's email. Then submit `sitemap.xml` and request indexing on
+the homepage.
+
+**Bing: import, do not re-verify.** At `bing.com/webmasters`, choose *Import from Google
+Search Console* and authorize with the same Google account. Verification and the sitemap
+come across; no second DNS record. DuckDuckGo is Bing-fed and follows.
+
+**IndexNow is already wired and needs nothing from you.** Every deploy submits the URLs
+whose pages actually changed, in minutes rather than weeks. Bing and Yandex participate;
+Google does not, so this is not a substitute for Search Console.
+
+- The key is served at `/0ec211c90d82b90b7b470eb6889ce903.txt`, written into `dist` by the
+  build. It is public by design — that file is how IndexNow proves the site is ours — so it
+  is in the repo and is not a secret.
+- `.github/workflows/deploy.yml` runs `scripts/indexnow.mjs` **after** the Hosting deploy.
+  Never before: announcing a URL before it is live gets the old bytes crawled.
+- It submits nothing when nothing changed, which is what IndexNow asks for. "0 of 15 page(s)
+  changed" in the build log is the normal, healthy line.
+- A failed ping warns and leaves the run green. The site is published either way.
+
+**One command you may want by hand: `npm run indexnow -- --all`.** It submits every URL in
+the *live* sitemap, for seeding an index that has never seen the site or re-seeding one that
+lost it. It reads the deployed sitemap, not the local build, so it cannot announce a page
+that is not published. It is deliberately not part of a deploy.
+
+**`<lastmod>` in the sitemap is per-page and truthful.** A page's date moves only when its
+rendered bytes move, recorded in `scripts/page-dates.json`, which is committed. That file
+matters: stamping every page with the build time is worse than emitting nothing, because
+Google discards lastmod from any site that reports it inaccurately, and 15 URLs changing on
+every deploy is indistinguishable from a site that lies. If you ever see every page restamped
+at once, something overwrote that record — only a build for the live host is allowed to.
+
 ## Still open
 
 A handful of things launching does not close: training photography, verified reviews, a

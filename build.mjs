@@ -2,6 +2,8 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, sta
 import { resolve, join, relative } from 'node:path';
 import { validateSuburbs, formatErrors } from './src/lib/validate-suburbs.mjs';
 import { generateResponsiveImages } from './scripts/responsive-images.mjs';
+import { resolveDates } from './scripts/page-dates.mjs';
+import { INDEXNOW_KEY, INDEXNOW_HOST, QUEUE_FILE } from './scripts/indexnow.mjs';
 import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyPriceFigures, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, promoteFirstH2, scanBalancedElement, stripReviewBlock, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
 import { renderLockerPage } from './src/lib/locker-page.mjs';
 import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
@@ -889,10 +891,66 @@ function step12_canvasPages(content, responsiveManifest, prelude) {
   return paths;
 }
 
+// A sitemap path back to the file that was written for it, so the page's own bytes can be
+// hashed. Every page is written as <path>/index.html except the root.
+function distFileFor(path) {
+  const clean = path.replace(/^\//, '').replace(/\/$/, '');
+  return resolve(DIST, clean === '' ? 'index.html' : join(clean, 'index.html'));
+}
+
+const DATES_FILE = resolve(ROOT, 'scripts', 'page-dates.json');
+
+// <lastmod> and the IndexNow queue come from the same place, because they answer the same
+// question: which of these pages actually changed? scripts/page-dates.mjs explains why a
+// build-time stamp would make both of them worthless.
 function writeSitemap(allPaths, siteUrl) {
-  const urls = allPaths.map((p) => '<url><loc>' + siteUrl.replace(/\/$/, '') + p + '</loc></url>').join('\n');
+  const base = siteUrl.replace(/\/$/, '');
+  const pages = {};
+  const missing = [];
+  for (const path of allPaths) {
+    const file = distFileFor(path);
+    if (existsSync(file)) pages[path] = readFileSync(file, 'utf8');
+    else missing.push(path + ' -> ' + relative(ROOT, file));
+  }
+  // A sitemap entry with no file behind it means this dist is incomplete, and skipping it
+  // quietly is the worst outcome: the page keeps whatever lastmod it had and never reaches
+  // the IndexNow queue, so a real change goes unannounced and nothing says so. On this
+  // machine the usual cause is another session's `npm run dev` emptying dist mid-build.
+  if (missing.length > 0) {
+    throw new Error('sitemap lists page(s) that were not written:\n  ' + missing.join('\n  '));
+  }
+
+  let previous = {};
+  if (existsSync(DATES_FILE)) {
+    try {
+      previous = JSON.parse(readFileSync(DATES_FILE, 'utf8'));
+    } catch {
+      // A corrupt record restamps everything rather than failing the build. The cost is one
+      // noisy sitemap, not a site that cannot ship.
+      console.warn('page-dates.json could not be read; every page will be restamped.');
+    }
+  }
+  const { dates, changed, manifest } = resolveDates(pages, previous);
+
+  const urls = allPaths
+    .map((p) => {
+      const loc = '<url><loc>' + base + p + '</loc>';
+      return dates[p] ? loc + '<lastmod>' + dates[p] + '</lastmod></url>' : loc + '</url>';
+    })
+    .join('\n');
   const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls + '\n</urlset>\n';
   writeFileSync(resolve(DIST, 'sitemap.xml'), xml);
+
+  // IndexNow proves ownership by serving the key as a file at the site root, so it ships
+  // with the site. It is public by construction and is not a secret.
+  writeFileSync(resolve(DIST, INDEXNOW_KEY + '.txt'), INDEXNOW_KEY + '\n');
+
+  // Nothing outside dist is written here, deliberately. An earlier cut recorded the manifest
+  // at this point and it cost an afternoon of confusion: a build that reached this line and
+  // then died at a later step still banked the new hashes, so a change was marked as seen by
+  // a run that never shipped, and the next build reported nothing changed. main() commits
+  // the state, once the build has survived everything after this.
+  return { manifest, changed: changed.map((u) => base + u), host: base.replace(/^https?:\/\//, '') };
 }
 
 // `node build.mjs --live` is a build meant for the public site. It exists because
@@ -980,7 +1038,7 @@ async function main() {
   allPaths.push(...step11d_enrollPages(sections, content, prelude));
   allPaths.push(...step12_canvasPages(content, responsiveManifest, prelude));
 
-  writeSitemap(allPaths, SITE_URL);
+  const sitemap = writeSitemap(allPaths, SITE_URL);
   writeRobots(SITE_URL);
   step13_assertNoEditorLeak();
 
@@ -996,6 +1054,24 @@ async function main() {
   const totalBytes = dirSize(DIST);
   console.log('Build complete. ' + allPaths.length + ' page(s) written to dist/.');
   console.log('Total dist size: ' + (totalBytes / 1024 / 1024).toFixed(2) + ' MB.');
+
+  // DEAD LAST, and that position is the whole point. These two files are the only build
+  // state that outlives dist, so they may only be written by a run that got all the way
+  // here. Anywhere earlier and a build that banks the hashes and then dies has told the
+  // next build "this page is already accounted for" about a page that never shipped; the
+  // change then goes out with a stale lastmod and is never announced. Three attempts at
+  // placing this higher each reproduced exactly that.
+  //
+  // The manifest describes the LIVE site, so only a live-host build may write it: the
+  // canonical URL sits inside every page, so a build for the web.app address or a preview
+  // channel hashes differently, and letting one of those record its hashes would make the
+  // next live build see all 15 pages as changed.
+  const liveHost = sitemap.host === INDEXNOW_HOST;
+  if (liveHost) writeFileSync(DATES_FILE, JSON.stringify(sitemap.manifest, null, 2) + '\n');
+  writeFileSync(QUEUE_FILE, JSON.stringify({ host: sitemap.host, urls: sitemap.changed }, null, 2) + '\n');
+  if (liveHost) {
+    console.log('IndexNow queue: ' + sitemap.changed.length + ' of ' + allPaths.length + ' page(s) changed.');
+  }
 }
 
 main().catch((err) => {

@@ -22,7 +22,8 @@
     "deploy": "node build.mjs --live && npx --yes firebase-tools deploy --only hosting,functions",
     "deploy:hosting": "node build.mjs --live && npx --yes firebase-tools deploy --only hosting",
     "deploy:functions": "npx --yes firebase-tools deploy --only functions",
-    "preview": "node build.mjs && npx --yes firebase-tools hosting:channel:deploy preview --expires 7d"
+    "preview": "node build.mjs && npx --yes firebase-tools hosting:channel:deploy preview --expires 7d",
+    "indexnow": "node scripts/indexnow.mjs"
   },
   "dependencies": {
     "stripe": "^22.6.1"

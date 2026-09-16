@@ -60,3 +60,14 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE }}
           channelId: live
           projectId: fast-basketball-b3ebe
+
+      # Tells Bing and Yandex which pages changed, in minutes instead of weeks. Google does
+      # not participate. This step is AFTER the deploy on purpose: announcing a URL before
+      # it is live gets the bytes that are still there crawled.
+      #
+      # It reads the change list `npm run build` wrote earlier in this job, submits nothing
+      # when nothing changed, and skips entirely unless the build targeted the real domain,
+      # so the web.app fallback never asks Bing to index a second copy of the site. A failed
+      # ping warns and leaves the run green: the site is already published either way.
+      - name: Announce changed URLs to IndexNow
+        run: node scripts/indexnow.mjs
