@@ -341,9 +341,9 @@ export function stripReviewBlock(html, content) {
 //
 // Unlike the hero ticker, `.ribbon` flips colour with the theme (see fb-polish.css).
 const RIBBON_SLOGANS = [
-  ['slog.1', 'Get Results'],
+  ['slog.1', 'Skills Training Every Week'],
   ['slog.2', 'Train Fast. Think Fast. Play Fast.'],
-  ['slog.3', 'Outwork Yesterday'],
+  ['slog.3', 'Elevate to Execute'],
   ['slog.4', 'Reps Do Not Lie'],
   ['slog.5', 'Earn Your Minutes'],
   ['slog.6', 'Compete Every Possession']

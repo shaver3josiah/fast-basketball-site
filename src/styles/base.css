@@ -223,12 +223,17 @@ nav.eyebrow a{min-width:44px;justify-content:center;}
   position:relative;z-index:2;width:100%;
 }
 .hero-copy .eyebrow{margin-bottom:22px;}
-.hero h1{margin-bottom:24px;}
+.hero h1{margin-bottom:24px;
+  /* The hero headline sits in a ~613px column beside the Evidence card, narrower than
+     any other page's h1, so it takes a smaller vw factor than the global scale. */
+  font-size:clamp(2.6rem,7vw,var(--step-6));}
 .hero h1 .l{display:block;overflow:hidden;}
 .hero h1 .l span{display:block;transform:translateY(104%);animation:lineUp .8s var(--ease-rush) forwards;}
 .hero h1 .l:nth-child(1) span{animation-delay:.10s;}
 .hero h1 .l:nth-child(2) span{animation-delay:.20s;}
 .hero h1 .l:nth-child(3) span{animation-delay:.30s;}
+/* 23 characters cannot hold the display size in the hero column; em tracks the clamp. */
+.hero h1 .l:nth-child(2) span{font-size:.63em;}
 @keyframes lineUp{to{transform:translateY(0);}}
 .fade-seq{opacity:0;animation:fadeSeq .6s var(--ease-rush) forwards;}
 @keyframes fadeSeq{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
