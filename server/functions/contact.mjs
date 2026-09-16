@@ -21,7 +21,7 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 // Long enough for a parent who wants to explain everything, short enough that the store
 // is never where somebody pastes a novel.
-const MAX = { name: 120, email: 200, phone: 40, area: 120, program: 160, message: 4000 };
+const MAX = { name: 120, email: 200, phone: 40, area: 120, program: 160, message: 4000, hearAbout: 60 };
 // Bot filter, September 2026 (Blake: "thousands of bots scanning your site"). The number
 // and the address are no longer in any public HTML; this endpoint hands them out only after
 // a request that passes. Two cheap tells, neither of which drops the lead: a flagged record
@@ -108,6 +108,7 @@ export default async (request, context) => {
     phone: text('phone'),
     area: text('area'),
     program: text('program'),
+    hearAbout: text('hearAbout'),
     message: text('message'),
     guardianConfirmed: true,
     ...(spam ? { spam } : {})

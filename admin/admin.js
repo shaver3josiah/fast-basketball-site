@@ -497,7 +497,7 @@
   // src/lib/registration.mjs.
   var REG_KEYS = ['athleteFirst', 'athleteLast', 'dob', 'gender', 'grade', 'school', 'studentEmail', 'studentPhone',
     'experience', 'team', 'position', 'goals', 'parentFirst', 'parentLast', 'relationship', 'homeCity', 'contactMethod',
-    'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'likedSite', 'paymentStatus', 'agreeName'];
+    'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'hearAbout', 'hearAboutOther', 'paymentStatus', 'agreeName'];
 
   // "3 hours ago" answers the only question a glance asks. Intl does the words; the exact
   // timestamp stays on the element's title for when it matters.
@@ -537,6 +537,7 @@
       if(l.program) s += SEP + l.program;
       return s;
     }
+    if(l.type === 'contact') return [l.area, l.hearAbout].filter(Boolean).join(SEP);
     return l.area || '';
   }
 
@@ -743,6 +744,7 @@
     } else if(l.type === 'contact'){
       meta('Area', l.area);
       meta('Program', l.program);
+      meta('How they heard', l.hearAbout);
       if(l.message){
         var msg = cell('div', l.message);
         msg.className = 'lead-msg';

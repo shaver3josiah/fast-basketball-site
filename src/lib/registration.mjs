@@ -9,6 +9,13 @@
 // are Stripe's, and the signature pad is Stripe's consent box and typed name (see below).
 // The two agreement boxes and the plan are validated below the loop, since neither is a
 // typed answer.
+//
+// hearAbout / hearAboutOther are not Jotform questions: the signed agreement's Schedule 1
+// requires this exact intake question, and Section 7 makes one particular answer the primary
+// evidence of attribution. Its options come from commission.mjs, the file the agreement's
+// wording is pinned to, so the two can never drift apart.
+
+import { HEAR_ABOUT_CHOICES } from './commission.mjs';
 
 export const SECTIONS = [
   { id: 'athlete', title: 'The athlete' },
@@ -52,7 +59,10 @@ export const FIELDS = [
   { key: 'insuranceProvider', section: 'health', label: 'Insurance provider', type: 'text', required: true, placeholder: 'Insurance company name' },
   { key: 'insurancePolicy', section: 'health', label: 'Policy number', type: 'text', required: true, autocomplete: 'off', placeholder: 'Policy or member number from the card' },
 
-  { key: 'notes', section: 'agreement', label: 'Questions or comments', type: 'textarea', placeholder: 'Anything Coach Blake should know before the first session' }
+  { key: 'notes', section: 'agreement', label: 'Questions or comments', type: 'textarea', placeholder: 'Anything Coach Blake should know before the first session' },
+
+  { key: 'hearAbout', section: 'agreement', label: 'How did you hear about us?', type: 'select', required: true, options: HEAR_ABOUT_CHOICES },
+  { key: 'hearAboutOther', section: 'agreement', label: 'Tell us more', type: 'text', placeholder: 'Only if you picked Other above' }
 ];
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -101,7 +111,7 @@ export function sampleRegistration() {
     athleteFirst: 'Jordan', athleteLast: 'Parent', dob: '2012-04-09', gender: 'Male', grade: '8th', school: 'Westglades Middle',
     experience: 'Intermediate', parentFirst: 'Ben', parentLast: 'Parent', relationship: 'Father',
     email: 'parent@example.com', phone: '(954) 555-0100', contactMethod: 'Text', program: '6th to 8th Grade Training',
-    insuranceProvider: 'Florida Blue', insurancePolicy: 'XYZ123456',
+    insuranceProvider: 'Florida Blue', insurancePolicy: 'XYZ123456', hearAbout: 'Friend, family, or referral',
     reviewed: true, terms: true
   };
 }

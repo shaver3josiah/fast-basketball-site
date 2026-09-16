@@ -50,14 +50,14 @@ test('a refund nets the accrual out of its period', () => {
 test('payments are bucketed by when the money moved, and periods come back newest first', () => {
   const { periods } = summarise([
     E({ paidAt: '2026-09-16T00:00:00.000Z', amountCents: 1000, commissionCents: 80 }),
-    E({ paidAt: '2026-09-29T00:00:00.000Z', amountCents: 1000, commissionCents: 80 })
+    E({ paidAt: '2026-10-02T00:00:00.000Z', amountCents: 1000, commissionCents: 80 })
   ]);
-  assert.deepEqual(periods.map((p) => p.key), ['2026-09-28', '2026-09-14']);
+  assert.deepEqual(periods.map((p) => p.key), ['2026-10', '2026-09']);
 });
 
-test('the last millisecond of a period stays in that period', () => {
-  const { periods } = summarise([E({ paidAt: '2026-09-27T23:59:59.999Z', amountCents: 1000, commissionCents: 80 })]);
-  assert.equal(periods[0].key, '2026-09-14');
+test('the last millisecond of a month stays in that month', () => {
+  const { periods } = summarise([E({ paidAt: '2026-09-30T23:59:59.999Z', amountCents: 1000, commissionCents: 80 })]);
+  assert.equal(periods[0].key, '2026-09');
 });
 
 test('a row with no readable date is counted, not silently dropped', () => {
@@ -97,29 +97,23 @@ test('money formats cents without ever parsing a string back', () => {
 });
 
 // --- the scheduled job -----------------------------------------------------------------
-// 2026-09-14 is the anchor Monday, so 09-14 starts period 0 and 09-28 starts period 1.
-const PAY_MONDAY = '2026-09-28T13:00:00.000Z'; // first Monday of period 1 -> pays period 0
-const OFF_MONDAY = '2026-09-21T13:00:00.000Z'; // second Monday of period 0 -> pays nothing
-
-test('an off week does nothing at all', async () => {
-  clear();
-  const r = await runPayPeriod(OFF_MONDAY);
-  assert.equal(r.skipped, 'not a pay week', JSON.stringify(r));
-});
+// Periods are calendar months, so the 1st of October reports 2026-09.
+const FIRST_OF_MONTH = '2026-10-01T13:00:00.000Z'; // the 1st -> reports September
 
 test('with no recipient configured it refuses rather than pretending', async () => {
   clear();
   delete process.env.PAYOUT_REPORT_EMAIL;
   delete process.env.ADMIN_BACKUP_EMAIL;
-  const r = await runPayPeriod(PAY_MONDAY);
+  const r = await runPayPeriod(FIRST_OF_MONTH);
   assert.equal(r.skipped, 'no PAYOUT_REPORT_EMAIL configured');
 });
 
-test('a pay week emails the period that just CLOSED, with both attachments', async () => {
+test('the job emails the month that just CLOSED, with both attachments', async () => {
   clear();
   await putEntry('acc_cs_1', E({
     paidAt: '2026-09-16T00:00:00.000Z', amountCents: 45000, commissionCents: 3600,
-    familyName: 'Ann Parent', sourceId: 'cs_1', billingReason: 'checkout', likedSite: true
+    familyName: 'Ann Parent', sourceId: 'cs_1', billingReason: 'checkout',
+    attributed: true, withinWindow: true, hearAbout: 'Google or online search', customerKey: 'ann@example.test'
   }));
   process.env.PAYOUT_REPORT_EMAIL = 'dev@example.test';
   process.env.RESEND_API_KEY = 'k';
@@ -128,9 +122,9 @@ test('a pay week emails the period that just CLOSED, with both attachments', asy
   const realFetch = globalThis.fetch;
   globalThis.fetch = async (url, init) => { sends.push(JSON.parse(init.body)); return { ok: true }; };
   try {
-    const r = await runPayPeriod(PAY_MONDAY);
+    const r = await runPayPeriod(FIRST_OF_MONTH);
     assert.equal(r.ok, true, JSON.stringify(r));
-    assert.equal(r.periodKey, '2026-09-14', 'it pays the closed period, not the open one');
+    assert.equal(r.periodKey, '2026-09', 'it pays the closed period, not the open one');
     assert.equal(r.netCents, 3600);
     assert.equal(sends.length, 1);
     const mail = sends[0];
@@ -154,12 +148,12 @@ test('a pay week emails the period that just CLOSED, with both attachments', asy
   }
 });
 
-test('a retry does not send the same fortnight twice', async () => {
+test('a retry does not send the same month twice', async () => {
   const sends = [];
   const realFetch = globalThis.fetch;
   globalThis.fetch = async (url, init) => { sends.push(JSON.parse(init.body)); return { ok: true }; };
   try {
-    const again = await runPayPeriod(PAY_MONDAY);
+    const again = await runPayPeriod(FIRST_OF_MONTH);
     assert.equal(again.skipped, 'already sent', JSON.stringify(again));
     assert.equal(sends.length, 0, 'a scheduled retry re-runs the whole handler: it must not re-email');
   } finally {
@@ -175,7 +169,7 @@ test('a failed send throws, so the scheduled function retries it', async () => {
   const realFetch = globalThis.fetch;
   globalThis.fetch = async () => ({ ok: false });
   try {
-    await assert.rejects(() => runPayPeriod(PAY_MONDAY), /was not sent/);
+    await assert.rejects(() => runPayPeriod(FIRST_OF_MONTH), /was not sent/);
   } finally {
     globalThis.fetch = realFetch;
   }
@@ -190,7 +184,7 @@ test('an empty period still reports, rather than going quiet', async () => {
   const realFetch = globalThis.fetch;
   globalThis.fetch = async (url, init) => { sends.push(JSON.parse(init.body)); return { ok: true }; };
   try {
-    const r = await runPayPeriod(PAY_MONDAY);
+    const r = await runPayPeriod(FIRST_OF_MONTH);
     assert.equal(r.ok, true);
     assert.equal(r.netCents, 0);
     assert.ok(sends[0].subject.includes('$0.00'), 'silence would read as "the job is broken"');

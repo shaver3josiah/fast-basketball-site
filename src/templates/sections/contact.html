@@ -57,6 +57,23 @@
               <option>Other</option>
             </select>
           </div>
+          <!-- Section 7 of the signed agreement requires this question on both the registration
+               form and every lead form. Optional here (an enquiry, not a registration), and the
+               six options are quoted verbatim in the agreement's Schedule 1: do not reword,
+               reorder or re-case them. Hard-coded label, no data-edit, same call as the step
+               legends: a new ct.* key would have to reach TEXT_KEYS and every saved draft first. -->
+          <div class="fld">
+            <label for="cHear">How did you hear about us?</label>
+            <select id="cHear" name="hearAbout">
+              <option value="">Please select</option>
+              <option>Google or online search</option>
+              <option>Instagram or other social media</option>
+              <option>Friend, family, or referral</option>
+              <option>Coach Blake directly</option>
+              <option>School, camp, or clinic</option>
+              <option>Other (please describe)</option>
+            </select>
+          </div>
           <div class="fld"><label for="cMsg" data-edit="ct.lbl.msg">Tell us about the player</label><textarea id="cMsg" name="message" placeholder="Grade, position, current team, and where they want to be playing in two years." data-edit-attr="placeholder:ct.ph.msg"></textarea></div>
         </fieldset>
         <fieldset class="step">

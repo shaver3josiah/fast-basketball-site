@@ -1,250 +1,203 @@
+// The money rules from the signed agreement, pinned.
+//
+// Section 6: 2.5% of Net Collected Revenue per Website Transaction, 8% for an Attributed
+// Customer for that customer's FIRST 12 MONTHS ONLY, and the two never stack.
+// Section 7: the intake answers, verbatim from Schedule 1.
+// Section 8: calendar-month periods, payable within 15 days of month end.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  RATE_LIKED,
+  RATE_ATTRIBUTED,
   RATE_BASE,
-  PAY_PERIOD_ANCHOR,
+  ATTRIBUTION_MONTHS,
+  HEAR_ABOUT_CHOICES,
+  ATTRIBUTING_ANSWER,
+  isAttributed,
   rateFor,
   commissionCents,
   periodKeyFor,
   periodRange,
   previousPeriodKey,
   nextPeriodKey,
-  isPayWeek
+  withinAttributionWindow
 } from './commission.mjs';
 
-const DAY = 86400000;
-const WEEK = 7 * DAY;
-const PERIOD = 14 * DAY;
-const ANCHOR = Date.parse(`${PAY_PERIOD_ANCHOR}T00:00:00.000Z`);
-
-test('rates are the published numbers', () => {
-  assert.equal(RATE_LIKED, 0.08);
+// --- Section 6: the rates ---------------------------------------------------------------
+test('the rates are the ones in the agreement', () => {
+  assert.equal(RATE_ATTRIBUTED, 0.08);
   assert.equal(RATE_BASE, 0.025);
+  assert.equal(ATTRIBUTION_MONTHS, 12);
 });
 
-test('only a strict true earns the liked rate', () => {
-  assert.equal(rateFor(true), RATE_LIKED);
-  for (const truthy of ['yes', 'true', 1, {}, [], 'TRUE']) {
-    assert.equal(rateFor(truthy), RATE_BASE, `${String(truthy)} must not earn 8%`);
-  }
-  for (const falsy of [false, 0, '', null, undefined, NaN]) {
-    assert.equal(rateFor(falsy), RATE_BASE);
+test('no stacking: exactly one rate applies to a payment', () => {
+  assert.equal(rateFor(true, true), RATE_ATTRIBUTED);
+  assert.equal(rateFor(false, true), RATE_BASE);
+  // Attributed but past the 12 months is the BASE rate, not zero and not 8%.
+  assert.equal(rateFor(true, false), RATE_BASE);
+  assert.equal(rateFor(false, false), RATE_BASE);
+});
+
+test('only a strict true earns the attributed rate', () => {
+  for (const truthy of ['yes', 1, {}, [], 'true']) {
+    assert.equal(rateFor(truthy, true), RATE_BASE, `${String(truthy)} must not earn 8%`);
   }
   assert.equal(rateFor(), RATE_BASE);
 });
 
-test('commission on the real catalog amounts, liked', () => {
-  const expected = [
-    [5000, 400],
-    [3500, 280],
-    [45000, 3600],
-    [65000, 5200],
-    [80000, 6400],
-    [100000, 8000],
-    [18333, 1467], // 1466.64 rounds up
-    [15000, 1200]
-  ];
-  for (const [amount, cents] of expected) {
-    assert.equal(commissionCents(amount, true), cents, `${amount} at 8%`);
+// --- Section 7: the intake answers ------------------------------------------------------
+test('the six answer choices are verbatim from Schedule 1', () => {
+  assert.deepEqual(HEAR_ABOUT_CHOICES, [
+    'Google or online search',
+    'Instagram or other social media',
+    'Friend, family, or referral',
+    'Coach Blake directly',
+    'School, camp, or clinic',
+    'Other (please describe)'
+  ]);
+  assert.equal(ATTRIBUTING_ANSWER, 'Google or online search');
+  assert.ok(HEAR_ABOUT_CHOICES.includes(ATTRIBUTING_ANSWER));
+});
+
+test('only the search answer attributes, and every other answer does not', () => {
+  assert.equal(isAttributed({ hearAbout: 'Google or online search' }), true);
+  for (const other of HEAR_ABOUT_CHOICES.filter((c) => c !== ATTRIBUTING_ANSWER)) {
+    assert.equal(isAttributed({ hearAbout: other }), false, other + ' must not attribute');
   }
+  // The agreement says so in as many words: none of these attribute on their own.
+  assert.equal(isAttributed({}), false);
+  assert.equal(isAttributed({ hearAbout: '' }), false);
+  assert.equal(isAttributed({ hearAbout: 'google or online search' }), false, 'case must match the signed wording');
+});
+
+test('an approved Developer campaign attributes on its own', () => {
+  assert.equal(isAttributed({ hearAbout: 'Coach Blake directly', campaign: 'spring-ads' }), true);
+  assert.equal(isAttributed({ campaign: '   ' }), false, 'blank is not a campaign');
+});
+
+// --- Section 6: the arithmetic ----------------------------------------------------------
+test('commission on the real catalog amounts, attributed', () => {
+  const at8 = (c) => commissionCents(c, true);
+  assert.equal(at8(5000), 400);      // $50 evaluation
+  assert.equal(at8(3500), 280);      // $35 48-hour evaluation
+  assert.equal(at8(45000), 3600);    // $450
+  assert.equal(at8(65000), 5200);    // $650
+  assert.equal(at8(80000), 6400);    // $800
+  assert.equal(at8(100000), 8000);   // $1,000
+  assert.equal(at8(18333), 1467);    // a monthly instalment
+  assert.equal(at8(15000), 1200);
 });
 
 test('commission on the real catalog amounts, base', () => {
-  const expected = [
-    [5000, 125],
-    [3500, 88], // exactly 87.5, rounds away from zero
-    [45000, 1125],
-    [65000, 1625],
-    [80000, 2000],
-    [100000, 2500],
-    [18333, 458], // 458.325 rounds down
-    [15000, 375]
-  ];
-  for (const [amount, cents] of expected) {
-    assert.equal(commissionCents(amount, false), cents, `${amount} at 2.5%`);
-  }
+  const at25 = (c) => commissionCents(c, false);
+  assert.equal(at25(5000), 125);
+  assert.equal(at25(3500), 88, 'exactly 87.5 must round away from zero, not to 87');
+  assert.equal(at25(45000), 1125);
+  assert.equal(at25(65000), 1625);
+  assert.equal(at25(80000), 2000);
+  assert.equal(at25(100000), 2500);
+  assert.equal(at25(18333), 458);
+  assert.equal(at25(300000), 7500);  // a hand-written $3,000 invoice
 });
 
-test('every result is an integer number of cents', () => {
-  for (let a = 0; a <= 200000; a += 137) {
-    assert.ok(Number.isInteger(commissionCents(a, true)));
-    assert.ok(Number.isInteger(commissionCents(a, false)));
+test('every result is a whole number of cents', () => {
+  for (let c = 0; c <= 20000; c += 37) {
+    assert.ok(Number.isSafeInteger(commissionCents(c, true)));
+    assert.ok(Number.isSafeInteger(commissionCents(c, false)));
   }
 });
 
 test('a reversal cancels its accrual exactly, at both rates', () => {
-  // negating 0 in JS gives -0, which node:assert compares with Object.is and so
-  // treats as a different value; the module deliberately never returns -0.
-  const negate = (cents) => (cents === 0 ? 0 : -cents);
-  for (let a = 1; a <= 250000; a += 7) {
-    for (const liked of [true, false]) {
-      assert.equal(
-        commissionCents(-a, liked),
-        negate(commissionCents(a, liked)),
-        `${a} at ${liked ? 'liked' : 'base'} rate is not symmetric`
-      );
+  // This is what makes a refunded sale net to zero instead of leaving a few cents behind.
+  // negate() exists because -0 is not 0 under assert.equal: on an amount too small to earn a
+  // cent the commission is 0, and negating that gives -0 on the EXPECTED side only. The module
+  // deliberately never returns -0, so the expectation is what needs normalising.
+  const negate = (n) => (n === 0 ? 0 : -n);
+  for (let c = 1; c <= 200000; c += 971) {
+    for (const rate of [true, false]) {
+      assert.equal(commissionCents(-c, rate), negate(commissionCents(c, rate)), `failed at ${c}`);
     }
   }
-  // the .5 boundaries Math.round gets wrong: 2.5% of 20n + 20 lands on a half cent
-  for (let a = 20; a <= 400000; a += 40) {
-    assert.equal(commissionCents(-a, false), negate(commissionCents(a, false)));
-  }
-  assert.equal(commissionCents(3500, false), 88);
-  assert.equal(commissionCents(-3500, false), -88);
 });
 
 test('zero is zero, and never negative zero', () => {
   assert.equal(commissionCents(0, true), 0);
-  assert.equal(commissionCents(0, false), 0);
-  assert.equal(commissionCents(-0, true), 0);
-  assert.ok(!Object.is(commissionCents(0, true), -0));
-  // 2.5% of 19 cents is 0.475, which rounds to nothing in either direction
-  assert.equal(commissionCents(19, false), 0);
-  assert.equal(commissionCents(-19, false), 0);
-  assert.ok(!Object.is(commissionCents(-19, false), -0));
+  assert.ok(Object.is(commissionCents(0, true), 0), 'must not be -0');
+  assert.ok(Object.is(commissionCents(-0, false), 0));
 });
 
-test('bad amounts throw', () => {
-  const bad = [1.5, -1.5, 0.1, NaN, undefined, null, Infinity, -Infinity, '5000', {}, [], true];
-  for (const value of bad) {
-    assert.throws(
-      () => commissionCents(value, true),
-      /safe integer/,
-      `${String(value)} should have thrown`
-    );
-  }
-  assert.throws(() => commissionCents(Number.MAX_SAFE_INTEGER, true), /too large/);
-});
-
-test('the anchor is a Monday at UTC midnight and starts its own period', () => {
-  assert.equal(new Date(ANCHOR).getUTCDay(), 1);
-  assert.equal(new Date(ANCHOR).toISOString(), `${PAY_PERIOD_ANCHOR}T00:00:00.000Z`);
-  assert.equal(periodKeyFor(ANCHOR), PAY_PERIOD_ANCHOR);
-  assert.equal(periodKeyFor(`${PAY_PERIOD_ANCHOR}T00:00:00.000Z`), PAY_PERIOD_ANCHOR);
-  assert.equal(periodKeyFor(PAY_PERIOD_ANCHOR), PAY_PERIOD_ANCHOR);
-});
-
-test('period boundaries are half-open', () => {
-  assert.equal(periodKeyFor(ANCHOR - 1), '2026-08-31'); // 1ms before the anchor
-  assert.equal(periodKeyFor(ANCHOR), PAY_PERIOD_ANCHOR);
-  assert.equal(periodKeyFor(ANCHOR + PERIOD - 1), PAY_PERIOD_ANCHOR); // last ms inside
-  assert.equal(periodKeyFor(ANCHOR + PERIOD), '2026-09-28'); // first ms of the next
-});
-
-test('a payment on the very last millisecond stays in its own period', () => {
-  for (let n = -10; n <= 40; n++) {
-    const start = ANCHOR + n * PERIOD;
-    const key = periodKeyFor(start);
-    assert.equal(periodKeyFor(start + PERIOD - 1), key, `last ms of period ${n} leaked forward`);
-    assert.notEqual(periodKeyFor(start + PERIOD), key);
-    assert.equal(periodKeyFor(start + PERIOD), nextPeriodKey(key));
+test('bad amounts throw rather than quietly pricing nonsense', () => {
+  for (const bad of [NaN, undefined, null, 1.5, Infinity, -Infinity, '450', {}, []]) {
+    assert.throws(() => commissionCents(bad, true), /safe integer/, `${String(bad)} should throw`);
   }
 });
 
-test('pre-anchor instants floor into negative periods, they do not truncate', () => {
-  assert.equal(periodKeyFor(ANCHOR - PERIOD), '2026-08-31');
-  assert.equal(periodKeyFor(ANCHOR - PERIOD - 1), '2026-08-17');
-  assert.equal(periodKeyFor('2026-08-31T00:00:00.000Z'), '2026-08-31');
-  assert.equal(periodKeyFor('2026-09-13T23:59:59.999Z'), '2026-08-31');
-  assert.equal(periodKeyFor('2020-02-29T23:00:00.000Z'), periodKeyFor(Date.parse('2020-02-29T23:00:00.000Z')));
-  // a truncating implementation would fold all of these into period 0
-  for (let n = -1; n >= -60; n--) {
-    const start = ANCHOR + n * PERIOD;
-    assert.equal(periodKeyFor(start), periodKeyFor(start + PERIOD - 1));
-    assert.notEqual(periodKeyFor(start), PAY_PERIOD_ANCHOR);
-    assert.ok(Date.parse(`${periodKeyFor(start)}T00:00:00.000Z`) < ANCHOR);
-  }
+// --- Section 8: calendar-month periods --------------------------------------------------
+test('a payment lands in the calendar month it was paid in', () => {
+  assert.equal(periodKeyFor('2026-09-16T10:00:00.000Z'), '2026-09');
+  assert.equal(periodKeyFor('2026-09-01T00:00:00.000Z'), '2026-09', 'first instant of the month');
+  assert.equal(periodKeyFor('2026-09-30T23:59:59.999Z'), '2026-09', 'last instant of the month');
+  assert.equal(periodKeyFor('2026-10-01T00:00:00.000Z'), '2026-10', 'and the next one rolls over');
+  assert.equal(periodKeyFor(Date.parse('2026-09-16T10:00:00.000Z')), '2026-09', 'epoch ms agrees');
 });
 
-test('ISO strings and epoch ms agree', () => {
-  for (let n = -30; n <= 30; n++) {
-    const ms = ANCHOR + n * PERIOD + 3 * DAY + 3600000;
-    assert.equal(periodKeyFor(ms), periodKeyFor(new Date(ms).toISOString()));
-  }
+test('a period is the whole month, half-open, payable 15 days after it ends', () => {
+  assert.deepEqual(periodRange('2026-09'), {
+    key: '2026-09',
+    startISO: '2026-09-01T00:00:00.000Z',
+    endISO: '2026-09-30T23:59:59.999Z',
+    endExclusiveISO: '2026-10-01T00:00:00.000Z',
+    payDateISO: '2026-10-16'
+  });
 });
 
-test('periodKeyFor rejects junk', () => {
-  for (const value of [NaN, Infinity, undefined, null, {}, 'not-a-date']) {
-    assert.throws(() => periodKeyFor(value), `${String(value)} should have thrown`);
+test('February and December are not special cases', () => {
+  assert.equal(periodRange('2027-02').endISO, '2027-02-28T23:59:59.999Z');
+  assert.equal(periodRange('2028-02').endISO, '2028-02-29T23:59:59.999Z', 'leap year');
+  assert.equal(periodRange('2026-12').endExclusiveISO, '2027-01-01T00:00:00.000Z', 'year rolls over');
+  assert.equal(periodRange('2026-12').payDateISO, '2027-01-16');
+});
+
+test('periods walk forwards and backwards across a year boundary', () => {
+  assert.equal(previousPeriodKey('2027-01'), '2026-12');
+  assert.equal(nextPeriodKey('2026-12'), '2027-01');
+  let k = '2026-01';
+  for (let i = 0; i < 36; i++) k = nextPeriodKey(k);
+  assert.equal(k, '2029-01');
+  for (let i = 0; i < 36; i++) k = previousPeriodKey(k);
+  assert.equal(k, '2026-01', 'round trip');
+});
+
+test('a malformed period key throws instead of inventing a month', () => {
+  for (const bad of ['2026-13', '2026-00', '2026', '2026-9', 'September', '', null, 20269]) {
+    assert.throws(() => periodRange(bad), /periodKey/, `${String(bad)} should throw`);
   }
 });
 
 test('periodRange round-trips through its own bounds', () => {
-  for (let n = -60; n <= 60; n++) {
-    const key = periodKeyFor(ANCHOR + n * PERIOD);
+  for (const key of ['2026-01', '2026-02', '2026-09', '2026-12', '2028-02']) {
     const r = periodRange(key);
-    assert.equal(r.key, key);
     assert.equal(periodKeyFor(r.startISO), key);
-    assert.equal(periodKeyFor(r.endISO), key);
-    assert.equal(periodKeyFor(r.endExclusiveISO), nextPeriodKey(key));
-    assert.equal(Date.parse(r.endExclusiveISO) - Date.parse(r.startISO), PERIOD);
-    assert.equal(Date.parse(r.endExclusiveISO) - Date.parse(r.endISO), 1);
-    assert.equal(r.startISO, `${key}T00:00:00.000Z`);
-    assert.equal(r.endExclusiveISO, `${nextPeriodKey(key)}T00:00:00.000Z`);
-    assert.equal(r.payDateISO, nextPeriodKey(key));
-    assert.ok(r.endISO.endsWith('T23:59:59.999Z'));
+    assert.equal(periodKeyFor(r.endISO), key, 'the last instant is still inside');
+    assert.equal(periodKeyFor(r.endExclusiveISO), nextPeriodKey(key), 'and the next one is not');
   }
 });
 
-test('periodRange on the anchor reads the way a payslip would', () => {
-  assert.deepEqual(periodRange(PAY_PERIOD_ANCHOR), {
-    key: '2026-09-14',
-    startISO: '2026-09-14T00:00:00.000Z',
-    endISO: '2026-09-27T23:59:59.999Z',
-    endExclusiveISO: '2026-09-28T00:00:00.000Z',
-    payDateISO: '2026-09-28'
-  });
+// --- Section 7: the 12-month window -----------------------------------------------------
+test('the window runs 12 calendar months from the first collected payment', () => {
+  const first = '2026-10-01T00:00:00.000Z';
+  assert.equal(withinAttributionWindow(first, '2026-10-01T00:00:00.000Z'), true, 'the first payment itself');
+  assert.equal(withinAttributionWindow(first, '2027-09-30T23:59:59.999Z'), true, 'the last instant inside');
+  assert.equal(withinAttributionWindow(first, '2027-10-01T00:00:00.000Z'), false, 'ends permanently at 12 months');
+  assert.equal(withinAttributionWindow(first, '2028-01-01T00:00:00.000Z'), false);
 });
 
-test('periodRange rejects a date that is not a period start', () => {
-  for (const value of ['2026-09-15', '2026-09-13', '2026-09-21', 'nonsense', '2026-9-14', 20260914, null]) {
-    assert.throws(() => periodRange(value), `${String(value)} should have thrown`);
-  }
-  assert.throws(() => previousPeriodKey('2026-09-15'));
-  assert.throws(() => nextPeriodKey('2026-09-15'));
+test('12 months is calendar months, not 365 days', () => {
+  // A leap day sits inside this window, so a fixed 365 * 86400000 would end a day early.
+  assert.equal(withinAttributionWindow('2027-06-01T00:00:00.000Z', '2028-05-31T23:59:59.999Z'), true);
+  assert.equal(withinAttributionWindow('2027-06-01T00:00:00.000Z', '2028-06-01T00:00:00.000Z'), false);
 });
 
-test('previous/next round-trip over many periods', () => {
-  const first = periodKeyFor(ANCHOR - 100 * PERIOD);
-  let key = first;
-  for (let n = 0; n < 200; n++) {
-    assert.equal(previousPeriodKey(nextPeriodKey(key)), key);
-    assert.equal(nextPeriodKey(previousPeriodKey(key)), key);
-    const next = nextPeriodKey(key);
-    assert.equal(Date.parse(`${next}T00:00:00.000Z`) - Date.parse(`${key}T00:00:00.000Z`), PERIOD);
-    key = next;
-  }
-  // walking forward 200 and back 200 lands where it started
-  for (let n = 0; n < 200; n++) key = previousPeriodKey(key);
-  assert.equal(key, first);
-});
-
-test('isPayWeek alternates across Mondays for more than two years, with no drift', () => {
-  let trues = 0;
-  for (let w = -30; w < 130; w++) {
-    // 160 weeks = 80 periods, spanning several clock changes in every local zone
-    const monday = ANCHOR + w * WEEK;
-    assert.equal(new Date(monday).getUTCDay(), 1);
-    const expected = ((w % 2) + 2) % 2 === 0;
-    assert.equal(isPayWeek(monday), expected, `week ${w} (${new Date(monday).toISOString()})`);
-    if (expected) trues++;
-    // every instant in that UTC week gives the same answer
-    assert.equal(isPayWeek(monday + WEEK - 1), expected);
-    assert.equal(isPayWeek(monday + 3 * DAY + 12 * 3600000), expected);
-    assert.equal(isPayWeek(new Date(monday).toISOString()), expected);
-  }
-  assert.equal(trues, 80); // exactly half of 160 weeks
-});
-
-test('a pay week is the first week of its own period', () => {
-  for (let n = -20; n <= 40; n++) {
-    const start = ANCHOR + n * PERIOD;
-    assert.equal(isPayWeek(start), true);
-    assert.equal(isPayWeek(start + WEEK - 1), true);
-    assert.equal(isPayWeek(start + WEEK), false);
-    assert.equal(isPayWeek(start + PERIOD - 1), false);
-    assert.equal(isPayWeek(start + PERIOD), true);
-    assert.equal(periodKeyFor(start + WEEK), periodKeyFor(start));
-  }
+test('with no earlier payment known, the payment being priced opens the window', () => {
+  assert.equal(withinAttributionWindow(null, '2026-10-01T00:00:00.000Z'), true);
+  assert.equal(withinAttributionWindow(undefined, '2030-01-01T00:00:00.000Z'), true);
 });

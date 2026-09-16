@@ -205,52 +205,42 @@ html.fb-light .en-card input:checked+.en-card-b,html.fb-light .en-pay:has(input:
 html.fb-light .en-card-d,html.fb-light .en-pay-a{color:var(--text-body-light);}
 @media(max-width:640px){.en-form{gap:32px;}.en-card-b{padding:20px 18px;}}
 
-/* --- The "you enjoyed the website" tick ------------------------------------
-   Scoped to .en-form on purpose: .fld + input[type=checkbox] is byte-identical
-   markup on the contact, playbook and locker guardian gates, and an unscoped
-   rule would celebrate a parent ticking a consent box on three other forms.
-   The default page is LIGHT (html ships class="fb-light"), so the ring is
+/* --- The "how did you hear about us" confirmation pulse --------------------
+   Replaces the old "you enjoyed the website" tick. This answer is the signed
+   agreement's primary evidence of attribution (Schedule 1 / Section 7), and
+   one particular choice pays the developer a higher rate than the rest. An
+   animation that fired only on that choice would nudge a parent toward it
+   and corrupt the record, so it plays identically for all six: the trigger
+   is "a real answer is picked", never which one.
+   Scoped to .en-form and to #en_hearAbout by id: .fld select is shared with
+   every other select on this page (gender, experience, contactMethod...) and
+   an unscoped rule would pulse on all of them.
+   box-shadow/transform animate directly on the select itself rather than on
+   a ::after: generated content is not reliably rendered on a native <select>,
+   which is why box-shadow (already used above for its own :focus ring) is
+   the anchor-free way to do this.
+   The default page is LIGHT (html ships class="fb-light"), so the pulse is
    --fast-red (4.7:1 on white); --red-hot is a dark-theme colour and measures
-   3.5:1 here. Decorative, but it reports the checked state, so it stays above
-   the 3:1 that 1.4.11 asks of a UI component.
-   The label is display:flex with no position (inline style from build.mjs), so
-   the anchor has to be set here before ::after can be placed against it. */
-.en-form #enLikedSite + span{position:relative;}
-.en-form #enLikedSite + span::after{
-  content:"";
-  position:absolute;
-  left:-30px; top:.15em;
-  width:19px; height:19px;
-  border-radius:50%;
-  border:2px solid var(--fast-red);
-  opacity:0;
-  pointer-events:none;
-}
+   3.5:1 here. */
 /* The final keyframe IS the resting state. base.css's reduced-motion reset does
-   not stop keyframes, it collapses them to .001ms, so a ring that ended at
-   scale(2.6);opacity:1 would be left permanently painted over the checkbox. */
-@keyframes enTickRing{
-  0%{transform:scale(.4);opacity:.9;}
-  70%{opacity:.35;}
-  100%{transform:scale(2.6);opacity:0;}
+   not stop keyframes, it collapses them to .001ms, so a pulse that ended at
+   full opacity would be left permanently painted around the select. */
+@keyframes hearAboutPulse{
+  0%{box-shadow:0 0 0 0 rgba(230,12,32,.55);}
+  70%{box-shadow:0 0 0 10px rgba(230,12,32,0);}
+  100%{box-shadow:0 0 0 10px rgba(230,12,32,0);}
 }
-@keyframes enTickPop{
+@keyframes hearAboutPop{
   0%{transform:scale(1);}
-  38%{transform:scale(1.28);}
+  38%{transform:scale(1.03);}
   100%{transform:scale(1);}
 }
-.en-form .fld:has(#enLikedSite:checked) #enLikedSite + span::after{
-  animation:enTickRing calc(.52s / var(--motion-speed,1)) var(--ease-recoil,cubic-bezier(.2,.9,.3,1.4)) 1;
+.en-form #en_hearAbout:has(option:checked:not([value=""])){
+  animation:hearAboutPulse calc(.52s / var(--motion-speed,1)) var(--ease-recoil,cubic-bezier(.2,.9,.3,1.4)) 1,
+            hearAboutPop calc(.42s / var(--motion-speed,1)) var(--ease-recoil,cubic-bezier(.2,.9,.3,1.4)) 1;
 }
-.en-form .fld:has(#enLikedSite:checked) #enLikedSite{
-  animation:enTickPop calc(.42s / var(--motion-speed,1)) var(--ease-recoil,cubic-bezier(.2,.9,.3,1.4)) 1;
-}
-/* Ticking it is a small kindness, so the copy warms up rather than shouting. */
-.en-form .fld:has(#enLikedSite:checked) .en-opt{color:var(--fast-red);}
 @media(prefers-reduced-motion:reduce){
-  .en-form .fld:has(#enLikedSite:checked) #enLikedSite + span::after,
-  .en-form .fld:has(#enLikedSite:checked) #enLikedSite{animation:none;}
+  .en-form #en_hearAbout:has(option:checked:not([value=""])){animation:none;}
 }
 /* html[data-motion="off"] twin of the block above. */
-html[data-motion="off"] .en-form .fld:has(#enLikedSite:checked) #enLikedSite + span::after,
-html[data-motion="off"] .en-form .fld:has(#enLikedSite:checked) #enLikedSite{animation:none;}
+html[data-motion="off"] .en-form #en_hearAbout:has(option:checked:not([value=""])){animation:none;}

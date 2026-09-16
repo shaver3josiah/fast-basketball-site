@@ -44,7 +44,7 @@ function readLocal() {
 // --- "this pay period has already been sent" -------------------------------------------
 //
 // A scheduled function RETRIES on a throw, and a retry re-runs the whole handler, so without a
-// marker a failure after the send would email the same fortnight twice. Its own store, because a
+// marker a failure after the send would email the same month twice. Its own store, because a
 // marker is not a ledger entry and must never reach the totals.
 const SENT_NAME = 'payperiod-sent';
 const SENT_PATH = () => resolve(process.cwd(), '.local/payperiod-sent.json');

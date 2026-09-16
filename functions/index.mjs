@@ -35,18 +35,17 @@ export const api = onRequest(
   }
 );
 
-// The fortnightly developer pay report.
-//
-// WEEKLY, not fortnightly, on purpose: cron cannot express "every two weeks" without drifting at
-// month boundaries, so the parity check lives in the job against a fixed anchor and an off week
-// returns immediately. timeZone is explicit because ScheduleOptions defaults to UTC, which would
-// put a 9am job at 4am or 5am Eastern depending on the season and move which day it lands on.
+// The monthly developer pay report, on the 1st, covering the month that just closed
+// (agreement Section 8). Monthly IS expressible in cron, so there is no anchor date and no
+// parity check to get wrong. timeZone is explicit because ScheduleOptions defaults to UTC,
+// which would put a 9am job at 4am or 5am Eastern depending on the season and could move which
+// calendar day it lands on.
 // maxInstances 1: this must never run beside itself. The body is imported lazily so deploy
 // discovery does not load the ledger, the spreadsheet writer or Stripe just to read the schedule.
 export const payPeriod = onSchedule(
   {
     region: 'us-central1',
-    schedule: '0 9 * * 1',
+    schedule: '0 9 1 * *',
     timeZone: 'America/New_York',
     maxInstances: 1,
     timeoutSeconds: 120,

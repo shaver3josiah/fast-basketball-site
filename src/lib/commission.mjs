@@ -1,21 +1,69 @@
-// Referral commission rates and fortnightly pay periods.
+// Commission rates, attribution, and calendar-month pay periods.
+//
+// Every rule here comes from the signed Website Development, Maintenance & Digital Growth
+// Agreement (Sections 6, 7 and 8, and Schedule 1). Where a constant is quoted from that
+// document the comment says so, because changing it changes what someone is owed.
 //
 // Pure module: no imports, no clock, no randomness. Every function is a
 // function of its arguments only, so the same inputs always give the same
 // money.
 //
-// TIMEZONE RULE: all period math is UTC. UTC has no DST, which is exactly why
-// the boundaries are computed there: a fortnight is always 14 * 86400000 ms,
-// with no 23- or 25-hour day to make that arithmetic lie. Never move whole days
-// by adding fixed milliseconds in a zone that observes DST; here nothing ever
-// leaves UTC, so 14 * 86400000 is exact.
+// TIMEZONE RULE: all period math is UTC, which has no DST, so no 23- or 25-hour day can
+// make the arithmetic lie. Month boundaries go through Date.UTC rather than any fixed number
+// of milliseconds, because months are not all the same length and 12 months is not 365 days.
 
-export const RATE_LIKED = 0.08;
+// The two rates in the signed agreement, Section 6.
+export const RATE_ATTRIBUTED = 0.08;
 export const RATE_BASE = 0.025;
 
-/** 8% only for a literal true. Anything else ("yes", 1, {}) is the base rate. */
-export function rateFor(likedSite) {
-  return likedSite === true ? RATE_LIKED : RATE_BASE;
+/**
+ * The intake answers, Schedule 1, VERBATIM.
+ *
+ * These strings are quoted in a signed agreement and are the primary evidence of attribution
+ * (Section 7). Do not reword, reorder or re-case them: a stored answer that no longer matches
+ * this list stops qualifying and silently drops a customer from 8% to 2.5%.
+ */
+export const HEAR_ABOUT_CHOICES = [
+  'Google or online search',
+  'Instagram or other social media',
+  'Friend, family, or referral',
+  'Coach Blake directly',
+  'School, camp, or clinic',
+  'Other (please describe)'
+];
+
+/** The one answer that attributes, Section 7. */
+export const ATTRIBUTING_ANSWER = 'Google or online search';
+
+/** 8% runs for this many months from the customer's FIRST collected payment, Section 6. */
+export const ATTRIBUTION_MONTHS = 12;
+
+/**
+ * Is this customer an Attributed Customer (Section 7)?
+ *
+ * Two of the three routes in the agreement are decidable here: the intake answer, and a
+ * Developer campaign the customer arrived through. The third, a non-branded organic search
+ * shown in Analytics or Search Console, is explicitly SECONDARY evidence and is not something
+ * the checkout path can see, so it is never inferred: it would have to be agreed between the
+ * parties and recorded deliberately.
+ *
+ * Note what does NOT attribute, because the agreement says so in as many words: searching for
+ * FAST by name, visiting the site, or paying online. Only the answer, or a named campaign.
+ */
+export function isAttributed({ hearAbout, campaign } = {}) {
+  if (typeof campaign === 'string' && campaign.trim()) return true;
+  return hearAbout === ATTRIBUTING_ANSWER;
+}
+
+/**
+ * The rate for one payment.
+ *
+ * `attributed` is whether the customer qualifies at all; `withinWindow` is whether this payment
+ * falls inside that customer's first 12 months. Both must hold, because the 8% "ends permanently
+ * after that 12-month period". No stacking: exactly one rate applies to a given payment.
+ */
+export function rateFor(attributed, withinWindow = true) {
+  return attributed === true && withinWindow === true ? RATE_ATTRIBUTED : RATE_BASE;
 }
 
 // Rates are scaled to hundred-thousandths so the whole calculation is integer
@@ -31,14 +79,14 @@ const SCALE = 100000;
  * trusting Math.round, which rounds half UP and so breaks the symmetry at every
  * .5 boundary: Math.round(87.5) is 88 but Math.round(-87.5) is -87.
  */
-export function commissionCents(amountCents, likedSite) {
+export function commissionCents(amountCents, earnsAttributedRate) {
   if (!Number.isSafeInteger(amountCents)) {
     throw new Error(
       `commissionCents: amountCents must be a safe integer number of cents, got ${typeof amountCents} ${String(amountCents)}`
     );
   }
   const sign = amountCents < 0 ? -1 : 1;
-  const scaled = Math.abs(amountCents) * Math.round(rateFor(likedSite) * SCALE);
+  const scaled = Math.abs(amountCents) * Math.round(rateFor(earnsAttributedRate) * SCALE);
   if (!Number.isSafeInteger(scaled)) {
     throw new Error(`commissionCents: amountCents too large to price exactly: ${amountCents}`);
   }
@@ -49,14 +97,15 @@ export function commissionCents(amountCents, likedSite) {
   return rounded === 0 ? 0 : sign * rounded;
 }
 
-/** Monday, UTC midnight. Start of pay period 0. */
-export const PAY_PERIOD_ANCHOR = '2026-09-14';
+// --- calendar-month pay periods, Section 8 ---------------------------------------------
+//
+// "FAST will calculate compensation monthly and pay undisputed amounts within 15 days after
+// the end of each calendar month." Calendar months, so there is no anchor date, no 14-day
+// arithmetic and no parity check: the month a payment falls in IS its period, and cron can
+// express "the 1st" natively. Months are UTC, which is also how Stripe timestamps arrive.
 
-const DAY_MS = 86400000;
-const WEEK_MS = 7 * DAY_MS;
-const PERIOD_MS = 14 * DAY_MS;
-const ANCHOR_MS = Date.parse(`${PAY_PERIOD_ANCHOR}T00:00:00.000Z`);
-const KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const KEY_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+const PAY_DAYS_AFTER_MONTH_END = 15;
 
 function toMs(instant) {
   if (typeof instant === 'number') {
@@ -72,61 +121,60 @@ function toMs(instant) {
 }
 
 const isoOf = (ms) => new Date(ms).toISOString();
-const dateOf = (ms) => isoOf(ms).slice(0, 10);
 
-/**
- * The 'YYYY-MM-DD' UTC date starting the 14-day period containing `instant`.
- * Periods are [anchor + 14n days, anchor + 14(n+1) days), half-open, so the
- * last millisecond of a period belongs to that period and not the next one.
- * Instants before the anchor are legal and give negative n, which is why this
- * floors rather than truncates: truncation would fold every pre-anchor instant
- * into period 0 and pay it in the wrong fortnight.
- */
+/** The 'YYYY-MM' UTC month containing `instant`. */
 export function periodKeyFor(instant) {
-  const n = Math.floor((toMs(instant) - ANCHOR_MS) / PERIOD_MS);
-  return dateOf(ANCHOR_MS + n * PERIOD_MS);
+  return isoOf(toMs(instant)).slice(0, 7);
 }
 
-function startMsOf(periodKey) {
+function partsOf(periodKey) {
   if (typeof periodKey !== 'string' || !KEY_RE.test(periodKey)) {
-    throw new Error(`periodKey: expected 'YYYY-MM-DD', got ${String(periodKey)}`);
+    throw new Error(`periodKey: expected 'YYYY-MM', got ${String(periodKey)}`);
   }
-  const start = Date.parse(`${periodKey}T00:00:00.000Z`);
-  if (Number.isNaN(start)) throw new Error(`periodKey: not a real date: ${periodKey}`);
-  if ((start - ANCHOR_MS) % PERIOD_MS !== 0) {
-    throw new Error(`periodKey: ${periodKey} is not a period start (anchor ${PAY_PERIOD_ANCHOR}, 14-day periods)`);
-  }
-  return start;
+  return [Number(periodKey.slice(0, 4)), Number(periodKey.slice(5, 7))];
 }
+
+const keyOf = (y, m) => String(y).padStart(4, '0') + '-' + String(m).padStart(2, '0');
 
 export function periodRange(periodKey) {
-  const start = startMsOf(periodKey);
-  const endExclusive = start + PERIOD_MS;
+  const [y, m] = partsOf(periodKey);
+  // Date.UTC normalises month 13 into January of the next year, so the end of December needs
+  // no special case.
+  const start = Date.UTC(y, m - 1, 1);
+  const endExclusive = Date.UTC(y, m, 1);
   return {
     key: periodKey,
     startISO: isoOf(start),
-    endISO: isoOf(endExclusive - 1), // last instant inside the period, for display
+    endISO: isoOf(endExclusive - 1), // last instant inside the month, for display
     endExclusiveISO: isoOf(endExclusive),
-    payDateISO: dateOf(endExclusive) // the day the period becomes payable
+    // Payable within 15 days of month end. Whole days added to a UTC midnight, so no DST.
+    payDateISO: isoOf(endExclusive + PAY_DAYS_AFTER_MONTH_END * 86400000).slice(0, 10)
   };
 }
 
 export function previousPeriodKey(periodKey) {
-  return dateOf(startMsOf(periodKey) - PERIOD_MS);
+  const [y, m] = partsOf(periodKey);
+  return m === 1 ? keyOf(y - 1, 12) : keyOf(y, m - 1);
 }
 
 export function nextPeriodKey(periodKey) {
-  return dateOf(startMsOf(periodKey) + PERIOD_MS);
+  const [y, m] = partsOf(periodKey);
+  return m === 12 ? keyOf(y + 1, 1) : keyOf(y, m + 1);
 }
 
 /**
- * True when `instant` falls in the FIRST of the two UTC weeks of its period.
- * Weeks run Monday 00:00 UTC to the next Monday 00:00 UTC; the anchor is a
- * Monday and periods are exactly two of those weeks, so every week lies wholly
- * inside one period and "first week" is unambiguous. A weekly job guarded by
- * this fires every other week, forever, without drift.
+ * Is `paidAt` inside this customer's 12-month attribution window?
+ *
+ * The window opens on the date of the customer's FIRST collected payment (Section 7) and the
+ * 8% "ends permanently after that 12-month period". Calendar months via Date.UTC, never a
+ * fixed number of milliseconds: 12 months is not 365 days in a leap year.
  */
-export function isPayWeek(instant) {
-  const offset = (((toMs(instant) - ANCHOR_MS) % PERIOD_MS) + PERIOD_MS) % PERIOD_MS;
-  return offset < WEEK_MS;
+export function withinAttributionWindow(firstPaidAt, paidAt) {
+  if (!firstPaidAt) return true; // no earlier payment known: this one opens the window
+  const first = new Date(toMs(firstPaidAt));
+  const endsAt = Date.UTC(
+    first.getUTCFullYear(), first.getUTCMonth() + ATTRIBUTION_MONTHS, first.getUTCDate(),
+    first.getUTCHours(), first.getUTCMinutes(), first.getUTCSeconds(), first.getUTCMilliseconds()
+  );
+  return toMs(paidAt) < endsAt;
 }

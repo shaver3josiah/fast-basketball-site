@@ -1,4 +1,7 @@
-// Rolling the commission ledger up into fortnightly pay periods, and rendering one.
+// Rolling the commission ledger up into calendar-month pay periods, and rendering one.
+//
+// Section 8 of the agreement: compensation is calculated monthly and paid within 15 days of
+// month end, with a statement listing the Website Transactions and the Attributed Customers.
 //
 // Pure apart from the ledger read: everything below takes entries in and gives numbers out, so
 // the totals can be tested without Firestore and without a clock.
@@ -19,7 +22,7 @@ export function money(cents) {
  * ONLY livemode rows count. A test-mode event writes a structurally identical row, and paying on
  * one would be paying on money that never moved. Rows are bucketed by `paidAt`, which is when
  * Stripe says the money moved, not when the webhook happened to be processed: a three-day retry
- * must still land in the fortnight it was earned.
+ * must still land in the month it was earned.
  */
 export function summarise(entries, { nowPeriodKey = null } = {}) {
   const byPeriod = new Map();
@@ -40,7 +43,8 @@ export function summarise(entries, { nowPeriodKey = null } = {}) {
       byPeriod.set(key, {
         ...periodRange(key),
         grossPaidCents: 0, accrualCents: 0, reversalCents: 0, netCents: 0,
-        entryCount: 0, unmatchedCount: 0, entries: []
+        entryCount: 0, unmatchedCount: 0, entries: [],
+        attributedCustomers: [], attributedSeen: new Set()
       });
     }
     const p = byPeriod.get(key);
@@ -51,12 +55,27 @@ export function summarise(entries, { nowPeriodKey = null } = {}) {
     else p.accrualCents += Number(e.commissionCents) || 0;
     p.netCents += Number(e.commissionCents) || 0;
     if (e.unmatched) p.unmatchedCount += 1;
+    // Section 8: the statement lists the Attributed Customers it charged 8% for. One line per
+    // customer, not per payment, and only while they are inside their 12 months.
+    if (e.kind === 'accrual' && e.attributed && e.withinWindow) {
+      const who = e.customerKey || e.familyName || e.sourceId;
+      if (!p.attributedSeen.has(who)) {
+        p.attributedSeen.add(who);
+        p.attributedCustomers.push({
+          customerKey: e.customerKey || null,
+          familyName: e.familyName || null,
+          hearAbout: e.hearAbout || null,
+          campaign: e.campaign || null
+        });
+      }
+    }
   }
 
   const periods = [...byPeriod.values()].sort((a, b) => (a.key < b.key ? 1 : -1));
   for (const p of periods) {
     p.current = nowPeriodKey ? p.key === nowPeriodKey : false;
     p.entries.sort((a, b) => (a.paidAt < b.paidAt ? -1 : 1));
+    delete p.attributedSeen; // a Set does not survive JSON, and the list is what matters
   }
   return { periods, skippedTestMode, undated };
 }
@@ -76,7 +95,8 @@ const COLUMNS = [
   { header: 'Player', key: 'playerName', type: 'string' },
   { header: 'Plan', key: 'planLabel', type: 'string' },
   { header: 'Source', key: 'billingReason', type: 'string' },
-  { header: 'Enjoyed the site', key: 'liked', type: 'string' },
+  { header: 'How they heard', key: 'hearAbout', type: 'string' },
+  { header: 'Attributed', key: 'attributed', type: 'string' },
   { header: 'Amount paid', key: 'amount', type: 'money' },
   { header: 'Rate', key: 'rate', type: 'number' },
   { header: 'Commission', key: 'commission', type: 'money' },
@@ -92,7 +112,10 @@ function rowsFor(period) {
     playerName: e.playerName || '',
     planLabel: e.planLabel || '',
     billingReason: e.billingReason || '',
-    liked: e.likedSite ? 'Yes' : 'No',
+    hearAbout: e.hearAbout || '',
+    // Says WHY the rate is what it is: an attributed customer past 12 months reads 'Yes, expired'
+    // rather than looking like a mistake on the statement.
+    attributed: e.attributed ? (e.withinWindow ? 'Yes' : 'Yes, 12 months expired') : 'No',
     amount: (Number(e.amountCents) || 0) / 100,
     rate: Number(e.rate) || 0,
     commission: (Number(e.commissionCents) || 0) / 100,

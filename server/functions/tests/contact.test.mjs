@@ -43,6 +43,7 @@ function clearRecords() {
 // A page loaded a minute ago, filled in by a person.
 const VALID = {
   name: 'Jordan Parent', email: 'parent@example.com', phone: '(954) 555 0100', area: 'Parkland',
+  hearAbout: 'Friend, family, or referral',
   message: 'Eighth grade guard, wants more minutes.', guardianConfirmed: true, 'ct-hp': '',
   ts: String(Date.now() - 60_000)
 };
@@ -69,6 +70,7 @@ test('a real request is stored, and only then is the number handed out', async (
   assert.equal(rows.length, 1);
   assert.equal(rows[0].type, 'contact');
   assert.equal(rows[0].email, 'parent@example.com');
+  assert.equal(rows[0].hearAbout, 'Friend, family, or referral');
   assert.equal(rows[0].spam, undefined);
 });
 

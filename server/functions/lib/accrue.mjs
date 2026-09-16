@@ -17,7 +17,7 @@
 // took: session.amount_total once paid, or invoice.amount_paid. Never the term total, which
 // is a promise rather than cash, and never a sum of catalog figures, which does not match
 // anyway (monthlyCents rounds: 18333 * 3 is 54999 against a published 55000).
-import { commissionCents, rateFor } from '../../../src/lib/commission.mjs';
+import { commissionCents, rateFor, isAttributed, withinAttributionWindow } from '../../../src/lib/commission.mjs';
 import { getLead } from './leads.mjs';
 import { getEntry, putEntry, listEntries } from './ledger.mjs';
 
@@ -46,7 +46,30 @@ export function invoiceSubscriptionId(inv) {
   return inv?.parent?.subscription_details?.subscription || inv?.subscription || null;
 }
 
-/** The registration row behind a payment, or null. Its likedSite decides the rate. */
+/** The customer, for the 12-month window. One family is one email, case folded. */
+const customerKeyOf = (email) => (typeof email === 'string' ? email.trim().toLowerCase() : '');
+
+/**
+ * When this customer FIRST paid, from the ledger itself.
+ *
+ * The 8% runs 12 months from the customer's first collected payment (Section 7), so the window
+ * needs a start date and the ledger already holds one: the earliest accrual for that email.
+ * ponytail: a full scan per accrual, which is the same scan the reversal path already does and
+ * is nothing at this volume. If the ledger ever gets big, store the first-payment date on the
+ * customer instead of deriving it.
+ */
+async function firstPaidAtFor(customerKey, list) {
+  if (!customerKey) return null;
+  const { entries } = await list();
+  let earliest = null;
+  for (const e of entries) {
+    if (e.kind !== 'accrual' || e.customerKey !== customerKey || !e.paidAt) continue;
+    if (!earliest || e.paidAt < earliest) earliest = e.paidAt;
+  }
+  return earliest;
+}
+
+/** The registration row behind a payment, or null. Its intake answer decides the rate. */
 async function registrationFor(registrationId) {
   if (typeof registrationId !== 'string' || !registrationId) return null;
   try {
@@ -59,14 +82,19 @@ async function registrationFor(registrationId) {
   }
 }
 
-function entryFrom({ kind, amountCents, likedSite, paidAt, event, currency, fields }) {
+function entryFrom({ kind, amountCents, attributed, withinWindow, paidAt, event, currency, fields }) {
+  // rateFor takes BOTH: a customer can be attributed and still be past their 12 months, which
+  // drops them to the base rate rather than off the ledger. commissionCents takes the resolved
+  // boolean, so the rate it prices at is exactly the rate recorded on the row.
+  const earns = attributed === true && withinWindow === true;
   return {
     type: 'commission',
     kind,
     amountCents,
-    rate: rateFor(likedSite),
-    commissionCents: commissionCents(amountCents, likedSite),
-    likedSite: likedSite === true,
+    rate: rateFor(attributed, withinWindow),
+    commissionCents: commissionCents(amountCents, earns),
+    attributed: attributed === true,
+    withinWindow: withinWindow === true,
     paidAt,
     currency: currency || 'usd',
     // A test-mode event writes a structurally identical row. The report pays on livemode only.
@@ -98,11 +126,19 @@ export async function accrueFromSession(session, event) {
   if (await getEntry(id)) return { duplicate: true, id };
   const reg = await registrationFor(meta.registrationId);
 
+  const paidAt = isoOf(event.created);
+  const attributed = isAttributed({ hearAbout: reg?.hearAbout, campaign: reg?.campaign });
+  const customerKey = customerKeyOf(reg?.email || session.customer_email);
+  const withinWindow = attributed
+    ? withinAttributionWindow(await firstPaidAtFor(customerKey, listEntries), paidAt)
+    : true;
+
   const entry = entryFrom({
     kind: 'accrual',
     amountCents,
-    likedSite: reg?.likedSite === true,
-    paidAt: isoOf(event.created),
+    attributed,
+    withinWindow,
+    paidAt,
     event,
     currency: session.currency,
     fields: {
@@ -111,6 +147,9 @@ export async function accrueFromSession(session, event) {
       sessionId: session.id,
       paymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null,
       registrationId: meta.registrationId || null,
+      customerKey,
+      hearAbout: reg?.hearAbout || null,
+      campaign: reg?.campaign || null,
       familyName: reg?.name || null,
       playerName: reg?.playerName || null,
       planLabel: reg?.planLabel || null,
@@ -131,12 +170,22 @@ export async function accrueFromInvoice(inv, event) {
   const meta = invoiceSubscriptionMeta(inv);
   const reg = await registrationFor(meta.registrationId);
 
+  // paid_at is when the money moved; event.created is only when we heard about it.
+  const paidAt = isoOf(inv.status_transitions?.paid_at) || isoOf(event.created);
+  const attributed = isAttributed({ hearAbout: reg?.hearAbout, campaign: reg?.campaign });
+  const customerKey = customerKeyOf(reg?.email || inv.customer_email);
+  // The window opens at the customer's FIRST payment, so a renewal in month 13 drops to the
+  // base rate on its own. Only looked up when it could change the answer.
+  const withinWindow = attributed
+    ? withinAttributionWindow(await firstPaidAtFor(customerKey, listEntries), paidAt)
+    : true;
+
   const entry = entryFrom({
     kind: 'accrual',
     amountCents,
-    likedSite: reg?.likedSite === true,
-    // paid_at is when the money moved; event.created is only when we heard about it.
-    paidAt: isoOf(inv.status_transitions?.paid_at) || isoOf(event.created),
+    attributed,
+    withinWindow,
+    paidAt,
     event,
     currency: inv.currency,
     fields: {
@@ -145,11 +194,14 @@ export async function accrueFromInvoice(inv, event) {
       invoiceId: inv.id,
       subscriptionId: invoiceSubscriptionId(inv),
       registrationId: meta.registrationId || null,
+      customerKey,
+      hearAbout: reg?.hearAbout || null,
+      campaign: reg?.campaign || null,
       familyName: reg?.name || inv.customer_name || null,
       playerName: reg?.playerName || null,
       planLabel: reg?.planLabel || null,
-      // 'manual' is a dashboard invoice written by hand: a real sale at the base rate,
-      // because no website checkbox was ever offered for it.
+      // 'manual' is a dashboard invoice written by hand. It never saw the intake question,
+      // so it cannot be an Attributed Customer and takes the base rate.
       billingReason: inv.billing_reason || null
     }
   });
@@ -186,7 +238,11 @@ export async function reverseFromCharge(charge, event, kind, list = listEntries)
   const entry = entryFrom({
     kind: 'reversal',
     amountCents: -amount,
-    likedSite: match ? match.likedSite === true : false,
+    // Mirror BOTH flags off the matched accrual so rateFor() reproduces exactly the rate that
+    // accrual used. Recomputing from attribution alone would reverse an out-of-window customer
+    // at 8% when they were only ever paid 2.5%.
+    attributed: match ? match.attributed === true : false,
+    withinWindow: match ? match.withinWindow === true : true,
     paidAt: isoOf(event.created),
     event,
     currency: charge.currency,
@@ -199,6 +255,8 @@ export async function reverseFromCharge(charge, event, kind, list = listEntries)
       familyName: match?.familyName || null,
       playerName: match?.playerName || null,
       planLabel: match?.planLabel || null,
+      customerKey: match?.customerKey || null,
+      hearAbout: match?.hearAbout || null,
       reversesId: match?.id || null,
       unmatched: !match,
       billingReason: kind === 'dispute' ? 'dispute' : 'refund'

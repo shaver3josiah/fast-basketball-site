@@ -120,8 +120,6 @@ export default async (request, context) => {
     // Checkboxes arrive as the string "yes" or not at all; the validator wants real booleans.
     body.reviewed = form.get('reviewed') === 'yes';
     body.terms = form.get('terms') === 'yes';
-    // Optional: absent means not ticked, which is the base commission rate.
-    body.likedSite = form.get('likedSite') === 'yes';
   } else {
     try {
       body = await request.json();
@@ -169,10 +167,6 @@ export default async (request, context) => {
   if (!id) id = randomUUID();
 
   const record = registrationRecord({ id, timestamp: new Date().toISOString(), values, spec });
-  // Not a FIELDS answer, so it is not in `values` and registrationRecord never sees it. The
-  // webhook reads it back off this row when it accrues, which is why it must be a real boolean
-  // and not left undefined: an absent value is "not ticked", the base rate.
-  record.likedSite = body.likedSite === true;
   try {
     await addLead('registration:' + id, record);
   } catch (err) {

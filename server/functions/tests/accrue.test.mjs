@@ -25,11 +25,14 @@ const clear = () => {
 };
 const all = async () => (await listEntries()).entries;
 
-// A family that ticked the box, and one that did not.
-async function registration(id, likedSite) {
+// The two answers that matter: the one that attributes, and one that does not.
+const GOOGLE = 'Google or online search';
+const REFERRAL = 'Friend, family, or referral';
+
+async function registration(id, hearAbout, email) {
   await addLead('registration:' + id, {
     type: 'enrollment', name: 'Ben Parent', playerName: 'Jordan Parent',
-    planLabel: 'Group Training Membership', likedSite
+    planLabel: 'Group Training Membership', hearAbout, email: email || (id + '@example.test')
   });
 }
 
@@ -39,19 +42,20 @@ const paymentSession = (over = {}) => ({
 });
 
 // --- the rate --------------------------------------------------------------------------
-test('a ticked box accrues 8 percent, an unticked one 2.5 percent', async () => {
+test('the attributing answer earns 8 percent, any other answer 2.5 percent', async () => {
   clear();
-  await registration('reg-1', true);
+  await registration('reg-1', GOOGLE);
   const r = await accrueFromSession(paymentSession(), EVENT);
   assert.equal(r.ok, true);
   const [e] = await all();
   assert.equal(e.amountCents, 45000);
   assert.equal(e.rate, 0.08);
   assert.equal(e.commissionCents, 3600, '8% of $450 is $36');
-  assert.equal(e.likedSite, true);
+  assert.equal(e.attributed, true);
+  assert.equal(e.hearAbout, GOOGLE);
 
   clear();
-  await registration('reg-1', false);
+  await registration('reg-1', REFERRAL);
   await accrueFromSession(paymentSession(), EVENT);
   const [f] = await all();
   assert.equal(f.rate, 0.025);
@@ -68,7 +72,7 @@ test('a registration that cannot be found falls back to the base rate, never 8 p
 // --- THE DOUBLE-COUNT RULE -------------------------------------------------------------
 test('a monthly enrollment accrues EXACTLY ONCE across both events Stripe fires', async () => {
   clear();
-  await registration('reg-2', true);
+  await registration('reg-2', GOOGLE);
   // 1. Stripe completes the subscription session, amount_total set to the first instalment.
   const sess = await accrueFromSession({
     id: 'cs_live_B', mode: 'subscription', payment_status: 'paid', amount_total: 18333,
@@ -100,7 +104,7 @@ test('an unpaid session and the preflight probe both accrue nothing', async () =
 // --- replay ----------------------------------------------------------------------------
 test('a Stripe retry or dashboard resend never doubles the money', async () => {
   clear();
-  await registration('reg-1', true);
+  await registration('reg-1', GOOGLE);
   await accrueFromSession(paymentSession(), EVENT);
   // A resend carries a NEW event id for the SAME session, which is why the ledger id is
   // derived from the payment and not from the event.
@@ -124,7 +128,7 @@ test('subscription metadata is read at both the parent and the legacy shape', ()
 
 test('a legacy-shaped invoice still finds its registration and its rate', async () => {
   clear();
-  await registration('reg-3', true);
+  await registration('reg-3', GOOGLE);
   await accrueFromInvoice({
     id: 'in_legacy', amount_paid: 15000, currency: 'usd', billing_reason: 'subscription_cycle',
     subscription: 'sub_x', subscription_details: { metadata: { registrationId: 'reg-3' } }
@@ -134,7 +138,7 @@ test('a legacy-shaped invoice still finds its registration and its rate', async 
   assert.equal(e.commissionCents, 1200);
 });
 
-test('a hand-written dashboard invoice accrues at the base rate', async () => {
+test('a hand-written dashboard invoice never attributes: it never saw the question', async () => {
   clear();
   await accrueFromInvoice({
     id: 'in_manual', amount_paid: 300000, currency: 'usd', billing_reason: 'manual',
@@ -149,7 +153,7 @@ test('a hand-written dashboard invoice accrues at the base rate', async () => {
 // --- reversals -------------------------------------------------------------------------
 test('a refund reverses at the rate the accrual used, and cancels it exactly', async () => {
   clear();
-  await registration('reg-1', true);
+  await registration('reg-1', GOOGLE);
   await accrueFromSession(paymentSession(), EVENT);
   const accrued = (await all())[0];
 
@@ -171,7 +175,7 @@ test('a refund reverses at the rate the accrual used, and cancels it exactly', a
 
 test('a partial refund reverses only the part refunded', async () => {
   clear();
-  await registration('reg-1', true);
+  await registration('reg-1', GOOGLE);
   await accrueFromSession(paymentSession(), EVENT);
   await reverseFromCharge(
     { id: 'ch_p', amount_refunded: 10000, currency: 'usd', payment_intent: 'pi_A' }, EVENT, 'refund'
@@ -194,7 +198,7 @@ test('a refund with no matching accrual is written at the base rate and flagged'
 
 test('a dispute reverses the whole charge', async () => {
   clear();
-  await registration('reg-1', true);
+  await registration('reg-1', GOOGLE);
   await accrueFromSession(paymentSession(), EVENT);
   await reverseFromCharge({ id: 'ch_d', amount: 45000, currency: 'usd', payment_intent: 'pi_A' }, EVENT, 'dispute');
   const rev = (await all()).find((e) => e.kind === 'reversal');
@@ -205,7 +209,7 @@ test('a dispute reverses the whole charge', async () => {
 // --- test mode -------------------------------------------------------------------------
 test('a test-mode event is recorded but marked livemode false', async () => {
   clear();
-  await registration('reg-1', true);
+  await registration('reg-1', GOOGLE);
   await accrueFromSession(paymentSession(), { created: 1_789_000_000, livemode: false });
   assert.equal((await all())[0].livemode, false, 'the report pays on livemode only');
 });
@@ -213,10 +217,98 @@ test('a test-mode event is recorded but marked livemode false', async () => {
 // --- the ledger stays out of the leads store -------------------------------------------
 test('commission rows never land in the leads store', async () => {
   clear();
-  await registration('reg-1', true);
+  await registration('reg-1', GOOGLE);
   await accrueFromSession(paymentSession(), EVENT);
   const { listLeads } = await import('../lib/leads.mjs');
   const leads = await listLeads();
   assert.equal(leads.filter((l) => l.type === 'commission').length, 0);
   assert.equal((await all()).length, 1);
+});
+
+// --- Section 7: the 12-month attribution window ----------------------------------------
+test('the 8 percent stops after the customer first 12 months', async () => {
+  clear();
+  await registration('reg-w', GOOGLE, 'window@example.test');
+  // Month 1: the first collected payment opens the window.
+  await accrueFromInvoice({
+    id: 'in_m1', amount_paid: 18333, currency: 'usd', billing_reason: 'subscription_create',
+    status_transitions: { paid_at: Math.floor(Date.parse('2026-10-01T00:00:00Z') / 1000) },
+    parent: { subscription_details: { metadata: { registrationId: 'reg-w' } } }
+  }, EVENT);
+  const first = (await all()).find((e) => e.id === 'acc_in_m1');
+  assert.equal(first.rate, 0.08, 'the first payment attributes');
+
+  // Month 11: still inside the window.
+  await accrueFromInvoice({
+    id: 'in_m11', amount_paid: 18333, currency: 'usd', billing_reason: 'subscription_cycle',
+    status_transitions: { paid_at: Math.floor(Date.parse('2027-09-01T00:00:00Z') / 1000) },
+    parent: { subscription_details: { metadata: { registrationId: 'reg-w' } } }
+  }, EVENT);
+  assert.equal((await all()).find((e) => e.id === 'acc_in_m11').rate, 0.08);
+
+  // Month 13: the 12 months are up. It stays on the ledger, at the base rate.
+  await accrueFromInvoice({
+    id: 'in_m13', amount_paid: 18333, currency: 'usd', billing_reason: 'subscription_cycle',
+    status_transitions: { paid_at: Math.floor(Date.parse('2027-11-01T00:00:00Z') / 1000) },
+    parent: { subscription_details: { metadata: { registrationId: 'reg-w' } } }
+  }, EVENT);
+  const late = (await all()).find((e) => e.id === 'acc_in_m13');
+  assert.equal(late.rate, 0.025, 'the 8 percent ends permanently after 12 months');
+  assert.equal(late.attributed, true, 'the customer is still attributed, just out of window');
+  assert.equal(late.withinWindow, false);
+});
+
+test('a refund of an out-of-window payment reverses at 2.5, not 8', async () => {
+  clear();
+  await registration('reg-o', GOOGLE, 'out@example.test');
+  await accrueFromInvoice({
+    id: 'in_old', amount_paid: 10000, currency: 'usd', billing_reason: 'subscription_create',
+    status_transitions: { paid_at: Math.floor(Date.parse('2026-01-01T00:00:00Z') / 1000) },
+    parent: { subscription_details: { metadata: { registrationId: 'reg-o' } } }
+  }, EVENT);
+  await accrueFromInvoice({
+    id: 'in_late', amount_paid: 10000, currency: 'usd', billing_reason: 'subscription_cycle',
+    status_transitions: { paid_at: Math.floor(Date.parse('2027-06-01T00:00:00Z') / 1000) },
+    parent: { subscription_details: { metadata: { registrationId: 'reg-o' } } }
+  }, EVENT);
+  const late = (await all()).find((e) => e.id === 'acc_in_late');
+  assert.equal(late.rate, 0.025);
+
+  await reverseFromCharge({ id: 'ch_late', amount_refunded: 10000, currency: 'usd', invoice: 'in_late' }, EVENT, 'refund');
+  const rev = (await all()).find((e) => e.kind === 'reversal');
+  assert.equal(rev.rate, 0.025, 'reversing at 8 would hand back money never earned');
+  assert.equal(rev.commissionCents, -late.commissionCents);
+});
+
+// --- Section 7: what must NOT attribute ------------------------------------------------
+test('every non-attributing answer is the base rate', async () => {
+  const others = [
+    'Instagram or other social media',
+    'Friend, family, or referral',
+    'Coach Blake directly',
+    'School, camp, or clinic',
+    'Other (please describe)'
+  ];
+  for (let i = 0; i < others.length; i++) {
+    clear();
+    await registration('reg-n' + i, others[i], 'n' + i + '@example.test');
+    await accrueFromSession(
+      paymentSession({ id: 'cs_n' + i, metadata: { registrationId: 'reg-n' + i } }), EVENT
+    );
+    const [e] = await all();
+    assert.equal(e.rate, 0.025, others[i] + ' must not attribute');
+    assert.equal(e.attributed, false);
+  }
+});
+
+test('an approved Developer campaign attributes even when the answer does not', async () => {
+  clear();
+  await addLead('registration:reg-c', {
+    type: 'enrollment', name: 'Cam Parent', email: 'cam@example.test',
+    hearAbout: 'Coach Blake directly', campaign: 'spring-search-ads'
+  });
+  await accrueFromSession(paymentSession({ metadata: { registrationId: 'reg-c' } }), EVENT);
+  const [e] = await all();
+  assert.equal(e.rate, 0.08);
+  assert.equal(e.campaign, 'spring-search-ads');
 });

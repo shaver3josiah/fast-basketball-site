@@ -1,4 +1,4 @@
-// POST /api/dev-payments: the developer-commission ledger, rolled into fortnightly pay periods.
+// POST /api/dev-payments: the developer-commission ledger, rolled into calendar-month periods.
 //
 // Session-gated like every other admin endpoint. It is the owner's own revenue being committed,
 // so this is deliberately in HIS panel rather than somewhere only the developer can see it.

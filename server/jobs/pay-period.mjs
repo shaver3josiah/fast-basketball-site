@@ -1,17 +1,16 @@
-// The fortnightly developer pay report: totals for the period that just closed, emailed with a
-// CSV and an XLSX attached.
+// The monthly developer pay report: totals for the month that just closed, emailed with a CSV
+// and an XLSX attached.
 //
-// WHY THIS RUNS WEEKLY. Unix cron cannot express "every two weeks". `0 9 1-31/14 * *` fires on
-// the 1st, 15th and 29th and then resets at the month boundary, so 29 Jan to 1 Feb is a 3-day
-// "fortnight" and the periods drift inside the month. The schedule is therefore WEEKLY and the
-// parity check lives here, against a fixed anchor: isPayWeek() is a modulo on the offset from
-// PAY_PERIOD_ANCHOR, so it alternates forever without drift.
+// Section 8 of the agreement: "FAST will calculate compensation monthly and pay undisputed
+// amounts within 15 days after the end of each calendar month, together with a transaction
+// summary listing the Website Transactions and Attributed Customers."
 //
-// WHY event.scheduleTime AND NOT Date.now(). scheduleTime is the time the job was MEANT to fire.
-// A retry, or a cold start that ran late, can put Date.now() hours or a day later, which near a
-// boundary pays the wrong fortnight. On a manual trigger scheduleTime is the execution time
-// instead, which is why it is parsed defensively and falls back rather than throwing.
-import { periodKeyFor, previousPeriodKey, isPayWeek, periodRange } from '../../src/lib/commission.mjs';
+// Monthly IS expressible in cron ("the 1st"), so there is no anchor date, no fortnight parity
+// and no off-week branch: the job runs on the 1st and reports the month that just ended. It
+// still reads event.scheduleTime rather than a clock, because a retry running late on the 2nd
+// must report the same month, and it still writes a sent marker before returning, because a
+// scheduled function retries on a throw and would otherwise email the same month twice.
+import { periodKeyFor, previousPeriodKey, periodRange } from '../../src/lib/commission.mjs';
 import { payPeriods, periodCsv, periodXlsx, fileBase, money } from '../functions/lib/payreport.mjs';
 import { wasSent, markSent } from '../functions/lib/ledger.mjs';
 import { sendEmail, escapeHtml } from '../functions/lib/notify.mjs';
@@ -44,8 +43,17 @@ function summaryHtml(period, extra) {
       ? '<p><b>' + extra.unreadable + ' ledger row(s) could not be read</b> and are missing from these ' +
         'totals. That is a real gap, not a rounding difference.</p>'
       : '') +
-    '<p>The CSV and the spreadsheet attached hold one row per payment, including which families ' +
-    'ticked the website question.</p>'
+    // Section 8 requires the statement to list the Attributed Customers it charged 8% for.
+    '<h3>Attributed Customers (8%)</h3>' +
+    (period.attributedCustomers && period.attributedCustomers.length
+      ? '<ul>' + period.attributedCustomers.map((c) =>
+          '<li>' + escapeHtml(c.familyName || c.customerKey || 'unnamed') +
+          (c.campaign ? ' (campaign: ' + escapeHtml(c.campaign) + ')'
+                      : ' (answered: ' + escapeHtml(c.hearAbout || 'unknown') + ')') +
+          '</li>').join('') + '</ul>'
+      : '<p>None this month. Every payment was charged at the 2.5% rate.</p>') +
+    '<p>The CSV and the spreadsheet attached hold one row per payment, with how each family said ' +
+    'they heard about FAST and whether that made them an Attributed Customer.</p>'
   );
 }
 
@@ -57,11 +65,7 @@ export async function runPayPeriod(scheduleTimeIso, { force = false } = {}) {
   const fired = Date.parse(scheduleTimeIso);
   const at = Number.isFinite(fired) ? fired : Date.now();
 
-  if (!force && !isPayWeek(at)) {
-    return { skipped: 'not a pay week', periodKey: periodKeyFor(at) };
-  }
-
-  // On the first Monday of a period, the period that just CLOSED is the previous one.
+  // The job fires on the 1st, so the month that just CLOSED is the previous one.
   const key = previousPeriodKey(periodKeyFor(at));
   const already = await wasSent(key);
   if (already && !force) return { skipped: 'already sent', periodKey: key, sentAt: already.sentAt };
@@ -70,7 +74,7 @@ export async function runPayPeriod(scheduleTimeIso, { force = false } = {}) {
   const period = periods.find((p) => p.key === key) || {
     ...periodRange(key),
     grossPaidCents: 0, accrualCents: 0, reversalCents: 0, netCents: 0,
-    entryCount: 0, unmatchedCount: 0, entries: []
+    entryCount: 0, unmatchedCount: 0, entries: [], attributedCustomers: []
   };
 
   const to = reportEmail();
