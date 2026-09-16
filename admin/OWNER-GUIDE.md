@@ -111,8 +111,10 @@ to the full Editor.
 
 Screen two: the Editor, at yoursite.com/admin/editor.html
 
-Same password. This one needs a computer; on a phone the panels do not fit and it says
-so. The left side lists the pages and sections. The middle is the site itself. Click
+Same sign-in code, and the "Open the Canvas Editor" button at the top of the Content tab
+takes you straight there. If you are already signed in on this device it opens without
+asking again. Best on a computer; on a phone the side panels do not fit and it says so,
+though you can still drag things to move them. The left side lists the pages and sections. The middle is the site itself. Click
 any text on the page and type in place. Drag and resize the elements on the free-form
 sections. Undo and Redo do what they say, and Revert Section puts a whole section back
 the way it was when you opened it.
@@ -153,6 +155,7 @@ not in this panel.
 If something goes wrong
 
 If a save fails, the screen says exactly what failed and nothing publishes halfway. A
-bad edit can only ever reach a draft, never the live site, until you press Publish. If
-you forget the password, your developer resets it. If you are stuck, take a screenshot
-of the message and send it over.
+bad edit can only ever reach a draft, never the live site, until you press Publish. There
+is no password to forget; if a sign-in code does not arrive, press "Send a new code" and
+check your spam folder once. If you are stuck, take a screenshot of the message and send
+it over.

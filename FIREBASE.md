@@ -78,6 +78,11 @@ The site is then live at `https://fast-basketball-b3ebe.web.app`.
    anything. Until you do, every canonical URL, the sitemap and the structured data still name
    the `web.app` address.
 
+Email sending (Resend) has its own three records in the same Wix panel: a TXT on `resend._domainkey`,
+and on `send` a **CNAME to `send.resend.com`** instead of the MX and TXT Resend lists. Wix cannot put
+an MX on a subdomain, and that Resend host already publishes the MX and SPF values the checker
+wants, so the CNAME satisfies it. A CNAME allows no other record on `send`.
+
 ## The admin cookie must be called `__session`
 
 Firebase Hosting strips every inbound cookie except one named `__session` before it
@@ -86,8 +91,9 @@ panel logs in and is signed out again on its very next request. `COOKIE_NAME` in
 `server/functions/lib/auth.mjs` is `__session` for that reason and must stay that way.
 
 This does not show up locally or under the emulator, because neither has the CDN in front
-of it. It only appears on a deployed site, and it looks like a broken password rather than
-a stripped header. The login response also sends `Cache-Control: private, no-store`, so a
+of it. It only appears on a deployed site, and it looks like a rejected sign-in code rather
+than a stripped header. It is also why device recognition rides on the emailed code itself
+and not a second long-lived cookie: a second cookie would never reach the function. The login response also sends `Cache-Control: private, no-store`, so a
 shared cache can never keep a response that carries a session cookie.
 
 ## Publishing content

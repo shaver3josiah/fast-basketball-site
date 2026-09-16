@@ -79,8 +79,8 @@ For stronger protection on the three that matter most, move them to Secret Manag
 | Variable | Holds |
 |---|---|
 | `SITE_URL` | The site's public URL. Used in canonicals, the sitemap, and structured data. This is a **build-time** variable, not a function one: `.github/workflows/deploy.yml` passes it, defaulting to the `web.app` address. Set a repository variable `SITE_URL` to `https://fast-basketball.com` on the day the domain moves. `src/lib/site-config.mjs` falls back to the production domain if nothing is set. |
-| `ADMIN_PASSWORD` | The single password that unlocks /admin. |
-| `ADMIN_SESSION_SECRET` | A long random string used to sign the admin login cookie. Generate once, never reuse elsewhere. |
+| `ADMIN_SESSION_SECRET` | A long random string. Signs the admin session cookie and hashes the emailed sign-in code. Generate once, never reuse elsewhere; changing it signs everyone out and voids any code in flight. |
+| `ADMIN_BACKUP_EMAIL` | Optional. A second inbox the /admin sign-in code is also sent to, so losing the owner's mailbox cannot lock the panel out. |
 | `GITHUB_TOKEN` | A fine-grained GitHub personal access token, write access to this one repository only. Lets the admin panel commit content and photo changes. |
 | `GITHUB_REPO` | The repository in `owner/name` form. For this site: `shaver3josiah/fast-basketball-site`. |
 | `GITHUB_BRANCH` | The branch the site deploys from. Defaults to `main` if not set, which is the branch this site deploys from, so it can normally be left unset. |
@@ -114,9 +114,11 @@ The build is a Node script (`build.mjs`) that reads JSON and HTML template files
 
 Every handler in `server/functions/` takes a web `Request` and returns a `Response`, the interface the platform gave us on Netlify and the one the web has standardised on. That turned out to be worth more than it cost: when the site moved to Firebase in September 2026, twelve functions became one Cloud Function and not a single handler body had to be rewritten. `functions/index.mjs` converts Express's objects into a `Request` and writes the `Response` back, and `server/router.mjs` picks the handler out of the path. If the host ever changes again, those two files are the whole port.
 
-### Admin authentication: one password checked server-side, not a hosted identity product or a CMS
+### Admin authentication: a code emailed to the owner, not a hosted identity product or a CMS
 
-Netlify Identity was discontinued for new sites, and its equivalents elsewhere are user-management systems for a site with exactly one user. Decap CMS (formerly Netlify CMS) is a full editor UI that expects to own the whole content workflow through a Git-based backend, and skinning it down to the exact text fields and image slots this owner needs would take more work than building a small custom panel and would still show the owner concepts like commits and branches he was never supposed to see. An endpoint that checks one password against an environment variable and issues a signed, httpOnly session cookie is a few dozen lines of code, has no moving parts to maintain, and matches the actual requirement: one owner, one password, no user management.
+Netlify Identity was discontinued for new sites, and its equivalents elsewhere are user-management systems for a site with exactly one user. Decap CMS (formerly Netlify CMS) is a full editor UI that expects to own the whole content workflow through a Git-based backend, and skinning it down to the exact text fields and image slots this owner needs would take more work than building a small custom panel and would still show the owner concepts like commits and branches he was never supposed to see.
+
+It began as one password checked against an environment variable. Since 15 September 2026 there is no password: `/admin` emails the owner a six-digit code and exchanges it for a signed, httpOnly session cookie. The code proves control of his inbox, which means a session only ever starts on a device that just passed an email challenge, and publishing needs a session — so the dangerous action is gated on something an attacker would have to steal a mailbox to get. Only the code's HMAC is stored, for ten minutes, with five tries before it is burned. The owner picks how long the session lasts; "This visit" is a browser-session cookie scoped to the tab that made it. Still a few dozen lines, still no user management, and now nothing shared that could leak.
 
 ### Lead storage: the host's own key/value store, not Airtable or a Google Sheet
 

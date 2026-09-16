@@ -24,8 +24,8 @@ These steps are yours and cannot be delegated:
 - **Upgrading the Firebase project to the Blaze plan.** Cloud Functions requires it, and
   billing is yours. The free allowance is 2,000,000 calls a month, so a site this size bills
   nothing, but a card has to be on file.
-- **Entering the environment values.** These are secrets: a GitHub token, an admin password,
-  a session-signing key, the Stripe keys. I do not handle credentials, even ones you paste
+- **Entering the environment values.** These are secrets: a GitHub token, a session-signing
+  key, the Stripe keys, the Resend key. I do not handle credentials, even ones you paste
   to me. Put them in `functions/.env`, which is gitignored.
 - **Creating the deploy service account.** `npx firebase-tools init hosting:github` makes it
   and stores it as a repository secret. It signs in as you.
@@ -52,11 +52,17 @@ repository variable `ROBOTS_ALLOW` to `false` and push; that is the whole switch
 `npm run build`, the one `npm run dev` uses, writes `Disallow: /`, which is why a preview
 channel is never indexed by accident.
 
-**The phone number and email are real and public.** The site publishes (503) 686-8371 and
-blake.kingsley@gmail.com, both taken from the signed training agreement. A personal Gmail on
-an indexed page gets scraped and will attract spam, so a forwarding address on the domain is
-worth setting up. And the group membership prices are on the page, so the number a parent
-reads is the number they will expect on the enrollment call.
+**The phone number and email are deliberately NOT in the public HTML.** Since 14 September 2026
+the contact form is the only door: bots were scraping the address and number out of the markup
+and spamming Blake. `/terms` is the one exception, because it reproduces the signed training
+agreement verbatim and that text carries them. Everywhere else they are gone, and the only place
+the site hands them out is the `/api/contact` response to an enquiry that passed the bot filter,
+which the page then shows in the confirmation box. Check with
+`grep -rlE 'mailto:|sms:\+|686-8371|blake@' dist --include=*.html` — only `terms` should match.
+
+The owner mailbox is `blake@fast-basketball.com`, a Google Workspace account on the domain; the
+signed agreement names a personal Gmail, and that address is off every page. The group membership
+prices ARE on the page, so the number a parent reads is the number they will expect on the call.
 
 ---
 
@@ -86,8 +92,8 @@ authoritative list of names is the table in `README.md`. The four that matter fo
 
 | Variable | Value |
 |---|---|
-| `ADMIN_PASSWORD` | A password you choose. This alone unlocks `/admin`. Make it long. |
-| `ADMIN_SESSION_SECRET` | A long random string, generated once, used nowhere else. |
+| `ADMIN_SESSION_SECRET` | A long random string, generated once, used nowhere else. It signs the session cookie AND hashes the emailed sign-in code, so changing it signs everyone out and voids any code in flight. |
+| `ADMIN_BACKUP_EMAIL` | Optional. A second inbox the `/admin` sign-in code is also sent to, so losing the owner's mailbox cannot lock the panel out for good. |
 | `GITHUB_TOKEN` | A **fine-grained** GitHub personal access token, scoped to this one repository, with **Contents: read and write**. The admin panel commits through it. |
 | `GITHUB_REPO` | `shaver3josiah/fast-basketball-site` |
 
@@ -132,8 +138,12 @@ from it is the `FIREBASE_SERVICE_ACCOUNT_FAST_BASKETBALL_B3EBE` repository secre
 Then, in order:
 
 1. **The site loads** at the `web.app` address, and the homepage renders with images.
-2. **`/admin` login works** with `ADMIN_PASSWORD`. If it 401s, `ADMIN_SESSION_SECRET` is
-   missing. If it loads but every save fails, `GITHUB_TOKEN` or `GITHUB_REPO` is wrong.
+2. **`/admin` login works.** There is no password: press "Email me a sign-in code", and a
+   6-digit code arrives at the owner mailbox (and `ADMIN_BACKUP_EMAIL` if set), good for ten
+   minutes. Pick how long to stay signed in first; "This visit" ends when you close the tab.
+   If no code arrives, `RESEND_API_KEY`/`PLAYBOOK_FROM_EMAIL` are missing or the Resend domain
+   is unverified. If the code is refused every time, `ADMIN_SESSION_SECRET` is missing. If it
+   loads but every save fails, `GITHUB_TOKEN` or `GITHUB_REPO` is wrong.
 3. **`/admin/editor.html` loads the canvas**, and the Photos panel lists the site's photos.
 4. **Submit the contact form once** and confirm the enquiry appears in the admin Leads tab,
    and that Blake gets the email if Resend is configured. There is no third-party form
@@ -215,7 +225,7 @@ family who filled in the whole registration and never paid becomes a follow-up i
 inbox rather than a row nobody looks at.
 
 Optional: `ENROLL_NOTIFY_EMAIL` if enrollment and failed-payment alerts should go somewhere
-other than blake.kingsley@gmail.com. Alerts also need `RESEND_API_KEY` and
+other than blake@fast-basketball.com (`CONTACT.email`). Alerts also need `RESEND_API_KEY` and
 `PLAYBOOK_FROM_EMAIL` from Step 2; without those the enrollment is still recorded and only
 the email is skipped.
 
