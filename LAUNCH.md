@@ -216,9 +216,12 @@ mode when the cutover order below says so.
 7. **Developers → Webhooks → Add endpoint.** URL
    `https://fast-basketball.com/api/stripe-webhook`. Events:
    `checkout.session.completed`, `checkout.session.expired`, `invoice.payment_failed`,
-   `customer.subscription.deleted`. Stripe shows a signing secret for the endpoint; put it in
-   `functions/.env` as `STRIPE_WEBHOOK_SECRET`. Test mode and live mode each get their own
-   endpoint and their own secret.
+   `customer.subscription.deleted`, `invoice.paid`, `charge.refunded`,
+   `charge.dispute.created`. `invoice.paid` is how a recurring monthly instalment or a
+   hand-written dashboard invoice is seen; `charge.refunded` and `charge.dispute.created`
+   are how money given back is seen. Stripe shows a signing secret for the endpoint; put it
+   in `functions/.env` as `STRIPE_WEBHOOK_SECRET`. Test mode and live mode each get their
+   own endpoint and their own secret.
 
 `checkout.session.expired` is the one that is easy to skip and worth having: it is how a
 family who filled in the whole registration and never paid becomes a follow-up in Blake's
@@ -260,7 +263,7 @@ one script run and one deploy. Do it in this order.
 **Live mode**
 
 7. Switch the dashboard to live mode. Repeat checklist steps 6 and 7 there: a live restricted
-   key and a live webhook endpoint with the same URL and the same four events. Replace both
+   key and a live webhook endpoint with the same URL and the same seven events. Replace both
    values in `functions/.env`.
 8. With the live key in the shell, run `npm run stripe:catalog` again. Live mode has its own
    products and prices; the script creates them.

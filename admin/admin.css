@@ -306,6 +306,23 @@ select{
 .link-row button{flex:1 1 100%;}
 .link-builder .help{font-size:.88rem;color:var(--fg-3);margin:12px 0 4px;}
 
+/* --- pay ---------------------------------------------------- */
+/* The card shell, the heading, the meta lines, the "not yet payable" flag and the
+   unmatched-refund note all reuse .lead/.lead-top/.lead-name/.lead-meta/.chip.flag/
+   .price-warn as-is. Only the headline commission figure is genuinely new. */
+.pay-net{
+  font-family:var(--cond);font-weight:700;font-size:2rem;
+  line-height:1.1;margin:4px 0 0;
+}
+.pay-net.pos{color:var(--green);}
+.pay-net.neg{color:var(--red-hot);}
+.pay-net-label{
+  margin:2px 0 12px;font-family:var(--cond);font-weight:700;font-size:.76rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);
+}
+.pay-actions{display:flex;gap:8px;margin-top:12px;}
+.pay-actions .btn{flex:1;}
+
 /* --- toast ------------------------------------------------ */
 .toast{
   position:fixed;left:12px;right:12px;

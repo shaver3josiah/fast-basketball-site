@@ -183,14 +183,16 @@
       var name = btn.dataset.tab;
       document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.remove('hidden');
       document.getElementById('tabTitle').textContent = btn.textContent;
-      // Save, Publish and the tools belong to Content and Photos. Leads has nothing to
-      // save, so hiding them there gives the list the bottom of the screen back. The
-      // class, not the hidden attribute: .actions sets its own display and would win.
-      document.getElementById('actionBar').classList.toggle('hidden', name === 'leads');
-      document.getElementById('tools').classList.toggle('hidden', name === 'leads');
-      // Leads is for reading enquiries, not editing the page, and the list wants the screen.
-      document.getElementById('canvasLink').classList.toggle('hidden', name === 'leads');
+      // Save, Publish and the tools belong to Content and Photos. Leads and Pay have
+      // nothing to save, so hiding them there gives the list the bottom of the screen
+      // back. The class, not the hidden attribute: .actions sets its own display and
+      // would win.
+      document.getElementById('actionBar').classList.toggle('hidden', name === 'leads' || name === 'pay');
+      document.getElementById('tools').classList.toggle('hidden', name === 'leads' || name === 'pay');
+      // Leads and Pay are for reading, not editing the page, and the list wants the screen.
+      document.getElementById('canvasLink').classList.toggle('hidden', name === 'leads' || name === 'pay');
       if(name === 'leads') loadLeads();
+      else if(name === 'pay') loadPay();
     });
   });
 
@@ -495,7 +497,7 @@
   // src/lib/registration.mjs.
   var REG_KEYS = ['athleteFirst', 'athleteLast', 'dob', 'gender', 'grade', 'school', 'studentEmail', 'studentPhone',
     'experience', 'team', 'position', 'goals', 'parentFirst', 'parentLast', 'relationship', 'homeCity', 'contactMethod',
-    'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'paymentStatus', 'agreeName'];
+    'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'likedSite', 'paymentStatus', 'agreeName'];
 
   // "3 hours ago" answers the only question a glance asks. Intl does the words; the exact
   // timestamp stays on the element's title for when it matters.
@@ -835,6 +837,144 @@
       rows.forEach(function(l){ listWrap.appendChild(leadCard(l)); });
     }
     buildList(leads);
+  }
+
+  // --- pay ----------------------------------------------------------------
+  // Developer-commission totals per fortnightly pay period, from the dev-payments
+  // endpoint. This tab only reads and downloads; the endpoint owns every figure.
+  function payMoney(cents){
+    var n = typeof cents === 'number' && !isNaN(cents) ? cents : 0;
+    var neg = n < 0;
+    return (neg ? '-$' : '$') + (Math.abs(n) / 100).toFixed(2);
+  }
+  // Dates arrive as full ISO instants (period start/end) or a bare YYYY-MM-DD (pay
+  // date). Slicing to the date part and building the Date at local noon dodges a
+  // UTC/local day-shift a straight `new Date(iso)` would risk on either shape.
+  function payDate(iso){
+    var d = new Date(String(iso).slice(0, 10) + 'T12:00:00');
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function downloadPayFile(periodKey, format, btn){
+    var label = btn.textContent;
+    btn.disabled = true;
+    api('dev-payments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ download: format, period: periodKey })
+    }).then(function(res){
+      if(!res.ok) throw new Error();
+      return res.blob();
+    }).then(function(blob){
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'dev-payments-' + periodKey + '.' + format;
+      a.click();
+    }).catch(function(){
+      say('Download failed. Check your connection and try again.');
+    }).finally(function(){
+      btn.disabled = false;
+      btn.textContent = label;
+    });
+  }
+
+  // One card per period, styled like a lead card (.lead, .lead-top, .lead-name,
+  // .lead-meta, .chip) so Pay looks like it belongs beside Leads rather than
+  // inventing a second visual language.
+  function payPeriodCard(period){
+    var card = document.createElement('div');
+    card.className = 'lead';
+
+    var top = document.createElement('div');
+    top.className = 'lead-top';
+    var dates = cell('h3', payDate(period.startISO) + ' to ' + payDate(period.endISO));
+    dates.className = 'lead-name';
+    top.appendChild(dates);
+    if(period.current){
+      var openChip = cell('span', 'Not yet payable');
+      openChip.className = 'chip flag';
+      top.appendChild(openChip);
+    }
+    card.appendChild(top);
+
+    var net = cell('p', payMoney(period.netCents));
+    net.className = 'pay-net' + (period.netCents > 0 ? ' pos' : period.netCents < 0 ? ' neg' : '');
+    card.appendChild(net);
+    var netLabel = cell('p', 'Net commission');
+    netLabel.className = 'pay-net-label';
+    card.appendChild(netLabel);
+
+    function meta(label, value){
+      var p = document.createElement('p');
+      p.className = 'lead-meta';
+      p.appendChild(cell('b', label + ': '));
+      p.appendChild(document.createTextNode(value));
+      card.appendChild(p);
+    }
+    meta('Gross paid', payMoney(period.grossPaidCents));
+    meta('Accrued', payMoney(period.accrualCents));
+    meta('Reversed', payMoney(period.reversalCents));
+    meta('Entries', String(period.entryCount || 0));
+    meta('Pay date', payDate(period.payDateISO));
+
+    // A refund the server could not match to its own accrual gets reversed at the
+    // base rate instead, which is worth flagging rather than burying in the total.
+    if(period.unmatchedCount > 0){
+      var warn = cell('p', period.unmatchedCount + (period.unmatchedCount === 1
+        ? ' refund could not be matched to its accrual and was reversed at the base rate.'
+        : ' refunds could not be matched to their accruals and were reversed at the base rate.'));
+      warn.className = 'price-warn';
+      card.appendChild(warn);
+    }
+
+    var actions = document.createElement('div');
+    actions.className = 'pay-actions';
+    ['csv', 'xlsx'].forEach(function(format){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn';
+      btn.textContent = format.toUpperCase();
+      btn.addEventListener('click', function(){ downloadPayFile(period.key, format, btn); });
+      actions.appendChild(btn);
+    });
+    card.appendChild(actions);
+
+    return card;
+  }
+
+  function renderPay(periods, data){
+    var root = document.getElementById('tabPay');
+    // A ledger row that will not parse is a payment MISSING from every total below. The server
+    // counts them rather than logging and moving on, so the panel has to say so: a silent gap
+    // behind a green-looking figure is the one failure this report must never have.
+    if(data && data.unreadable){
+      var warn = cell('p', data.unreadable + ' commission record(s) could not be read and are '
+        + 'missing from these totals. Tell your developer before paying from this.');
+      warn.className = 'price-warn';
+      root.appendChild(warn);
+    }
+    if(!periods.length){
+      root.appendChild(cell('p', 'No pay periods yet.'));
+      return;
+    }
+    periods.forEach(function(period){ root.appendChild(payPeriodCard(period)); });
+  }
+
+  function loadPay(){
+    var root = document.getElementById('tabPay');
+    root.textContent = '';
+    var status = document.createElement('p');
+    status.textContent = 'Loading pay periods...';
+    root.appendChild(status);
+    api('dev-payments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+      .then(function(res){
+        if(!res.ok) throw new Error();
+        return res.json();
+      }).then(function(data){
+        status.remove();
+        renderPay(data.periods || [], data);
+      }).catch(function(){
+        status.textContent = 'Could not load pay periods.';
+      });
   }
 
   // Save and Publish are two buttons because they are two different things now. A save

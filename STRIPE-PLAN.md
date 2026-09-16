@@ -261,7 +261,7 @@ monthly plan bills the term it was sold without anyone tracking the count by han
 | `LAUNCH.md` | Stripe section: Phase 0 checklist, `stripe listen` for local, live-mode cutover order (catalog script in live, live restricted key, live webhook endpoint + secret, one $0.50 real test refunded) |
 
 Webhook endpoint registered in the Stripe dashboard as
-`https://<site>/api/stripe-webhook` for the four event types. Locally:
+`https://<site>/api/stripe-webhook` for the seven event types. Locally:
 `stripe listen --forward-to localhost:8899/api/stripe-webhook` and
 `stripe trigger checkout.session.completed`; records land in `.local/leads.json`.
 

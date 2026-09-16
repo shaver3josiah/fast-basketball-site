@@ -244,6 +244,10 @@
     data.pay = pay ? pay.value : 'full';
     data.reviewed = document.getElementById('enReviewed').checked === true;
     data.terms = document.getElementById('enTerms').checked === true;
+    /* Optional, so the element is read defensively: a stale cached page without it must still
+       submit rather than throw on .checked of null. */
+    var liked = document.getElementById('enLikedSite');
+    data.likedSite = !!(liked && liked.checked);
     data['en-hp'] = hp ? hp.value : '';
     /* The id from an earlier try in this tab, so a return from Stripe's cancel link rewrites
        the same pending registration instead of adding a second one. */

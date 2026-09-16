@@ -13,6 +13,7 @@ import { sendEmail, ownerEmail, escapeHtml, recordTable } from './lib/notify.mjs
 import { stripeClient, json } from './lib/stripe.mjs';
 import { getPlan, checkoutSpec, dollars, cancelNoticeBy, PAY_LABELS } from '../../src/lib/plans.mjs';
 import { CONTACT, absoluteUrl } from '../../src/lib/site-config.mjs';
+import { accrueFromSession, accrueFromInvoice, reverseFromCharge } from './lib/accrue.mjs';
 
 export default async (request) => {
   if (request.method !== 'POST') return json(405, { error: 'method not allowed' });
@@ -38,6 +39,13 @@ export default async (request) => {
       case 'checkout.session.expired': return json(200, await onSessionExpired(event));
       case 'invoice.payment_failed': return json(200, await onPaymentFailed(event));
       case 'customer.subscription.deleted': return json(200, await onSubscriptionDeleted(event));
+      // The commission ledger. These three exist ONLY to accrue, so a throw here SHOULD 500 and
+      // let Stripe retry: putEntry is keyed on the payment, so a retry overwrites rather than
+      // doubles. That is the opposite of the enrollment path above, where the record and the
+      // owner email matter more than the ledger and the accrual is caught instead.
+      case 'invoice.paid': return json(200, await accrueFromInvoice(event.data.object, event));
+      case 'charge.refunded': return json(200, await reverseFromCharge(event.data.object, event, 'refund'));
+      case 'charge.dispute.created': return json(200, await onDisputeCreated(event));
       default: return json(200, { ignored: event.type });
     }
   } catch (err) {
@@ -123,7 +131,36 @@ async function onCheckoutCompleted(event) {
   });
   if (sent) await addLead(key, { ...record, notified: true });
   else console.error('owner email not sent for ' + key + '; the record is saved, and a Stripe resend of this event will try again');
+
+  // Accrue LAST, and never let it fail this handler. The enrollment record and Blake's email are
+  // what a family depends on; the commission ledger is accounting that can be reconciled against
+  // Stripe afterwards. A throw here would 500, and Stripe would retry an already-recorded
+  // enrollment for three days. A subscription session accrues nothing: its money arrives as
+  // invoice.paid, and accruing both would pay twice on month one (see lib/accrue.mjs).
+  try {
+    const accrued = await accrueFromSession(session, event);
+    if (accrued?.ok) console.log('[commission] ' + accrued.id + ' ' + accrued.commissionCents + 'c');
+  } catch (err) {
+    console.error('[commission] accrual FAILED for ' + session.id + ', reconcile by hand: ' + err.message);
+  }
   return { ok: true };
+}
+
+/**
+ * charge.dispute.created delivers a DISPUTE, not a charge: `object` is the dispute, its `charge`
+ * field is the charge id and `amount` is the amount being disputed. Passing it straight to
+ * reverseFromCharge would key the ledger row on a dp_... id and never match the accrual, so it is
+ * shaped into the charge the reverser expects first.
+ */
+async function onDisputeCreated(event) {
+  const d = event.data.object || {};
+  const chargeId = typeof d.charge === 'string' ? d.charge : d.charge?.id;
+  if (!chargeId) return { ignored: 'dispute with no charge' };
+  return reverseFromCharge(
+    { id: chargeId, amount: d.amount, currency: d.currency, payment_intent: d.payment_intent },
+    event,
+    'dispute'
+  );
 }
 
 function customField(session, key) {

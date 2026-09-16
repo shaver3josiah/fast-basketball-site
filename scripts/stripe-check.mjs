@@ -27,11 +27,19 @@ import { SITE_URL } from '../src/lib/site-config.mjs';
 
 // Every event server/functions/stripe-webhook.mjs acts on. checkout.session.expired is the
 // one people forget: without it a family who registered and never paid is a row nobody sees.
+// The last three carry the developer-commission ledger. invoice.paid is the ONLY way a recurring
+// monthly instalment, a month-to-month renewal after the term releases, or a hand-written
+// dashboard invoice is ever seen: a subscription Checkout Session deliberately accrues nothing,
+// because Stripe fires both for month one and accruing twice would pay twice. The two charge
+// events are how money given back is taken off the ledger again.
 export const REQUIRED_EVENTS = [
   'checkout.session.completed',
   'checkout.session.expired',
   'invoice.payment_failed',
-  'customer.subscription.deleted'
+  'customer.subscription.deleted',
+  'invoice.paid',
+  'charge.refunded',
+  'charge.dispute.created'
 ];
 
 export const WEBHOOK_PATH = '/api/stripe-webhook';
@@ -129,7 +137,7 @@ export async function auditStripe(stripe, { siteUrl = SITE_URL, probeSession = t
       const absent = all ? [] : REQUIRED_EVENTS.filter((e) => !events.includes(e));
       add('webhook', absent.length === 0,
         absent.length ? enabled.url + ' is missing events: ' + absent.join(', ')
-          : enabled.url + ' is enabled and subscribed to all four events.' +
+          : enabled.url + ' is enabled and subscribed to all ' + REQUIRED_EVENTS.length + ' events.' +
             (enabled.url !== wanted ? ' NOTE: it points at ' + enabled.url + ', not ' + wanted + '.' : ''));
     }
   }

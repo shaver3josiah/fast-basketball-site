@@ -204,3 +204,53 @@ html.fb-light .en-card-b,html.fb-light .en-pay{background:var(--bone);border-col
 html.fb-light .en-card input:checked+.en-card-b,html.fb-light .en-pay:has(input:checked){border-color:var(--fast-red);}
 html.fb-light .en-card-d,html.fb-light .en-pay-a{color:var(--text-body-light);}
 @media(max-width:640px){.en-form{gap:32px;}.en-card-b{padding:20px 18px;}}
+
+/* --- The "you enjoyed the website" tick ------------------------------------
+   Scoped to .en-form on purpose: .fld + input[type=checkbox] is byte-identical
+   markup on the contact, playbook and locker guardian gates, and an unscoped
+   rule would celebrate a parent ticking a consent box on three other forms.
+   The default page is LIGHT (html ships class="fb-light"), so the ring is
+   --fast-red (4.7:1 on white); --red-hot is a dark-theme colour and measures
+   3.5:1 here. Decorative, but it reports the checked state, so it stays above
+   the 3:1 that 1.4.11 asks of a UI component.
+   The label is display:flex with no position (inline style from build.mjs), so
+   the anchor has to be set here before ::after can be placed against it. */
+.en-form #enLikedSite + span{position:relative;}
+.en-form #enLikedSite + span::after{
+  content:"";
+  position:absolute;
+  left:-30px; top:.15em;
+  width:19px; height:19px;
+  border-radius:50%;
+  border:2px solid var(--fast-red);
+  opacity:0;
+  pointer-events:none;
+}
+/* The final keyframe IS the resting state. base.css's reduced-motion reset does
+   not stop keyframes, it collapses them to .001ms, so a ring that ended at
+   scale(2.6);opacity:1 would be left permanently painted over the checkbox. */
+@keyframes enTickRing{
+  0%{transform:scale(.4);opacity:.9;}
+  70%{opacity:.35;}
+  100%{transform:scale(2.6);opacity:0;}
+}
+@keyframes enTickPop{
+  0%{transform:scale(1);}
+  38%{transform:scale(1.28);}
+  100%{transform:scale(1);}
+}
+.en-form .fld:has(#enLikedSite:checked) #enLikedSite + span::after{
+  animation:enTickRing calc(.52s / var(--motion-speed,1)) var(--ease-recoil,cubic-bezier(.2,.9,.3,1.4)) 1;
+}
+.en-form .fld:has(#enLikedSite:checked) #enLikedSite{
+  animation:enTickPop calc(.42s / var(--motion-speed,1)) var(--ease-recoil,cubic-bezier(.2,.9,.3,1.4)) 1;
+}
+/* Ticking it is a small kindness, so the copy warms up rather than shouting. */
+.en-form .fld:has(#enLikedSite:checked) .en-opt{color:var(--fast-red);}
+@media(prefers-reduced-motion:reduce){
+  .en-form .fld:has(#enLikedSite:checked) #enLikedSite + span::after,
+  .en-form .fld:has(#enLikedSite:checked) #enLikedSite{animation:none;}
+}
+/* html[data-motion="off"] twin of the block above. */
+html[data-motion="off"] .en-form .fld:has(#enLikedSite:checked) #enLikedSite + span::after,
+html[data-motion="off"] .en-form .fld:has(#enLikedSite:checked) #enLikedSite{animation:none;}
