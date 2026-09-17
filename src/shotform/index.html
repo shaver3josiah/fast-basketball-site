@@ -95,6 +95,10 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 /* stage */
 .live{display:grid;gap:12px}
 .stage{position:relative;aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+/* On a phone held upright the camera hands back a portrait picture, and a 16:9 box letterboxes it into a strip
+   about 200px tall. The picture is the thing being judged, so on a narrow screen it gets most of the viewport. */
+@media(max-width:640px){.stage{aspect-ratio:auto;height:min(64vh,560px)}}
+@media(max-width:640px) and (orientation:landscape){.stage{height:min(78vh,420px)}}
 .stage video,.stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
 .stage video{background:#000}
 .stage canvas{pointer-events:none}
@@ -134,6 +138,22 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 @keyframes readyIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
 @keyframes shootIn{from{opacity:0;transform:scale(.7)}60%{transform:scale(1.06)}to{opacity:1;transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.stageState b{animation:none!important}}
+
+/* the whole screen says go, once, so it reads from anywhere in the gym and from the corner of an eye */
+.goflash{position:fixed;inset:0;z-index:60;pointer-events:none;background:#12C46B;opacity:0;}
+.goflash.on{animation:goflash .62s var(--rush) 1}
+@keyframes goflash{0%{opacity:0}18%{opacity:.62}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.goflash.on{animation:goflashQuiet .62s ease 1}@keyframes goflashQuiet{0%,100%{opacity:0}50%{opacity:.3}}}
+
+/* full screen: the real API where it exists, and a fixed overlay everywhere else, because iOS Safari
+   has no element fullscreen at all and would otherwise simply do nothing. */
+.stage.immersive{position:fixed;inset:0;z-index:55;width:100vw;height:100dvh;aspect-ratio:auto;border-radius:0;border:0}
+body.immersed{overflow:hidden}
+.fsbtn{position:absolute;right:10px;bottom:10px;z-index:3;min-height:44px;padding:0 14px;background:rgba(10,10,12,.66);
+  border:1px solid var(--line-2);border-radius:100px;color:var(--chalk);font:700 .72rem/1 var(--cond);letter-spacing:.14em;
+  text-transform:uppercase;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:inline-flex;align-items:center;gap:7px}
+.fsbtn svg{width:16px;height:16px}
+.stage[data-mode="off"] .fsbtn{display:none}
 
 .tapnote{position:absolute;left:0;right:0;bottom:0;padding:12px 16px;background:linear-gradient(180deg,transparent,rgba(10,10,12,.85));
   color:var(--bone);font:600 1rem/1.3 var(--cond);letter-spacing:.06em;text-align:center;display:none}
@@ -305,7 +325,7 @@ input[type=text]{width:150px}
     <canvas id="overlay"></canvas>
     <div class="empty" id="emptyStage">
       <div><b>Side view, 15 feet, floor along the bottom edge.</b>
-      <p>Phone on the sideline square to the shooter, chest height, then press Start. Cues are spoken so nobody has to read the screen.</p></div>
+      <p>Phone on the sideline square to the shooter, chest height, then press Start. The screen flashes green and sounds a note when the shooter is in position. Turn Voice on if you want the corrections read out too.</p></div>
     </div>
     <div class="pill" id="phasePill">Setting up</div>
     <div class="pill" id="lockPill">Ball: not set</div>
@@ -324,12 +344,16 @@ input[type=text]{width:150px}
       <b class="ss-shoot">Shoot</b>
       <span class="ss-sub" id="ssSub"></span>
     </div>
+    <button class="fsbtn" id="fsBtn" type="button" aria-pressed="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg>
+      <span id="fsLabel">Full screen</span></button>
     <div class="tapnote" id="tapNote">Bounce the ball a few times where the camera can see it.</div>
   </div>
+  <div class="goflash" id="goFlash" aria-hidden="true"></div>
 
   <div class="cue" id="cueBand" aria-live="polite">
     <b id="cueMain">Set the camera up first.</b>
-    <span id="cueSub">Sideline, square to the shooter, phone in landscape</span>
+    <span id="cueSub">Sideline, square to the shooter, phone steady</span>
   </div>
 
   <div class="controls">
@@ -339,9 +363,9 @@ input[type=text]{width:150px}
     <button class="btn" id="tapBtn" type="button" disabled>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M6 6c3 3 3 9 0 12M18 6c-3 3-3 9 0 12"/></svg>
       Find the ball</button>
-    <button class="btn" id="voiceBtn" type="button" aria-pressed="true">
+    <button class="btn" id="voiceBtn" type="button" aria-pressed="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
-      Voice on</button>
+      Voice off</button>
   </div>
   <div class="tools">
     <label>Camera <select id="camSel" aria-label="Camera"><option value="">Rear (default)</option></select></label>
@@ -724,7 +748,8 @@ class ShotMachine {
     this.downCount = 0; this.upCount = 0; this.sepCount = 0; this.ballVel = null; this.cooldownUntil = -1; this.holdUntil = null; this.snapMax = -Infinity; this.relBy = null; }
   frameFeatures(lm) {
     const P = i => lm[i], vis = i => lm[i].v;
-    const okBody = [0, 11, 12, 23, 24].every(i => vis(i) > 0.5) && (vis(27) > 0.5 || vis(28) > 0.5);
+    // either shoulder, either hip, either ankle: half-turned to the camera one of each pair hides behind the other
+    const okBody = vis(0) > 0.3 && (vis(11) > 0.35 || vis(12) > 0.35) && (vis(23) > 0.35 || vis(24) > 0.35) && (vis(27) > 0.35 || vis(28) > 0.35);
     const sho = mid(P(11), P(12)), hip = mid(P(23), P(24));
     const ank = [27, 28].filter(i => vis(i) > 0.5).map(i => P(i).y);
     const ankleY = ank.length ? Math.max(...ank) : null;
@@ -1246,7 +1271,7 @@ const SOURCES = [
 ];
 $('sources').innerHTML = 'Sources: ' + SOURCES.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(' · ');
 
-const st = { landmarker: null, stream: null, mode: 'off', finder: null, machine: null, smoother: new PoseSmoother(), voice: true, tap: false, learn: null,
+const st = { landmarker: null, stream: null, mode: 'off', finder: null, machine: null, smoother: new PoseSmoother(), voice: false, tap: false, learn: null,
   lastT: -1, lastFrameAt: 0, frameCost: 0, budgetMs: 33, cards: [], frames: 0, fpsAt: 0, fps: 0 };
 
 function status(text, cls = '') { const el = $('status'); el.textContent = text; el.className = 'status ' + cls; }
@@ -1259,8 +1284,16 @@ function say(text) {
   if (!st.voice || !('speechSynthesis' in window) || !text) return;
   try { window.speechSynthesis.cancel(); setTimeout(() => { const u = new SpeechSynthesisUtterance(text); u.rate = 1.02; u.lang = 'en-US'; window.speechSynthesis.speak(u); }, 60); } catch {}   // cancel then speak back to back is dropped by some engines
 }
-$('voiceBtn').onclick = () => { st.voice = !st.voice; $('voiceBtn').classList.toggle('on', st.voice); $('voiceBtn').setAttribute('aria-pressed', st.voice); $('voiceBtn').lastChild.textContent = st.voice ? ' Voice on' : ' Voice off'; if (st.voice) say('Voice on'); else window.speechSynthesis?.cancel(); };
-$('voiceBtn').classList.add('on');
+// Voice starts OFF. A gym is noisy and shared, and a page that begins talking the moment it is opened is a page
+// people turn off at the wall. The ready tone is separate and always sounds: it is one note, not a sentence.
+function setVoice(on) {
+  st.voice = on; $('voiceBtn').classList.toggle('on', on); $('voiceBtn').setAttribute('aria-pressed', on);
+  $('voiceBtn').lastChild.textContent = on ? ' Voice on' : ' Voice off';
+  try { localStorage.setItem('fb_shotform_voice', on ? '1' : '0'); } catch {}
+  if (!on) window.speechSynthesis?.cancel();
+}
+$('voiceBtn').onclick = () => { setVoice(!st.voice); if (st.voice) say('Voice on'); };
+try { setVoice(localStorage.getItem('fb_shotform_voice') === '1'); } catch { setVoice(false); }
 
 // ---- model
 async function loadModel() {
@@ -1463,20 +1496,30 @@ function updateChecks(lm) {
   const now = performance.now(); if (now - lastCheck < 250) return; lastCheck = now;
   const W = overlay.width, H = overlay.height, m = st.machine, holding = now < (st.cueHoldUntil || 0);   // a rep's verdict stays on the band
   if (!lm) { check('ckBody', 'fix', 'nobody in frame'); check('ckDist', '', 'waiting'); check('ckSide', '', 'waiting'); if (m && m.state === 'idle' && !holding) setupCue('Step into frame.', 'Whole body visible, side on'); return; }
-  const need = [0, 11, 12, 23, 24, 27, 28], vis = need.every(i => lm[i].v > 0.5), inside = need.every(i => lm[i].x > W * 0.03 && lm[i].x < W * 0.97 && lm[i].y > H * 0.03 && lm[i].y < H * 0.97);
-  const ankY = Math.max(lm[27].y, lm[28].y), hPx = (ankY - lm[0].y) / STATURE_ANKLE_TO_NOSE, frac = hPx / H, air = lm[0].y / H;   // air: how far down the frame the nose sits
+  // EITHER side of the body is enough, and the bar is 0.35 rather than 0.5. A shooter half-turned to the camera
+  // hides one shoulder, one hip and one ankle behind the other, and demanding both of each pair turned an ordinary
+  // stance into "whole body in frame, please" over and over. Only the landmarks actually seen are checked against
+  // the edges, and the margin is 1% rather than 3%.
+  const pair = (a, b) => lm[a].v > 0.35 || lm[b].v > 0.35;
+  const vis = lm[0].v > 0.3 && pair(11, 12) && pair(23, 24) && pair(27, 28);
+  const seen = [0, 11, 12, 23, 24, 27, 28].filter(i => lm[i].v > 0.35);
+  const inside = seen.every(i => lm[i].x > W * 0.01 && lm[i].x < W * 0.99 && lm[i].y > -H * 0.02 && lm[i].y < H * 0.99);
+  const ankY = Math.max(lm[27].v > 0.35 ? lm[27].y : -1e9, lm[28].v > 0.35 ? lm[28].y : -1e9);
+  const hPx = (ankY - lm[0].y) / STATURE_ANKLE_TO_NOSE, frac = hPx / H;
   const sideRatio = Math.abs(lm[11].x - lm[12].x) / Math.max(1, dist(mid(lm[11], lm[12]), mid(lm[23], lm[24])));
-  // Head room measured against the athlete's own height, not a fixed fraction of the frame: a fixed fraction was
-  // tuned for the tilted 1x placement and called the page's own ultra-wide placement too close at every distance.
-  const tooClose = lm[0].y < 0.9 * hPx, tooFar = frac < 0.3, distOk = !tooClose && !tooFar;
+  // Head room against the athlete's own height, with real slack. The picture only has to hold the shot; it does not
+  // have to frame it nicely, and being told to move the phone on a rep that would have tracked fine is worse than
+  // an occasional rep that clips the top.
+  const tooClose = lm[0].y < 0.55 * hPx, tooFar = frac < 0.22, distOk = !tooClose && !tooFar;
   check('ckBody', vis && inside ? 'good' : 'fix', vis && inside ? 'yes' : (vis ? 'cut off at the edge' : 'feet or head hidden'));
   check('ckDist', distOk ? 'good' : 'watch', tooClose ? 'too close, the raised hand will leave the top' : tooFar ? 'far, the ball gets too small to follow' : 'good');
-  check('ckSide', sideRatio < 0.35 ? 'good' : 'watch', sideRatio < 0.35 ? 'square to the shooter' : 'angled, move to the side');
+  const sideOk = sideRatio < 0.55;   // was 0.35: a shooter is rarely dead square, and a three-quarter stance still reads
+  check('ckSide', sideOk ? 'good' : 'watch', sideOk ? 'square enough' : 'angled, move to the side');
   check('ckBall', st.finder.taught ? 'good' : 'watch', st.finder.taught ? `found, ${(st.finder.rExp / (det.width / W)).toFixed(0)} px radius${m && m.ppm ? ', ' + m.ppm.toFixed(0) + ' px per metre' : ''}` : (st.learn ? 'bounce it a few times' : 'press Find the ball'));
   $('lockPill').textContent = st.lastBall ? 'Ball: tracking' : (st.finder.taught ? 'Ball: found' : (st.learn ? 'Ball: listening' : 'Ball: not set')); $('lockPill').classList.toggle('on', !!st.lastBall);
   if (m && m.state === 'idle' && st.frames > 30 && !holding) {
     if (!(vis && inside)) setupCue('Whole body in frame, please.', vis ? 'Feet or head are cut off at the edge' : 'Feet and head must be visible');
-    else if (sideRatio >= 0.35) setupCue('Move the camera to the side.', 'Square to the shooter, shooting hand nearest the phone');
+    else if (!sideOk) setupCue('Move the camera to the side.', 'Square to the shooter, shooting hand nearest the phone');
     else if (!distOk) setupCue(tooClose ? 'Move the phone back, or tilt it up.' : 'Move the phone closer.', tooClose ? 'The raised hand will leave the top of the picture' : 'The ball is too small to follow from here');
     else if (!st.finder.taught) setupCue(st.learn ? 'Bounce the ball.' : 'Find the ball first.', st.learn ? 'A few bounces where the camera can see it' : 'Press Find the ball, then bounce it a few times');
     else if (!m.ppm || m.ground == null) setupCue('Stand still for a second.', 'The tracker is measuring the athlete against the floor');
@@ -1484,10 +1527,10 @@ function updateChecks(lm) {
   }
   // In position: everything framed, the scale learned, the ball taught and the machine idle. Held for three quarters
   // of a second so a wave through the frame does not start a countdown, then the count runs itself.
-  const inPosition = vis && inside && distOk && sideRatio < 0.35 && st.finder.taught && m && m.state === 'idle' && m.ppm && m.ground != null && !holding;
+  const inPosition = vis && inside && distOk && sideOk && st.finder.taught && m && m.state === 'idle' && m.ppm && m.ground != null && !holding;
   if (!inPosition) { readySince = 0; if (!countTimer) stageState('none'); if (m && m.state === 'idle') armed = true; }
   else if (armed && !countTimer) {
-    if (!readySince) { readySince = now; stageState('ready', 'Hold it there'); say('Ready'); }
+    if (!readySince) { readySince = now; stageState('ready', 'Hold it there'); goSignal(); say('Ready'); }
     else if (now - readySince > 750) startCount();
   }
 }
@@ -1721,6 +1764,45 @@ $('refApply').onclick = () => {
   say('Targets set from the photo');
 };
 
+// ---- the go signal ----
+// One note and one flash of the whole screen. It has to carry with the voice off, from across a gym, and out of
+// the corner of an eye, so it is a sound and a colour rather than a word. The tone is synthesised: the page has no
+// assets of its own and a bundled audio file would be the only one.
+let audioCtx = null;
+function tone(freq = 880, ms = 150, type = 'sine', gain = 0.22) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const t0 = audioCtx.currentTime, osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, t0);
+    // a short ramp at each end, or the speaker clicks
+    g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(gain, t0 + 0.012);
+    g.gain.setValueAtTime(gain, t0 + ms / 1000 - 0.03); g.gain.linearRampToValueAtTime(0, t0 + ms / 1000);
+    osc.connect(g); g.connect(audioCtx.destination); osc.start(t0); osc.stop(t0 + ms / 1000 + 0.02);
+  } catch {}
+}
+function goSignal() {
+  const el = $('goFlash'); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  setTimeout(() => el.classList.remove('on'), 700);
+  tone(784, 110); setTimeout(() => tone(1175, 170), 120);   // a rising two-note "go"
+}
+
+// ---- full screen ----
+// iOS Safari has no element fullscreen at all, so the fixed-overlay path is not a fallback, it is the path that
+// works on the phone this is built for. The real API is used as well wherever it exists.
+function setImmersive(on) {
+  stage.classList.toggle('immersive', on); document.body.classList.toggle('immersed', on);
+  $('fsBtn').setAttribute('aria-pressed', on); $('fsLabel').textContent = on ? 'Exit full screen' : 'Full screen';
+  try {
+    if (on && stage.requestFullscreen) stage.requestFullscreen().catch(() => {});
+    else if (!on && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  } catch {}
+  if (st.machine) requestAnimationFrame(() => { st.lastT = -1; });   // the next frame redraws at the new size
+}
+$('fsBtn').onclick = () => setImmersive(!stage.classList.contains('immersive'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && stage.classList.contains('immersive')) setImmersive(false); });
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && stage.classList.contains('immersive') && document.fullscreenEnabled) setImmersive(false); });
+
 // ---- ready, countdown, live numbers ----------------------------------------------------------
 // The phone is on a tripod and the athlete is fifteen feet away, so the countdown starts itself once the framing
 // has held steady: nobody should have to walk over and press a button between reps.
@@ -1779,7 +1861,7 @@ video.addEventListener('ended', () => { if (st.mode === 'clip') { status('Clip d
 if (navigator.mediaDevices?.enumerateDevices) listCameras();
 if (!navigator.mediaDevices?.getUserMedia) cue('This browser has no camera access.', 'Use Safari on the iPhone or Chrome on a laptop');
 document.addEventListener('visibilitychange', () => { if (document.hidden && st.mode === 'camera') stopAll(); else if (!document.hidden && st.mode !== 'off') keepAwake(); });
-if (new URLSearchParams(location.search).has('debug')) window.__fb = { st, onShot, cardSvg, cardHtml, animSvg, csvOf, stageState, startCount, openForm, setTargetEdits, saveTargetEdits, get TARGETS(){return TARGETS} };   // test rigs only
+if (new URLSearchParams(location.search).has('debug')) window.__fb = { st, onShot, cardSvg, cardHtml, animSvg, csvOf, stageState, startCount, openForm, setTargetEdits, saveTargetEdits, goSignal, tone, setImmersive, setVoice, get TARGETS(){return TARGETS} };   // test rigs only
 </script>
 </body>
 </html>

@@ -413,6 +413,24 @@ console.log('occlusion');
   const v = shots[0] && shots[0].metrics.elbowSetDeg;
   ok(v == null || v > 45, 'the set elbow is never an impossible angle from an occluded frame', v);
 }
+// ---------- a body the camera only half sees ----------
+// The complaint this answers: the phone was too picky about the player being in shot. A shooter turned to the
+// camera hides one shoulder, one hip and one ankle behind the other, and the machine used to refuse the rep.
+console.log('half-seen body');
+{
+  // hide one whole side of the body, as a real pose model does on a half-turned athlete
+  const halfSeen = frames => frames.map(f => ({ ...f, lm: f.lm.map((p, i) => [11, 13, 15, 19, 17, 21, 23, 25, 27, 31].includes(i) ? { ...p, v: 0.1 } : p) }));
+  const { shots } = run(halfSeen(rep()));
+  ok(shots.length === 1, 'a rep still cuts with one whole side of the body hidden', shots.length);
+  if (shots[0]) ok(near(shots[0].metrics.kneeMinDeg, 120, 6), 'and the knee still reads off the visible leg', shots[0].metrics.kneeMinDeg);
+  // a low-confidence landmark on its own must not stop the rep
+  const dim = frames => frames.map(f => ({ ...f, lm: f.lm.map((p, i) => i === 27 ? { ...p, v: 0.2 } : p) }));
+  ok(run(dim(rep())).shots.length === 1, 'one dim ankle does not stop a rep', run(dim(rep())).shots.length);
+  // but a body genuinely not in shot still must not produce a card
+  const gone = frames => frames.map(f => ({ ...f, lm: f.lm.map(p => ({ ...p, v: 0.05 })) }));
+  ok(run(gone(rep())).shots.length === 0, 'a body that really is not in shot still cuts nothing');
+}
+
 // ---------- learning the ball from a bounce ----------
 // Nobody should walk to the phone. A bounced ball is the one orange thing in a gym that travels, so the learner
 // must take it and leave the floor, a cone and a stripe alone.
