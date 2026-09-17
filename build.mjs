@@ -246,6 +246,11 @@ function step3_copyStatic() {
   cpSync(resolve(ROOT, 'src/brand/favicon.ico'), resolve(DIST, 'favicon.ico'));
   const notFoundSrc = resolve(ROOT, '404.html');
   if (existsSync(notFoundSrc)) cpSync(notFoundSrc, resolve(DIST, '404.html'));
+  // The Shot Form tracker is one self-contained file: it is copied, not rendered, and it is deliberately not in
+  // allPaths, so it stays out of the sitemap the way /enroll does. It needs the camera, which firebase.json blocks
+  // on every other path, so there is a /shotform header block beside this. Its own checks are src/shotform/check.mjs.
+  const shotform = resolve(ROOT, 'src/shotform/index.html');
+  if (existsSync(shotform)) { mkdirSync(resolve(DIST, 'shotform'), { recursive: true }); cpSync(shotform, resolve(DIST, 'shotform/index.html')); }
   console.log('Copied static assets into dist/.');
 }
 
