@@ -67,8 +67,64 @@ export const PLANS = {
   }
 };
 
-// Page order, and the order the pay radios render in. A plan offers a subset of these.
+// ---------------------------------------------------------------- app products
+//
+// The two tools the Developer built, sold from /appbuy. They are in this file because this
+// file is the Stripe catalog: catalog() below feeds scripts/stripe-catalog.mjs, so a product
+// added here gets a Stripe product and price with no other edit. They are a SEPARATE map from
+// PLANS because /enroll renders a card per key of PLANS and must never offer a phone tool as a
+// training membership, and because content.json's owner prices deliberately do not reach them
+// (applyOwnerPrices only walks PLANS): these are split 50/50 with the Developer, so the price
+// is a term both parties agreed, not a number one of them edits in a text box.
+//
+// One price each, and the instalment plans collect exactly that price spread over N months,
+// with no uplift. The training sheet charges more to pay over time; nobody has published such a
+// figure for these, and inventing one is not arithmetic this file gets to do.
+//
+// NON-REFUNDABLE, including every instalment: that is what /appbuy says and what the buyer
+// ticks. It is also why an instalment plan CANCELS at the end of its term (endBehavior below)
+// rather than releasing to month-to-month the way a membership does. A tool bought once must
+// never keep billing.
+export const APP_PLANS = {
+  'shotform': {
+    label: 'Shot Form Watcher',
+    description: 'The side-view shooting form tracker. Set a phone on a tripod and every rep is graded against the form you set.',
+    kind: 'app', cents: 10000, instalments: [2, 3, 4, 5],
+    url: '/shotform'
+  },
+  'dribble': {
+    label: 'Dribble Listener',
+    description: 'Counts dribbles through the phone microphone. Teach it your ball once and it keeps the count, the pace and the clock.',
+    kind: 'app', cents: 2000, instalments: [2, 3, 4, 5],
+    url: '/dribble'
+  }
+};
+
+export const isAppPlan = (key) => typeof key === 'string' && Object.hasOwn(APP_PLANS, key);
+
+/**
+ * Where a form record for this plan lives in the leads store.
+ *
+ * checkout.mjs writes it, stripe-webhook.mjs completes it and accrue.mjs reads it, so the three
+ * have to agree on one spelling. An app order is NOT an enrollment: keeping it under its own
+ * prefix is what stops a $20 tool purchase rendering in the admin Leads tab as a family whose
+ * athlete has no date of birth, and what stops the expired-session handler texting Blake about it.
+ */
+export const leadKey = (planKey, id) => (isAppPlan(planKey) ? 'apporder:' : 'registration:') + id;
+
+// Page order, and the order the pay radios render in. A TRAINING plan offers a subset of these;
+// /enroll renders exactly this list. App products price their own options (full, then m2..m5),
+// which is why PAY_ORDER below exists and this constant stays the training pair.
 export const PAY_OPTIONS = ['full', 'monthly'];
+
+// Every pay option in the whole catalog, in the order a page renders them.
+const PAY_ORDER = [...PAY_OPTIONS, 'm2', 'm3', 'm4', 'm5'];
+
+// The number of monthly payments an 'm<N>' option collects, or null for anything else.
+export function instalmentsIn(pay) {
+  const m = typeof pay === 'string' ? /^m([2-9])$/.exec(pay) : null;
+  return m ? Number(m[1]) : null;
+}
 
 // ---------------------------------------------------------------- owner prices
 //
@@ -131,7 +187,11 @@ applyOwnerPrices(PLANS, readOwnerPrices());
 
 export const PAY_LABELS = {
   full: 'Pay in full',
-  monthly: 'Monthly'
+  monthly: 'Monthly',
+  m2: '2 months',
+  m3: '3 months',
+  m4: '4 months',
+  m5: '5 months'
 };
 
 export function dollars(cents) {
@@ -141,18 +201,24 @@ export function dollars(cents) {
   return '$' + withCommas + (frac ? '.' + String(frac).padStart(2, '0') : '');
 }
 
-// ponytail: nearest cent, which can land a cent either side of the published total.
-// $550 / 3 = $183.333…, so the 3 month monthly plan bills $183.33 x 3 = $549.99, a cent
-// under. Under is the right direction to miss: it never charges more than the page says.
-// Every other plan divides exactly ($900 / 6 = $150.00, the figure on the price sheet).
+// ponytail: floor, so instalments can only ever add up to LESS than the published total, never
+// more. $550 / 3 = $183.333…, so the 3 month monthly plan bills $183.33 x 3 = $549.99, a cent
+// under. Every training plan divides exactly or rounds down anyway ($900 / 6 = $150.00), so this
+// is the same number it always was for them; it is the app instalments that need the guarantee,
+// since $20 over 3 months is $6.666… and Math.round would have billed $20.01 for a product the
+// page prices at $20.
 export function monthlyCents(total, months) {
-  return Math.round(total / months);
+  return Math.floor(total / months);
 }
 
-// Own keys only: PLANS['__proto__'] is Object.prototype, which is truthy.
+// Own keys only: PLANS['__proto__'] is Object.prototype, which is truthy. Training first, then
+// the app products: one lookup for both, so every consumer downstream (checkout, the webhook,
+// the ledger, the catalog script) needed no branch of its own.
 export function getPlan(planKey) {
-  if (typeof planKey !== 'string' || !Object.hasOwn(PLANS, planKey)) throw new Error('unknown plan: ' + planKey);
-  return PLANS[planKey];
+  if (typeof planKey !== 'string') throw new Error('unknown plan: ' + planKey);
+  if (Object.hasOwn(PLANS, planKey)) return PLANS[planKey];
+  if (Object.hasOwn(APP_PLANS, planKey)) return APP_PLANS[planKey];
+  throw new Error('unknown plan: ' + planKey);
 }
 
 // A plan offers exactly what it prices. PAY_OPTIONS fixes the order so the page and the
@@ -160,7 +226,8 @@ export function getPlan(planKey) {
 export function payOptionsFor(planKey) {
   const plan = getPlan(planKey);
   if (plan.kind === 'once') return ['full'];
-  return PAY_OPTIONS.filter((pay) => Object.hasOwn(plan.totals, pay));
+  if (plan.kind === 'app') return ['full', ...plan.instalments.map((n) => 'm' + n)];
+  return PAY_ORDER.filter((pay) => Object.hasOwn(plan.totals, pay));
 }
 
 // The published total for one plan and pay option, in cents. This is the number the page
@@ -168,6 +235,11 @@ export function payOptionsFor(planKey) {
 export function totalCents(planKey, pay) {
   const plan = getPlan(planKey);
   if (plan.kind === 'once') return plan.cents;
+  // An app product costs the same however it is paid, so every option resolves to one figure.
+  if (plan.kind === 'app') {
+    if (!payOptionsFor(planKey).includes(pay)) throw new Error('plan ' + planKey + ' does not offer ' + pay);
+    return plan.cents;
+  }
   if (!Object.hasOwn(plan.totals, pay)) throw new Error('plan ' + planKey + ' does not offer ' + pay);
   return plan.totals[pay];
 }
@@ -182,8 +254,30 @@ export function checkoutSpec(planKey, pay) {
   const base = {
     plan: planKey, pay, label: plan.label,
     lookupKey: planKey + '-' + pay,
+    // Where the buyer came from and goes back to. sessionParams() builds Stripe's success and
+    // cancel URLs from it, so a tool purchase that is abandoned lands back on /appbuy with its
+    // choice still made rather than on the athlete registration form.
+    page: plan.kind === 'app' ? '/appbuy' : '/enroll',
     metadata: { plan: planKey, pay }
   };
+
+  if (plan.kind === 'app') {
+    const months = instalmentsIn(pay);
+    const metadata = { ...base.metadata, totalCents: String(plan.cents) };
+    if (!months) {
+      return { ...base, metadata, description: plan.description, mode: 'payment', amountCents: plan.cents, interval: null, iterations: null, endBehavior: null };
+    }
+    const each = monthlyCents(plan.cents, months);
+    return {
+      ...base,
+      metadata: { ...metadata, months: String(months) },
+      description: plan.label + '. ' + months + ' monthly payments of ' + dollars(each) + '. Non-refundable.',
+      mode: 'subscription', amountCents: each, interval: 'month', iterations: months,
+      // 'cancel', not the membership's 'release'. A tool is bought once: when the instalments
+      // are done the subscription must stop, not roll on month to month.
+      endBehavior: 'cancel'
+    };
+  }
 
   if (plan.kind === 'once') {
     return { ...base, description: plan.description, mode: 'payment', amountCents: plan.cents, interval: null, iterations: null, endBehavior: null };
@@ -213,7 +307,7 @@ export function checkoutSpec(planKey, pay) {
 // Every sellable combination, in page order.
 export function catalog() {
   const out = [];
-  for (const key of Object.keys(PLANS)) {
+  for (const key of [...Object.keys(PLANS), ...Object.keys(APP_PLANS)]) {
     for (const pay of payOptionsFor(key)) out.push(checkoutSpec(key, pay));
   }
   return out;

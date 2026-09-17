@@ -68,13 +68,20 @@ export const FIELDS = [
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const MAX_CHARS = { text: 200, email: 200, tel: 40, date: 10, select: 100, textarea: 2000 };
 
-// Pure, so it runs in a test without a request. Returns every problem at once, keyed by
-// field, so the page can mark each one rather than the first.
-export function validateRegistration(body) {
+/**
+ * One typed field list in, every problem out, keyed by field so a page can mark each one
+ * rather than the first. Pure, so it runs in a test without a request.
+ *
+ * Shared with src/lib/apporder.mjs, which asks a different and much shorter set of questions
+ * for a tool purchase but has to bound and shape its answers on exactly the same terms: both
+ * lists arrive over the same public endpoint, so one relaxed copy of this loop would be a hole
+ * in the other form's trust boundary.
+ */
+export function validateFields(fields, body) {
   const errors = {};
   const values = {};
   const src = body && typeof body === 'object' ? body : {};
-  for (const f of FIELDS) {
+  for (const f of fields) {
     const v = typeof src[f.key] === 'string' ? src[f.key].trim() : '';
     values[f.key] = v;
     if (!v) {
@@ -87,6 +94,14 @@ export function validateRegistration(body) {
     else if (f.type === 'date' && !pastDate(v)) errors[f.key] = f.label + ' must be a past date';
     else if (f.type === 'select' && !f.options.includes(v)) errors[f.key] = f.label + ' is not one of the choices';
   }
+  return { errors, values };
+}
+
+// Pure, so it runs in a test without a request. Returns every problem at once, keyed by
+// field, so the page can mark each one rather than the first.
+export function validateRegistration(body) {
+  const { errors, values } = validateFields(FIELDS, body);
+  const src = body && typeof body === 'object' ? body : {};
   // The two agreement boxes. A drawn signature pad sat beside them until September 2026 and
   // was removed: the training agreement's own Step 2 says a family agrees "by entering your
   // full name on the checkout form" and ticking the I-agree box, which is Stripe Checkout's

@@ -487,7 +487,8 @@
   // Mirrors PAY_LABELS in src/lib/plans.mjs, where 'split' was retired with the September
   // 2026 price sheet. A lead stored under a retired option still renders: the lookup below
   // falls back to the raw value rather than showing a blank.
-  var PAY_LABELS = { full: 'Pay in full', monthly: 'Monthly' };
+  // Mirrors PAY_LABELS in src/lib/plans.mjs. m2..m5 are the tool-purchase payment plans.
+  var PAY_LABELS = { full: 'Pay in full', monthly: 'Monthly', m2: '2 months', m3: '3 months', m4: '4 months', m5: '5 months' };
   var SEP = ' \u00b7 ';
   // A registration is an enrollment row before Stripe has confirmed anything. 'paid' and
   // 'unpaid' are Stripe's own words for a completed session; the rest are ours, set by
@@ -497,7 +498,9 @@
   // src/lib/registration.mjs.
   var REG_KEYS = ['athleteFirst', 'athleteLast', 'dob', 'gender', 'grade', 'school', 'studentEmail', 'studentPhone',
     'experience', 'team', 'position', 'goals', 'parentFirst', 'parentLast', 'relationship', 'homeCity', 'contactMethod',
-    'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'hearAbout', 'hearAboutOther', 'paymentStatus', 'agreeName'];
+    'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'hearAbout', 'hearAboutOther', 'paymentStatus', 'agreeName',
+    // /appbuy tool orders. Mirrors FIELDS in src/lib/apporder.mjs plus what the webhook adds.
+    'firstName', 'lastName', 'role', 'athleteName', 'product', 'productLabel', 'accessUrl'];
 
   // "3 hours ago" answers the only question a glance asks. Intl does the words; the exact
   // timestamp stays on the element's title for when it matters.
@@ -536,6 +539,12 @@
       if(l.playerName) s += SEP + 'player ' + l.playerName + (l.grade ? ', ' + l.grade : '');
       if(l.program) s += SEP + l.program;
       return s;
+    }
+    if(l.type === 'apporder'){
+      var a = (l.productLabel || l.product || '') + SEP + (PAY_LABELS[l.pay] || l.pay || '') + SEP +
+        (l.amount || '') + (l.amount && l.months ? ' a month' : '');
+      if(STATUS[l.paymentStatus]) a = STATUS[l.paymentStatus] + SEP + a;
+      return a;
     }
     if(l.type === 'contact') return [l.area, l.hearAbout].filter(Boolean).join(SEP);
     return l.area || '';
@@ -741,6 +750,23 @@
       meta('Player', l.playerName ? l.playerName + (l.grade ? ', ' + l.grade : '') : '');
       meta('Program', l.program);
       meta('Notice by', l.cancelNoticeBy);
+    } else if(l.type === 'apporder'){
+      if(STATUS[l.paymentStatus]){
+        var ast = cell('p', STATUS[l.paymentStatus]);
+        ast.className = 'lead-status';
+        card.appendChild(ast);
+      }
+      // A payment-plan amount is one instalment, not the price, so the row says "a month"
+      // for the same reason a monthly enrollment does.
+      meta('Tool', [l.productLabel || l.product, PAY_LABELS[l.pay] || l.pay,
+        l.amount ? l.amount + (l.months ? ' a month for ' + l.months + ' months' : '') : ''].filter(Boolean).join(SEP));
+      meta('For', [l.role, l.athleteName].filter(Boolean).join(SEP));
+      meta('Access link', l.accessUrl);
+      if(l.notes){
+        var anote = cell('div', l.notes);
+        anote.className = 'lead-msg';
+        card.appendChild(anote);
+      }
     } else if(l.type === 'contact'){
       meta('Area', l.area);
       meta('Program', l.program);
@@ -790,7 +816,7 @@
     filter.placeholder = 'Filter by suburb, name, or email';
     bar.appendChild(filter);
     var typeSel = document.createElement('select');
-    [['', 'All types'], ['contact', 'contact'], ['playbook', 'playbook'], ['enrollment', 'enrollment'], ['visit', 'link opens']].forEach(function(pair){
+    [['', 'All types'], ['contact', 'contact'], ['playbook', 'playbook'], ['enrollment', 'enrollment'], ['apporder', 'tool orders'], ['visit', 'link opens']].forEach(function(pair){
       var o = document.createElement('option');
       o.value = pair[0];
       o.textContent = pair[1];
@@ -915,6 +941,13 @@
     meta('Gross paid', payMoney(period.grossPaidCents));
     meta('Accrued', payMoney(period.accrualCents));
     meta('Reversed', payMoney(period.reversalCents));
+    // The net settles two deals at once: 2.5% or 8% of training revenue, and 50% of a tool
+    // sale. Shown only when there is a tool sale in the month, so a training-only period reads
+    // exactly as it always did.
+    if(period.appCount){
+      meta('Training part', payMoney(period.trainingNetCents));
+      meta('Tool sales, 50/50', payMoney(period.appNetCents));
+    }
     meta('Entries', String(period.entryCount || 0));
     meta('Pay date', payDate(period.payDateISO));
 

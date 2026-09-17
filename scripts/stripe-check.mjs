@@ -23,6 +23,7 @@
 import { pathToFileURL } from 'node:url';
 import Stripe from 'stripe';
 import { catalog, dollars } from '../src/lib/plans.mjs';
+import { pricesByLookupKey } from './stripe-catalog.mjs';
 import { SITE_URL } from '../src/lib/site-config.mjs';
 
 // Every event server/functions/stripe-webhook.mjs acts on. checkout.session.expired is the
@@ -66,10 +67,8 @@ export async function auditStripe(stripe, { siteUrl = SITE_URL, probeSession = t
   const add = (name, ok, detail) => checks.push({ name, ok, detail });
   const specs = catalog();
 
-  // ---- prices
-  const { data: prices } = await stripe.prices.list({
-    lookup_keys: specs.map((s) => s.lookupKey), active: true, limit: 100
-  });
+  // ---- prices. Ten lookup keys per call, which is Stripe's cap: see stripe-catalog.mjs.
+  const prices = await pricesByLookupKey(stripe, specs.map((s) => s.lookupKey));
   const byKey = new Map(prices.map((p) => [p.lookup_key, p]));
   const missing = [];
   const wrong = [];

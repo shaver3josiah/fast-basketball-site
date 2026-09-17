@@ -100,7 +100,17 @@ checkoutSpec(planKey, pay) → {
 }
 ```
 
-That is eight lookup keys: four memberships, two of which price monthly as well as in
+**Since 17 September 2026 there are also ten app-product keys**, `shotform-*` and `dribble-*`,
+which are the two tools sold from `/appbuy`: `-full` plus `-m2`, `-m3`, `-m4` and `-m5` for the
+payment plans. They come out of `APP_PLANS` in the same `src/lib/plans.mjs` and through the same
+`catalog()`, so `npm run stripe:catalog` creates them with everything else and nothing about the
+sync changed. Two things differ from a membership: the price is the SAME on every pay option
+(paying over time adds nothing), and an instalment schedule ends with `cancel` rather than
+`release`, because a tool is bought once and must stop billing when it is paid for.
+**Eighteen lookup keys in total.** The developer's share of an app sale is 50%, not the
+agreement's 8%/2.5%; that is a new commercial term and is not in the signed agreement yet.
+
+That is eight training lookup keys: four memberships, two of which price monthly as well as in
 full, plus the two evaluation rates. The Unlimited tiers publish one figure each, so they
 sell pay in full only rather than offering a monthly number nobody set. Private one on one
 ($3,000 per six month term) is **not** in the catalog on purpose: Blake schedules it by
@@ -242,7 +252,7 @@ Privacy page gets one paragraph: payments are processed by Stripe on Stripe's pa
 site never sees card numbers; what Stripe keeps is governed by Stripe's privacy policy.
 
 **Phase 1 test:** `node --test src/lib/plans.test.mjs` green. Then in test mode with
-card `4242 4242 4242 4242`: each of the eight lookup keys checks out, the consent box and
+card `4242 4242 4242 4242`: each of the eighteen lookup keys checks out, the consent box and
 typed-name field appear, `cancel_url` returns to the matrix with the plan preselected,
 a request with a tampered `plan` gets 422, the 11th request in 10 minutes gets 429, and
 JS disabled still reaches Stripe through the form POST. Lighthouse and the golden

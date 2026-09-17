@@ -28,7 +28,14 @@ function fakeStripe({ prices = goodPrices(), endpoints = [goodEndpoint()], sessi
   log.created = [];
   log.expired = [];
   return {
-    prices: { list: async () => ({ data: prices }) },
+    prices: {
+      // Stripe refuses more than ten lookup keys per call. See the same guard in
+      // stripe-catalog.test.mjs: without it the suite passes and the live run 400s.
+      list: async ({ lookup_keys = [] } = {}) => {
+        if (lookup_keys.length > 10) throw new Error('invalid_request_error: You can specify up to 10 lookup_keys');
+        return { data: prices.filter((p) => !lookup_keys.length || lookup_keys.includes(p.lookup_key)) };
+      }
+    },
     checkout: {
       sessions: {
         create: async (params) => {

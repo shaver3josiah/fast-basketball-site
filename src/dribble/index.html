@@ -1,0 +1,2828 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dribble Counter</title>
+<!--
+  A Locker worksheet that counts real dribbles through the phone's microphone, checks the
+  tempo against one the athlete picked, and turns the screen green while that pace holds.
+
+  WHY IT CAN HEAR A BALL FROM ACROSS THE COURT. A bounced basketball makes two sounds at
+  once. The impact radiates a low "thump" whose length is set by the few milliseconds the
+  ball is in contact with the floor, and the air sealed inside the ball rings in its own
+  spherical cavity modes, measured at about 970 Hz and 1580 Hz for a regulation ball
+  (Russell, Am. J. Phys. 78, 549, 2010) inside a spectrum carrying better than fifty
+  partials out to 12 kHz. The thump travels well but shares its band with every air
+  handler, passing truck and hand rumble on earth. The ring sits where a phone microphone
+  is sensitive and where a gym is comparatively quiet.
+
+  So this detector band-passes 250 Hz to 2.2 kHz and then looks for a TRANSIENT rather
+  than for loudness: a fast envelope that jumps clear of a lagging one. A bounce reaches
+  full level in under five milliseconds and is gone inside a hundred. A shout, a whistle,
+  a shoe squeak and a song all rise slowly by comparison, lifting both envelopes together,
+  so they never trip the ratio. That is the whole trick, and it is why this works on an
+  ordinary phone with no model, no library and no network.
+
+  THREE THINGS THAT WOULD OTHERWISE BREAK IT, all handled below:
+   - The browser's voice pipeline. echoCancellation, noiseSuppression and autoGainControl
+     exist to delete exactly this sound. A repeating impulse is what a noise gate is built
+     to remove, and AGC destroys the level relationship the threshold depends on. All
+     three are turned off in the getUserMedia constraints.
+   - A fixed threshold. A ball 20 ft away in a loud gym and a ball at your feet in a quiet
+     one differ by 30 dB or more. The threshold rides a noise floor that falls fast and
+     rises slowly, so it sits just above whatever the room is doing right now, and the
+     athlete still gets a sensitivity knob, because no gym is the room this was tested in.
+   - The metronome's own click, which the microphone hears from two inches away. It is a
+     7 kHz tick placed two low-pass poles above the detection band, so the counter does
+     not count the thing this page is playing. Pinned by a test in check-dribble.mjs.
+
+  It saves like every other document in the Locker: the app injects its bridge, the bridge
+  reads anything carrying data-k, and this page keeps its totals in hidden inputs carrying
+  exactly that. Nothing in here knows the app exists, which is why it also opens in a
+  plain browser by double-clicking the file.
+-->
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  color-scheme:dark;
+  --page:#08080C;--card:#131318;--panel:#0D0D12;--stage:#05060B;--ctl:#1B1B22;--ctl-2:#16161C;
+  --line:rgba(255,255,255,.10);--hair:rgba(255,255,255,.07);--track:#5E5E6A;
+  --ink:#E8E8EE;--ink-hi:#FFFFFF;--mute:#A5A5B2;--dim:#8A8A97;
+  --red:#E60C20;--red-hot:#FF3A41;--good:#19D26B;--slow:#6AA8FF;--fast:#FFA23A;--gold:#FFD34D;
+  --teal:#2DD4BF;
+}
+body{font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink);background:var(--page);padding:20px 16px 32px;overflow-x:hidden;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:430px;margin:0 auto;position:relative;z-index:1}
+
+/* ------------------------------------------------------------------ masthead --- */
+h1{font-size:1.5rem;line-height:1.05;color:var(--ink-hi);letter-spacing:-.022em;font-weight:800}
+.by{font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;color:var(--red-hot);
+  font-weight:700;margin:6px 0 14px}
+/* The intro was four lines in a red-barred box, above a screen whose whole job is one
+   number. It is one line of plain text now, and the part that only matters once, what it
+   records and what it does not, is one tap away and still exact. The box went with it: a
+   tinted panel with a coloured bar down its side was shouting a sentence nobody rereads. */
+.note{font-size:.88rem;line-height:1.5;color:var(--mute);margin:8px 0 12px}
+.how{margin:-6px 0 14px}
+.how summary{display:inline-block;font-size:.74rem;text-transform:uppercase;
+  letter-spacing:.1em;font-weight:800;color:var(--red-hot);cursor:pointer;padding:6px 0;
+  min-height:32px;line-height:20px}
+.how summary::-webkit-details-marker{display:none}
+.how summary::after{content:' +';font-weight:900}
+.how[open] summary::after{content:' \2212'}
+.how p{font-size:.82rem;line-height:1.55;color:var(--dim);margin-top:2px;max-width:62ch}
+/* Once the session is running, the explanation and the setup notes have been read, and the
+   phone is already on the floor. The screen belongs to the count, the pace, and what it is
+   hearing. Sixty pixels of instruction that nobody rereads mid-drill is sixty pixels the
+   number does not get, on a hero that is exactly one screen tall. */
+.hero.live .note,
+.hero.live .how,
+.hero.live .teach-why{display:none}
+
+/* The wash. One fixed layer behind everything, recoloured by the pace state, so there is
+   only ever one thing painting the room. The modes change its opacity, nothing else. */
+#flood{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;
+  background:radial-gradient(120% 80% at 50% 38%,#19D26B 0%,#0B5C33 55%,#08080C 100%);
+  transition:opacity .22s linear,background .3s linear}
+#flood.on{opacity:.3}
+#flood.on.big{opacity:.72}
+
+/* ------------------------------------------------------------------ controls --- */
+button{font:inherit;font-size:.8rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  border-radius:12px;border:1px solid rgba(255,255,255,.16);background:var(--ctl);color:#F5F3EF;
+  cursor:pointer;padding:12px 14px;min-height:48px;
+  transition:background .15s ease,border-color .15s ease,color .15s ease}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.42}
+button:focus-visible,input:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--red-hot);outline-offset:2px}
+
+.go{width:100%;background:var(--red);border-color:var(--red);color:#fff;
+  font-size:1.02rem;letter-spacing:.1em;min-height:64px}
+.go.live{background:#141419;border-color:var(--red-hot);color:#FF6B72}
+.msg{font-size:.8rem;line-height:1.45;color:#9C9CA9;margin-top:9px;min-height:1.5em}
+.msg.bad{color:#FF8A90}
+
+/* ---------------------------------------------------------------------- hero --- */
+/* Stage and verdict are one instrument: the canvas is the top of it, the call is the
+   bottom, and they share a border so the eye reads a single object from ten feet away. */
+.stage{position:relative;margin-top:18px;border:1px solid var(--line);border-bottom:0;
+  border-radius:18px 18px 0 0;overflow:hidden;background:var(--stage)}
+/* The phone is on the floor across the court, so the number and the call under it have to
+   be on screen TOGETHER, without scrolling. Inside the app the page does not get the
+   phone: the Locker screen spends about 210px on its own header, status strip and save
+   bar, so a 6.1in phone leaves this page roughly 630px and an SE about 500.
+
+   This was first done by subtracting a measured constant from the viewport height, and
+   that was wrong twice over. The constant went stale the moment anything above the stage
+   changed, and it was never one number anyway: the intro paragraph wraps to four lines at
+   360px and three at 375px, so the content above the stage is 20px taller on the NARROWER
+   phone. No arithmetic on the viewport height can know that.
+
+   So the hero is a column that owns one screen, and the stage simply takes what is left
+   after the things with their own size have taken theirs. Nothing to keep in sync.
+   The vh line is the fallback for a WebView too old for svh; inside the app the two are
+   the same number anyway, because there is no browser chrome to collapse. */
+/* height, not min-height. A minimum is only a floor: the column would grow past the
+   screen to fit its contents and the stage would never give anything back. A definite
+   height is what lets the stage shrink into whatever is left. */
+.hero{display:flex;flex-direction:column;
+  height:calc(100vh - 20px);
+  height:calc(100svh - 20px)}
+.hero .stage{flex:1 1 auto;min-height:96px;max-height:360px}
+canvas{display:block;width:100%;height:100%}
+
+
+/* The count sits in its own pool of dark. The canvas paints a bright core right under it,
+   and white on that core measures 3.4:1; this scrim takes it past 11:1 without reaching
+   the ripples, which expand outside the ellipse. */
+.big{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:0 12px;pointer-events:none;
+  background:radial-gradient(58% 40% at 50% 50%,
+    rgba(5,6,11,.74) 0%,rgba(5,6,11,.6) 52%,rgba(5,6,11,0) 100%)}
+.big b{font-size:clamp(4.2rem,24vw,6.4rem);line-height:.88;font-weight:900;color:#fff;
+  letter-spacing:-.05em;font-variant-numeric:tabular-nums;text-shadow:0 2px 20px rgba(0,0,0,.55)}
+.big span{font-size:.66rem;text-transform:uppercase;letter-spacing:.15em;color:#D6D6E0;
+  font-weight:800;margin-top:11px;text-align:center;line-height:1.3}
+
+/*
+ * WHAT IT JUST HEARD, one mark per sound, newest on the right.
+ *
+ * Before this the page gave the same silence to "I heard nothing" and to "I heard that and
+ * it was not your ball", which are the two things an athlete most needs told apart: one
+ * means move the phone, the other means nothing is wrong. Three marks, no words, readable
+ * at a glance with the phone on the floor.
+ *
+ * IT SITS INSIDE THE STAGE, ABSOLUTELY, and both halves of that matter. Inside, because
+ * the stage and the verdict share a border and read as one instrument; a block between
+ * them opens a seam down the middle of it and the eye stops seeing one object. Absolutely,
+ * because the stage is `flex:1 1 auto` inside a hero exactly one screen tall, so anything
+ * in that column with a height takes it straight off the stage. Shipped in the flow, it
+ * cost 28px, and on a screen where the ball card was open the stage was already on its
+ * 96px floor, so those 28px came out of the number: the label under it was cut in half.
+ */
+.heard{position:absolute;left:0;right:0;bottom:8px;z-index:2;pointer-events:none;
+  display:flex;gap:5px;justify-content:center;align-items:center;height:16px}
+/* Below about 140px the stage cannot hold the number, the label AND a row of marks, and
+   the number and the call are what has to survive: see the note on .stage above. */
+.stage.tight .heard{display:none}
+/* Size and colour are ONE scale: how sure it was that this was your ball. A big green dot
+   is a sound it had no doubt about, teal is one it counted with less. Gold and hollow is a
+   bounce it was sure of but which landed soft, because that is about the rep and not about
+   the recognition. Grey is a sound it heard and refused. */
+.heard i{display:block;width:9px;height:9px;border-radius:50%;background:var(--teal)}
+.heard i.sure{width:13px;height:13px;background:var(--good)}
+.heard i.soft{width:11px;height:11px;background:transparent;border:2px solid var(--gold)}
+.heard i.no{width:6px;height:6px;background:var(--track);opacity:.6}
+/*
+ * THE SPEEDOMETER.
+ *
+ * The pace used to be three separate things: a number in the stats, a word in this bar and
+ * the colour of the whole screen. None of them says how FAR off you are, or which way to
+ * move, without doing arithmetic against a target you have to remember. A needle against a
+ * band answers both without reading anything.
+ *
+ * It lives inside the call bar rather than above it, because the stage and this bar share a
+ * border and read as one instrument; a strip between them opens a seam down the middle of
+ * it. The scale is the trace view's, target plus or minus 140, so the two views of the same
+ * number cannot disagree.
+ */
+.gauge{position:relative;height:9px;border-radius:5px;background:var(--ctl-2);
+  border:1px solid var(--line);margin:0 0 10px;overflow:hidden}
+.g-band{position:absolute;top:0;bottom:0;background:rgba(25,210,107,.3);
+  border-left:1px solid rgba(25,210,107,.65);border-right:1px solid rgba(25,210,107,.65)}
+.g-needle{position:absolute;top:-1px;bottom:-1px;width:3px;margin-left:-1.5px;
+  background:var(--ink-hi);border-radius:2px;opacity:0;
+  transition:left .2s linear,opacity .2s linear}
+.verdict .gauge{display:none}
+.hero.live .verdict .gauge{display:block}
+.verdict{border:1px solid var(--line);border-top:0;border-radius:0 0 18px 18px;
+  background:var(--panel);padding:13px 14px;text-align:center;font-size:1.05rem;
+  text-transform:uppercase;letter-spacing:.15em;font-weight:900;color:#9C9CA9;
+  transition:color .2s linear,background-color .2s linear}
+.verdict.good{color:var(--good);background:rgba(25,210,107,.12)}
+.verdict.slow{color:var(--slow);background:rgba(59,130,246,.14)}
+.verdict.fast{color:var(--fast);background:rgba(255,155,47,.12)}
+
+/* The instrument cluster. Live readings across the top at full weight, session totals
+   under them at less, so a glance lands on the pace and not on the minute count. */
+/* Four tiles, not five in a six-column grid with a hole in it. Target left: the gauge above
+   draws the band and the pace control below prints the figure, so a third copy was noise. */
+.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
+.st{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:9px 4px 8px;text-align:center}
+.st:nth-child(-n+3){grid-column:span 2}
+.st:nth-child(n+4){grid-column:span 3}
+.st b{display:block;font-size:1.3rem;font-weight:800;color:#fff;line-height:1.15;
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.st:nth-child(n+4) b{font-size:1.1rem;color:var(--ink)}
+.st span{display:block;font-size:.64rem;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--mute);font-weight:700;margin-top:3px}
+.st.good b{color:var(--good)}
+
+/* ------------------------------------------------------------------ settings --- */
+/* Two recessive shells: the pace panel, which belongs to the reading above it, and the
+   setup panel, which does not. Neither carries a card inside it. */
+.pace,.tune{background:var(--panel);border:1px solid var(--hair);border-radius:16px;padding:14px}
+.pace{margin-top:12px}
+.grp{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair)}
+.grp:first-child{margin-top:0;padding-top:0;border-top:0}
+.grp>:first-child{margin-top:0}
+h3{font-size:.64rem;text-transform:uppercase;letter-spacing:.13em;color:var(--dim);
+  font-weight:800;margin-bottom:10px}
+
+.row{display:flex;align-items:center;gap:10px;margin-top:12px}
+.row label{flex:1;font-size:.74rem;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--mute);font-weight:700;line-height:1.35}
+.row b{font-size:1.15rem;font-weight:800;color:#fff;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;min-width:86px;text-align:right}
+.step{flex:none;min-width:56px;min-height:48px;padding:8px;font-size:1.25rem;line-height:1;
+  color:var(--ink)}
+/* The slider is drawn by hand because the UA track is near white, which on this page was
+   the brightest thing on the screen and out-shouted the Start button. The box stays 44px
+   for the thumb; only the painted rail is 6px. Every slider here has its value spelled out
+   above it, so losing the filled-portion tint costs nothing. */
+input[type=range]{flex:1;width:100%;min-width:0;height:44px;margin-top:2px;
+  -webkit-appearance:none;appearance:none;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:4px;background:var(--track)}
+input[type=range]::-moz-range-track{height:6px;border-radius:4px;background:var(--track)}
+input[type=range]::-moz-range-progress{height:6px;border-radius:4px;background:var(--red)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:26px;height:26px;margin-top:-10px;border-radius:50%;
+  background:var(--red);border:2px solid #fff}
+input[type=range]::-moz-range-thumb{box-sizing:border-box;width:26px;height:26px;
+  border-radius:50%;background:var(--red);border:2px solid #fff}
+.grp>input[type=range]{margin-top:6px}
+.grp>input[type=range]+.hint{margin-top:2px}
+
+.tog{display:flex;align-items:flex-start;gap:12px;cursor:pointer;padding:2px 0;min-height:48px}
+.tog input{flex:none;width:22px;height:22px;accent-color:var(--red);margin-top:2px}
+.tog span{font-size:.9rem;font-weight:600;color:var(--ink)}
+.tog small{display:block;font-size:.76rem;font-weight:400;color:var(--mute);
+  line-height:1.5;margin-top:3px}
+
+.modes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.modes button{background:var(--ctl-2);border-color:var(--line);font-size:.68rem;
+  letter-spacing:.06em;padding:10px 4px;min-height:48px}
+.modes button.on{background:var(--red);border-color:var(--red);color:#fff}
+
+.meter{height:10px;border-radius:6px;background:var(--ctl);overflow:hidden;
+  border:1px solid rgba(255,255,255,.08)}
+/* No transition on either bar. The script drives both by writing style.width every
+   200 ms, so an eased width would smear the workout clock and blunt the meter, whose
+   whole job is to JUMP on a bounce. */
+.meter i{display:block;height:100%;width:0;border-radius:6px;
+  background:linear-gradient(90deg,#3B82F6,#19D26B,#FFA23A)}
+
+.hint{font-size:.78rem;line-height:1.55;color:var(--mute);margin-top:10px}
+.lede{margin:0 0 12px}
+
+/* ------------------------------------------------------------------ sections --- */
+section{margin-top:28px}
+h2{font-size:.68rem;text-transform:uppercase;letter-spacing:.14em;color:var(--mute);
+  font-weight:800;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+
+/* ------------------------------------------------------------------ workouts --- */
+.wk{position:relative;width:100%;text-align:left;text-transform:none;letter-spacing:0;
+  font-weight:400;background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:14px 42px 14px 15px;margin-bottom:9px}
+.wk::after{content:"";position:absolute;right:17px;top:50%;width:9px;height:9px;
+  border-right:2px solid #7E7E8A;border-top:2px solid #7E7E8A;
+  transform:translateY(-50%) rotate(45deg)}
+.wk b{display:block;font-size:1.06rem;font-weight:800;color:#fff;letter-spacing:-.015em;
+  line-height:1.25}
+.wk u{display:block;text-decoration:none;font-size:.66rem;text-transform:uppercase;
+  letter-spacing:.09em;color:var(--mute);font-weight:800;margin-top:5px}
+.wk p{font-size:.84rem;line-height:1.5;color:#A9A9B6;margin-top:7px}
+.wk.done{background:rgba(25,210,107,.06);border-color:rgba(25,210,107,.34)}
+.wk.done u{color:var(--good)}
+
+#runner{display:none;background:#0F1013;border:1px solid rgba(255,58,65,.42);
+  border-radius:16px;padding:15px;margin-bottom:12px}
+#runner.on{display:block}
+#runner.rest{border-color:rgba(106,168,255,.42)}
+.rTop{display:flex;align-items:baseline;gap:10px}
+.rTop b{flex:1;font-size:1.12rem;font-weight:800;color:#fff;line-height:1.25;letter-spacing:-.015em}
+.rTop span{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--good);white-space:nowrap}
+.rTop i{font-style:normal;font-size:1.9rem;font-weight:900;color:var(--gold);line-height:1;
+  letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+#runner.rest .rTop i{color:var(--slow)}
+.rCue{font-size:.88rem;line-height:1.5;color:#C9C9D4;margin-top:8px}
+.rNext{font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;color:var(--mute);
+  font-weight:800;margin-top:10px}
+.rBar{height:7px;border-radius:4px;background:var(--ctl);overflow:hidden;margin-top:11px}
+.rBar i{display:block;height:100%;width:0;background:var(--red)}
+.rBtns{display:flex;gap:9px;margin-top:12px}
+.rBtns button{flex:1;font-size:.68rem;min-height:48px}
+
+/* -------------------------------------------------------------------- drills --- */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:.62rem;text-transform:uppercase;letter-spacing:.11em;
+  color:var(--dim);font-weight:800;padding:0 0 9px}
+th:last-child,td:last-child{width:86px;text-align:right}
+th:first-child,td:first-child{padding-right:16px}
+td{padding:11px 0;font-size:.92rem;color:var(--ink);vertical-align:top;
+  border-top:1px solid var(--hair)}
+td b{font-weight:700;color:#fff;letter-spacing:-.01em}
+td small{display:block;font-size:.8rem;line-height:1.5;color:var(--mute);margin-top:4px}
+/* The script writes the pace as "170<br>/min", one text node, so the unit cannot be
+   wrapped and styled. ::first-line is what lets the number carry the weight anyway. */
+td button{display:block;width:100%;background:var(--ctl-2);padding:8px 6px;min-height:48px;
+  font-size:.66rem;letter-spacing:.06em;line-height:1.25;white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+td button::first-line{font-size:1.05rem;letter-spacing:-.01em}
+
+/* --------------------------------------------------------------------- notes --- */
+textarea{width:100%;font:inherit;font-size:16px;line-height:1.5;padding:12px 13px;
+  border-radius:10px;border:1px solid #6C6C78;background:#0C0C11;color:#F5F3EF;resize:vertical}
+textarea::placeholder{color:var(--dim)}
+textarea:focus{outline:2px solid var(--red-hot);outline-offset:1px}
+.foot{margin-top:30px;padding-top:15px;border-top:1px solid var(--line);
+  font-size:.72rem;line-height:1.7;color:#8E8E9B;text-align:center}
+
+/* A short screen. Every band above the stage gives back a few pixels so the stage keeps
+   enough of them to hold a number worth reading from twenty feet. */
+@media (max-height:640px){
+  h1{font-size:1.3rem}
+  .note{font-size:.8rem;line-height:1.45;padding:8px 11px;margin-bottom:12px}
+  .go{min-height:56px;font-size:.95rem}
+  .msg{margin-top:7px}
+  .stage{margin-top:12px}
+  .verdict{padding:10px 12px;font-size:.95rem}
+  button.wide{min-height:46px;margin-top:8px}
+  .teach-why{margin-top:5px}
+  .big b{font-size:clamp(3.4rem,19vw,5rem)}
+  .big span{margin-top:8px}
+  .hero .stage{min-height:88px}
+}
+button.wide{width:100%;margin:10px 0 0;font-size:.72rem}
+.btnrow{display:flex;gap:8px}
+.btnrow button.wide{flex:1;min-width:0}
+.hidden{display:none !important}
+/* The only animation on the page, and it means one thing: this button is waiting for you.
+   Green because green already means "on pace" here, and a ring that grows outward rather
+   than a fill, so nothing on the row changes size while it pulses. */
+@keyframes readypulse{0%,100%{box-shadow:0 0 0 0 rgba(25,210,107,.38)}50%{box-shadow:0 0 0 8px rgba(25,210,107,0)}}
+button.ready{border-color:var(--good);color:var(--good);animation:readypulse 1.7s ease-out infinite}
+@media (prefers-reduced-motion:reduce){button.ready{animation:none}}
+/* Quiet: a real action that must never be mistaken for the red one above it. */
+button.quiet{background:transparent;border-color:var(--line);color:var(--mute)}
+button.quiet.arm{border-color:var(--red-hot);color:var(--red-hot)}
+.ballcard{display:flex;align-items:center;gap:12px;margin-top:10px;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.ballcard canvas{flex:none;width:75px;height:38px;background:#0A0A10;border-radius:7px}
+.ballwords{min-width:0}
+.ballcard b{display:block;font-size:.84rem;color:var(--ink-hi);font-weight:800;letter-spacing:-.01em}
+.ballcard span{display:block;font-size:.74rem;color:#A7A7B4;line-height:1.5}
+.ballcard.good{border-color:rgba(25,210,107,.45)}
+/* Telling it the truth has to be as easy as reading the wrong number was. */
+.fix{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.fix label{font-size:.78rem;color:var(--mute);font-weight:700}
+.fix input{width:66px;font:inherit;font-size:16px;font-weight:800;text-align:center;
+  background:var(--ctl);color:var(--ink-hi);border:1px solid var(--line);border-radius:10px;
+  padding:9px 8px;min-height:44px}
+.fix button{flex:1;min-width:118px;min-height:44px;background:transparent;
+  border-color:var(--good);color:var(--good)}
+.fix input::placeholder{color:var(--dim);font-weight:700}
+#report{font:inherit;font-size:15px;line-height:1.5;white-space:pre;overflow-x:auto}
+.teach-why{margin-top:7px}
+
+/* On a genuinely short screen the one-line note under the teach button is the first
+   thing to go: the same explanation is in Your ball, and the count and the pace verdict
+   are what somebody reads from twenty feet away. */
+@media (max-height:545px){
+  .teach-why{display:none}
+  .note{font-size:.76rem;padding:7px 10px;margin-bottom:10px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  #flood,.verdict,button,.g-needle{transition:none}
+  button:active{transform:none}
+}
+</style>
+<body>
+<div id="flood"></div>
+<div class="wrap">
+
+<div class="hero" id="hero">
+<h1>Dribble Counter</h1>
+<p class="by">Fast Basketball &middot; Blake Kingsley</p>
+<p class="note">Phone on the floor inside the court, screen up. It counts every bounce and
+tells you whether you are holding your pace.</p>
+<details class="how">
+  <summary>How it works</summary>
+  <p>It hears the ball from about 20 ft. No audio is recorded and no sound leaves the phone.
+  It does keep a log of the numbers it measured from each sound, so a count that comes out
+  wrong can be fixed later instead of argued about.</p>
+</details>
+
+<button class="go" id="goBtn" type="button">Start listening</button>
+<p class="msg" id="msg" role="status">The microphone only runs while this is on.</p>
+<div class="btnrow">
+  <button type="button" id="doneTeach" class="wide hidden">That is enough, use it</button>
+  <button type="button" id="teachBtn" class="wide hidden">Teach it the ball</button>
+  <button type="button" id="finishBtn" class="wide hidden">Finish and write up</button>
+</div>
+<button type="button" id="clearBtn" class="wide quiet hidden">Clear everything</button>
+
+<div class="ballcard hidden" id="ballCard">
+  <canvas id="ballViz" width="150" height="76" aria-label="The shape of the sound it learned"></canvas>
+  <div class="ballwords">
+    <b id="ballWhat">Your ball</b>
+    <span id="ballHow">&nbsp;</span>
+    <span id="ballDoing">&nbsp;</span>
+  </div>
+</div>
+<div class="fix hidden" id="fixRow">
+  <label for="fixN">Wrong count?</label>
+  <input type="number" id="fixN" min="1" max="500" step="1" inputmode="numeric" placeholder="5" aria-label="How many bounces there really were">
+  <button type="button" id="fixBtn">Go find them</button>
+</div>
+<p class="hint teach-why">It learns the room first, then your ball, from five bounces.</p>
+
+<div class="stage">
+  <canvas id="cv" aria-label="Live tempo feedback"></canvas>
+  <div class="big">
+    <b id="count">0</b>
+    <span id="countLbl">dribbles</span>
+  </div>
+  <div class="heard" id="heard" aria-hidden="true"></div>
+</div>
+<div class="verdict" id="verdict">
+  <div class="gauge" id="gauge" aria-hidden="true">
+    <i class="g-band" id="gBand"></i>
+    <i class="g-needle" id="gNeedle"></i>
+  </div>
+  <span id="verdictWord">not listening yet</span>
+</div>
+</div>
+
+<div class="hud">
+  <div class="st"><b id="sDpm">0</b><span>Per min</span></div>
+  <div class="st" id="stPace"><b id="sPace">0%</b><span>On pace</span></div>
+  <div class="st"><b id="sRun">0</b><span>Best streak</span></div>
+  <div class="st"><b id="sMin">0</b><span>Minutes</span></div>
+</div>
+
+<div class="pace">
+  <div class="grp">
+    <div class="row">
+      <label for="tgt">Pace to hold</label>
+      <b id="tgtVal">160 / min</b>
+    </div>
+    <div class="row">
+      <button class="step" id="tDown" type="button" aria-label="Slower target">&minus;</button>
+      <input type="range" id="tgt" min="60" max="360" step="5" value="160" aria-label="Target dribbles per minute">
+      <button class="step" id="tUp" type="button" aria-label="Faster target">+</button>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="row">
+      <label for="tol">How close still counts</label>
+      <b id="tolVal">&plusmn;15</b>
+    </div>
+    <input type="range" id="tol" min="5" max="50" step="5" value="15" aria-label="Tolerance in dribbles per minute">
+  </div>
+
+  <div class="grp">
+    <label class="tog" for="tick">
+      <input type="checkbox" id="tick">
+      <span>Play a tempo tick
+        <small>A 7 kHz click, pitched above everything the counter listens for, so it never
+        counts itself.</small>
+      </span>
+    </label>
+  </div>
+</div>
+
+<section>
+  <h2>Workouts</h2>
+  <p class="hint lede">Pick one. It sets the pace for every drill and runs the clock for you.</p>
+  <div id="runner">
+    <div class="rTop"><b id="rDrill">&nbsp;</b><span id="rCount">0 this drill</span><i id="rClock">0:00</i></div>
+    <p class="rCue" id="rCue">&nbsp;</p>
+    <p class="rNext" id="rNext">&nbsp;</p>
+    <div class="rBar"><i id="rFill"></i></div>
+    <div class="rBtns">
+      <button type="button" id="rSkip">Skip this drill</button>
+      <button type="button" id="rStop">End workout</button>
+    </div>
+  </div>
+  <div id="workouts"></div>
+</section>
+
+<section>
+  <h2>The drills</h2>
+  <p class="hint lede">Tap a pace to make it your target and run free reps at that tempo.</p>
+  <table id="drills"><tr><th>Drill</th><th>Pace</th></tr></table>
+</section>
+
+<section>
+  <h2>Setup</h2>
+  <div class="tune">
+    <div class="grp">
+      <h3>Feedback</h3>
+      <div class="modes" id="modes">
+        <button type="button" data-mode="flood" class="on">Flood</button>
+        <button type="button" data-mode="rings">Rings</button>
+        <button type="button" data-mode="trace">Trace</button>
+        <button type="button" data-mode="focus">Focus</button>
+      </div>
+      <p class="hint" id="modeHint">Flood: the whole screen goes green while you hold the pace,
+      blue when you drift slow, orange when you race. Readable from the far end of the floor.</p>
+    </div>
+
+    <div class="grp">
+      <h3>Your ball</h3>
+      <div class="meter"><i id="lvl"></i></div>
+      <p class="hint">It counts your ball and not the gym by listening for two things at
+      once: the thud of a floor taking the ball's weight, and the ring of the air sealed
+      inside it. Plenty in a gym makes one of those. Almost nothing makes both. Every ball
+      rings a little differently, and the same ball changes as it loses air, so it learns
+      yours from five bounces rather than assuming. Changed balls, moved courts, or it is
+      missing bounces? Teach it again.</p>
+      <div class="row">
+        <label for="sens">How fussy</label>
+        <b id="sensVal">Normal</b>
+      </div>
+      <input type="range" id="sens" min="55" max="90" step="1" value="75"
+        aria-label="How closely a sound must match your ball">
+      <p class="hint">Missing real bounces? Drag left. Counting something that is not the
+      ball? Drag right, and if that does not fix it, send what it heard with the button
+      below. The fix for that one is in the code, not on this slider.</p>
+      <button type="button" id="heardBtn" class="wide quiet">Copy what it heard</button>
+      <p class="hint">Every sound it looked at, as numbers: when, how much it looked like
+      your ball, how much floor it carried, and which rule turned it down. No audio, and
+      nothing you said. Send it with a note about what it got wrong and the next version
+      gets fixed against your gym instead of a recording of somebody else's.</p>
+    </div>
+  </div>
+</section>
+
+<section id="reportBox" class="hidden">
+  <h2>Send it to your coach</h2>
+  <textarea id="report" rows="12" readonly aria-label="Session write-up"></textarea>
+  <button type="button" id="copyBtn" class="wide">Copy it</button>
+  <p class="hint">The numbers are already saved to your account when you tap Save. This is
+  the same session as plain text, for putting in a message.</p>
+</section>
+
+<section>
+  <h2>Session notes</h2>
+  <textarea data-k="dc_notes" rows="3" placeholder="Which hand fell apart first? Where did the pace drop?"></textarea>
+</section>
+
+<input type="hidden" data-k="dc_total" value="0">
+<input type="hidden" data-k="dc_min" value="0">
+<input type="hidden" data-k="dc_pace" value="0">
+<input type="hidden" data-k="dc_best" value="0">
+<input type="hidden" data-k="dc_done" value="">
+<input type="hidden" data-k="dc_heard" value="">
+
+<p class="foot">The count only moves when a ball hits the floor.<br>Fast Basketball &middot; Fort Lauderdale<br>Property of Josiah Shaver</p>
+</div>
+
+<script id="detector">
+/*
+ * The listener.
+ *
+ * WHY THIS IS NOT A LOUDNESS DETECTOR, AND WHY IT IS NOT AN ONSET DETECTOR EITHER.
+ *
+ * The first version of this file looked for a transient: something that jumps well clear
+ * of the room and is spent again inside 80 ms. That is a true description of a bounce and
+ * a useless one, because it is equally true of a footstep, a clap, a door, a dropped bag,
+ * a ball off the rim, and the plosive at the front of half the words anyone says. All of
+ * them are sharp and all of them are gone in a tenth of a second. Put that detector in a
+ * real gym and it counts the gym. Being sudden is a property a dribble shares with nearly
+ * every other sound worth noticing, so no amount of tuning the envelope rescues it.
+ *
+ * So: what is true of a bounced basketball and false of everything else in the building?
+ *
+ * A basketball is a sealed sphere of pressurised air. Hit it and the air inside rings in
+ * the cavity modes of that sphere, near 970 Hz and 1580 Hz on a regulation ball, and it
+ * rings at the SAME frequencies every single time, because those frequencies are set by
+ * the geometry and the gas and nothing else (Russell, Am. J. Phys. 78, 549, 2010). A clap
+ * is broadband with no modes at all. A footstep is a low thud. A rim is metal, rings
+ * somewhere else entirely and for far longer. A voice is the harmonics of a vocal fold.
+ * None of them can imitate a specific pair of cavity resonances, because none of them is
+ * a sealed sphere of air.
+ *
+ * That is the whole design. This file learns the actual spectrum of THE ball being used,
+ * on THAT floor, in THAT room, at THAT distance, from five bounces the athlete gives it on
+ * purpose, and then counts only sounds whose spectrum matches what it was shown. It is not
+ * trying to recognise basketballs in general, which is genuinely hard and needs a model
+ * nobody can ship inside one HTML file. It is matching one sound against one template,
+ * which is easy, and which additionally solves every problem a general recogniser would
+ * still have: the room, the phone, the microphone, the distance and the floor are all
+ * baked into the template, because the template was recorded through them.
+ *
+ * Three consequences worth knowing:
+ *  - Calibration is not optional and must never be made optional. Without a template the
+ *    honest answer is "I do not know what your ball sounds like", and counting anything
+ *    sudden is what that turns into.
+ *  - The fingerprint is normalised to unit length, so LEVEL DROPS OUT and only the shape
+ *    of the spectrum is compared. A soft dribble twenty feet away matches a hard one at
+ *    your feet, which is what lets one template cover a whole workout.
+ *  - The metronome tick stops being a special case. It is a 7 kHz sine and looks nothing
+ *    like a ball, so the template rejects it without the filter having to hide it.
+ *
+ * Pure arithmetic: no DOM, no Web Audio, no clock of its own, which is what lets
+ * scripts/check-dribble.mjs run this exact code over synthetic audio in node.
+ */
+window.FBDribble = (function () {
+  'use strict';
+
+  /* One-pole coefficients: by corner frequency, and by time constant. */
+  function poleF(hz, sr) { var w = 2 * Math.PI * hz / sr; return w / (1 + w); }
+  function poleT(sec, sr) { return 1 - Math.exp(-1 / (sec * sr)); }
+
+  /* The floor stops falling here, so a muted or dead stream cannot drive the threshold to
+     zero and make dither look like a basketball. */
+  var FLOOR_MIN = 2e-4;
+
+  /* The cheap front end. These decide only what gets LOOKED AT; the fingerprint decides
+     what gets counted, so they are deliberately permissive. */
+  var SETTLE = 0.080;      /* a bounce is spent by now */
+  var SETTLE_TO = 0.55;
+  var LOOK_BACK = 20;      /* ms: it must have risen from nothing this recently */
+  var ATTACK = 2.2;
+
+  /* TWO different minimum spacings, because they enforce two different facts.
+     RETRIGGER is how soon the front end may look at another sound, and exists only to
+     stop one bang being examined twice; it sits just past the settle window.
+     GAP is how soon another DRIBBLE may be counted, and is a fact about basketballs:
+     110 ms is 545 a minute, well past anything a hand can do.
+     Keeping them apart matters. When one number did both jobs, a door closing 90 ms
+     before a bounce held the front end shut and the bounce went uncounted, so gym noise
+     did not just add dribbles, it stole them. A sound that is not the ball now blocks
+     nothing. */
+  var RETRIGGER = 0.085;
+  var GAP = 0.110;
+
+  /*
+   * WHEN THE CANDIDATE TURNS OUT TO HAVE BEEN THE WARNING, NOT THE EVENT.
+   *
+   * Found in a real recording, and invisible in every synthetic one. A bounce is often
+   * preceded within a tenth of a second by something faint - the ball leaving the hand, a
+   * shoe, the tail of the room - and that faint thing crosses the threshold first. The
+   * candidate window opens on it, and the actual bounce, arriving TEN TIMES LOUDER 60 ms
+   * later, was simply absorbed into it: fingerprinted as the precursor, judged not a ball,
+   * discarded. Three of twelve real bounces went uncounted that way, and it had been
+   * written off as a collision, which it is not. Two sounds a tenth of a second apart with
+   * twenty dB between them are not one event to anybody.
+   *
+   * So a candidate is provisional. If something arrives during its window that dwarfs it,
+   * the window re-anchors on the loud thing, which is the one that was always worth
+   * looking at. An echo cannot trigger this, because an echo is quieter than what made it.
+   */
+  var RESTART = 3.0;
+  var RESTART_MAX = 3;
+
+  /*
+   * THE RING'S SHADOW.
+   *
+   * A bounce keeps ringing for a couple of hundred milliseconds, and anything that
+   * happens during that inherits the ring: the fingerprint of a door closing 150 ms after
+   * a dribble contains the dribble, and scores like one. Measured, that was the ONLY way
+   * a non-ball sound ever got counted, and it was every single false positive in a 40 run
+   * sweep: all of them between 120 and 205 ms after a real bounce, none anywhere else.
+   *
+   * So inside the shadow the bar goes up. A real dribble at that spacing is a genuine
+   * bounce and still scores in the nineties; a bang wearing someone else's ring does not.
+   * It is a bar, not a block, because a hand really can dribble that fast and refusing to
+   * count a machine gun rack would be the worse error.
+   */
+  var SHADOW = 0.26;
+
+  /*
+   * The fingerprint is a picture of the WHOLE BOUNCE, not a snapshot of its loudest
+   * instant.
+   *
+   * A bounce is a sequence, and the sequence is most of what identifies it. First about
+   * two milliseconds of broadband contact noise as the ball deforms against the floor.
+   * Then the air sealed inside takes over and rings down through its cavity modes over
+   * something like a tenth of a second. The click on its own is a bang like any other
+   * bang; the ring on its own is what makes it a basketball; and the RATE the ring dies
+   * at is what separates it from a rim, which is the one other thing in a gym that rings
+   * on a struck note and which keeps going for the better part of a second.
+   *
+   * A single window at the onset averages all of that into one smear and cannot tell a
+   * short ring from a long one at all. So the fingerprint is five consecutive 21 ms
+   * slices covering the first 107 ms: click, early ring, mid ring, late ring, and
+   * whatever is left. 24 log-spaced bands each, so 120 numbers describing how the
+   * spectrum EVOLVES rather than what it averaged out to.
+   *
+   * Crucially the five slices are scaled against ONE global maximum rather than each
+   * being normalised on its own. Normalising per slice would make every sound decay at
+   * the same rate by construction and throw away the exact thing this was widened to see.
+   */
+  /* About 21 ms per slice, rounded to a power of two for the transform. It is derived
+     from the sample rate rather than fixed, because a slice is a DURATION. A fixed 1024
+     samples is 21 ms at 48 kHz and 64 ms at 16 kHz, and five of those is 320 ms of audio
+     demanded 115 ms after the onset: indices nothing had written yet, read out of a
+     circular buffer as whatever unrelated sound was there one wrap earlier. It survived
+     only because the stale audio was usually quiet enough to clamp to the floor. */
+  var FP_MS = 0.021;
+  var FP_FRAMES = 5;
+  var BANDS = 24;
+  var FP_LO = 200, FP_HI = 7000;
+
+  /* How long after the onset the whole picture has arrived is now derived per detector,
+     as this.fpSpan, so the wait can never be shorter than the audio it waits for. The
+     bounce is stamped when it landed, so this is latency on the COUNT, not on the timing. */
+
+  /*
+   * How alike two bounces of the SAME ball have to look to be grouped while learning, and
+   * how long the teaching window stays open.
+   *
+   * MEASURED, and the measurement was a surprise worth writing down: two bounces of one
+   * real ball correlate 0.90 typically but only 0.78 at the fifth percentile, because a
+   * ball struck by a human on a real floor is not the same sound twice. A REPEATED GYM
+   * NOISE is far more self-consistent than that - a bag dropped twice correlates 0.98 -
+   * so a strict grouping bar does not select for basketballs, it selects for whatever is
+   * most mechanically repetitive in the room. At 0.86 the athlete's own bounces sometimes
+   * failed to group, teaching stayed open, and the first thing that DID group got learned.
+   * A page that confidently counts bag drops is worse than one that counts everything.
+   *
+   * So the bar is 0.75, which real bounces clear, and the window is bounded: only sounds
+   * from the last few seconds are candidates for teaching. The athlete bounces when asked
+   * and the group comes from that, rather than accumulating across a whole session until
+   * some machine wins.
+   */
+  var LEARN_SIM = 0.75;
+  var LEARN_WINDOW = 12;
+  var LEARN_MAX = 14;
+
+  /*
+   * WHAT IT IS NOT.
+   *
+   * Teaching takes whatever agrees with itself, and a machine agrees with itself better
+   * than a hand-struck ball does. Played a real recording of a gym whose dominant
+   * repeating sound was mechanical, this taught itself in 2.4 seconds and counted fifteen
+   * of them.
+   *
+   * The first fix was a rule about where a basketball keeps its energy. It worked on the
+   * seven recordings to hand and it was still wrong, for two reasons. It refuses, which
+   * leaves the athlete holding a page that will not count no matter what they do. And it
+   * is a hard-coded assumption about frequency, so the day somebody turns up with a ball
+   * or a floor outside the range it was measured on, it tells them their real basketball
+   * is not a basketball.
+   *
+   * So instead of deciding what a ball IS, it learns what the room ALREADY SOUNDS LIKE,
+   * before the athlete touches the ball, and keeps those as sounds that will never be
+   * counted. Everything heard while the page says "hold still" is by definition not the
+   * ball. The ball is then whatever new thing shows up when they start bouncing.
+   *
+   * This is impostor cohort normalisation, the standard trick from speaker verification:
+   * score against the target AND against a cohort of known impostors, and require the
+   * target to win by a margin rather than merely to clear a bar. The literature's own
+   * finding is that the cohort works best when it is made of the CLOSEST impostors, which
+   * is exactly what a recording of this room, through this phone, gives for free.
+   *
+   * Nothing here assumes anything about frequency, so no real ball can be refused for
+   * ringing in the wrong place.
+   */
+  var COHORT_MAX = 14;     /* plenty for one room; oldest falls out */
+  var COHORT_SAME = 0.90;  /* near-duplicates do not each need a slot */
+  var COHORT_WIN = 0.12;   /* how far the ball must beat the room's own sounds */
+
+  /*
+   * THE THUMP, which everything above this line had been throwing away.
+   *
+   * A bounce is two sounds, and the ring is the QUIET one. The loud one is the thump: the
+   * ball's volume collapsing against the floor for about twelve milliseconds radiates a
+   * low pulse near 80 to 160 Hz (Katz, Eur. J. Phys. 2010, "Thump, ring: the sound of a
+   * bouncing ball"), some 14 dB above the cavity ring. Measured on two real recordings
+   * from two different balls, the 80 to 160 Hz band is the loudest band of every single
+   * bounce, 6 to 14 dB above 160 to 250 Hz and 10 to 20 dB above everything from 250 Hz
+   * up. The front end high-passes at 250 Hz and the fingerprint starts at 200 Hz, so the
+   * one thing in the sound that is loudest and most specific to an inflated ball hitting
+   * a floor was invisible to the decision.
+   *
+   * It matters because real impostors are not the synthetic ones. Over the real corpus a
+   * clap, a voice, a room's own clicks score 0.5 to 0.73 against the taught ball on the
+   * fingerprint alone, which is inside the range real bounces score, so no match bar
+   * separates them. Their thump does: sure bounces carry the 50 to 200 Hz band at +2 to
+   * +16 dB against 250 to 3000 Hz (median +12), and NOT ONE of the impostors that scored
+   * above 0.45 carried it above -5 dB. Rank AUC 0.99 on 134 real events. A clap and a
+   * word have no volume to collapse.
+   *
+   * It is LEARNED from the taught bounces rather than fixed, same as everything else here,
+   * because a phone microphone rolls off somewhere below 150 Hz and no two phones agree
+   * where: the bar is the taught ball's own thump, less this slack. Real bounces of one
+   * ball spread about 10 dB either side of their median on this measure, so the slack is
+   * wide; it costs about two sure bounces in a hundred and admits nothing.
+   *
+   * ponytail: a footstep has a thump and no ring, so it passes this and fails the
+   * fingerprint. That is the division of labour: the thump gate answers "did something
+   * hit the floor", the fingerprint answers "was it this ball".
+   */
+  var THUMP_SLACK = 14;
+
+  /* How much a cohort member has to resemble the taught ball before it is struck out as
+     the ball having leaked into the room pass. Swept; see the note in lock(). */
+  /* Swept against real recordings. 0.82 and below let a machine at twice the ball's
+     level take a true 58 up to 75; above 0.90 a real shooting session fell to 20 because
+     a bounce that leaked into the room pass vetoed its own kind. 0.90 with eviction below
+     is the only pair that holds both ends. */
+  var COHORT_PRUNE = 0.90;
+
+  /*
+   * A COHORT MEMBER THAT KEEPS BLOCKING THE BALL WAS THE BALL.
+   *
+   * Pruning at lock time cannot settle this on its own, and the sweep says so plainly:
+   * prune loosely and a machine at twice the ball's level takes a true 65 up to 90, prune
+   * tightly and a real shooting session falls from 66 to 20 because a bounce that leaked
+   * into the room pass now vetoes its own kind. There is no threshold that does both,
+   * because at lock time the two cases look identical.
+   *
+   * They stop looking identical a few seconds later. If something keeps arriving that
+   * matches the taught ball STRONGLY and is being vetoed by one particular room sound,
+   * that room sound was the ball leaking in, and it is evicted. A machine never triggers
+   * this, because the events it blocks only ever scrape past the bar rather than landing
+   * squarely on it. The evidence arrives on its own and nobody has to be asked anything.
+   */
+  var EVICT_AFTER = 4;
+  var EVICT_SURE = 0.20;   /* how far above the bar a blocked sound must be to count */
+
+  /* ------------------------------------------------------------------- the transform -- */
+
+  /* Iterative radix-2 Cooley-Tukey, in place. Small enough to read, and pinned by a
+     self-check that puts a known sine in a known bin. */
+  function fft(re, im) {
+    var n = re.length, i, j, k, m, half, t, wr, wi, wmr, wmi, ur, ui, a, b, bit;
+    for (i = 1, j = 0; i < n; i++) {
+      bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) {
+        t = re[i]; re[i] = re[j]; re[j] = t;
+        t = im[i]; im[i] = im[j]; im[j] = t;
+      }
+    }
+    for (m = 2; m <= n; m <<= 1) {
+      half = m >> 1;
+      wmr = Math.cos(-2 * Math.PI / m);
+      wmi = Math.sin(-2 * Math.PI / m);
+      for (i = 0; i < n; i += m) {
+        wr = 1; wi = 0;
+        for (k = 0; k < half; k++) {
+          a = i + k; b = a + half;
+          ur = re[b] * wr - im[b] * wi;
+          ui = re[b] * wi + im[b] * wr;
+          re[b] = re[a] - ur; im[b] = im[a] - ui;
+          re[a] += ur; im[a] += ui;
+          t = wr * wmr - wi * wmi; wi = wr * wmi + wi * wmr; wr = t;
+        }
+      }
+    }
+  }
+
+  /*
+   * Both vectors are mean-removed and unit length, so the dot product is the CORRELATION
+   * of two log spectra: 1 is the same shape, 0 is unrelated, negative is opposite.
+   *
+   * It has to be the correlation and not the plain cosine of the raw magnitudes, and that
+   * is not a detail. A spectrum is all non-negative numbers, and the cosine between any
+   * two non-negative vectors is pinned high no matter what they contain: two unrelated
+   * broadband sounds sit around 0.85 simply because neither has a negative component.
+   * Measured, a hand clap scored 0.87 against a basketball that way, which is inside the
+   * range real bounces score, so no threshold existed that could separate them. Taking
+   * logs first and removing the mean lets a band that is QUIET count as evidence against
+   * a match, which is most of what tells a peaked ring apart from a flat bang.
+   */
+  function similarity(a, b) {
+    var s = 0;
+    for (var i = 0; i < a.length; i++) s += a[i] * b[i];
+    return s;
+  }
+
+  /*
+   * A FINGERPRINT AS 320 CHARACTERS, AND BACK AGAIN.
+   *
+   * The page keeps a log of what it heard, and the only part of that log which lets a
+   * decision be REPLAYED rather than merely read is the fingerprints: the template, and
+   * the vectors of the events worth arguing about. Same numbers in, same similarity out,
+   * at any threshold anyone wants to try afterwards.
+   *
+   * TWO bytes per component, and the first attempt at one byte is worth recording because
+   * the arithmetic for it looks right. A fingerprint is a unit vector over 120 components,
+   * so the average component is about 0.09 and a byte at 400 counts per unit covers plus
+   * or minus 0.32 with a quantisation error near a thousandth. What that reasoning misses
+   * is that the five slices are weighted by their own energy, so the vector is not spread
+   * evenly at all: nearly all of it sits in the loud slice, whose components run well past
+   * 0.32 and were clamped flat. Measured, the template came back scoring 0.912 against
+   * itself, which is inside the range a DIFFERENT BALL scores. A log that loses that much
+   * is not evidence, it is a rumour.
+   *
+   * At 32000 counts per unit across two bytes nothing can clamp, because no component of a
+   * unit vector reaches 1.024, and the error lands near a hundred-thousandth. The cost is
+   * 160 characters per fingerprint against a budget of about a megabyte. The round trip is
+   * pinned by a check rather than asserted here, because "it decodes to something" and "it
+   * decodes to the same decision" are different claims and only the second one matters.
+   *
+   * It lives in this block rather than in the page for one practical reason: the check
+   * suite lifts this block and nothing else.
+   */
+  var FP_SCALE = 32000;
+
+  function packFp(fp) {
+    var out = '', i, v;
+    for (i = 0; i < fp.length; i++) {
+      v = Math.round(fp[i] * FP_SCALE) + 32768;
+      if (v < 0) v = 0; else if (v > 65535) v = 65535;
+      out += String.fromCharCode(v >> 8, v & 255);
+    }
+    return btoa(out);
+  }
+
+  function unpackFp(b64) {
+    var raw = atob(b64), out = new Float32Array(raw.length >> 1), i;
+    for (i = 0; i < out.length; i++) {
+      out[i] = ((raw.charCodeAt(i * 2) << 8 | raw.charCodeAt(i * 2 + 1)) - 32768) / FP_SCALE;
+    }
+    return out;
+  }
+
+  /*
+   * HOW HARD THIS ONE LANDED, against the recent normal, in dB.
+   *
+   * The counter knows the loudness of every bounce it counts and has never said anything
+   * about it, which is a waste: in a pound drill a soft bounce is a bad rep, and the
+   * athlete cannot hear the difference over their own breathing.
+   *
+   * It is RELATIVE, against the median of the recent ones, because an absolute level means
+   * nothing: it depends on the floor, the ball's pressure and how far away the phone is.
+   * The median, not the mean, so one clang does not move the reference. And the reference
+   * keeps updating, so a drill that is soft throughout re-baselines rather than painting
+   * every rep red; the cost is that a slow fade over a minute is invisible, and the fix for
+   * that, if it is ever wanted, is to compare against the loudest recent rep instead.
+   *
+   * Zero until there are enough references to have a normal, which is what stops the first
+   * bounce of a session being judged against nothing.
+   */
+  function relDb(peak, recent) {
+    if (!recent || recent.length < 5) return 0;
+    var s = recent.slice().sort(function (a, b) { return a - b; });
+    var ref = s[Math.floor(s.length / 2)];
+    if (!(ref > 0) || !(peak > 0)) return 0;
+    return 20 * Math.log10(peak / ref);
+  }
+
+  /* ---------------------------------------------------------------------- the sensor -- */
+
+  function Detector(sampleRate, opts) {
+    opts = opts || {};
+    var sr = sampleRate || 48000;
+    var i, k;
+    this.sr = sr;
+
+    /* The front end still band-passes, but only to decide WHERE to look. 250 Hz, two
+       poles, keeps rumble and vowel fundamentals out of the envelope; 3 kHz, four poles,
+       keeps hiss out of it. The fingerprint below reads the RAW audio, so everything this
+       throws away is still available to the thing that actually makes the decision. */
+    this.hpA = 1 / (1 + 2 * Math.PI * 250 / sr);
+    this.lpB = poleF(3000, sr);
+    this.hx1 = 0; this.hy1 = 0; this.hx2 = 0; this.hy2 = 0;
+    this.lp = [0, 0, 0, 0];
+
+    this.kFast = poleT(0.012, sr);
+    this.kFlDn = poleT(0.200, sr);
+    this.kFlUp = poleT(3.000, sr);
+    this.fast = 0; this.floor = FLOOR_MIN;
+
+    this.ring = [];
+    for (i = 0; i < LOOK_BACK; i++) this.ring.push(0);
+    this.ringAt = 0; this.ringStep = Math.max(1, Math.round(sr / 1000)); this.ringLeft = 0;
+
+    this.seen = 0; this.primed = false;
+    this.warm = Math.round(sr * (opts.warmSec == null ? 0.6 : opts.warmSec));
+    this.lastCand = -1e9; this.lastHit = -1e9;
+    this.lastEnd = null; this.pend = null; this.peak = 0;
+
+    /* Raw audio kept long enough to look back at a bounce once it has finished proving
+       itself. Confirmation lands 80 ms after the onset and the fingerprint reads the 21 ms
+       from the onset, so a third of a second is generous. */
+    /* Long enough to hold the whole fingerprint span plus a stalled poll, at any rate. */
+    this.rawLen = 16384;
+    while (this.rawLen < FP_FRAMES * this.fpN + Math.round(sr * 0.25)) this.rawLen *= 2;
+    this.raw = new Float32Array(this.rawLen);
+    this.rawPos = 0;
+
+    /* Nearest power of two to FP_MS at this rate, bounded so the transform stays cheap
+       and the bands stay resolvable. */
+    var pow = Math.round(Math.log(sr * FP_MS) / Math.LN2);
+    this.fpN = Math.max(256, Math.min(2048, Math.pow(2, pow)));
+    /* The wait is the audio it needs, plus a little. Derived, so it cannot go stale. */
+    this.fpSpan = (FP_FRAMES * this.fpN) / sr + 0.012;
+
+    this.fp = new Float32Array(BANDS * FP_FRAMES);
+    this.win = new Float32Array(this.fpN);
+    for (i = 0; i < this.fpN; i++) this.win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (this.fpN - 1));
+    this.fre = new Float32Array(this.fpN);
+    this.fim = new Float32Array(this.fpN);
+
+    /* Band edges in FFT bins, forced strictly increasing so no band can come out empty at
+       a low sample rate. */
+    this.edges = [];
+    var prev = 0;
+    for (k = 0; k <= BANDS; k++) {
+      var hz = FP_LO * Math.pow(FP_HI / FP_LO, k / BANDS);
+      var bin = Math.round(hz * this.fpN / sr);
+      if (bin <= prev) bin = prev + 1;
+      if (bin > this.fpN / 2 - 1) bin = this.fpN / 2 - 1;
+      this.edges.push(bin);
+      prev = bin;
+    }
+
+    this.template = null;
+    this.learned = [];
+    this.cohort = [];
+    this.blocks = [];
+    this.taught = 0;
+    this.ballThump = 0;
+    /* MEASURED over 400 bounces and about 2000 impostors, not chosen. A real bounce
+       correlates 0.76 to 0.99 with its own template, at every level from a pound at your
+       feet to a tap from across the gym. Every impostor scores under 0.28: a hand clap
+       0.24, a plosive 0.23, a tennis ball 0.17, and a footstep, a door and a bag all come
+       out NEGATIVE, meaning they are not merely unlike the ball but the other shape
+       entirely. 0.60 sits in that gap, swept against recall.
+
+       Widening the fingerprint from one slice to the whole bounce is what opened it: on a
+       single snapshot a clap scored 0.58 and the gap was 0.28, because a clap really does
+       start like a bounce. It is the hundred milliseconds AFTER the start where a clap has
+       nothing left and a ball is still ringing.
+
+       ponytail: the one thing this cannot separate is an object that rings at the same
+       frequencies AND dies at the same rate, because at that point it is acoustically a
+       basketball. A second basketball in the gym is counted, and that is correct. */
+    this.setMatch(opts.match == null ? 0.60 : opts.match);
+    this.pruneAt = opts.pruneAt == null ? COHORT_PRUNE : opts.pruneAt;
+    this.shadowBonus = opts.shadowBonus == null ? 0.15 : opts.shadowBonus;
+
+    /* How far below the loudest band a band may be and still say anything. Swept, not
+       guessed: at 60 dB the decayed ring of the PREVIOUS bounce was still loud enough to
+       lend its shape to whatever banged next, which was every false positive there was.
+       46 dB keeps all the detail a ring needs and drops the ghost. */
+    this.fpFloor = opts.fpFloor == null ? 5e-3 : opts.fpFloor;
+    this.setSens(opts.sensDb == null ? 10 : opts.sensDb);
+  }
+
+  /* How far above the room a sound has to reach before it is worth fingerprinting. Lower
+     than it used to be, because a false candidate now costs one transform rather than one
+     wrong dribble, and being too deaf here costs a quiet bounce nobody counts. */
+  Detector.prototype.setSens = function (db) {
+    this.sensDb = db;
+    this.ratio = Math.pow(10, db / 20);
+  };
+
+  /* How closely a sound has to match the ball it was taught. This is the knob that matters
+     now: it is the difference between counting the gym and counting the ball. */
+  Detector.prototype.setMatch = function (m) { this.match = m; };
+
+  /*
+   * Forget everything and start over: the ball AND the room.
+   *
+   * The room is dropped too, and that is the point. If the athlete was already dribbling
+   * when they pressed start, the ball went into the set of sounds that will never be
+   * counted, and every real bounce afterwards gets vetoed for resembling it. Eviction
+   * digs most sessions back out, but not all: measured, about one synthetic session in
+   * five stayed silent. And no threshold can settle it automatically, because at the
+   * moment of teaching "the ball leaked into the room" and "a machine is running" are
+   * the same picture.
+   *
+   * What does settle it is the person holding the phone. They can see the count is not
+   * moving, and Teach it the ball is on screen. One tap discards a poisoned room and
+   * starts clean, which is a guarantee no heuristic here could make.
+   */
+  Detector.prototype.teach = function () {
+    this.template = null;
+    this.learned = [];
+    this.cohort = [];
+    this.blocks = [];
+    this.taught = 0;
+    this.ballThump = 0;
+  };
+
+  /*
+   * "I heard this, and it is not the ball." Everything from the room pass arrives here,
+   * and so does anything during a session that is clearly not what was taught.
+   */
+  Detector.prototype.note = function (ev) {
+    if (!ev || !ev.fp) return;
+    for (var i = 0; i < this.cohort.length; i++) {
+      if (similarity(ev.fp, this.cohort[i]) >= COHORT_SAME) return;   /* already have one */
+    }
+    this.cohort.push(ev.fp);
+    this.blocks.push(0);
+    if (this.cohort.length > COHORT_MAX) { this.cohort.shift(); this.blocks.shift(); }
+  };
+
+  /* How much this sound resembles the closest thing the room makes on its own. */
+  Detector.prototype.cohortBest = function (fp) {
+    var best = -1;
+    for (var i = 0; i < this.cohort.length; i++) {
+      var v = similarity(fp, this.cohort[i]);
+      if (v > best) best = v;
+    }
+    return best;
+  };
+
+  /* Offer a sound as a teaching bounce. Old ones fall out of the window, so five
+     agreeing sounds means five agreeing sounds from the last few seconds and not five
+     collected over a session. */
+  Detector.prototype.learn = function (ev) {
+    if (ev.tooSoon) return;
+    this.learned.push({ fp: ev.fp, t: ev.t, thump: ev.thump });
+    while (this.learned.length &&
+           (this.learned.length > LEARN_MAX ||
+            ev.t - this.learned[0].t > LEARN_WINDOW)) {
+      this.learned.shift();
+    }
+  };
+
+  /*
+   * Turn the teaching bounces into a template.
+   *
+   * It does NOT simply average them. Whatever else was in the room while the athlete was
+   * bouncing got collected too, so it takes the biggest group that agree with each other
+   * and averages only those: five bounces of one ball agree, and the door that shut
+   * halfway through agrees with nothing and is dropped.
+   */
+  Detector.prototype.lock = function (need) {
+    var list = this.learned, i, j, k, best = null;
+    if (list.length < need) return false;
+    for (i = 0; i < list.length; i++) {
+      /* A sound the room was already making cannot become the ball, however well it
+         agrees with itself. This is what stops the machine being learned. */
+      if (this.cohortBest(list[i].fp) >= COHORT_SAME) continue;
+      var group = [list[i]];
+      for (j = 0; j < list.length; j++) {
+        if (j !== i && similarity(list[i].fp, list[j].fp) >= LEARN_SIM) group.push(list[j]);
+      }
+      if (!best || group.length > best.length) best = group;
+    }
+    if (!best || best.length < need) return false;
+
+    /* The average of several mean-removed unit vectors is mean-removed already, so it
+       only needs re-normalising to unit length to stay a correlation. */
+    var wide = BANDS * FP_FRAMES;
+    var tpl = new Float32Array(wide), sum = 0;
+    for (i = 0; i < best.length; i++) {
+      for (k = 0; k < wide; k++) tpl[k] += best[i].fp[k];
+    }
+    for (k = 0; k < wide; k++) sum += tpl[k] * tpl[k];
+    sum = Math.sqrt(sum) || 1;
+    for (k = 0; k < wide; k++) tpl[k] /= sum;
+    this.template = tpl;
+    this.taught = best.length;
+    /* The taught ball's own thump, the median of the group, as the bar for every later
+       sound. The median, because one bounce that landed on a foot or a line is not the
+       ball's thump. */
+    var thumps = best.map(function (m) { return m.thump == null ? 0 : m.thump; }).sort(function (a, b) { return a - b; });
+    this.ballThump = thumps[Math.floor(thumps.length / 2)];
+
+    /*
+     * THE ATHLETE GETS THE LAST WORD.
+     *
+     * The room pass files everything it hears as "not the ball", which is true only if
+     * the athlete actually held still. If they were already dribbling when they pressed
+     * start, or the ball bounced once while the page was listening to the room, then the
+     * BALL went into the cohort, and every real bounce afterwards would be vetoed for
+     * resembling it. Counting nothing, silently, forever.
+     *
+     * Measured: on all three real dribbling recordings, which have no hold-still period,
+     * that is exactly what happened - the count went to zero.
+     *
+     * So when five bounces say "this is my ball", anything in the cohort that resembles
+     * it is struck out. The bar for striking out is the COUNTING threshold, not some
+     * stricter near-duplicate test: a sound that would itself have counted as a dribble
+     * is useless as an impostor and can only do harm, because it sits close enough to
+     * every real bounce to veto it. Measured, striking out only exact duplicates left one
+     * half-ball-like sound in the cohort of a real shooting session and it vetoed two
+     * thirds of the dribbles in it.
+     */
+    var keep = [];
+    for (i = 0; i < this.cohort.length; i++) {
+      if (similarity(this.cohort[i], tpl) < this.pruneAt) keep.push(this.cohort[i]);
+    }
+    this.cohort = keep;
+    this.blocks = keep.map(function () { return 0; });
+    return true;
+  };
+
+  /*
+   * The shape of the spectrum starting at an absolute sample index, as something two of
+   * them can be compared by.
+   *
+   * Band magnitudes go to dB relative to the loudest band and are floored 60 dB down, so
+   * an empty band is a real number rather than a negative infinity and the room's noise
+   * floor cannot dominate. Then the mean is removed and the vector normalised, which
+   * takes BOTH the level and the overall tilt of the spectrum out of the comparison: a
+   * soft dribble across the gym, where the air has eaten some of the top end, still
+   * matches a hard one at your feet.
+   */
+  /*
+   * The shape of the whole bounce, as something two of them can be compared by.
+   *
+   * WHY EACH SLICE IS SHAPED AND WEIGHTED SEPARATELY, rather than the five being flattened
+   * into one long spectrum and normalised once.
+   *
+   * A bounce is loud for about twenty milliseconds and then it is the room. So are a clap,
+   * a snap, a door and almost everything else impulsive. Flattened and normalised in one
+   * go, four fifths of the resulting vector is the quiet tail - and every impulsive sound
+   * in the same room has the SAME quiet tail, because it is the room's tail, not the
+   * sound's. Those shared dimensions are identical in both vectors and they dominate the
+   * correlation, so two sounds that have nothing in common but the room they were recorded
+   * in score high. Measured: once the test corpus gained a realistic room tail, a hand
+   * clap went from 0.24 against a basketball to a median of 0.45 and a worst case of 0.95.
+   * That is the symptom of "it counts finger snaps": most of what was being compared was
+   * not the sound.
+   *
+   * So each slice is turned into a SHAPE of its own - log, mean removed, unit length, so
+   * it describes only the distribution of that slice - and then scaled by how much energy
+   * that slice actually had. A slice that is just room tail carries almost no weight and
+   * contributes almost nothing, instead of contributing a large constant. What survives is
+   * slice one's spectrum, which is the ball, weighted by how the sound decays, which is
+   * what separates a ball from a rim. Nothing is thrown away; the quiet parts simply stop
+   * outvoting the loud one.
+   */
+  Detector.prototype.fingerprint = function (from) {
+    var re = this.fre, im = this.fim, mags = this.fp, i, k, f, p;
+    var n = this.fpN;
+    var out = new Float32Array(BANDS * FP_FRAMES);
+    var energy = [], total = 0;
+
+    for (f = 0; f < FP_FRAMES; f++) {
+      var base = from + f * n;
+      for (i = 0; i < n; i++) {
+        re[i] = this.raw[(base + i) % this.rawLen] * this.win[i];
+        im[i] = 0;
+      }
+      fft(re, im);
+      if (f === 0) {
+        /* The thump: 50 to 200 Hz against 250 to 3000 Hz, in dB, over the first 21 ms.
+           Read straight off the bins below the first band edge, which the fingerprint
+           itself never looks at. Every bin index is derived from the rate. */
+        var sr0 = this.sr, th = 0, md = 0;
+        var a1 = Math.max(1, Math.round(50 * n / sr0)), b1 = Math.max(a1 + 1, Math.round(200 * n / sr0));
+        var a2 = Math.round(250 * n / sr0), b2 = Math.round(3000 * n / sr0);
+        for (i = a1; i < b1; i++) th += re[i] * re[i] + im[i] * im[i];
+        for (i = a2; i < b2; i++) md += re[i] * re[i] + im[i] * im[i];
+        this.lastThump = 10 * Math.log10((th + 1e-20) / (md + 1e-20));
+      }
+      var e = 0, mx = 0;
+      for (k = 0; k < BANDS; k++) {
+        p = 0;
+        for (i = this.edges[k]; i < this.edges[k + 1]; i++) p += re[i] * re[i] + im[i] * im[i];
+        var v = Math.sqrt(p);
+        mags[f * BANDS + k] = v;
+        e += p;
+        if (v > mx) mx = v;
+      }
+      energy.push(Math.sqrt(e));
+      total += e;
+
+      /* This slice's shape, on its own terms. */
+      if (mx <= 0) continue;
+      var floorAt = mx * this.fpFloor, mean = 0;
+      for (k = 0; k < BANDS; k++) {
+        var d = mags[f * BANDS + k];
+        d = 20 * Math.log10((d < floorAt ? floorAt : d) / mx);
+        out[f * BANDS + k] = d;
+        mean += d;
+      }
+      mean /= BANDS;
+      var norm = 0;
+      for (k = 0; k < BANDS; k++) { out[f * BANDS + k] -= mean; norm += out[f * BANDS + k] * out[f * BANDS + k]; }
+      norm = Math.sqrt(norm) || 1;
+      for (k = 0; k < BANDS; k++) out[f * BANDS + k] /= norm;
+    }
+
+    if (total <= 0) return out;
+
+    /* Scale each slice by the energy it actually carried, so the decay is still described
+       but a silent slice cannot vote. */
+    var loudest = 0;
+    for (f = 0; f < FP_FRAMES; f++) if (energy[f] > loudest) loudest = energy[f];
+    if (loudest <= 0) return out;
+    var whole = 0;
+    for (f = 0; f < FP_FRAMES; f++) {
+      var w = energy[f] / loudest;
+      for (k = 0; k < BANDS; k++) { out[f * BANDS + k] *= w; whole += out[f * BANDS + k] * out[f * BANDS + k]; }
+    }
+    whole = Math.sqrt(whole) || 1;
+    for (i = 0; i < out.length; i++) out[i] /= whole;
+    return out;
+  };
+
+  /*
+   * Hand it the analyser's time-domain window and the absolute time of its LAST sample.
+   * Returns one object per confirmed transient: { t, fp, sim, peak }. `sim` is how much it
+   * looked like the ball, or null while no ball has been taught yet.
+   *
+   * What to DO with each one is the page's job, because the answer differs while teaching
+   * and while counting.
+   *
+   * Only samples new since the previous call are examined. The windows overlap heavily,
+   * which is what guarantees no transient falls between two polls, but running the
+   * envelopes over audio they have already heard would count one bounce twice.
+   */
+  Detector.prototype.scan = function (buf, endTime) {
+    var n = buf.length, sr = this.sr, out = [], i;
+    var fresh = this.lastEnd === null ? n : Math.round((endTime - this.lastEnd) * sr);
+    if (fresh > n) fresh = n;     /* the page stalled. The gap is simply lost, honestly. */
+    if (fresh < 0) fresh = 0;
+    this.lastEnd = endTime;
+
+    var t0 = endTime - (n - 1) / sr;
+    var live = this.primed;
+    var peak = 0;
+
+    for (i = n - fresh; i < n; i++) {
+      var x = buf[i];
+
+      this.raw[this.rawPos % this.rawLen] = x;
+      var here = this.rawPos;
+      this.rawPos++;
+
+      var y = this.hpA * (this.hy1 + x - this.hx1); this.hx1 = x; this.hy1 = y;
+      var z = this.hpA * (this.hy2 + y - this.hx2); this.hx2 = y; this.hy2 = z;
+      var lp = this.lp, feed = z;
+      for (var p = 0; p < 4; p++) { lp[p] += (feed - lp[p]) * this.lpB; feed = lp[p]; }
+      var v = feed < 0 ? -feed : feed;
+      if (v > peak) peak = v;
+
+      this.fast = v > this.fast ? v : this.fast + (v - this.fast) * this.kFast;
+      this.floor += (this.fast - this.floor) * (this.fast < this.floor ? this.kFlDn : this.kFlUp);
+
+      /* Kept up to date through the warm-up too. It used to start from zeros the instant
+         detection went live, which made "louder than it was 20 ms ago" mean "louder than
+         zero" - vacuously true - for the first 20 ms. */
+      var ago = this.ring[this.ringAt];
+      if (--this.ringLeft <= 0) {
+        this.ringLeft = this.ringStep;
+        this.ring[this.ringAt] = this.fast;
+        this.ringAt = (this.ringAt + 1) % LOOK_BACK;
+      }
+
+      if (!live) {
+        /* The warm-up is the room measurement: the floor is slammed up to the loudest
+           thing in it rather than crawling toward it over ten seconds and calling
+           everything on the way a candidate. */
+        if (this.fast > this.floor) this.floor = this.fast;
+        continue;
+      }
+      if (this.floor < FLOOR_MIN) this.floor = FLOOR_MIN;
+      var t = t0 + i / sr;
+
+      if (this.pend) {
+        /* Against `born`, the level that OPENED this window, and never against `peak`.
+           peak is a running maximum: it climbs with the arriving sound, so a sound
+           compared against it is compared against itself and can never be three times
+           larger. That mistake made this whole branch dead code. */
+        if (this.fast > this.pend.born * RESTART && this.pend.restarts < RESTART_MAX) {
+          this.pend = { at: t, idx: here, peak: this.fast, born: this.fast, settled: null,
+                        restarts: this.pend.restarts + 1 };
+          this.lastCand = t;
+          continue;
+        }
+        if (this.fast > this.pend.peak) this.pend.peak = this.fast;
+        /* Is it over? asked once, at 80 ms, and remembered. */
+        if (this.pend.settled === null && t >= this.pend.at + SETTLE) {
+          this.pend.settled = this.fast;
+        }
+        /* Judged once the whole 107 ms of it has been recorded. */
+        if (t >= this.pend.at + this.fpSpan) {
+          if (this.pend.settled !== null && this.pend.settled < this.pend.peak * SETTLE_TO) {
+            var fp = this.fingerprint(this.pend.idx);
+            var sim = this.template ? similarity(fp, this.template) : null;
+            var ev = { t: this.pend.at, fp: fp, sim: sim, peak: this.pend.peak,
+                       thump: this.lastThump, tooSoon: false };
+            /* Only a sound that is going to be USED claims the gap: the ball while
+               counting, anything while still learning what the ball is. */
+            /* Inside a recent bounce's ring, demand more; outside it, the usual bar. */
+            var need = this.match;
+            if (ev.t - this.lastHit < SHADOW) {
+              need = Math.min(0.97, this.match + this.shadowBonus);
+            }
+            ev.need = need;
+            if (!this.template || sim >= need) {
+              if (ev.t - this.lastHit < GAP) ev.tooSoon = true;
+              else this.lastHit = ev.t;
+            }
+            out.push(ev);
+          }
+          this.pend = null;
+        }
+        continue;
+      }
+
+      if (this.fast > this.floor * this.ratio &&
+          this.fast > ago * ATTACK &&
+          t - this.lastCand > RETRIGGER) {
+        this.lastCand = t;
+        this.pend = { at: t, idx: here, peak: this.fast, born: this.fast, settled: null, restarts: 0 };
+      }
+    }
+
+    this.peak = peak;
+    this.seen += fresh;
+    if (!this.primed && this.seen >= this.warm) this.primed = true;
+    return out;
+  };
+
+  /* Does this one count? The page asks; the answer lives here so the check can ask it
+     exactly the way the page does. */
+  /* `ev.why` is set on every refusal: 'soon', 'unlike', 'thump' or 'room'. The page
+     shows those counts beside the ball, so "it counted something" and "it missed
+     something" both come with the reason attached rather than a shrug. */
+  Detector.prototype.counts = function (ev) {
+    if (!this.template) return false;
+    if (ev.tooSoon) { ev.why = 'soon'; return false; }
+    if (ev.sim < (ev.need == null ? this.match : ev.need)) { ev.why = 'unlike'; return false; }
+    /* Did it hit the floor the way the taught ball does? Learned, not assumed. */
+    if (ev.thump != null && ev.thump < this.ballThump - THUMP_SLACK) { ev.why = 'thump'; return false; }
+    /* It is not enough to look like the ball. It has to look MORE like the ball than
+       like anything this room makes by itself, which is what a normalised score buys:
+       a loud machine can drag a correlation over a fixed bar, but it cannot beat its
+       own recording. */
+    var worst = -1, at = -1;
+    for (var i = 0; i < this.cohort.length; i++) {
+      var v = similarity(ev.fp, this.cohort[i]);
+      if (v > worst) { worst = v; at = i; }
+    }
+    if (ev.sim - worst >= COHORT_WIN) return true;
+    ev.why = 'room';
+
+    /* Vetoed. If the thing being vetoed is squarely the taught ball rather than something
+       scraping the bar, the blocker is the suspect, not the sound. */
+    if (at >= 0 && ev.sim >= this.match + EVICT_SURE) {
+      this.blocks[at] = (this.blocks[at] || 0) + 1;
+      if (this.blocks[at] >= EVICT_AFTER) {
+        this.cohort.splice(at, 1);
+        this.blocks.splice(at, 1);
+      }
+    }
+    return false;
+  };
+
+  /*
+   * THE ATHLETE SAW WHAT HAPPENED AND THE COUNTER DID NOT.
+   *
+   * "That was five, go find them." Given a set of sounds the athlete vouches for, rebuild
+   * the ball from exactly those. It is the same machinery as teaching, with one difference
+   * that matters: `learn()` drops anything older than LEARN_WINDOW, because teaching is
+   * five bounces in a few seconds. A correction is a whole drill, a minute of it, so the
+   * window has to be out of the way or every bounce but the last few would be thrown away
+   * before the template was built.
+   *
+   * `lock` still does the deciding. It takes the biggest group that agree with each other,
+   * so a miscount that swept in a door slam does not poison the ball: the slam agrees with
+   * nothing and is dropped, and the athlete is told how many actually agreed.
+   */
+  Detector.prototype.relearn = function (list, need) {
+    this.learned = list.map(function (e) { return { fp: e.fp, t: e.t, thump: e.thump }; });
+    var ok = this.lock(need);
+    this.learned = [];
+    return ok;
+  };
+
+  /*
+   * Starting again on a new microphone stream.
+   *
+   * Pausing hands the microphone back, so resuming gets a different stream with its own
+   * levels and its own clock. Everything LEARNED survives - the ball, the room it will
+   * not count, the totals - and only the running measurements start over, the warm-up
+   * included, so the first second back is spent re-reading the room rather than counting
+   * whatever the new stream happens to open with.
+   */
+  Detector.prototype.rewarm = function () {
+    var i;
+    this.fast = 0; this.floor = FLOOR_MIN;
+    this.seen = 0; this.primed = false;
+    this.lastEnd = null; this.pend = null;
+    this.lastCand = -1e9; this.lastHit = -1e9;
+    this.hx1 = 0; this.hy1 = 0; this.hx2 = 0; this.hy2 = 0;
+    for (i = 0; i < this.lp.length; i++) this.lp[i] = 0;
+    for (i = 0; i < this.ring.length; i++) this.ring[i] = 0;
+    this.ringAt = 0; this.ringLeft = 0; this.rawPos = 0;
+  };
+
+  /* How far the loudest thing right now sits above the room, in dB. Drives the meter. */
+  Detector.prototype.headroom = function () {
+    return 20 * Math.log10(Math.max(this.fast, 1e-7) / Math.max(this.floor, FLOOR_MIN));
+  };
+
+  /*
+   * Dribbles per minute from the recent bounce times.
+   *
+   * The MEDIAN gap, not the mean: one missed bounce doubles a gap and one extra halves it,
+   * and either would yank a mean around hard enough to flip the colour of the whole screen.
+   * A median over five gaps shrugs off one of each.
+   */
+  function tempo(times) {
+    if (!times || times.length < 3) return 0;
+    var gaps = [], i;
+    for (i = Math.max(1, times.length - 5); i < times.length; i++) {
+      gaps.push(times[i] - times[i - 1]);
+    }
+    gaps.sort(function (a, b) { return a - b; });
+    var mid = gaps[Math.floor(gaps.length / 2)];
+    return mid > 0 ? 60 / mid : 0;
+  }
+
+  return {
+    Detector: Detector,
+    tempo: tempo,
+    similarity: similarity,
+    relDb: relDb,
+    packFp: packFp,
+    unpackFp: unpackFp,
+    FP_SCALE: FP_SCALE,
+    fft: fft,
+    BANDS: BANDS,
+    FLOOR_MIN: FLOOR_MIN
+  };
+})();
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var FB = window.FBDribble;
+
+  /* ------------------------------------------------------------------ the drills --- */
+
+  var DRILLS = [
+    { k: 'pound', n: 'Pound dribble', dpm: 170,
+      c: 'Waist high, as hard as you can hit it, eyes off the ball. One hand the whole time.' },
+    { k: 'low', n: 'Low pound', dpm: 230,
+      c: 'Knee bent, hand on top, knock it off the floor below your knee. Small and violent.' },
+    { k: 'cross', n: 'Front crossover', dpm: 130,
+      c: 'Hip to hip, under the knee, snap it across and catch it wide. No standing up.' },
+    { k: 'inout', n: 'In and out', dpm: 130,
+      c: 'Sell the cross with the shoulder, keep the hand on top, never let it change hands.' },
+    { k: 'legs', n: 'Between the legs', dpm: 105,
+      c: 'Push off the back foot, punch it through, meet it on the other side. Stay low.' },
+    { k: 'back', n: 'Behind the back', dpm: 95,
+      c: 'Wrap it around the hip, not the waist, and keep walking forward through it.' },
+    { k: 'fig8', n: 'Figure eight', dpm: 110,
+      c: 'One bounce through the legs each pass. Head up, chest up, feet planted.' },
+    { k: 'wide', n: 'Wide V', dpm: 150,
+      c: 'Side to side outside the foot, one hand, arm long. Reach further than is comfortable.' },
+    { k: 'scis', n: 'Front to back V', dpm: 140,
+      c: 'In front of the foot, then behind it, same hand. The wrist does the work.' },
+    { k: 'retreat', n: 'Retreat and attack', dpm: 120,
+      c: 'Two hard pulls back, two hard pushes forward. Push the floor away on the retreat.' },
+    { k: 'spider', n: 'Spider dribble', dpm: 250,
+      c: 'Right in front, left in front, right behind, left behind. Tiny taps, never catch it.' },
+    { k: 'gun', n: 'Machine gun', dpm: 320,
+      c: 'Ankle height, alternating hands, as fast as the floor will give it back.' },
+    { k: 'two', n: 'Two ball pound', dpm: 300,
+      c: 'Both balls together, same height. The counter hears both, so this number doubles.' }
+  ];
+
+  var byKey = {};
+  for (var d = 0; d < DRILLS.length; d++) byKey[DRILLS[d].k] = DRILLS[d];
+
+  /* A step is [drill key, seconds, hand label, target override]. */
+  var WORKOUTS = [
+    { id: 'warm', n: 'Warm the hands', rest: 12,
+      d: 'Both hands awake before anything else. Do it before every session.',
+      steps: [['pound', 45, 'Right hand'], ['pound', 45, 'Left hand'], ['low', 30, 'Right hand'],
+        ['low', 30, 'Left hand'], ['cross', 45, ''], ['fig8', 45, ''], ['gun', 20, '']] },
+    { id: 'builder', n: 'Handle builder', rest: 15,
+      d: 'The whole toolbox, one pass each. The one to run when you have ten minutes.',
+      steps: [['pound', 40, 'Right hand'], ['pound', 40, 'Left hand'], ['cross', 40, ''],
+        ['inout', 40, 'Right hand'], ['inout', 40, 'Left hand'], ['legs', 45, ''],
+        ['back', 45, ''], ['wide', 30, 'Right hand'], ['wide', 30, 'Left hand'],
+        ['spider', 25, '']] },
+    { id: 'ladder', n: 'Tempo ladder', rest: 10,
+      d: 'One drill, five speeds. The target moves under you and the screen tells you when you found it.',
+      steps: [['pound', 40, 'Right hand', 120], ['pound', 40, 'Left hand', 120],
+        ['pound', 40, 'Right hand', 170], ['pound', 40, 'Left hand', 170],
+        ['low', 35, 'Right hand', 220], ['low', 35, 'Left hand', 220],
+        ['gun', 25, '', 280], ['gun', 20, '', 330]] },
+    { id: 'speed', n: 'Game speed', rest: 20,
+      d: 'Change of direction at the pace a defender makes you play at. Longer rest on purpose.',
+      steps: [['retreat', 45, ''], ['cross', 35, ''], ['inout', 35, ''], ['legs', 40, ''],
+        ['back', 40, ''], ['retreat', 45, ''], ['scis', 35, 'Right hand'],
+        ['scis', 35, 'Left hand'], ['cross', 30, '']] },
+    { id: 'hell', n: 'Two minutes of hell', rest: 0,
+      d: 'No rest. Finisher only. Your hands will quit before the clock does.',
+      steps: [['gun', 30, ''], ['low', 30, 'Right hand'], ['low', 30, 'Left hand'],
+        ['spider', 30, '']] }
+  ];
+
+  /* ------------------------------------------------------------------- the state --- */
+
+  /* The page opens FUSSIER than the Detector's own default, and the two numbers are
+     allowed to disagree. 0.60 is where the library sits because that is what the synthetic
+     suite is calibrated against. 0.75 is where the page opens because the owner, in a real
+     gym, kept dragging it there. Measured over the real corpus, every value from 0.55 to
+     0.88 lets exactly zero false counts through now that the thump gate is in, so the
+     whole range below 55 was dead and is gone from the slider. */
+  var target = 160, tol = 15, fussy = 0.75, mode = 'flood', tickOn = false;
+  /* 'off' | 'room' | 'learn' | 'count' | 'paused'. Nothing is counted before 'count'. */
+  var phase = 'off';
+  /* A session outlives the microphone. Pausing closes the stream and keeps the session:
+     the count, the clock, the taught ball and the learned room all survive until Finish. */
+  var paused = false, started = false, resumeTo = 'room';
+  var listening = false, ctx = null, stream = null, analyser = null, frame = null, det = null;
+  var pollId = 0, uiId = 0;
+
+  var count = 0;            /* this session */
+  var total = 0;            /* everything saved for the period, plus this session */
+  var best = 0, run = 0;    /* longest unbroken run of on-pace bounces */
+  var hits = [];            /* recent bounce times on the audio clock */
+  var marks = [];           /* {t, dpm} for the trace */
+  var ripples = [];         /* {t, state} for the rings */
+  var dpm = 0, flash = 0, state = 'idle';
+  var activeMs = 0, paceMs = 0, savedPace = 0;
+  /* What it heard and did NOT count, and how well the real bounces are matching. Both
+     exist to be shown: they are the evidence that the template is doing something. */
+  var ignored = 0, lastMatch = null, whys = {}, softCount = 0;
+  /* The recent bounces' loudness, and the marks under the count. See heardMark(). */
+  var peaks = [], heardMarks = [];
+  /*
+   * MEASURED, and the synthetic corpus alone would have given the wrong number.
+   *
+   * Synthesised bounces of one strength sit within about 1.5 dB of their running median, so
+   * on that evidence -4 dB looked safe and caught a rep 5 dB down. Real dribbling is wider.
+   * On a real 45 second dribbling recording the middle half of the bounces spans 2 dB but
+   * six of forty-one sit more than 12 dB below: real bounces are not a continuum, they are
+   * a tight cluster plus a few that are genuinely much quieter. -6 dB lands in the empty
+   * space between those two groups, flags every one of the quiet ones, and flags none of
+   * the cluster. It is a gap in the data, not a preference.
+   */
+  var SOFT_DB = -6;
+  /* Above this it had no doubt at all. Real bounces of a taught ball score 0.76 to 0.99
+     against it, so 0.90 splits "certain" from "counted, but it was not obvious". */
+  var SURE = 0.90;
+  /* Every sound this stretch, kept so the athlete can correct it. 400 of them is about two
+     minutes of hard dribbling and about 200KB of fingerprints, which a phone will not
+     notice. See findThem(). */
+  var tried = [];
+  /* The session log. See "what it heard" below. */
+  var heardRows = [], heardKeep = { best: [], near: [], loud: [] };
+  var heardT0 = null, heardBase = 0, heardWroteAt = 0, heardWroteN = -1;
+  var clearTimer = 0;
+  var minBase = 0, listenMs = 0, lastUi = 0;
+  var beatOrigin = 0, nextTick = 0;
+  var done = {};
+
+  var wk = null, stepIdx = 0, stepEnd = 0, resting = false, stepBase = 0, freeTarget = 160;
+
+  /* ---------------------------------------------------------------------- the DOM -- */
+
+  function id(x) { return document.getElementById(x); }
+  function txt(x, v) { var e = id(x); if (e.textContent !== v) e.textContent = v; }
+  var flood = id('flood'), cv = id('cv'), g = cv.getContext('2d');
+
+  var TONE = {
+    good: ['#19D26B', '#0B5C33'],
+    slow: ['#3B82F6', '#12315F'],
+    fast: ['#FF9B2F', '#5C3308'],
+    idle: ['#2A2A34', '#121218']
+  };
+
+  /* ------------------------------------------------------------------- listening --- */
+
+  function say(m, bad) {
+    txt('msg', m);
+    id('msg').className = bad ? 'msg bad' : 'msg';
+  }
+
+  /* Opening the microphone is its own step, because Resume needs it too. */
+  function openMic(ok) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      say('This browser will not hand a page the microphone here. Open it in the app, or serve it from localhost.', true);
+      return;
+    }
+    say('Asking for the microphone...');
+    /* Every one of these three is a voice feature that deletes exactly this sound:
+       a gate hears a repeating impulse as noise, and AGC flattens the level the
+       threshold is measured against. */
+    navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        channelCount: 1
+      }
+    }).then(function (s) {
+      stream = s;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+      if (ctx.state === 'suspended') ctx.resume();
+      analyser = ctx.createAnalyser();
+      /* 8192 samples is about 170 ms of history, and the poll below only ever reads the
+         part it has not read yet. The window is this big because it is the ONLY buffer:
+         whatever falls out of it before a poll arrives is gone, and a phone busy laying
+         out this page can easily push a 16 ms timer past 40 ms. At 2048 that cost real
+         dribbles - a 90 bounce run came back 87 on a contended browser - and the miss is
+         silent, because a counter that is three low still counts. */
+      analyser.fftSize = 8192;
+      analyser.smoothingTimeConstant = 0;
+      ctx.createMediaStreamSource(s).connect(analyser);
+      frame = new Float32Array(analyser.fftSize);
+      beatOrigin = ctx.currentTime;
+      nextTick = 0;
+      listening = true;
+      paused = false;
+      lastUi = Date.now();
+      pollId = setInterval(poll, 16);
+      ok();
+      controls();
+    }).catch(function (e) {
+      var why = e && e.name === 'NotAllowedError'
+        ? 'Microphone permission was turned down. Allow it and tap again.'
+        : 'No microphone available on this device.';
+      say(why, true);
+    });
+  }
+
+  function start() {
+    openMic(function () {
+      det = new FB.Detector(ctx.sampleRate, { match: fussy });
+      started = true;
+      phase = 'room';
+      say('Listening to the room. Hold still.');
+      /* Long enough to actually hear the room. Everything caught in this window is filed
+         as a sound that will never be counted, which is what lets the ball be recognised
+         later as the thing that was NOT already here. */
+      setTimeout(function () {
+        if (listening && phase === 'room') teachNow();
+      }, 3500);
+    });
+  }
+
+  /*
+   * Pause hands the microphone back and keeps the session.
+   *
+   * It has to work in the middle of teaching as well as in the middle of a drill, because
+   * that is where somebody actually gets interrupted: half way through the five bounces,
+   * when a page that could only stop-and-start would make them do the whole setup again.
+   * Where it resumes to is remembered here rather than guessed later.
+   */
+  function pause() {
+    resumeTo = phase === 'count' ? 'count' : (det && det.template ? 'count' : (det && det.learned.length ? 'learn' : 'room'));
+    closeMic();
+    paused = true;
+    phase = 'paused';
+    say(resumeTo === 'count'
+      ? 'Paused. The microphone is off. Everything is kept.'
+      : 'Paused while learning your ball. Resume and bounce it five times.');
+    controls();
+  }
+
+  function resume() {
+    openMic(function () {
+      if (det) det.rewarm();
+      if (resumeTo === 'count') {
+        phase = 'count';
+        say('Back on. One second to re-read the room, then counting.');
+      } else if (resumeTo === 'learn') {
+        teachNow();
+      } else {
+        phase = 'room';
+        say('Listening to the room. Hold still.');
+        setTimeout(function () { if (listening && phase === 'room') teachNow(); }, 3500);
+      }
+    });
+  }
+
+  function closeMic() {
+    listening = false;
+    clearInterval(pollId);
+    /* Banking the log's clock before the context goes: resuming opens a NEW context whose
+       currentTime starts from zero again, so without this every event after a pause would
+       be stamped back at the beginning. */
+    if (ctx && heardT0 !== null) { heardBase += Math.max(0, ctx.currentTime - heardT0); heardT0 = null; }
+    /* Resuming opens a new stream with its own levels, so what counted as a normal bounce
+       a moment ago is not a reference any more. The marks stay: they are history. */
+    peaks = [];
+    if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+    if (ctx) ctx.close();
+    stream = null; ctx = null; analyser = null;
+    dpm = 0; hits = []; state = 'idle';
+  }
+
+  /*
+   * CLEAR EVERYTHING, which is neither Pause nor Finish.
+   *
+   * Pause keeps the ball and the count. Finish writes the session up and keeps it. Neither
+   * helps the one case this exists for: it learned the wrong sound, or the room changed
+   * under it, and the honest move is to start the whole thing over without hunting for a
+   * way to reload a page that is running inside an app.
+   *
+   * Two taps, because it throws away a session nobody can get back.
+   *
+   * What it does NOT throw away is deliberate. The log of what it heard is FLUSHED first,
+   * because the reason anyone reaches for this button is that it got something wrong, and
+   * wiping the evidence of that is the one thing this must not do. The period's own
+   * records are left alone too: this session's count is subtracted back out of the running
+   * total rather than the total being zeroed, so clearing after 400 dribbles returns the
+   * number to what it was when the session opened, not to nothing.
+   */
+  function disarmClear() {
+    if (clearTimer) clearTimeout(clearTimer);
+    clearTimer = 0;
+    var b = id('clearBtn');
+    if (b) { txt2(b, 'Clear everything'); b.className = 'wide quiet'; }
+  }
+
+  function clearAll() {
+    if (!clearTimer) {
+      txt2(id('clearBtn'), 'Tap again to clear');
+      id('clearBtn').className = 'wide quiet arm';
+      clearTimer = setTimeout(disarmClear, 4500);
+      say('This clears the count and the ball it learned. Your period total stays. Tap again to do it.');
+      return;
+    }
+    disarmClear();
+    if (wk) endWorkout(false);
+    save(true);                 /* the evidence goes in BEFORE the session goes away */
+    closeMic();
+    total -= count;
+    if (total < 0) total = 0;
+    count = 0; run = 0;
+    hits = []; marks = []; ripples = [];
+    dpm = 0; flash = 0; state = 'idle';
+    ignored = 0; lastMatch = null; whys = {}; softCount = 0; tried = [];
+    peaks = []; heardMarks = []; id('heard').innerHTML = '';
+    heardRows = []; heardKeep = { best: [], near: [], loud: [] };
+    heardT0 = null; heardBase = 0; heardWroteN = -1;
+    activeMs = 0; paceMs = 0;
+    det = null;
+    started = false; paused = false; phase = 'off';
+    id('reportBox').className = 'hidden';
+    id('report').value = '';
+    showBall();
+    save();
+    controls();
+    ui();
+    say('Cleared. Start listening and teach it the ball again.');
+  }
+
+  /* End the session and write it up. */
+  function finish() {
+    if (wk) endWorkout(false);
+    closeMic();
+    paused = false; started = false; phase = 'off';
+    save(true);
+    writeUp();
+    controls();
+    say('Finished. The write-up below is ready to send.');
+    var box = id('reportBox');
+    if (box.scrollIntoView) box.scrollIntoView({ block: 'center' });
+  }
+
+  /* One place decides what every control says, so they can never disagree with each
+     other or with the phase. */
+  function controls() {
+    var go = id('goBtn');
+    var teaching = started && !paused && phase === 'learn';
+    go.textContent = !started ? 'Start listening' : (paused ? 'Resume' : 'Pause');
+    go.className = 'go' + (started && !paused ? ' live' : '');
+    id('finishBtn').className = started ? 'wide' : 'wide hidden';
+    /* While it is learning, the useful button is the one that stops learning, and it goes
+       green the moment it actually HAS enough bounces to build a ball from. Before that it
+       is still on screen, just not yet the thing to press: a button that pulses when
+       pressing it would only produce "bounce a few more" is a button that lies. */
+    var canLock = !!(det && det.learned && det.learned.length >= 3);
+    id('doneTeach').className = teaching ? (canLock ? 'wide ready' : 'wide') : 'wide hidden';
+    id('fixRow').className = 'fix' + (phase === 'count' && det && det.template ? '' : ' hidden');
+    /* And Teach goes green when it is hearing plenty and counting none, which is exactly
+       what a session that learned the wrong sound looks like from the outside. */
+    var deaf = phase === 'count' && !count && ignored >= 6;
+    /* Mid-drill, Teach is only worth a full-width row when it is the thing to press: the
+       session is deaf. The rest of the time the screen belongs to the count. */
+    var showTeach = started && !teaching && (phase !== 'count' || deaf);
+    id('teachBtn').className = showTeach ? (deaf ? 'wide ready' : 'wide') : 'wide hidden';
+    /* Nothing to clear before anything has happened, and nothing to clear MID-DRILL either:
+       pause first. The armed state outlives this, since ui() repaints five times a second. */
+    var canClear = (started || count || (det && det.template)) && phase !== 'count';
+    id('clearBtn').className = 'wide quiet' + (clearTimer ? ' arm' : '') + (canClear ? '' : ' hidden');
+  }
+
+  /* The audio poll runs on its own timer rather than inside the animation frame: the
+     count must not depend on whether anything is being drawn. */
+  /* Teaching. The page cannot know what a basketball sounds like in this gym, through
+     this phone, at this distance, so it asks. Five bounces is enough to average out the
+     floor and the ball's own variation, and the athlete is doing something they would do
+     anyway. Nothing is counted until this finishes, because the alternative - counting
+     anything sudden - is the bug this replaced. */
+  /*
+   * Stop teaching on the athlete's say-so.
+   *
+   * Teaching normally ends itself once five bounces agree. It can also fail to: an odd
+   * floor, a ball that does not repeat cleanly, someone bouncing off-mic. Without a way
+   * out, the page sits on "bounce the ball five times" forever and the only escape is to
+   * stop the session, which is a dead end wearing a friendly face.
+   *
+   * So this locks a template from what it actually has. Three is the floor, because two
+   * agreeing sounds is a coincidence and one is nothing at all; below that it says how
+   * many it has rather than pretending.
+   */
+  function doneTeaching() {
+    if (!det) return;
+    if (det.lock(3)) {
+      phase = 'count';
+      say(det.taught >= 5
+        ? 'Got it. Start dribbling.'
+        : 'Got it, from ' + det.taught + ' bounces. Teach it again if it misses some.');
+      showBall();
+      ui();
+      return;
+    }
+    var got = det.learned.length;
+    say(got
+      ? 'Heard ' + got + ', and they have to agree with each other. Bounce a few more.'
+      : 'Nothing heard yet. Bounce the ball where you will be training.', true);
+  }
+
+  function teachNow() {
+    phase = 'learn';
+    if (det) det.teach();
+    say('Bounce it five times, where you are going to train.');
+    ui();
+  }
+
+  function poll() {
+    if (!listening) return;
+    analyser.getFloatTimeDomainData(frame);
+    var now = ctx.currentTime;
+    var found = det.scan(frame, now);
+    for (var i = 0; i < found.length; i++) {
+      var ev = found[i];
+      if (phase === 'room') {
+        det.note(ev);           /* whatever this is, it is not the ball */
+        heardRow(ev, false, 5);
+        heardMark('no');        /* the room, being catalogued */
+        flash = 1;
+        continue;
+      }
+      if (phase === 'learn') {
+        if (ev.tooSoon) continue;
+        det.learn(ev);
+        heardRow(ev, false, 6);
+        heardMark('good');      /* it took that one as a teaching bounce */
+        flash = 1;
+        if (det.lock(5)) {
+          tried = [];
+          phase = 'count';
+          say('Got it. Start dribbling.');
+          showBall();
+        }
+        ui();
+        continue;
+      }
+      if (phase !== 'count') continue;
+      /* Every candidate is kept, counted or not, because a correction has to be able to
+         reach the ones it got WRONG. */
+      ev.counted = det.counts(ev);
+      tried.push(ev);
+      if (tried.length > 400) tried.shift();
+      if (ev.counted) {
+        lastMatch = ev.sim;
+        heardRow(ev, true);
+        var kind = strengthOf(ev) === 'soft' ? 'soft'
+          : (ev.sim != null && ev.sim >= SURE ? 'sure' : 'maybe');
+        bounce(ev.t, kind);
+        heardMark(kind);
+        continue;
+      }
+      ignored++;
+      if (ev.why) whys[ev.why] = (whys[ev.why] || 0) + 1;
+      heardRow(ev, false);
+      heardMark('no');
+      /* A refused sound gets a ring too, small and grey. Saying nothing was the bug: an
+         athlete could not tell a counter that had stopped hearing them from a gym that had
+         gone quiet. */
+      ripples.push({ t: ev.t, s: 'idle', k: 'no' });
+      if (ripples.length > 14) ripples.shift();
+      /* Clearly not the ball, and it happened during the session: the room is still
+         teaching us what to ignore. The margin keeps a merely borderline bounce out of
+         the cohort, because filing a real dribble as an impostor would suppress the
+         ones after it. */
+      if (ev.sim != null && ev.sim < fussy - 0.25) det.note(ev);
+    }
+
+    /* The tempo decays to nothing when the ball stops, instead of freezing on the last
+       reading and claiming a pace nobody is holding. */
+    if (hits.length && now - hits[hits.length - 1] > 1.6) { dpm = 0; hits = []; }
+
+    if (tickOn) scheduleTicks(now);
+  }
+
+  /* Good bounce or soft one, judged against this athlete's own recent bounces. The peak
+     goes into the reference either way, so a drill that is soft throughout settles into its
+     own normal instead of scolding every rep. */
+  function strengthOf(ev) {
+    var kind = FB.relDb(ev.peak, peaks) <= SOFT_DB ? 'soft' : 'good';
+    peaks.push(ev.peak);
+    if (peaks.length > 16) peaks.shift();
+    return kind;
+  }
+
+  /* One mark per sound it looked at: a green dot counted, a hollow gold one counted but
+     soft, a small grey one heard and not counted. Newest on the right, and the newest is
+     drawn bigger so the eye finds the live end without hunting. */
+  function heardMark(kind) {
+    heardMarks.push(kind);
+    if (heardMarks.length > 20) heardMarks.shift();
+    var html = '';
+    for (var i = 0; i < heardMarks.length; i++) {
+      /* 'maybe' is the bare dot, so the common case writes the least markup. */
+      var cls = heardMarks[i] === 'maybe' ? '' : heardMarks[i];
+      html += cls ? '<i class="' + cls + '"></i>' : '<i></i>';
+    }
+    id('heard').innerHTML = html;
+  }
+
+  /*
+   * "THAT WAS FIVE. GO FIND THEM."
+   *
+   * The athlete knows how many bounces they just made and the counter does not. This takes
+   * their number as the truth: it picks the N sounds from the stretch that look most like
+   * the ball it currently knows, rebuilds the ball out of exactly those, and drops the
+   * match bar to just under the weakest of them so every one would count next time. The
+   * count for the stretch is corrected too, because the truth is now known.
+   *
+   * It is the honest version of the fussiness slider. The slider asks somebody to guess a
+   * number for a threshold they cannot see; this asks them for something they actually
+   * know, and works the threshold out from it.
+   *
+   * What it will not do is invent a sound it never heard. If the stretch produced fewer
+   * CANDIDATES than the number given, the front end never looked at those bounces at all:
+   * the phone is too far from where the ball lands, and no amount of re-teaching fixes
+   * that, so it says so rather than teaching itself from whatever else was in the room.
+   */
+  function findThem() {
+    if (!det || !det.template) { say('Teach it the ball first.', true); return; }
+    var want = Math.round(+id('fixN').value || 0), i;
+    if (!(want > 0)) { say('Type how many bounces that really was, then tap it again.', true); return; }
+    var pool = [];
+    for (i = 0; i < tried.length; i++) if (tried[i].fp) pool.push(tried[i]);
+    if (pool.length < want) {
+      say('It only heard ' + pool.length + ' sound' + (pool.length === 1 ? '' : 's') +
+        ' in that stretch, so it cannot find ' + want + ' bounces in there. Put the phone nearer where the ball lands and run it again.', true);
+      return;
+    }
+    var best = pool.slice().sort(function (a, b) { return b.sim - a.sim; }).slice(0, want);
+    if (!det.relearn(best, Math.min(3, want))) {
+      say('Those ' + want + ' sounds do not agree with each other enough to be one ball. Teach it the ball again instead.', true);
+      return;
+    }
+    var lo = 1;
+    for (i = 0; i < best.length; i++) {
+      var v = FB.similarity(best[i].fp, det.template);
+      if (v < lo) lo = v;
+    }
+    /* Floor first, so a clamp cannot round the bar UP past a bounce it was just told to
+       accept. Then into the range the slider offers, so the two can never disagree. */
+    var m = Math.max(0.55, Math.min(0.90, Math.floor((lo - 0.02) * 100) / 100));
+    id('sens').value = String(Math.round(m * 100));
+    id('sens').dispatchEvent(new Event('input'));
+
+    var had = 0;
+    for (i = 0; i < tried.length; i++) if (tried[i].counted) had++;
+    count += want - had;
+    total += want - had;
+    if (count < 0) { total -= count; count = 0; }
+    tried = []; softCount = 0; ignored = 0; whys = {};
+    peaks = []; heardMarks = []; id('heard').innerHTML = '';
+    hits = []; dpm = 0;
+    showBall();
+    ui();
+    say('Learned your ball from those ' + det.taught + '. The count is ' + count +
+      ', and it is matching at ' + Math.round(m * 100) + '% now.');
+  }
+
+  function bounce(t, kind) {
+    count++;
+    total++;
+    if (kind === 'soft') softCount++;
+    hits.push(t);
+    if (hits.length > 10) hits.shift();
+    dpm = FB.tempo(hits);
+    var st = paceState();
+    if (st === 'good') { run++; if (run > best) best = run; } else { run = 0; }
+    marks.push({ t: t, dpm: dpm });
+    if (marks.length > 90) marks.shift();
+    ripples.push({ t: t, s: st, k: kind });
+    if (ripples.length > 14) ripples.shift();
+    flash = 1;
+  }
+
+  function paceState() {
+    if (!listening || !dpm) return 'idle';
+    if (dpm < target - tol) return 'slow';
+    if (dpm > target + tol) return 'fast';
+    return 'good';
+  }
+
+  /* ------------------------------------------------------------------- the ticker -- */
+
+  /* Scheduled on the audio clock, a quarter second ahead, because a metronome driven by
+     a 16 ms timer wobbles audibly. The eye and the ear share one grid: the ring below
+     reads the same beatOrigin. */
+  function scheduleTicks(now) {
+    var period = 60 / target;
+    if (nextTick < now) {
+      nextTick = beatOrigin + Math.ceil((now - beatOrigin) / period) * period;
+    }
+    while (nextTick < now + 0.25) {
+      click(nextTick);
+      nextTick += period;
+    }
+  }
+
+  function click(t) {
+    var o = ctx.createOscillator(), gn = ctx.createGain();
+    o.frequency.value = Math.min(7000, ctx.sampleRate * 0.33);
+    o.connect(gn); gn.connect(ctx.destination);
+    gn.gain.setValueAtTime(0.0001, t);
+    gn.gain.exponentialRampToValueAtTime(0.25, t + 0.002);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    o.start(t); o.stop(t + 0.05);
+  }
+
+  /* -------------------------------------------------------------------- the paint -- */
+
+  function sizeCanvas() {
+    var r = cv.getBoundingClientRect();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+    if (w && (cv.width !== w || cv.height !== h)) { cv.width = w; cv.height = h; }
+    /* The stage is the one element that gives way when the page runs out of screen, so on
+       a short one the marks step aside rather than landing on the label. Measured here
+       because this already runs every frame and already holds the stage's real size. */
+    if (r.height) cv.parentNode.classList.toggle('tight', r.height < 140);
+  }
+
+  function draw() {
+    requestAnimationFrame(draw);
+    sizeCanvas();
+    var W = cv.width, H = cv.height;
+    if (!W) return;
+    g.clearRect(0, 0, W, H);
+    var now = ctx ? ctx.currentTime : 0;
+    if (mode === 'trace') drawTrace(W, H, now); else drawRings(W, H, now);
+    flash *= 0.88;
+  }
+
+  function drawRings(W, H, now) {
+    var cx = W / 2, cy = H / 2, unit = Math.min(W, H);
+    var tone = TONE[state];
+
+    /* The beat: a ring that collapses on every target bounce, so the eye has something
+       to land on even with the tick switched off. */
+    if (listening) {
+      var period = 60 / target;
+      var phase = ((now - beatOrigin) % period) / period;
+      g.strokeStyle = 'rgba(255,255,255,' + (0.06 + 0.16 * (1 - phase)) + ')';
+      g.lineWidth = unit * 0.006;
+      g.beginPath();
+      g.arc(cx, cy, unit * (0.12 + 0.3 * phase), 0, 6.2832);
+      g.stroke();
+    }
+
+    /* One ring per sound. A counted bounce takes the colour of the pace it landed on, a
+       soft one is gold, and anything it refused gets a small dim ring so the floor can see
+       that it heard SOMETHING and said no. */
+    for (var i = 0; i < ripples.length; i++) {
+      var rp = ripples[i];
+      var age = now - rp.t;
+      if (age < 0 || age > 1.1) continue;
+      var a = (1 - age / 1.1);
+      var dim = rp.k === 'no';
+      var col = rp.k === 'soft' ? '#FFD34D' : dim ? '#5E5E6A' : TONE[rp.s][0];
+      g.strokeStyle = hexA(col, a * (mode === 'focus' ? 0.35 : 0.8) * (dim ? 0.45 : 1));
+      g.lineWidth = unit * 0.01 * a * (dim ? 0.55 : 1);
+      g.beginPath();
+      g.arc(cx, cy, unit * (0.08 + age * 0.42 * (dim ? 0.55 : 1)), 0, 6.2832);
+      g.stroke();
+    }
+
+    /* The core, which thumps with the last bounce. */
+    var r = unit * (0.1 + 0.05 * flash);
+    var grd = g.createRadialGradient(cx, cy, 0, cx, cy, r * 2.6);
+    grd.addColorStop(0, hexA(tone[0], mode === 'focus' ? 0.4 : 0.75));
+    grd.addColorStop(1, hexA(tone[1], 0));
+    g.fillStyle = grd;
+    g.beginPath();
+    g.arc(cx, cy, r * 2.6, 0, 6.2832);
+    g.fill();
+  }
+
+  /* The trace is the honest one: every bounce plotted at the tempo it made, against the
+     band you asked for. Drift shows up as a slope before you can feel it in your hands. */
+  function drawTrace(W, H, now) {
+    var span = 12, pad = H * 0.08;
+    var lo = Math.max(30, target - 140), hi = target + 140;
+    function y(v) { return H - pad - (v - lo) / (hi - lo) * (H - pad * 2); }
+    function x(t) { return W - (now - t) / span * W; }
+
+    g.fillStyle = 'rgba(25,210,107,.13)';
+    g.fillRect(0, y(target + tol), W, Math.max(2, y(target - tol) - y(target + tol)));
+    g.strokeStyle = 'rgba(25,210,107,.55)';
+    g.lineWidth = Math.max(1, W * 0.002);
+    g.beginPath(); g.moveTo(0, y(target)); g.lineTo(W, y(target)); g.stroke();
+
+    g.fillStyle = 'rgba(255,255,255,.45)';
+    g.font = '600 ' + Math.round(W * 0.032) + 'px -apple-system,Segoe UI,Roboto,sans-serif';
+    g.fillText(target + '/min', W * 0.02, y(target) - W * 0.014);
+
+    var started = false;
+    g.beginPath();
+    g.strokeStyle = 'rgba(255,255,255,.3)';
+    for (var i = 0; i < marks.length; i++) {
+      var m = marks[i];
+      if (!m.dpm || now - m.t > span) continue;
+      var px = x(m.t), py = y(Math.min(hi, Math.max(lo, m.dpm)));
+      if (started) g.lineTo(px, py); else { g.moveTo(px, py); started = true; }
+    }
+    g.stroke();
+
+    for (var j = 0; j < marks.length; j++) {
+      var k = marks[j];
+      if (!k.dpm || now - k.t > span) continue;
+      var good = Math.abs(k.dpm - target) <= tol;
+      g.fillStyle = good ? '#19D26B' : (k.dpm < target ? '#3B82F6' : '#FF9B2F');
+      g.beginPath();
+      g.arc(x(k.t), y(Math.min(hi, Math.max(lo, k.dpm))), W * 0.011, 0, 6.2832);
+      g.fill();
+    }
+  }
+
+  function hexA(hex, a) {
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a.toFixed(3) + ')';
+  }
+
+  /* --------------------------------------------------------------------- the HUD --- */
+
+  var VERDICT = {
+    good: 'on pace',
+    slow: 'pick it up',
+    fast: 'ease off',
+    idle: 'waiting for the ball'
+  };
+
+  function ui() {
+    var now = Date.now();
+    var dt = Math.min(now - lastUi, 2000);
+    lastUi = now;
+
+    if (listening) {
+      listenMs += dt;
+      if (dpm) {
+        activeMs += dt;
+        if (paceState() === 'good') paceMs += dt;
+      }
+    }
+
+    state = paceState();
+    if (phase === 'learn') {
+      var got = det ? Math.min(5, det.learned.length) : 0;
+      txt('count', String(got));
+      txt('countLbl', 'of 5 bounces taught');
+    } else {
+      txt('count', String(count));
+      txt('countLbl', paused ? 'dribbles so far' : 'dribbles');
+    }
+    txt('sDpm', dpm ? String(Math.round(dpm)) : '0');
+    txt('sRun', String(best));
+    txt('sMin', String(minutes()));
+    var pct = activeMs ? Math.round(paceMs / activeMs * 100) : 0;
+    txt('sPace', pct + '%');
+    id('stPace').className = pct >= 70 && activeMs > 8000 ? 'st good' : 'st';
+
+    txt('verdictWord', paused ? 'paused'
+      : !listening ? 'not listening yet'
+      : phase === 'room' ? 'learning the room'
+      : phase === 'learn' ? 'bounce the ball'
+      : VERDICT[state]);
+    id('verdict').className = 'verdict ' + (phase !== 'count' || state === 'idle' ? '' : state);
+    gauge();
+    /* Everything that only matters while setting up steps aside once a session is running. */
+    id('hero').className = 'hero' + (started ? ' live' : '');
+
+    var tone = TONE[state];
+    flood.style.background = 'radial-gradient(120% 80% at 50% 38%,' + tone[0] +
+      ' 0%,' + tone[1] + ' 55%,#08080C 100%)';
+    flood.className = (listening && phase === 'count' && state !== 'idle' && mode !== 'focus' ? 'on' : '') +
+      (mode === 'flood' ? ' big' : '');
+
+    if (det) {
+      var h = det.headroom();
+      id('lvl').style.width = Math.max(0, Math.min(100, h / 34 * 100)) + '%';
+    }
+
+    controls();
+    ballDoing();
+    if (wk) runnerTick(now);
+    if (listening && listenMs > 15000) save();
+  }
+
+  /*
+   * The needle, on the trace view's own scale so the two readings of one number cannot
+   * disagree: the target plus or minus 140 a minute, floored at 30. The band is the
+   * tolerance the athlete set, drawn once per frame because the target moves with a drill.
+   *
+   * The needle fades out rather than parking at zero when the ball stops: a needle pinned
+   * to the left of a speedometer reads as "very slow", and the truth is "not dribbling".
+   */
+  function gauge() {
+    var lo = Math.max(30, target - 140), hi = target + 140, span = hi - lo;
+    var at = function (v) { return Math.max(0, Math.min(100, (v - lo) / span * 100)); };
+    var a = at(target - tol), b = at(target + tol);
+    var band = id('gBand'), pin = id('gNeedle');
+    band.style.left = a + '%';
+    band.style.width = Math.max(1, b - a) + '%';
+    pin.style.left = at(dpm) + '%';
+    pin.style.opacity = dpm ? '1' : '0';
+  }
+
+  function minutes() { return minBase + Math.round(listenMs / 60000); }
+
+  /*
+   * Draw the sound it learned.
+   *
+   * This is not decoration. Everything else on the page is a number that could be right
+   * for the wrong reason, and until now there was no way for anyone to see WHETHER it had
+   * understood the ball or merely latched onto something. These are the twenty-four bands
+   * of the template's first slice - literally the shape it is matching against - so a
+   * template built from a ball looks like a ball every time, and one built from a door
+   * looks obviously different. Nobody has to know what the bars mean to notice that this
+   * session's picture is not like last session's.
+   */
+  function showBall() {
+    var card = id('ballCard');
+    if (!det || !det.template) { card.className = 'ballcard hidden'; return; }
+    card.className = 'ballcard good';
+    var cv2 = id('ballViz'), g2 = cv2.getContext('2d');
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = Math.round(75 * dpr), H = Math.round(38 * dpr);
+    if (cv2.width !== W) { cv2.width = W; cv2.height = H; }
+    g2.clearRect(0, 0, W, H);
+    var n = 24, lo = 1e9, hi = -1e9, k;
+    for (k = 0; k < n; k++) { var v = det.template[k]; if (v < lo) lo = v; if (v > hi) hi = v; }
+    var span = (hi - lo) || 1;
+    var bw = W / n;
+    for (k = 0; k < n; k++) {
+      var h = ((det.template[k] - lo) / span) * (H - 4) + 2;
+      g2.fillStyle = k <= 14 ? '#19D26B' : 'rgba(25,210,107,.45)';
+      g2.fillRect(k * bw + bw * 0.15, H - h, bw * 0.7, h);
+    }
+    txt('ballHow', 'learned from ' + det.taught + ' bounce' + (det.taught === 1 ? '' : 's'));
+  }
+
+  /* The other half: proof it is still applying what it learned, while it runs. */
+  /*
+   * WHAT IT IS DOING, in words somebody holding a basketball can act on.
+   *
+   * This line used to read "12 counted - 31 ignored (17 not the ball, 13 no thump) -
+   * matching 93%". Every number in it was true and the whole thing was useless on a court:
+   * it repeated the big number, it named internal rules, and "no thump" means nothing to
+   * anyone who has not read this file. The breakdown by rule is diagnostics and it still
+   * exists, in the log, behind the button beside the fussiness slider. What belongs here is
+   * the answer to one question: is it hearing my ball right now.
+   */
+  function ballDoing() {
+    if (!det || !det.template) return;
+    var bits = [];
+    if (!count && ignored >= 6) bits.push('Not hearing your ball');
+    else if (lastMatch == null) bits.push('Listening');
+    else bits.push(lastMatch >= 0.85 ? 'Hearing your ball clearly' : 'Hearing your ball');
+    if (softCount) bits.push(softCount + ' soft');
+    if (ignored) bits.push(ignored + ' other sound' + (ignored === 1 ? '' : 's') + ' ignored');
+    txt('ballDoing', bits.join(' \u00b7 '));
+  }
+
+  /*
+   * The session as plain text.
+   *
+   * Plain text on purpose: it has to survive being pasted into a message, and a coach
+   * reading it on a phone should not have to open anything. The numbers here are the same
+   * ones the app saves, so the written-up version and the coach's own list can never
+   * disagree.
+   */
+  function writeUp() {
+    var when = new Date();
+    var pct = activeMs > 8000 ? Math.round(paceMs / activeMs * 100) : 0;
+    var doneList = Object.keys(done).map(function (k) {
+      for (var i = 0; i < WORKOUTS.length; i++) if (WORKOUTS[i].id === k) return WORKOUTS[i].n;
+      return k;
+    });
+    /* One space minimum, so a label exactly as long as the column still reads. */
+    var pad = function (label) { return (label + '                     ').slice(0, Math.max(19, label.length + 1)); };
+    var L = [];
+    L.push('FAST BASKETBALL - dribble session');
+    L.push(when.toDateString() + ', ' + when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    L.push('');
+    L.push(pad('Dribbles') + count);
+    if (total > count) L.push(pad('Total this period') + total);
+    L.push(pad('Time') + minutes() + ' min');
+    L.push(pad('Pace aimed for') + target + ' a minute');
+    if (activeMs > 8000) L.push(pad('Held that pace') + pct + '% of the time');
+    if (best) L.push(pad('Best unbroken run') + best + ' in a row');
+    if (softCount) L.push(pad('Soft bounces') + softCount + ' of ' + count);
+    if (ignored) L.push(pad('Other sounds') + ignored + ' ignored');
+    if (doneList.length) L.push(pad('Workouts finished') + doneList.join(', '));
+    var note = (el('dc_notes') && el('dc_notes').value || '').trim();
+    if (note) { L.push(''); L.push('Notes:'); L.push(note); }
+    L.push('');
+    L.push('Counted by ear from the ball itself, not tapped in.');
+    id('report').value = L.join('\n');
+    id('reportBox').className = '';
+  }
+
+  /* Share where the phone offers it, clipboard where it does not, and select-the-text as
+     the last resort, because a copy button that silently does nothing is worse than no
+     copy button. */
+  function shareReport() {
+    var txt = id('report').value;
+    if (!txt) return;
+    var done2 = function (msg) { txt2(id('copyBtn'), msg); setTimeout(function () { txt2(id('copyBtn'), 'Copy it'); }, 2200); };
+    if (navigator.share) {
+      navigator.share({ text: txt }).then(function () { done2('Shared'); }, function () {});
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { done2('Copied'); }, function () { selectReport(); done2('Press copy'); });
+      return;
+    }
+    selectReport();
+    done2('Press copy');
+  }
+  function txt2(node, v) { node.textContent = v; }
+  function selectReport() {
+    var t = id('report');
+    t.removeAttribute('readonly');
+    t.focus();
+    t.setSelectionRange(0, t.value.length);
+    t.setAttribute('readonly', 'readonly');
+  }
+
+  /* ------------------------------------------------------------------ the workouts - */
+
+  function drillOf(step) { return byKey[step[0]]; }
+
+  function workoutSeconds(w) {
+    var s = 0;
+    for (var i = 0; i < w.steps.length; i++) s += w.steps[i][1] + (i ? w.rest : 0);
+    return s;
+  }
+
+  function renderWorkouts() {
+    var host = id('workouts');
+    host.innerHTML = '';
+    WORKOUTS.forEach(function (w) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'wk' + (done[w.id] ? ' done' : '');
+      var mins = Math.round(workoutSeconds(w) / 60);
+      b.innerHTML = '<b></b><u></u><p></p>';
+      b.querySelector('b').textContent = w.n;
+      b.querySelector('u').textContent = (done[w.id] ? 'Done today &middot; ' : '') +
+        w.steps.length + ' drills &middot; about ' + mins + ' min';
+      b.querySelector('u').innerHTML = (done[w.id] ? 'Done today &middot; ' : '') +
+        w.steps.length + ' drills &middot; about ' + mins + ' min';
+      b.querySelector('p').textContent = w.d;
+      b.addEventListener('click', function () { startWorkout(w); });
+      host.appendChild(b);
+    });
+  }
+
+  function startWorkout(w) {
+    if (!listening) { freeTarget = target; start(); }
+    else freeTarget = target;
+    wk = w; stepIdx = 0; resting = false;
+    id('runner').className = 'on';
+    beginStep();
+  }
+
+  function beginStep() {
+    var step = wk.steps[stepIdx];
+    var dr = drillOf(step);
+    resting = false;
+    stepBase = count;
+    stepEnd = Date.now() + step[1] * 1000;
+    setTarget(step[3] || dr.dpm);
+    id('runner').className = 'on';
+    txt('rDrill', dr.n + (step[2] ? ' · ' + step[2] : ''));
+    txt('rCue', dr.c);
+    var next = wk.steps[stepIdx + 1];
+    txt('rNext', next ? 'Next: ' + drillOf(next).n + (next[2] ? ' ' + next[2].toLowerCase() : '')
+      : 'Last one. Finish it.');
+  }
+
+  function beginRest() {
+    resting = true;
+    stepEnd = Date.now() + wk.rest * 1000;
+    id('runner').className = 'on rest';
+    var next = wk.steps[stepIdx];
+    txt('rDrill', 'Rest');
+    txt('rCue', 'Shake the hands out. ' + drillOf(next).n +
+      (next[2] ? ', ' + next[2].toLowerCase() : '') + ' is up.');
+    txt('rNext', 'Pace for it: ' + (next[3] || drillOf(next).dpm) + ' a minute');
+  }
+
+  function runnerTick(now) {
+    var left = Math.max(0, stepEnd - now);
+    var whole = resting ? wk.rest * 1000 : wk.steps[stepIdx][1] * 1000;
+    id('rFill').style.width = (100 - left / whole * 100).toFixed(1) + '%';
+    txt('rClock', Math.ceil(left / 1000) + 's');
+    /* The drill's own count belongs to the drill, not to the label under the session
+       total. The big number said 147 while the label under it said "this drill: 12", which
+       is two different numbers wearing one label. */
+    txt('rCount', resting ? 'resting' : (count - stepBase) + ' this drill');
+    if (left > 0) return;
+
+    if (resting) { beginStep(); return; }
+    stepIdx++;
+    if (stepIdx >= wk.steps.length) { endWorkout(true); return; }
+    if (wk.rest > 0) beginRest(); else beginStep();
+  }
+
+  function endWorkout(finished) {
+    if (finished && wk) {
+      done[wk.id] = true;
+      renderWorkouts();
+      say('Finished ' + wk.n + '. ' + (count - 0) + ' dribbles counted this session.');
+    }
+    wk = null;
+    id('runner').className = '';
+    txt('countLbl', 'dribbles');
+    setTarget(freeTarget);
+    save();
+  }
+
+  /* ------------------------------------------------------------------- the controls - */
+
+  function setTarget(v) {
+    target = Math.max(60, Math.min(360, Math.round(v / 5) * 5));
+    id('tgt').value = target;
+    txt('tgtVal', target + ' / min');
+    if (ctx) beatOrigin = ctx.currentTime;   /* restart the grid on the new tempo */
+    nextTick = 0;
+  }
+
+  id('goBtn').addEventListener('click', function () {
+    if (!started) start(); else if (paused) resume(); else pause();
+  });
+  id('finishBtn').addEventListener('click', finish);
+  id('copyBtn').addEventListener('click', shareReport);
+  id('clearBtn').addEventListener('click', clearAll);
+  id('fixBtn').addEventListener('click', findThem);
+  id('heardBtn').addEventListener('click', function () {
+    var b = id('heardBtn'), t = heardJson(true);
+    var back = function (m) { txt2(b, m); setTimeout(function () { txt2(b, 'Copy what it heard'); }, 2200); };
+    if (!heardRows.length) { back('Nothing heard yet'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(
+        function () { back('Copied ' + Math.max(1, Math.round(t.length / 1024)) + ' KB'); },
+        function () { back('Could not copy'); });
+      return;
+    }
+    back('Not available here');
+  });
+  id('doneTeach').addEventListener('click', doneTeaching);
+  id('tgt').addEventListener('input', function () { setTarget(+this.value); });
+  id('tDown').addEventListener('click', function () { setTarget(target - 10); });
+  id('tUp').addEventListener('click', function () { setTarget(target + 10); });
+  id('tol').addEventListener('input', function () {
+    tol = +this.value;
+    id('tolVal').innerHTML = '&plusmn;' + tol;
+  });
+  id('sens').addEventListener('input', function () {
+    fussy = +this.value / 100;
+    if (det) det.setMatch(fussy);
+    txt('sensVal', fussy <= 0.62 ? 'Lets more in'
+      : fussy >= 0.84 ? 'Very fussy'
+      : fussy >= 0.76 ? 'Fussy' : 'Normal');
+  });
+  id('teachBtn').addEventListener('click', function () {
+    if (!listening) { start(); return; }
+    /* Start over completely, room included: the reason to press this is usually that the
+       room pass caught something it should not have. */
+    det.teach();
+    ignored = 0; lastMatch = null; whys = {}; softCount = 0; tried = [];
+    peaks = []; heardMarks = []; id('heard').innerHTML = '';
+    phase = 'room';
+    showBall();
+    say('Starting over. Listening to the room. Hold still.');
+    ui();
+    setTimeout(function () { if (listening && phase === 'room') teachNow(); }, 3500);
+  });
+  id('tick').addEventListener('change', function () {
+    tickOn = this.checked;
+    nextTick = 0;
+  });
+
+  var MODE_HINT = {
+    flood: 'Flood: the whole screen goes green while you hold the pace, blue when you drift slow, orange when you race. Readable from the far end of the floor.',
+    rings: 'Rings: one ripple per bounce against the beat ring. Good for getting the rhythm honest before you chase a number.',
+    trace: 'Trace: every bounce plotted at the speed it made, against the band you asked for. Drift shows as a slope before your hands feel it.',
+    focus: 'Focus: the count and nothing else. For a gym where a flashing screen is a nuisance.'
+  };
+  id('modes').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    mode = b.dataset.mode;
+    var all = this.querySelectorAll('button');
+    for (var i = 0; i < all.length; i++) all[i].className = all[i] === b ? 'on' : '';
+    txt('modeHint', MODE_HINT[mode]);
+  });
+
+  id('rSkip').addEventListener('click', function () {
+    if (!wk) return;
+    if (resting) { beginStep(); return; }
+    stepIdx++;
+    if (stepIdx >= wk.steps.length) endWorkout(true);
+    else if (wk.rest > 0) beginRest(); else beginStep();
+  });
+  id('rStop').addEventListener('click', function () { endWorkout(false); });
+
+  function renderDrills() {
+    var rows = '<tr><th>Drill</th><th>Pace</th></tr>';
+    for (var i = 0; i < DRILLS.length; i++) {
+      var dr = DRILLS[i];
+      rows += '<tr><td><b>' + dr.n + '</b><small>' + dr.c + '</small></td>' +
+        '<td><button type="button" data-dpm="' + dr.dpm + '">' + dr.dpm + '<br>/min</button></td></tr>';
+    }
+    id('drills').innerHTML = rows;
+  }
+  id('drills').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    if (wk) endWorkout(false);
+    setTarget(+b.dataset.dpm);
+    freeTarget = target;
+    if (!listening) start();
+  });
+
+  /* ---------------------------------------------------------------------- saving --- */
+
+  function el(k) { return document.querySelector('[data-k="' + k + '"]'); }
+  /* ------------------------------------------------------------- what it heard --- */
+
+  /*
+   * WHY A COUNTER THAT WORKS STILL KEEPS A LOG.
+   *
+   * Every threshold in the detector was set against recordings that are not this gym,
+   * this ball, this floor or this phone. So when the owner says it counted something that
+   * was not a dribble, the only honest answer available today is a guess, because the
+   * sound was judged and thrown away inside a tenth of a second and nothing survives it.
+   *
+   * So the page keeps the evidence rather than the audio. For every sound it LOOKED at:
+   * when, how much it resembled the taught ball, how much floor-thump it carried, how
+   * loud it was, and which rule turned it down. Plus the taught template itself and the
+   * full fingerprint of the two dozen most interesting events, which is enough to replay
+   * the whole decision offline at any threshold.
+   *
+   * It is numbers about sounds, never the sounds, which is what lets it ride along in the
+   * saved document with no recorder anywhere in the app and nothing to delete afterwards.
+   *
+   * One real session from the gym this is used in is worth more than the entire corpus
+   * the detector was tuned on, because it is the only one recorded through this
+   * microphone, in this room, off this floor.
+   */
+  var WHY_CODE = { unlike: 1, thump: 2, room: 3, soon: 4 };
+  var HEARD_MAX = 1200, HEARD_KEEP = 8;
+
+  /* The interesting few, kept by score. The check before packing matters: this runs on
+     every sound in the session and the transform is the expensive part. */
+  function stash(list, ev, at, score) {
+    if (score == null) return;
+    if (list.length >= HEARD_KEEP && score <= list[list.length - 1].s) return;
+    list.push({ t: at, s: Math.round(score * 1000) / 1000, fp: FB.packFp(ev.fp) });
+    list.sort(function (a, b) { return b.s - a.s; });
+    if (list.length > HEARD_KEEP) list.length = HEARD_KEEP;
+  }
+
+  /*
+   * One row per sound. `code` overrides the refusal reason for the sounds that were never
+   * candidates to be counted in the first place: 5 is the room pass, 6 is a teaching
+   * bounce. Both are worth having, because "the ball leaked into the room pass" is a real
+   * failure with a real fix and it is invisible in a log of counted things.
+   *
+   * Times are seconds since listening began, carried across a pause, so the gaps between
+   * events are readable as a drill rather than as an arbitrary audio clock.
+   */
+  function heardRow(ev, counted, code) {
+    if (heardT0 === null) heardT0 = ev.t;
+    var at = Math.round((heardBase + ev.t - heardT0) * 10) / 10;
+    heardRows.push([
+      at,
+      ev.sim == null ? null : Math.round(ev.sim * 100),
+      ev.thump == null ? null : Math.round(ev.thump * 10),
+      Math.round(20 * Math.log10(Math.max(ev.peak || 0, 1e-7))),
+      code != null ? code : (counted ? 0 : (WHY_CODE[ev.why] || 9))
+    ]);
+    if (heardRows.length > HEARD_MAX) heardRows.shift();
+    if (!ev.fp) return;
+    if (counted) stash(heardKeep.best, ev, at, ev.sim);
+    else {
+      stash(heardKeep.near, ev, at, ev.sim);
+      stash(heardKeep.loud, ev, at, ev.peak);
+    }
+  }
+
+  /*
+   * TWO SIZES, and the split is the whole design rather than a tidy-up.
+   *
+   * The small one is what SAVES ITSELF with the document every session: the shape of what
+   * happened, plus the ball it learned. About six hundred bytes, which is small enough
+   * that no storage limit is in question and small enough that a person can read it.
+   *
+   * The big one is the whole log, every row and the fingerprints, and it only ever goes on
+   * the CLIPBOARD when somebody presses the button. That asymmetry is deliberate. Nothing
+   * in the app reads a saved worksheet back, so a forty kilobyte blob filed automatically
+   * would be evidence nobody ever opens, riding in the same field as the count, on a write
+   * that has to keep succeeding for a session to be saved at all. The moment the full log
+   * is actually wanted is the moment someone says it counted wrong, and that is a moment
+   * with a person in it, standing next to the button.
+   */
+  function heardJson(full) {
+    var out = {
+      v: 1,
+      at: new Date().toISOString(),
+      sr: det ? det.sr : 0,
+      match: fussy,
+      taught: det ? det.taught : 0,
+      thumpBar: det && det.template ? Math.round(det.ballThump * 10) / 10 : null,
+      cohort: det ? det.cohort.length : 0,
+      counted: count, ignored: ignored, why: whys,
+      heard: heardRows.length,
+      /* The ball it learned, in every saved session. Six hundred bytes buys the one
+         question worth asking across sessions: did it learn the ball, or the room? */
+      tpl: det && det.template ? FB.packFp(det.template) : null
+    };
+    if (!full) return JSON.stringify(out);
+    out.fpScale = FB.FP_SCALE;
+    out.cols = 't,sim*100,thump*10,peakDb,why(0 counted,1 unlike,2 no thump,3 room,4 too close,5 room pass,6 teaching)';
+    out.rows = heardRows;
+    out.fp = heardKeep;
+    return JSON.stringify(out);
+  }
+
+  function set(k, v) { var e = el(k); if (e) e.value = String(v); }
+  function num(k) { var e = el(k); return e ? (+e.value || 0) : 0; }
+
+  function save(force) {
+    var pct = activeMs > 8000 ? Math.round(paceMs / activeMs * 100) : 0;
+    if (pct > savedPace) savedPace = pct;
+    set('dc_total', total);
+    set('dc_min', minutes());
+    set('dc_pace', savedPace);
+    set('dc_best', best);
+    set('dc_done', Object.keys(done).join(','));
+    /* The SMALL log is rebuilt at most every two seconds, and NEVER while it is empty:
+       this runs five times a second once a session is going, and an empty write on the
+       first tick of a new session would erase the previous one before anybody read it. */
+    if (!heardRows.length) return;
+    if (!force && (heardRows.length === heardWroteN || Date.now() - heardWroteAt < 2000)) return;
+    set('dc_heard', heardJson());
+    heardWroteN = heardRows.length;
+    heardWroteAt = Date.now();
+  }
+
+  /* The app restores saved answers into the inputs and fires one change event on the
+     document. Reading them back here is what carries a period's totals forward. */
+  function pull() {
+    var t = num('dc_total'), m = num('dc_min'), p = num('dc_pace'), b = num('dc_best');
+    var list = (el('dc_done') ? el('dc_done').value : '').split(',').filter(Boolean);
+    var changed = false;
+    if (t > total) { total = t; changed = true; }
+    if (m !== minutes()) { minBase = m; listenMs = 0; changed = true; }
+    if (p > savedPace) { savedPace = p; changed = true; }
+    if (b > best) { best = b; changed = true; }
+    for (var i = 0; i < list.length; i++) if (!done[list[i]]) { done[list[i]] = true; changed = true; }
+    if (!changed) return;
+    renderWorkouts();
+    save();
+  }
+  document.addEventListener('change', pull);
+
+  window.addEventListener('pagehide', function () { if (listening) closeMic(); });
+
+  /* ----------------------------------------------------------------------- go ------ */
+
+  renderWorkouts();
+  renderDrills();
+  controls();
+  setTarget(160);
+  uiId = setInterval(ui, 200);
+  draw();
+  ui();
+})();
+</script>
+</body>

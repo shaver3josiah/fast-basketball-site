@@ -35,6 +35,16 @@ function summaryHtml(period, extra) {
     row('Gross paid by families', money(period.grossPaidCents)) +
     row('Payments in this period', String(period.entryCount)) +
     '</table>' +
+    // The net settles two different deals at once. Printing only the total would hide which
+    // half is which, and the tool half is priced twenty times higher than the training half.
+    (period.appCount
+      ? '<h3>What the net is made of</h3><table style="border-collapse:collapse">' +
+        row('Training commission (8% / 2.5%)', money(period.trainingNetCents)) +
+        row('Tool sales (50/50, ' + period.appCount + ' payment' + (period.appCount === 1 ? '' : 's') + ')', money(period.appNetCents)) +
+        '</table>' +
+        '<p>The 50/50 split on the tool products is not in the signed agreement. It needs an ' +
+        'addendum before anyone pays or invoices on it.</p>'
+      : '') +
     (period.unmatchedCount
       ? '<p><b>' + period.unmatchedCount + ' reversal(s) could not be matched to an accrual</b> and were ' +
         'reversed at the base rate. Check those rows in the attachment before paying.</p>'
@@ -74,6 +84,9 @@ export async function runPayPeriod(scheduleTimeIso, { force = false } = {}) {
   const period = periods.find((p) => p.key === key) || {
     ...periodRange(key),
     grossPaidCents: 0, accrualCents: 0, reversalCents: 0, netCents: 0,
+    // Every field summarise() would have set. A month with no payments still renders a CSV and
+    // a spreadsheet, and a missing counter here is a NaN in the totals block of both.
+    trainingNetCents: 0, appNetCents: 0, appCount: 0,
     entryCount: 0, unmatchedCount: 0, entries: [], attributedCustomers: []
   };
 

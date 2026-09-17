@@ -17,6 +17,28 @@ function keyMode(key) {
   return 'unknown';
 }
 
+
+// STRIPE CAPS `lookup_keys` AT TEN PER CALL. The catalog was eight keys for a year and then the
+// /appbuy products took it to eighteen, at which point a single list call answers
+// invalid_request_error ("You can specify up to 10 lookup_keys") and the whole script dies
+// before touching anything. So the keys are asked for ten at a time and the pages concatenated.
+// Keep this whenever the catalog grows again; the cap is Stripe's, not ours.
+const LOOKUP_KEYS_PER_CALL = 10;
+
+export async function pricesByLookupKey(stripe, lookupKeys, extra = {}) {
+  const out = [];
+  for (let i = 0; i < lookupKeys.length; i += LOOKUP_KEYS_PER_CALL) {
+    const { data } = await stripe.prices.list({
+      lookup_keys: lookupKeys.slice(i, i + LOOKUP_KEYS_PER_CALL),
+      active: true,
+      limit: 100,
+      ...extra
+    });
+    out.push(...data);
+  }
+  return out;
+}
+
 function priceMatches(price, spec) {
   if (price.unit_amount !== spec.amountCents || price.currency !== 'usd') return false;
   if (spec.mode !== 'subscription') return price.recurring === null;
@@ -42,11 +64,9 @@ export async function syncCatalog(stripe, { dryRun = false, log = console.log } 
   const specs = catalog();
   const write = (fn, placeholder) => (dryRun ? Promise.resolve(placeholder) : fn());
 
-  // One list call covers every lookup key and brings each price's product along, which
-  // is how a plan's product is found without storing its ID anywhere.
-  const { data: prices } = await stripe.prices.list({
-    lookup_keys: specs.map((s) => s.lookupKey), active: true, limit: 100, expand: ['data.product']
-  });
+  // The list calls bring each price's product along, which is how a plan's product is found
+  // without storing its ID anywhere. Ten lookup keys per call: see LOOKUP_KEYS_PER_CALL above.
+  const prices = await pricesByLookupKey(stripe, specs.map((s) => s.lookupKey), { expand: ['data.product'] });
   const priceByKey = new Map(prices.map((p) => [p.lookup_key, p]));
   const productByPlan = new Map();
   for (const spec of specs) {

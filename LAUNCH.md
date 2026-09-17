@@ -243,7 +243,10 @@ one script run and one deploy. Do it in this order.
    `STRIPE_WEBHOOK_SECRET` to the **test** endpoint's secret.
 2. With the test key in the shell, run `npm run stripe:catalog -- --dry-run` and read what it
    will create, then `npm run stripe:catalog`. That makes the products and the eight prices
-   under their lookup keys. It is idempotent; running it twice is safe.
+   under their lookup keys. It is idempotent; running it twice is safe. Since 17 September 2026
+   that is **eighteen** lookup keys, not eight: the ten extra are the `/appbuy` tool products
+   (`shotform-*`, `dribble-*`). Until this has run against the live key, `/appbuy` answers 503,
+   saves the order, emails you, and tells the buyer you will send a payment link.
 3. `npm run deploy:functions` so the function picks up the new values.
 4. With the test key in the shell, run `npm run stripe:check`. It verifies the four things
    that silently break enrollment: a lookup key with no active price, a price that drifted

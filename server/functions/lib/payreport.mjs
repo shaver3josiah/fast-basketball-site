@@ -43,6 +43,10 @@ export function summarise(entries, { nowPeriodKey = null } = {}) {
       byPeriod.set(key, {
         ...periodRange(key),
         grossPaidCents: 0, accrualCents: 0, reversalCents: 0, netCents: 0,
+        // Two rate worlds in one payout. The owner is settling 2.5% or 8% of training revenue
+        // and 50% of tool sales out of a single figure, so the figure has to show its working
+        // before he pays it; a net that does not split is a number nobody can check.
+        trainingNetCents: 0, appNetCents: 0, appCount: 0,
         entryCount: 0, unmatchedCount: 0, entries: [],
         attributedCustomers: [], attributedSeen: new Set()
       });
@@ -54,6 +58,15 @@ export function summarise(entries, { nowPeriodKey = null } = {}) {
     if (e.kind === 'reversal') p.reversalCents += Number(e.commissionCents) || 0;
     else p.accrualCents += Number(e.commissionCents) || 0;
     p.netCents += Number(e.commissionCents) || 0;
+    // A row written before the app products existed carries no `product` and is training.
+    if (e.product === 'app') {
+      p.appNetCents += Number(e.commissionCents) || 0;
+      // Sales, not rows: a refund is a reversal and counting it would make the statement say
+      // "3 payments" for two sales and a refund.
+      if (e.kind !== 'reversal') p.appCount += 1;
+    } else {
+      p.trainingNetCents += Number(e.commissionCents) || 0;
+    }
     if (e.unmatched) p.unmatchedCount += 1;
     // Section 8: the statement lists the Attributed Customers it charged 8% for. One line per
     // customer, not per payment, and only while they are inside their 12 months.
@@ -91,6 +104,7 @@ export async function payPeriods(now) {
 const COLUMNS = [
   { header: 'Paid at', key: 'paidAt', type: 'string' },
   { header: 'Kind', key: 'kind', type: 'string' },
+  { header: 'Line', key: 'product', type: 'string' },
   { header: 'Family', key: 'familyName', type: 'string' },
   { header: 'Player', key: 'playerName', type: 'string' },
   { header: 'Plan', key: 'planLabel', type: 'string' },
@@ -108,6 +122,9 @@ function rowsFor(period) {
   return period.entries.map((e) => ({
     paidAt: (e.paidAt || '').slice(0, 19).replace('T', ' '),
     kind: e.kind === 'reversal' ? (e.sourceType === 'dispute' ? 'Dispute' : 'Refund') : 'Accrual',
+    // Why this row is priced where it is. Without it a 50% line sitting beside a 2.5% line
+    // reads as an error in the spreadsheet rather than as a different product.
+    product: e.product === 'app' ? 'Tool (50/50)' : 'Training',
     familyName: e.familyName || '',
     playerName: e.playerName || '',
     planLabel: e.planLabel || '',
@@ -145,6 +162,8 @@ export function periodCsv(period) {
   lines.push(total('Gross paid', period.grossPaidCents));
   lines.push(total('Accrued', period.accrualCents));
   lines.push(total('Reversed', period.reversalCents));
+  lines.push(total('Training commission', period.trainingNetCents));
+  lines.push(total('Tool sales, 50/50', period.appNetCents));
   lines.push(total('Net due', period.netCents));
   return lines.join('\r\n') + '\r\n';
 }
@@ -156,6 +175,8 @@ export function periodXlsx(period) {
   rows.push({ familyName: 'Gross paid', amount: period.grossPaidCents / 100 });
   rows.push({ familyName: 'Accrued', commission: period.accrualCents / 100 });
   rows.push({ familyName: 'Reversed', commission: period.reversalCents / 100 });
+  rows.push({ familyName: 'Training commission', commission: period.trainingNetCents / 100 });
+  rows.push({ familyName: 'Tool sales, 50/50', commission: period.appNetCents / 100 });
   rows.push({ familyName: 'Net due', commission: period.netCents / 100 });
   return buildXlsx({ sheetName: 'Pay ' + period.key, columns: COLUMNS, rows });
 }

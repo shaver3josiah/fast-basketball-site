@@ -1,19 +1,103 @@
 // Run: node --test src/lib/plans.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PLANS, catalog, checkoutSpec, payOptionsFor, totalCents, cancelNoticeBy, dollars, monthlyCents, applyOwnerPrices, validPriceCents } from './plans.mjs';
+import { PLANS, APP_PLANS, isAppPlan, leadKey, instalmentsIn, catalog, checkoutSpec, payOptionsFor, totalCents, cancelNoticeBy, dollars, monthlyCents, applyOwnerPrices, validPriceCents } from './plans.mjs';
 
-test('catalog is 8 specs with unique lookup keys and whole-cent amounts', () => {
+// Counted rather than derived, on purpose: the point of the pin is that the catalog did not
+// change size by accident, and a count taken from the catalog itself can never notice that.
+const TRAINING_SPECS = 8;  // 2 evaluations, 4 memberships, and monthly on the two once-a-week terms
+const APP_SPECS = 10;      // 2 tools x (pay in full + four payment plans)
+
+test('catalog is 18 specs with unique lookup keys and whole-cent amounts', () => {
   const specs = catalog();
-  assert.equal(specs.length, 8);
+  assert.equal(specs.length, TRAINING_SPECS + APP_SPECS);
   const keys = new Set(specs.map((s) => s.lookupKey));
-  assert.equal(keys.size, 8);
+  assert.equal(keys.size, TRAINING_SPECS + APP_SPECS);
   for (const s of specs) {
     assert.ok(Number.isInteger(s.amountCents) && s.amountCents > 0, s.lookupKey + ' amount ' + s.amountCents);
     assert.ok(['payment', 'subscription'].includes(s.mode));
     if (s.mode === 'subscription') assert.equal(s.interval, 'month');
     else assert.equal(s.interval, null);
   }
+});
+
+// --- the /appbuy products ----------------------------------------------------------------
+
+test('a tool is $100 or $20 however it is paid, and an instalment plan never collects more', () => {
+  assert.equal(APP_PLANS.shotform.cents, 10000);
+  assert.equal(APP_PLANS.dribble.cents, 2000);
+  for (const key of Object.keys(APP_PLANS)) {
+    const price = APP_PLANS[key].cents;
+    for (const pay of payOptionsFor(key)) {
+      // The published price is the same on every option: paying over time adds nothing.
+      assert.equal(totalCents(key, pay), price, key + ' ' + pay + ' is the published price');
+      const spec = checkoutSpec(key, pay);
+      const collected = spec.amountCents * (spec.iterations || 1);
+      // THE RULE: instalments may land under the published price (monthlyCents floors) and
+      // must never land over it. A buyer told "$20" must never be charged $20.01.
+      assert.ok(collected <= price, key + ' ' + pay + ' would collect ' + collected + ' for a ' + price + ' product');
+      assert.ok(price - collected < (spec.iterations || 1), key + ' ' + pay + ' drifts by ' + (price - collected) + ' cents');
+      // Stripe refuses anything under 50 cents, so a plan that cannot be charged is a plan
+      // that must not be offered.
+      assert.ok(spec.amountCents >= 50, key + ' ' + pay + ' is under the Stripe minimum');
+    }
+  }
+});
+
+test('a tool payment plan CANCELS when it is done, so a bought tool never keeps billing', () => {
+  for (const key of Object.keys(APP_PLANS)) {
+    for (const n of APP_PLANS[key].instalments) {
+      const spec = checkoutSpec(key, 'm' + n);
+      assert.equal(spec.mode, 'subscription');
+      assert.equal(spec.iterations, n);
+      // 'release' is the membership behaviour: keep billing until someone cancels in writing.
+      // A one-off purchase must stop by itself.
+      assert.equal(spec.endBehavior, 'cancel', key + ' m' + n);
+    }
+    assert.equal(checkoutSpec(key, 'full').mode, 'payment');
+    assert.equal(checkoutSpec(key, 'full').endBehavior, null);
+  }
+});
+
+test('up to five months, and nothing longer or stranger resolves', () => {
+  for (const key of Object.keys(APP_PLANS)) {
+    assert.deepEqual(payOptionsFor(key), ['full', 'm2', 'm3', 'm4', 'm5']);
+    assert.throws(() => checkoutSpec(key, 'm6'), key + ' must refuse six months');
+    assert.throws(() => checkoutSpec(key, 'm1'));
+    assert.throws(() => checkoutSpec(key, 'monthly'), key + ' does not use the membership option');
+    assert.throws(() => checkoutSpec(key, 'm2x'));
+  }
+  assert.equal(instalmentsIn('m5'), 5);
+  assert.equal(instalmentsIn('full'), null);
+  assert.equal(instalmentsIn('monthly'), null);
+  assert.equal(instalmentsIn('m10'), null);
+  assert.equal(instalmentsIn(undefined), null);
+});
+
+test('a tool and a membership never leak into each other', () => {
+  // /enroll renders a card per key of PLANS. A tool appearing there would sell a phone app as
+  // a training membership; a membership on /appbuy would sell court time as software.
+  for (const key of Object.keys(APP_PLANS)) assert.ok(!Object.hasOwn(PLANS, key), key);
+  for (const key of Object.keys(PLANS)) assert.equal(isAppPlan(key), false, key);
+  for (const key of Object.keys(APP_PLANS)) assert.equal(isAppPlan(key), true, key);
+  assert.equal(isAppPlan('__proto__'), false);
+  assert.equal(isAppPlan(undefined), false);
+  // Return paths, which is what sends an abandoned checkout back to the right form.
+  assert.equal(checkoutSpec('shotform', 'full').page, '/appbuy');
+  assert.equal(checkoutSpec('group-3m-1x', 'full').page, '/enroll');
+  // Store prefixes: an app order is not an enrollment and must not be read as one.
+  assert.equal(leadKey('shotform', 'abc'), 'apporder:abc');
+  assert.equal(leadKey('group-3m-1x', 'abc'), 'registration:abc');
+  assert.equal(leadKey('nonsense', 'abc'), 'registration:abc');
+});
+
+test('owner prices cannot touch a tool price: it is a term both parties agreed', () => {
+  // applyOwnerPrices walks PLANS only. content.json arrives from a saved admin draft, and the
+  // 50/50 split means half of this figure is not the owner's to move on his own.
+  const before = APP_PLANS.shotform.cents;
+  applyOwnerPrices(PLANS, { shotform: { full: 1 }, dribble: { full: 1 } });
+  assert.equal(APP_PLANS.shotform.cents, before);
+  assert.equal(checkoutSpec('shotform', 'full').amountCents, 10000);
 });
 
 test('a plan offers exactly the pay options it prices, and never invents one', () => {
@@ -54,6 +138,8 @@ test('published totals: full is exact, monthly sums within a cent per month', ()
     if (!Object.hasOwn(plan.totals, 'monthly')) continue;
     const monthly = checkoutSpec(key, 'monthly');
     assert.equal(monthly.iterations, plan.months);
+    // A membership keeps billing after its term until it is cancelled in writing; only the
+    // one-off tool purchases end themselves.
     assert.equal(monthly.endBehavior, 'release');
     // Rounding may land a cent either side; it must never drift by a whole month's worth.
     const drift = monthly.amountCents * plan.months - plan.totals.monthly;
@@ -73,6 +159,11 @@ test('the rates on the page', () => {
   // $550 over 3 months is $183.33, a cent under across the term rather than over.
   assert.equal(checkoutSpec('group-3m-1x', 'monthly').amountCents, 18333);
   assert.equal(monthlyCents(55000, 3) * 3, 54999);
+  // monthlyCents floors rather than rounds, so instalments are never more than the published
+  // price. Every training figure is identical either way; $20 over 3 months is where it bites.
+  assert.equal(monthlyCents(90000, 6), 15000);
+  assert.equal(monthlyCents(2000, 3), 666, 'rounding here would bill $20.01 for a $20 product');
+  assert.ok(monthlyCents(2000, 3) * 3 <= 2000);
 });
 
 test('six month terms carry the 60 day notice, three month terms 7 days', () => {

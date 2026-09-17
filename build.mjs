@@ -11,8 +11,9 @@ import { renderSuburbPage } from './src/lib/suburb-page.mjs';
 import { renderCoachPage } from './src/lib/coach-page.mjs';
 import { breadcrumbList } from './src/lib/structured-data.mjs';
 import { SITE_URL, CONTACT } from './src/lib/site-config.mjs';
-import { PLANS, PAY_LABELS, getPlan, payOptionsFor, checkoutSpec, totalCents, dollars } from './src/lib/plans.mjs';
+import { PLANS, APP_PLANS, PAY_OPTIONS, PAY_LABELS, getPlan, payOptionsFor, checkoutSpec, totalCents, dollars } from './src/lib/plans.mjs';
 import { FIELDS as REGISTRATION_FIELDS, SECTIONS as REGISTRATION_SECTIONS } from './src/lib/registration.mjs';
+import { FIELDS as APPORDER_FIELDS, SECTIONS as APPORDER_SECTIONS } from './src/lib/apporder.mjs';
 import { TEXT_GROUPS, TEXT_LABELS, IMAGE_LABELS } from './src/lib/content-schema.mjs';
 import { CONTENT_GROUPS } from './src/lib/content-groups.mjs';
 import { ELEMENT_TYPES, FONT_FAMILIES, THEME_COLORS, BREAKPOINTS, DESIGN_WIDTH } from './src/lib/canvas-schema.mjs';
@@ -251,6 +252,18 @@ function step3_copyStatic() {
   // on every other path, so there is a /shotform header block beside this. Its own checks are src/shotform/check.mjs.
   const shotform = resolve(ROOT, 'src/shotform/index.html');
   if (existsSync(shotform)) { mkdirSync(resolve(DIST, 'shotform'), { recursive: true }); cpSync(shotform, resolve(DIST, 'shotform/index.html')); }
+  // The Dribble Listener, the other tool sold from /appbuy. Same deal: one self-contained file,
+  // copied not rendered, out of allPaths so it stays out of the sitemap, and it needs the
+  // MICROPHONE, which firebase.json blocks everywhere else, so there is a /dribble header block
+  // beside the /shotform one.
+  //
+  // DRIFT WARNING. This file is a copy of fast-basketball-app/scripts/worksheets/
+  // dribble-counter.html, where it is also a Locker worksheet, and its checks live there
+  // (scripts/check-dribble.mjs, npm run test:dribble). Two repos, so there is no import that
+  // could keep them honest. Regenerate this one with cp after changing that one; never edit it
+  // here. The Shot Form tracker went the other way and MOVED in, which is why it has no twin.
+  const dribble = resolve(ROOT, 'src/dribble/index.html');
+  if (existsSync(dribble)) { mkdirSync(resolve(DIST, 'dribble'), { recursive: true }); cpSync(dribble, resolve(DIST, 'dribble/index.html')); }
   console.log('Copied static assets into dist/.');
 }
 
@@ -443,6 +456,8 @@ function step11b_privacyPage(content, prelude) {
   body += '<p>Only what you type into a form. The contact form asks for a name, an email, a phone number, your area, which program you are asking about, and whatever you want to tell us about the player. The playbook form asks for a name, an email, and the player\'s grade, position and skill focus. The Locker asks for an email so we can send you the resource you unlocked.</p>\n';
   body += '<p>The enrollment form asks for more, because it is the registration for a training program: the athlete\'s name, date of birth, gender, grade, school, experience, and optionally their own email, phone, team, position and goals; the parent or guardian\'s name, relationship, email, phone, home city and preferred way to be contacted; the program, frequency, day and T-shirt size; the athlete\'s health insurance provider and policy number, which is what a coach needs if a player is hurt on the court; the plan chosen; any questions; and a record that you ticked the two agreement boxes. Your signature itself is not collected here: you sign by typing your full name on Stripe\'s checkout page, and Stripe keeps that.</p>\n';
   body += '<p>When you open an enrollment link Coach Blake sent you, the page records that it was opened and how long it stayed open, tied to the tag in that link, so he knows to follow up. No cookie, no third party, and nothing you typed leaves your browser until you submit the form.</p>\n';
+  body += '<p>Buying one of the training tools asks for much less, because it is software rather than a place on a court: your name, your email, optionally a phone number, a home city and the athlete\'s name, which of the four "you are" answers fits you, anything you typed in the comments box, which tool you bought, how you chose to pay, and a record that you ticked the two boxes. Your email is where the link is sent, so it is the one thing the purchase cannot work without. No date of birth, no school, and no insurance details: nothing about selling a phone tool needs them.</p>\n';
+  body += '<p>The tools themselves send us nothing at all. The Shot Form Watcher uses your camera and the Dribble Listener uses your microphone, and both do their work inside the browser on your own device. No video, no audio and no recording is uploaded anywhere, to us or to anyone else, and neither tool has a login.</p>\n';
   body += '<p>The enrollment form and the contact form both ask how you heard about us. We keep your answer on your record. It changes nothing about what you pay or what your athlete receives: it tells Coach Blake which of his efforts are reaching families, and it sets the fee the person who built this site is paid out of Coach Blake\'s own share rather than out of anything you pay. If you would rather not say, pick "Other" and leave the box blank.</p>\n';
   body += '<p>One thing gets recorded that you did not type: a playbook request is saved along with the internet address it came from, which is how we stop the form being hammered by a bot. Netlify, which hosts the site, also keeps its own standard server logs, the way every web host does.</p>\n';
 
@@ -471,6 +486,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<li>A count of the shots you have made in the little night court on the homepage. It is a number. That is genuinely all it is.</li>\n';
   body += '<li>Which program you clicked, so the contact form arrives already knowing what you wanted to ask about. It clears when you close the tab.</li>\n';
   body += '<li>The answers you typed into the enrollment form, so coming back from Stripe\'s checkout does not empty it. The insurance policy number is not kept. All of it clears when you close the tab.</li>\n';
+  body += '<li>The same for the tool purchase form, and for the same reason. It clears when you close the tab.</li>\n';
   body += '<li>A note that you have already seen the opening animation, so it does not replay on every page. That clears when you close the tab too.</li>\n';
   body += '</ul>\n';
   body += '<p>There is no analytics on this site, no advertising pixel, no session recording and no third-party script of any kind. Every script and font a page here loads is served from this site. Clearing your browser storage removes everything in that list.</p>\n';
@@ -746,7 +762,9 @@ function step11d_enrollPages(sections, content, prelude) {
   // data-monthly attribute (features.css), which is how the page matches syncPay() before JS runs.
   body += '<fieldset class="en-fs" id="enPay">\n' + legend(++n, 'Choose how to pay');
   body += '<div class="en-pays">\n';
-  for (const pay of Object.keys(PAY_LABELS)) {
+  // PAY_OPTIONS, not every key of PAY_LABELS: that map also holds the tool-purchase payment
+  // plans (m2..m5) now, and no training membership offers them.
+  for (const pay of PAY_OPTIONS) {
     body += '<label class="en-pay"><input type="radio" name="pay" value="' + pay + '"' + (pay === 'full' ? ' checked' : '') + '>' +
       '<span class="en-pay-l">' + escapeHtml(PAY_LABELS[pay]) + '</span><span class="en-pay-a"></span></label>\n';
   }
@@ -808,6 +826,150 @@ function step11d_enrollPages(sections, content, prelude) {
   }));
   // The thanks page stays out of the sitemap: it is a landing, not a destination.
   return []; // noindex: not in the sitemap
+}
+
+// /appbuy sells the two tools the developer built: pick one, say who you are, pick how to pay,
+// and finish on Stripe. It is deliberately the SAME shape as /enroll, down to the .en-* classes
+// and the numbered legends, because it is the same job (a form, a product card, a pay choice,
+// two boxes and a checkout) and a second visual language for it would be invention, not design.
+//
+// Three things differ, and each is a decision rather than an accident:
+//   - It asks eight questions, not twenty-six. See the header of src/lib/apporder.mjs.
+//   - Every product prices every pay option, so no pay radio ever has to be hidden and the
+//     no-JS path needs none of the [data-monthly] CSS /enroll carries.
+//   - It is indexable. /enroll is a private link Blake emails after a call; this is a shop.
+function step11e_appbuyPages(content, prelude) {
+  const payLine = (key, pay) => {
+    const spec = checkoutSpec(key, pay);
+    if (!spec.iterations) return dollars(spec.amountCents) + ' today, once';
+    return dollars(spec.amountCents) + ' a month for ' + spec.iterations + ' months';
+  };
+  // Every product's every pay option, on the card, so appbuy.js can write the amount beside
+  // each pay radio the way enroll.js does. Without JS the card's own lines still carry them.
+  const card = (key) => {
+    const plan = getPlan(key);
+    const attrs = payOptionsFor(key).map((pay) => ' data-' + pay + '="' + escapeAttr(payLine(key, pay)) + '"').join('');
+    const cheapest = Math.min(...plan.instalments.map((n) => checkoutSpec(key, 'm' + n).amountCents));
+    let out = '<label class="en-card"' + attrs + '>\n';
+    out += '<input type="radio" name="plan" value="' + key + '" required>\n<span class="en-card-b">\n';
+    out += '<span class="en-card-t">' + escapeHtml(plan.label) + '</span>\n';
+    out += '<span class="prog-price">' + dollars(plan.cents) + '<small>one time</small></span>\n';
+    out += '<span class="en-card-d">' + escapeHtml(plan.description) + '</span>\n';
+    out += '<span class="en-card-d">Or from ' + dollars(cheapest) + ' a month over ' +
+      Math.max(...plan.instalments) + ' months. Payment plans are final and non-refundable.</span>\n';
+    return out + '</span>\n</label>\n';
+  };
+  const legend = (n, text) => '<legend class="en-lg"><span class="en-n">0' + n + '</span>' + text + '</legend>\n';
+
+  const control = (f) => {
+    const attrs = ' id="ab_' + f.key + '" name="' + f.key + '"' + (f.required ? ' required' : '') +
+      (f.autocomplete ? ' autocomplete="' + f.autocomplete + '"' : '') +
+      (f.placeholder ? ' placeholder="' + escapeAttr(f.placeholder) + '"' : '');
+    if (f.type === 'select') {
+      return '<select' + attrs + '><option value="">Please select</option>' +
+        f.options.map((o) => '<option value="' + escapeAttr(o) + '">' + escapeHtml(o) + '</option>').join('') + '</select>';
+    }
+    if (f.type === 'textarea') return '<textarea' + attrs + '></textarea>';
+    return '<input type="' + f.type + '"' + attrs + '>';
+  };
+  const field = (f) => '<div class="fld"><label for="ab_' + f.key + '">' + escapeHtml(f.label) +
+    (f.required ? '' : ' <span class="en-opt">optional</span>') + '</label>' + control(f) + '</div>\n';
+  const fieldsIn = (section) => {
+    const list = APPORDER_FIELDS.filter((f) => f.section === section);
+    let out = '';
+    for (let i = 0; i < list.length; i++) {
+      const next = list[i + 1];
+      if (list[i].row && next && next.row === list[i].row) {
+        out += '<div class="fld-row">' + field(list[i]) + field(next) + '</div>\n';
+        i++;
+      } else out += field(list[i]);
+    }
+    return out;
+  };
+  // Same checkbox markup and inline styles as /enroll and the contact form's parent gate.
+  const LABEL_CSS = 'display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;';
+  const BOX_CSS = 'width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;';
+  const check = (id, name, html) => '<div class="fld">\n<label for="' + id + '" style="' + LABEL_CSS + '">\n' +
+    '<input type="checkbox" id="' + id + '" name="' + name + '" value="yes" required style="' + BOX_CSS + '">\n<span>' + html + '</span>\n</label>\n</div>\n';
+
+  let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
+  body += '<div class="eyebrow">Training tools</div>\n<h1>Buy a tool</h1>\n';
+  body += '<p class="lede">Two things Coach Blake uses in sessions, built to run on the phone already in your bag. Buy one once, or spread it over up to five months. Both open in the browser: nothing to install, and nothing they measure leaves your phone.</p>\n';
+  body += '</div>\n</header>\n';
+  body += '<section class="band band-ink">\n<div class="shell">\n';
+  body += '<div class="en-intro">\n';
+  body += '<p><b>What you get.</b> A link, emailed the moment the payment clears. Open it on the phone you will use and bookmark it. There is no app store, no account and no sign in.</p>\n';
+  body += '<p><b>What it needs.</b> A phone or laptop with a modern browser, and something to stand the phone on. The Shot Form Watcher uses the camera, the Dribble Listener uses the microphone. Both do their work on the device: no video, no audio and no recording is ever uploaded.</p>\n';
+  body += '<p><b>Payment plans.</b> Pick 2, 3, 4 or 5 months and the same price is split across that many monthly payments, with nothing added for spreading it. The payments stop on their own at the end. You get everything on the first payment, which is why the plan cannot be cancelled and no payment is refundable.</p>\n';
+  body += '<p><b>Refunds.</b> There are none, on either product, on any plan. This is software you are given in full on day one. Questions before you buy: <a href="/contact">send a note</a> and Coach Blake answers himself.</p>\n';
+  body += '</div>\n';
+  body += '<form id="abForm" class="en-form" method="post" action="/api/checkout">\n';
+
+  let n = 0;
+  body += '<fieldset class="en-fs">\n' + legend(++n, 'Choose your tool');
+  body += '<div class="en-plans">\n' + Object.keys(APP_PLANS).map(card).join('') + '</div>\n</fieldset>\n';
+
+  for (const sec of APPORDER_SECTIONS) {
+    body += '<fieldset class="en-fs">\n' + legend(++n, sec.title) + '<div class="pb-form">\n' + fieldsIn(sec.id) + '</div>\n</fieldset>\n';
+  }
+
+  body += '<fieldset class="en-fs" id="abPay">\n' + legend(++n, 'Choose how to pay');
+  body += '<div class="en-pays">\n';
+  // Every app product offers every one of these, so unlike /enroll nothing here is ever
+  // hidden and there is no CSS rule standing in for JS that has not run yet.
+  for (const pay of payOptionsFor(Object.keys(APP_PLANS)[0])) {
+    body += '<label class="en-pay"><input type="radio" name="pay" value="' + pay + '"' + (pay === 'full' ? ' checked' : '') + '>' +
+      '<span class="en-pay-l">' + escapeHtml(PAY_LABELS[pay]) + '</span><span class="en-pay-a"></span></label>\n';
+  }
+  body += '</div>\n</fieldset>\n';
+
+  body += '<fieldset class="en-fs">\n' + legend(++n, 'Review and agree') + '<div class="pb-form">\n';
+  body += check('abTerms', 'terms', 'I have read what is on this page and I agree to it. I understand I will type my full name to agree again on the next page.');
+  // Its own box, not a clause inside the terms box. A payment plan you cannot cancel is the
+  // one surprising thing about this purchase, so it gets its own sentence to tick.
+  body += check('abNoRefund', 'norefund', '<b>I understand this purchase is final.</b> There are no refunds, and if I choose a payment plan every one of those payments is owed and non-refundable, whether or not I keep using the tool.');
+  body += '<p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="en-hp" id="abHp" tabindex="-1" autocomplete="off"></label></p>\n';
+  // Shipped in the page, not written by JS: a no-JS post comes back to ?err=1#enErr and
+  // #enErr:target is what unhides it. The id matches /enroll so the one CSS rule covers both.
+  body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;">That did not go through. Check the highlighted fields and try again, or <a href="/contact">send a note</a> and Coach Blake will take it from there.</p>\n';
+  body += '<button type="submit" class="btn btn-primary" style="width:100%;">Continue to Secure Checkout</button>\n';
+  body += '<p class="trust-line">You finish on Stripe\'s secure checkout page, where you tick the terms box and type your full name. Card details never touch this site.</p>\n';
+  body += '</div>\n</fieldset>\n</form>\n';
+  body += '</div>\n</section>\n</main>\n';
+
+  writeHtml(resolve(DIST, 'appbuy', 'index.html'), buildSimplePage({
+    title: 'Buy a training tool | Fast Basketball',
+    description: 'The Shot Form Watcher and the Dribble Listener: two phone tools from Fast Basketball. Buy once, or split the price over up to five months.',
+    canonicalPath: '/appbuy',
+    bodyHtml: body,
+    content,
+    prelude,
+    jsonLd: [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Buy a tool', path: '/appbuy' }])],
+    extraScripts: ['/js/appbuy.js']
+  }));
+
+  let thanks = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
+  thanks += '<div class="eyebrow">Tool purchase</div>\n<h1>Thanks.</h1>\n';
+  thanks += '<p class="lede">If the payment went through, your link is on its way to the email address you gave, along with a receipt from Stripe. Give it a few minutes and check spam before you worry.</p>\n';
+  thanks += '</div>\n</header>\n';
+  thanks += '<section class="band band-ink">\n<div class="shell">\n';
+  thanks += '<h2>What happens next</h2>\n';
+  thanks += '<p>Open the link on the phone you will use it with and bookmark it. It runs in the browser, so there is nothing to install and nothing to sign in to.</p>\n';
+  thanks += '<p>On a payment plan, you have everything from today. The rest of the payments come off the same card once a month and then stop on their own.</p>\n';
+  thanks += '<p>No email after fifteen minutes, or anything not working: <a href="/contact">send a note</a> and Coach Blake will sort it.</p>\n';
+  thanks += '<p><a href="/" class="btn btn-ghost">Back to the site</a></p>\n';
+  thanks += '</div>\n</section>\n</main>\n';
+  writeHtml(resolve(DIST, 'appbuy', 'thanks', 'index.html'), buildSimplePage({
+    title: 'Thanks | Fast Basketball',
+    description: 'Watch for the link to your tool and the receipt from Stripe.',
+    canonicalPath: '/appbuy/thanks',
+    bodyHtml: thanks,
+    content,
+    prelude,
+    robots: 'noindex, nofollow'
+  }));
+  // The shop is in the sitemap; the landing page it redirects to is not.
+  return ['/appbuy'];
 }
 
 function step11_blogIndex(content, prelude) {
@@ -1041,6 +1203,7 @@ async function main() {
   allPaths.push(...step11b_privacyPage(content, prelude));
   allPaths.push(...step11c_termsPage(content, prelude));
   allPaths.push(...step11d_enrollPages(sections, content, prelude));
+  allPaths.push(...step11e_appbuyPages(content, prelude));
   allPaths.push(...step12_canvasPages(content, responsiveManifest, prelude));
 
   const sitemap = writeSitemap(allPaths, SITE_URL);

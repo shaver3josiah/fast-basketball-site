@@ -17,6 +17,21 @@ export const RATE_ATTRIBUTED = 0.08;
 export const RATE_BASE = 0.025;
 
 /**
+ * The Developer's share of a Developer-built product sold on the site, agreed 17 September 2026.
+ *
+ * NOT IN THE SIGNED AGREEMENT. Sections 6 to 8 price FAST's own training revenue at 8% or 2.5%;
+ * the app products (see APP_PLANS in plans.mjs) are a new line of business the Developer built
+ * and FAST sells, split 50/50. That is a new commercial term and it needs writing into the
+ * agreement or a signed addendum; until it is, this constant is the only record of it, which is
+ * why it says so here. See docs/owner-open-items.md.
+ *
+ * It is a PRODUCT rate, not an attribution rate: it never stacks with 8% or 2.5%, it does not
+ * depend on how the buyer heard about FAST, and it has no 12-month window. A row priced at this
+ * rate is never an Attributed Customer and never appears in the Section 8 attribution list.
+ */
+export const RATE_APP = 0.5;
+
+/**
  * The intake answers, Schedule 1, VERBATIM.
  *
  * These strings are quoted in a signed agreement and are the primary evidence of attribution
@@ -119,15 +134,30 @@ const SCALE = 100000;
  * .5 boundary: Math.round(87.5) is 88 but Math.round(-87.5) is -87.
  */
 export function commissionCents(amountCents, earnsAttributedRate) {
+  return commissionAtRate(amountCents, rateFor(earnsAttributedRate));
+}
+
+/**
+ * The same arithmetic against a rate that is already resolved.
+ *
+ * The attributed/base pair is not the only rate any more: a Developer-built product sells at
+ * RATE_APP, which no combination of the two booleans can express. The rate is therefore an
+ * argument, and the row in the ledger stores the rate it was priced at, so a reversal can
+ * reproduce it exactly rather than re-deriving it from a customer's circumstances months later.
+ */
+export function commissionAtRate(amountCents, rate) {
   if (!Number.isSafeInteger(amountCents)) {
     throw new Error(
-      `commissionCents: amountCents must be a safe integer number of cents, got ${typeof amountCents} ${String(amountCents)}`
+      `commissionAtRate: amountCents must be a safe integer number of cents, got ${typeof amountCents} ${String(amountCents)}`
     );
   }
+  if (!Number.isFinite(rate) || rate < 0 || rate > 1) {
+    throw new Error(`commissionAtRate: rate must be a fraction between 0 and 1, got ${String(rate)}`);
+  }
   const sign = amountCents < 0 ? -1 : 1;
-  const scaled = Math.abs(amountCents) * Math.round(rateFor(earnsAttributedRate) * SCALE);
+  const scaled = Math.abs(amountCents) * Math.round(rate * SCALE);
   if (!Number.isSafeInteger(scaled)) {
-    throw new Error(`commissionCents: amountCents too large to price exactly: ${amountCents}`);
+    throw new Error(`commissionAtRate: amountCents too large to price exactly: ${amountCents}`);
   }
   const whole = Math.floor(scaled / SCALE);
   const rest = scaled % SCALE;

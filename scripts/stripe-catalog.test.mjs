@@ -18,10 +18,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { syncCatalog } from './stripe-catalog.mjs';
-import { catalog, PLANS } from '../src/lib/plans.mjs';
+import { catalog, PLANS, APP_PLANS } from '../src/lib/plans.mjs';
 
 const SPECS = catalog();
-const PLAN_COUNT = Object.keys(PLANS).length;
+// One Stripe product per catalog key, training plans and app products alike: catalog() covers
+// both, so a sync creates a product for each.
+const PLAN_COUNT = Object.keys(PLANS).length + Object.keys(APP_PLANS).length;
 
 // The slice of Stripe the script actually touches: prices.list/create/update and
 // products.search/create. Every call is recorded so the tests can assert on order and on
@@ -33,7 +35,13 @@ function makeFake({ products = [], prices = [] } = {}) {
   const api = {
     prices: {
       async list({ lookup_keys, active }) {
-        state.calls.push({ op: 'prices.list' });
+        state.calls.push({ op: 'prices.list', keys: lookup_keys.length });
+        // The real API refuses more than ten lookup keys in one call, and the catalog passed
+        // eight for a year before the /appbuy products took it to eighteen. A fake that
+        // accepts any number lets that failure reach the live account instead of the suite.
+        if (lookup_keys.length > 10) {
+          throw new Error('invalid_request_error: You can specify up to 10 lookup_keys');
+        }
         // expand: ['data.product'] means the product arrives as an object, which is how
         // the script finds a plan's product without ever storing its id.
         const data = state.prices
@@ -206,4 +214,19 @@ test('an existing product with no active price is reused rather than duplicated'
 
   assert.equal(counts.created, SPECS.length);
   assert.equal(state.products.length, PLAN_COUNT, 'products must be reused, not recreated');
+});
+
+test('lookup keys are asked for ten at a time, because Stripe refuses more', async () => {
+  // The catalog was eight keys for a year, so one prices.list call carried all of them. The
+  // /appbuy products took it to eighteen, and Stripe answers a single call of that size with
+  // invalid_request_error before touching anything: no training price could be synced either.
+  // The fake throws over ten for exactly this reason, so a revert to one call fails here rather
+  // than against the live account.
+  const { api, state } = makeFake();
+  await syncCatalog(api, { dryRun: true, log: quiet });
+
+  const lists = state.calls.filter((c) => c.op === 'prices.list');
+  assert.ok(lists.length >= Math.ceil(SPECS.length / 10), SPECS.length + ' keys need at least that many calls');
+  for (const call of lists) assert.ok(call.keys <= 10, 'a list call asked for ' + call.keys + ' lookup keys');
+  assert.equal(lists.reduce((n, c) => n + c.keys, 0), SPECS.length, 'every key is still asked for, exactly once');
 });

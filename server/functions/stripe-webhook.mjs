@@ -11,7 +11,7 @@ import Stripe from 'stripe';
 import { addLead, getLead, listLeads } from './lib/leads.mjs';
 import { sendEmail, ownerEmail, escapeHtml, recordTable } from './lib/notify.mjs';
 import { stripeClient, json } from './lib/stripe.mjs';
-import { getPlan, checkoutSpec, dollars, cancelNoticeBy, PAY_LABELS } from '../../src/lib/plans.mjs';
+import { getPlan, checkoutSpec, dollars, cancelNoticeBy, isAppPlan, leadKey, PAY_LABELS } from '../../src/lib/plans.mjs';
 import { CONTACT, absoluteUrl } from '../../src/lib/site-config.mjs';
 import { accrueFromSession, accrueFromInvoice, reverseFromCharge } from './lib/accrue.mjs';
 
@@ -60,6 +60,11 @@ export default async (request) => {
 async function onCheckoutCompleted(event) {
   const session = event.data.object;
   const meta = session.metadata || {};
+  // A tool purchase is not an enrollment and shares almost nothing with one: no term, no notice
+  // period, no schedule to wrap, and a welcome email about a first session at a gym would be
+  // nonsense to someone who just bought a $20 app. The plan key is what decides, because the
+  // catalog is the only thing that knows what a key means.
+  if (isAppPlan(meta.plan)) return onAppPaid(event);
   // A session the enroll page opened carries its registration id, and the record that page
   // wrote is completed in place: one row per family. A session Blake made in the dashboard
   // has none and gets a record of its own, keyed by the session, holding what Stripe knows.
@@ -144,6 +149,138 @@ async function onCheckoutCompleted(event) {
     console.error('[commission] accrual FAILED for ' + session.id + ', reconcile by hand: ' + err.message);
   }
   return { ok: true };
+}
+
+/**
+ * A paid tool purchase: record it, send the buyer their access link, tell Blake, accrue.
+ *
+ * The buyer email is the delivery. Nothing else in this codebase emails a customer except the
+ * playbook, and for the same reason: they paid for a thing and the thing is a link. It is sent
+ * BEFORE Blake's copy, because a buyer waiting on a $100 purchase is the one person here with
+ * nothing else to fall back on.
+ *
+ * An instalment plan unlocks on the FIRST payment, not the last. That is what a payment plan
+ * means, it is why the plan is non-refundable in writing on /appbuy and on Stripe's own consent
+ * box, and it is why the subscription schedule ends in 'cancel': the tool is already theirs, the
+ * remaining payments are just the rest of the price.
+ */
+async function onAppPaid(event) {
+  const session = event.data.object;
+  const meta = session.metadata || {};
+  // A session with no order id was made in the Stripe dashboard by hand; it still gets a row,
+  // keyed on the session. The duplicate check has to read THAT key too, or a Stripe retry of a
+  // dashboard sale would email the buyer their link a second time.
+  const storeKey = meta.registrationId ? leadKey(meta.plan, meta.registrationId) : 'apporder:session-' + session.id;
+  const seen = await getLead(storeKey);
+  // Same marker as the enrollment path: "the emails went", not "a record exists". A Stripe
+  // retry or a dashboard resend is the only second chance a failed send gets.
+  if (seen && seen.notified) return { duplicate: true };
+
+  let plan = null;
+  try {
+    plan = getPlan(meta.plan);
+  } catch (err) {
+    console.error('tool purchase ' + session.id + ' names a product not in the catalog: ' + meta.plan);
+    return { ignored: 'unknown product' };
+  }
+
+  const timestamp = new Date(event.created * 1000).toISOString();
+  const amountCents = session.amount_total ?? 0;
+  const paid = session.payment_status === 'paid' || session.payment_status === 'no_payment_required';
+  const record = {
+    ...(seen || {}),
+    type: 'apporder',
+    timestamp,
+    orderedAt: seen ? seen.timestamp : null,
+    sessionId: session.id,
+    customerId: session.customer || null,
+    subscriptionId: session.subscription || null,
+    email: session.customer_details?.email || session.customer_email || seen?.email || null,
+    phone: session.customer_details?.phone || seen?.phone || null,
+    name: seen?.name || customField(session, 'agree_name'),
+    agreeName: customField(session, 'agree_name'),
+    product: meta.plan,
+    productLabel: plan.label,
+    pay: meta.pay || '',
+    payLabel: PAY_LABELS[meta.pay] || meta.pay || '',
+    amountCents,
+    amount: dollars(amountCents),
+    months: Number(meta.months) || null,
+    priceCents: Number(meta.totalCents) || null,
+    accessUrl: absoluteUrl(plan.url),
+    paymentStatus: session.payment_status,
+    termsAccepted: session.consent?.terms_of_service === 'accepted',
+    livemode: !!event.livemode
+  };
+  await addLead(storeKey, record);
+
+  // THE PAYMENT PLAN ONLY STOPS BECAUSE OF THIS LINE. Stripe Checkout creates an OPEN-ENDED
+  // monthly subscription; spec.iterations and endBehavior 'cancel' are inert until a schedule is
+  // wrapped around it. Without this a buyer on the 5 month plan would be charged $20 a month
+  // forever, which is the exact opposite of what /appbuy promises and of what they agreed to.
+  const scheduleNote = await attachSchedule(session, meta.plan, meta.pay);
+
+  let delivered = false;
+  if (paid && record.email) {
+    delivered = await sendEmail({
+      to: record.email,
+      subject: 'Your ' + plan.label + ' is ready',
+      html: buyerHtml(record, plan)
+    });
+    if (!delivered) console.error('access email NOT sent to ' + record.email + ' for ' + storeKey + '; send the link by hand');
+  }
+
+  const sent = await sendEmail({
+    to: ownerEmail(),
+    subject: (paid ? 'Tool sold: ' : 'UNPAID tool order: ') + plan.label + ' - ' + (record.name || record.email),
+    html: '<h2>' + (paid ? 'Tool purchase' : 'Tool order recorded, payment NOT collected') + '</h2>' +
+      (paid
+        ? '<p>Access link ' + (delivered ? 'emailed to' : '<b>NOT emailed</b>, send it by hand to') + ' ' +
+          escapeHtml(record.email || 'no address on the order') + ': ' + escapeHtml(record.accessUrl) + '</p>'
+        : '<p>Stripe reports payment_status ' + escapeHtml(record.paymentStatus ?? 'unknown') +
+          ', so nothing was sent to the buyer. Check the payment in the dashboard.</p>') +
+      (record.months
+        ? '<p><b>Payment plan:</b> ' + record.amount + ' a month for ' + record.months +
+          ' months, then it stops on its own. Non-refundable, and the buyer has access from today.<br>' +
+          '<b>Installment schedule:</b> ' + escapeHtml(scheduleNote) + '</p>'
+        : '') +
+      recordTable(record)
+  });
+  // `notified` means every email this purchase owed actually went, and it is what blocks a
+  // retry. It is therefore only ever set on a PAID purchase that was actually delivered.
+  //
+  // An unpaid session is left unmarked on purpose. A subscription checkout whose first invoice
+  // fails completes as 'unpaid'; if the buyer fixes their card, the session's payment_status
+  // becomes 'paid', so Blake resending that event from the dashboard is what finally delivers
+  // the link. Marking it notified would make that resend answer `duplicate` and the buyer would
+  // never receive the thing they paid for.
+  if (paid && sent && (!record.email || delivered)) await addLead(storeKey, { ...record, notified: true });
+  else console.error('tool purchase emails incomplete for ' + storeKey + '; a Stripe resend of this event will try again');
+
+  try {
+    const accrued = await accrueFromSession(session, event);
+    if (accrued?.ok) console.log('[commission] ' + accrued.id + ' ' + accrued.commissionCents + 'c');
+  } catch (err) {
+    console.error('[commission] accrual FAILED for ' + session.id + ', reconcile by hand: ' + err.message);
+  }
+  return { ok: true, delivered };
+}
+
+function buyerHtml(record, plan) {
+  const firstName = record.name ? record.name.trim().split(/\s+/)[0] : 'there';
+  return '<p>Hi ' + escapeHtml(firstName) + ',</p>' +
+    '<p>Thanks for buying the <b>' + escapeHtml(plan.label) + '</b>. Here it is:</p>' +
+    '<p><a href="' + escapeHtml(record.accessUrl) + '">' + escapeHtml(record.accessUrl) + '</a></p>' +
+    '<p>Open that link on the phone you will use it with, and bookmark it. It runs in the browser, ' +
+    'so there is nothing to install and nothing to sign in to. Everything it measures stays on your phone.</p>' +
+    (record.months
+      ? '<p>You are on the ' + record.months + ' month plan: ' + escapeHtml(record.amount) +
+        ' a month, ' + record.months + ' times, and then it stops by itself. You have full access from today. ' +
+        'As you agreed at checkout, those payments are final and are not refundable.</p>'
+      : '<p>As you agreed at checkout, this purchase is final and is not refundable.</p>') +
+    '<p>Anything not working: reply to this email, or use the <a href="' + escapeHtml(absoluteUrl('/contact')) +
+    '">contact form</a>.</p>' +
+    '<p>Coach Blake</p>';
 }
 
 /**
@@ -252,11 +389,19 @@ function longDate(iso) {
 // is a text Blake wants to send. One that is no longer pending was paid through a later
 // session from the same tab and stays as it is.
 async function onSessionExpired(event) {
-  const id = event.data.object.metadata?.registrationId;
+  const meta = event.data.object.metadata || {};
+  const id = meta.registrationId;
   if (!id) return { ignored: 'no registration' };
-  const key = 'registration:' + id;
+  const key = leadKey(meta.plan, id);
   const reg = await getLead(key);
   if (!reg || reg.paymentStatus !== 'pending') return { ignored: 'not pending' };
+  // An abandoned tool cart is recorded and nothing else happens. The "a text from you usually
+  // finishes it" alert below is about a family who filled in a registration for their child and
+  // stopped at the card; a $20 app someone did not buy is not worth Blake's afternoon.
+  if (isAppPlan(meta.plan)) {
+    await addLead(key, { ...reg, paymentStatus: 'abandoned' });
+    return { ok: true, quiet: true };
+  }
   // ponytail: a full scan of the store, fine at this size. A parent who came back in a fresh
   // tab registered again under a new id; if that one paid, this one is not a lost family.
   const twin = (await listLeads()).find((l) => l.key !== key && l.type === 'enrollment' && l.paymentStatus === 'paid' &&
