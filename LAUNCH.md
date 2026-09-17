@@ -316,6 +316,22 @@ Google does not, so this is not a substitute for Search Console.
   changed" in the build log is the normal, healthy line.
 - A failed ping warns and leaves the run green. The site is published either way.
 
+**Who announces a change, and the one sharp edge.** `scripts/page-dates.json` is committed,
+so whichever build is the FIRST publishing build after a change is the one that sees it:
+
+- **Blake edits content and hits Publish.** The panel commits through the GitHub API, CI is
+  the first publishing build, and CI announces. Nothing to do.
+- **A developer changes something.** A local `node build.mjs --live` banks the new hashes, and
+  you commit that manifest with the change, so CI then finds nothing changed. Run
+  `npm run indexnow` from `build/site` once the Hosting workflow goes green: the local build
+  already wrote the change list, and the site is live by then.
+
+Only a publishing build writes either file: `--live` or `SITE_ENV=production`. A plain
+`npm run build` and the dev server's rebuilds leave both alone, which they did not at first, and
+that was a real bug: the dev server spawns a bare `node build.mjs`, inherits the live domain as
+`SITE_URL`, and was banking hashes on every file save, so an edit could be marked "already seen"
+by a rebuild that deployed nothing.
+
 **One command you may want by hand: `npm run indexnow -- --all`.** It submits every URL in
 the *live* sitemap, for seeding an index that has never seen the site or re-seeding one that
 lost it. It reads the deployed sitemap, not the local build, so it cannot announce a page

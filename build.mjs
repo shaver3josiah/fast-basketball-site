@@ -1062,13 +1062,26 @@ async function main() {
   // change then goes out with a stale lastmod and is never announced. Three attempts at
   // placing this higher each reproduced exactly that.
   //
-  // The manifest describes the LIVE site, so only a live-host build may write it: the
-  // canonical URL sits inside every page, so a build for the web.app address or a preview
-  // channel hashes differently, and letting one of those record its hashes would make the
-  // next live build see all 15 pages as changed.
-  const liveHost = sitemap.host === INDEXNOW_HOST;
+  // The manifest is a record of what has been PUBLISHED, so two things must both hold.
+  //
+  // Live host: the canonical URL sits inside every page, so a build for the web.app address
+  // or a preview channel hashes differently, and letting one of those record its hashes
+  // would make the next live build see all 15 pages as changed.
+  //
+  // And a build actually meant for publishing. `scripts/dev-server.mjs` spawns a plain
+  // `node build.mjs` with no env of its own, so it inherits the real domain as SITE_URL and
+  // was silently banking hashes on every file save: a genuine edit got marked "already seen"
+  // by a rebuild that deployed nothing, and the next real deploy then announced nothing and
+  // shipped a stale lastmod. Caught exactly that way, by an alt-text edit that reported
+  // itself as no change. CI passes SITE_ENV=production and every deploy script passes
+  // --live; a hand-run `npm run build` is not a publish and no longer counts as one.
+  const publishing = LIVE_BUILD || process.env.SITE_ENV === 'production';
+  const liveHost = sitemap.host === INDEXNOW_HOST && publishing;
   if (liveHost) writeFileSync(DATES_FILE, JSON.stringify(sitemap.manifest, null, 2) + '\n');
-  writeFileSync(QUEUE_FILE, JSON.stringify({ host: sitemap.host, urls: sitemap.changed }, null, 2) + '\n');
+  // Conditional for the same reason as the manifest, and it was the same footgun: a plain
+  // `npm run build` used to overwrite this with an empty list, so the record of what a
+  // publishing build had found was destroyed by the next casual rebuild.
+  if (liveHost) writeFileSync(QUEUE_FILE, JSON.stringify({ host: sitemap.host, urls: sitemap.changed }, null, 2) + '\n');
   if (liveHost) {
     console.log('IndexNow queue: ' + sitemap.changed.length + ' of ' + allPaths.length + ' page(s) changed.');
   }
