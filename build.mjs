@@ -9,8 +9,8 @@ import { renderLockerPage } from './src/lib/locker-page.mjs';
 import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
 import { renderCoachPage } from './src/lib/coach-page.mjs';
-import { breadcrumbList, trainingService } from './src/lib/structured-data.mjs';
-import { SITE_URL, CONTACT, OFFERS } from './src/lib/site-config.mjs';
+import { breadcrumbList } from './src/lib/structured-data.mjs';
+import { SITE_URL, CONTACT } from './src/lib/site-config.mjs';
 import { PLANS, APP_PLANS, PAY_OPTIONS, PAY_LABELS, getPlan, payOptionsFor, checkoutSpec, totalCents, dollars } from './src/lib/plans.mjs';
 import { FIELDS as REGISTRATION_FIELDS, SECTIONS as REGISTRATION_SECTIONS } from './src/lib/registration.mjs';
 import { FIELDS as APPORDER_FIELDS, SECTIONS as APPORDER_SECTIONS } from './src/lib/apporder.mjs';
@@ -331,13 +331,7 @@ function step8_trainingPages(content, prelude) {
     // See the note above venuesProse in src/lib/suburb-copy.mjs.
     body += '<p>Every session runs at the Salvation Army Fort Lauderdale Corps gym, 100 SW 9th Ave, and families drive in from Miami, Hollywood and north Broward. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
     body += '</div>\n</section>\n</main>\n';
-    // OFFERS only lists the group membership's published price; matching by path (not array
-    // index) means evaluation and private correctly get no offer instead of an invented one.
-    const offer = OFFERS.find((o) => o.path === canonicalPath);
-    const jsonLd = [
-      breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }]),
-      trainingService({ name: page.label, description: page.description, path: canonicalPath, offer })
-    ];
+    const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }])];
     const html = buildSimplePage({
       title: page.title,
       description: page.description || content.text[page.textKey],
@@ -997,14 +991,10 @@ function step11_blogIndex(content, prelude) {
     canonicalPath: '/blog/',
     bodyHtml: body,
     content,
-    prelude,
-    // Nothing is published here yet, so this stays out of search rather than being indexed,
-    // or flagged thin, for an empty placeholder. Revert to index, follow and restore the
-    // sitemap entry below the day a real post ships.
-    robots: 'noindex, follow'
+    prelude
   });
   writeHtml(resolve(DIST, 'blog', 'index.html'), html);
-  return []; // noindex: not in the sitemap
+  return ['/blog/'];
 }
 
 // Canvas pages: the free-positioning half of the site, compiled from src/data/site.json.
