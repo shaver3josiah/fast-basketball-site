@@ -15,7 +15,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { checkoutSpec } from '../../../src/lib/plans.mjs';
-import { sampleRegistration } from '../../../src/lib/registration.mjs';
+import { sampleRegistration, FIELDS as REGISTRATION_FIELDS } from '../../../src/lib/registration.mjs';
+import { couponCoversPlan } from '../lib/stripe.mjs';
 
 process.chdir(fs.mkdtempSync(path.join(os.tmpdir(), 'fb-checkout-')));
 const { default: handler, sessionParams, registrationRecord } = await import('../checkout.mjs');
@@ -271,4 +272,86 @@ test('a campaign tag is not a typed answer and cannot overwrite one', async () =
   const row = records().filter((r) => r.type === 'enrollment').pop();
   assert.equal(row.hearAbout, 'Friend, family, or referral', 'the answer is the parent\'s, untouched');
   assert.equal(row.campaign, undefined);
+});
+
+// ---------------------------------------------------------------- the coupon box
+//
+// A code the parent types on /enroll. The string itself lives only in Stripe, so nothing here
+// knows what any real coupon is called; what these pin is the shape of the request, the bound
+// on what can be stored, and the one rule this repo does enforce, which is which plans a
+// coupon covers. Stripe's own applies_to[products] is silently dropped on this account, so
+// couponCoversPlan is the only thing between a $25 off evaluation code and a $450 membership.
+
+test('sessionParams attaches a discount only when a promotion code was resolved', () => {
+  const spec = checkoutSpec('eval', 'full');
+  const base = { email: 'parent@example.com', priceId: 'price_123', siteUrl: SITE, nowSeconds: NOW };
+
+  const none = sessionParams(spec, base);
+  assert.equal(none.discounts, undefined, 'no coupon, no discounts array: an empty one is not the same thing');
+
+  const withCode = sessionParams(spec, { ...base, promotionCodeId: 'promo_abc' });
+  assert.deepEqual(withCode.discounts, [{ promotion_code: 'promo_abc' }]);
+  // The amount is never ours to send. Everything else about the session is unchanged.
+  assert.equal(withCode.line_items[0].price, 'price_123');
+  assert.equal(withCode.mode, 'payment');
+  assert.equal(JSON.stringify(withCode.discounts).includes('amount'), false, 'no amount travels with a discount');
+});
+
+test('couponCoversPlan: no metadata is unrestricted, a list is a list', () => {
+  const promo = (plans) => ({ promotion: { type: 'coupon', coupon: { metadata: plans === null ? {} : { plans } } } });
+
+  assert.equal(couponCoversPlan(promo(null), 'group-3m-1x'), true, 'an unrestricted coupon covers everything');
+  assert.equal(couponCoversPlan(promo(''), 'group-3m-1x'), true, 'so does a blank one');
+  assert.equal(couponCoversPlan(promo('   '), 'group-3m-1x'), true);
+  assert.equal(couponCoversPlan(promo('eval,eval-call'), 'eval'), true);
+  assert.equal(couponCoversPlan(promo('eval,eval-call'), 'eval-call'), true);
+  assert.equal(couponCoversPlan(promo('eval, eval-call'), 'eval-call'), true, 'spaces around a comma are a human typing');
+  assert.equal(couponCoversPlan(promo('eval,eval-call'), 'group-3m-1x'), false, 'the whole point');
+  assert.equal(couponCoversPlan(promo('eval,eval-call'), 'shotform'), false, 'and it holds for the tool products too');
+  // No partial matches: a list of 'eval' must not cover 'eval-call', which is a different price.
+  assert.equal(couponCoversPlan(promo('eval'), 'eval-call'), false);
+  // An unexpanded coupon is a bare id string with no metadata to read. Treat it as unrestricted
+  // rather than throwing: promotionCodeByCode always expands, and a crash on the money path is
+  // a worse failure than a discount Stripe was going to allow anyway.
+  assert.equal(couponCoversPlan({ promotion: { type: 'coupon', coupon: 'priority25' } }, 'eval'), true);
+  assert.equal(couponCoversPlan(null, 'eval'), true);
+});
+
+test('a coupon is stored as typed, and is not a registration answer', async () => {
+  clearRecords();
+  const res = await handler(post({ ...sampleRegistration(), plan: 'eval', pay: 'full', coupon: '  PRIORITY25  ' }), CTX);
+  assert.equal(res.status, 503, 'no Stripe key in this test, so it stops after the record is written');
+  const row = records().filter((r) => r.type === 'enrollment').pop();
+  assert.equal(row.coupon, 'PRIORITY25', 'trimmed, and stored as the parent typed it');
+  // It must not ride in through `values`: FIELDS drives that object, and the CSV mirrors it.
+  assert.equal(REGISTRATION_FIELDS.some((f) => f.key === 'coupon'), false, 'not a FIELDS answer');
+});
+
+test('no coupon means no coupon key on the record', async () => {
+  clearRecords();
+  for (const body of [{}, { coupon: '' }, { coupon: '   ' }, { coupon: 42 }]) {
+    const res = await handler(post({ ...sampleRegistration(), plan: 'eval', pay: 'full', ...body }), CTX);
+    assert.equal(res.status, 503);
+    assert.equal(records().pop().coupon, undefined, 'nothing stored for ' + JSON.stringify(body));
+    clearRecords();
+  }
+});
+
+test('an absurd coupon is refused before anything is stored', async () => {
+  clearRecords();
+  const res = await handler(post({ ...sampleRegistration(), plan: 'eval', pay: 'full', coupon: 'x'.repeat(65) }), CTX);
+  assert.equal(res.status, 422);
+  const out = await res.json();
+  assert.ok(out.errors.coupon, 'keyed on the field, so enroll.js marks the box');
+  assert.equal(records().length, 0, 'refused with the rest of the validation, before the write');
+});
+
+// The no-JS path parses the body in its own branch, and this form's no-JS path has been dead
+// before (the signature pad killed it for a while), so the coupon is pinned there too.
+test('a coupon survives the JavaScript-off form post', async () => {
+  clearRecords();
+  const form = new URLSearchParams({ ...sampleRegistration(), plan: 'eval', pay: 'full', coupon: 'PRIORITY25', reviewed: 'yes', terms: 'yes' });
+  const res = await handler(post(form.toString(), 'application/x-www-form-urlencoded'), CTX);
+  assert.equal(res.status, 303, 'no Stripe key, so it lands on the thanks page rather than an error');
+  assert.equal(records().pop().coupon, 'PRIORITY25');
 });

@@ -18,10 +18,17 @@ import { SITE_URL, absoluteUrl } from '../../src/lib/site-config.mjs';
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
 import { addLead, getLead } from './lib/leads.mjs';
 import { sendEmail, ownerEmail, escapeHtml, recordTable } from './lib/notify.mjs';
-import { stripeClient, priceByLookupKey, json } from './lib/stripe.mjs';
+import { stripeClient, priceByLookupKey, promotionCodeByCode, couponCoversPlan, json } from './lib/stripe.mjs';
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
+// One message for every way a coupon can fail: unknown, mistyped, expired, spent, not for this
+// plan, or refused by Stripe at the last moment. It is true of all of them, and it names the
+// action that always works, so a code Stripe will not take is never a dead end at the till.
+const COUPON_BAD = 'That coupon could not be applied. Check the code, or clear the box to continue without it.';
+// Stripe caps a promotion code well under this. The bound is here so an absurd string is
+// refused before it is stored, not so a real code is ever near it.
+const COUPON_MAX_CHARS = 64;
 // Stripe caps expires_at at 24 hours after the session's own created time, so an hour of
 // slack keeps our clock running slightly ahead of theirs from failing every checkout.
 const SESSION_TTL_SECONDS = 23 * 60 * 60;
@@ -42,7 +49,7 @@ function backToForm(body) {
 
 // Pure so the parameter shape is testable without a Stripe account. siteUrl is a
 // parameter for the same reason; the handler passes SITE_URL from site-config.
-export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds, registrationId }) {
+export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds, registrationId, promotionCodeId }) {
   const abs = (path) => siteUrl.replace(/\/$/, '') + path;
   // The registration id rides on the session so the webhook can find the record it belongs
   // to, and on the dashboard's reference field so Blake can too.
@@ -77,6 +84,12 @@ export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds, regis
     expires_at: nowSeconds + SESSION_TTL_SECONDS
   };
   if (registrationId) params.client_reference_id = registrationId;
+  // A coupon the buyer typed, already resolved to a promotion code Stripe will honour and
+  // already checked against this plan. The amount is Stripe's: the discount lives on the coupon
+  // object, so nothing here and nothing the client sent decides how much comes off. Absent
+  // unless a code was used, because `discounts` and allow_promotion_codes are exclusive and an
+  // empty array is not the same as no array.
+  if (promotionCodeId) params.discounts = [{ promotion_code: promotionCodeId }];
   // Metadata is copied onto the object the webhook and the dashboard actually look at:
   // the subscription for installment plans, the PaymentIntent for one-off payments.
   // customer_creation is a payment-mode-only parameter; subscriptions always make one.
@@ -194,6 +207,13 @@ export default async (request, context) => {
   if (!allowed) return fail(429, { error: 'too many requests, try again later' });
 
   const { errors, values } = isApp ? validateAppOrder(body) : validateRegistration(body);
+  // The typed coupon code. Deliberately NOT a FIELDS answer, the same call as the campaign tag
+  // below: it is an instruction about the payment, not something the registration asks about
+  // the athlete, so it never enters `values`, never reaches validateRegistration and never
+  // lands in the admin CSV's registration columns. Whether it means anything is decided
+  // against Stripe further down, never here and never on the page.
+  const coupon = typeof body.coupon === 'string' ? body.coupon.trim() : '';
+  if (coupon.length > COUPON_MAX_CHARS) errors.coupon = COUPON_BAD;
   let spec = null;
   try {
     spec = checkoutSpec(body.plan, body.pay);
@@ -233,6 +253,11 @@ export default async (request, context) => {
   // put a campaign name on a row it can never have priced.
   const campaign = isApp ? null : approvedCampaign(body.campaign);
   if (campaign) record.campaign = campaign;
+  // Stored as typed, before Stripe has been asked whether it is real, so the record and the
+  // email Blake gets say what the family entered. What the card is actually charged is not
+  // this number and never was: the webhook writes amount_total over it once Stripe reports
+  // the money, which is the only figure that is ever true.
+  if (coupon) record.coupon = coupon;
   try {
     await addLead(leadKey(spec.plan, id), record);
   } catch (err) {
@@ -257,11 +282,28 @@ export default async (request, context) => {
       console.error('no active Stripe price for ' + spec.lookupKey + ': scripts/stripe-catalog.mjs has not been run for this mode (test or live)');
       return isForm ? redirect(thanksPath) : json(503, { error: 'price not configured: ' + spec.lookupKey, registrationId: id });
     }
+    // A code the buyer typed, resolved against Stripe and checked against this plan. Both
+    // halves matter: the first says the code exists and is live, the second says it is meant
+    // for what they are buying, which Stripe's own applies_to cannot do here (see
+    // couponCoversPlan). Everything about the discount itself stays Stripe's.
+    let promotionCodeId = null;
+    if (coupon) {
+      const promo = await promotionCodeByCode(stripe, coupon);
+      if (!promo || !couponCoversPlan(promo, spec.plan)) {
+        return fail(422, { error: COUPON_BAD, errors: { coupon: COUPON_BAD }, registrationId: id });
+      }
+      promotionCodeId = promo.id;
+    }
     session = await stripe.checkout.sessions.create(sessionParams(spec, {
-      email: values.email, priceId: price.id, siteUrl: SITE_URL, nowSeconds: Math.floor(Date.now() / 1000), registrationId: id
+      email: values.email, priceId: price.id, siteUrl: SITE_URL, nowSeconds: Math.floor(Date.now() / 1000), registrationId: id, promotionCodeId
     }));
   } catch (err) {
     console.error('stripe checkout failed: ' + err.message);
+    // With a coupon in play the honest answer is "that coupon could not be applied", and it
+    // stays honest if the real cause was Stripe: clearing the box is the one action that could
+    // help, and a genuine outage fails the same way on the retry without it. Without a coupon
+    // there is nothing the parent can fix, so it is still an outage.
+    if (coupon) return fail(422, { error: COUPON_BAD, errors: { coupon: COUPON_BAD }, registrationId: id });
     return fail(502, { error: 'checkout unavailable', registrationId: id });
   }
 
@@ -277,7 +319,11 @@ async function notifyRegistration(record, reused) {
     subject: (reused ? 'Updated registration' : 'New registration') + ', payment pending: ' + record.playerName + ' (' + record.planLabel + ')',
     html: '<h2>' + (reused ? 'Registration updated' : 'New registration') + '</h2>' +
       '<p>' + escapeHtml(record.name) + ' registered ' + escapeHtml(record.playerName) + ' and is on the way to Stripe to pay ' +
-      escapeHtml(record.amount) + (record.pay === 'monthly' ? ' a month' : '') + '. The spot is not reserved until the enrollment email arrives.</p>' +
+      escapeHtml(record.amount) + (record.pay === 'monthly' ? ' a month' : '') +
+      // The published price, which is not what the card is charged when a coupon holds. Say so
+      // here rather than let the enrollment email arrive for a different figure and look wrong.
+      (record.coupon ? ', less coupon <b>' + escapeHtml(record.coupon) + '</b> if Stripe accepts it' : '') +
+      '. The spot is not reserved until the enrollment email arrives.</p>' +
       recordTable(record)
   });
   if (!sent) console.error('registration email not sent for ' + record.registrationId + '; the record is saved');

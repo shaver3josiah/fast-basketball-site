@@ -9,8 +9,8 @@ import { renderLockerPage } from './src/lib/locker-page.mjs';
 import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
 import { renderCoachPage } from './src/lib/coach-page.mjs';
-import { breadcrumbList } from './src/lib/structured-data.mjs';
-import { SITE_URL, CONTACT } from './src/lib/site-config.mjs';
+import { breadcrumbList, trainingService } from './src/lib/structured-data.mjs';
+import { SITE_URL, CONTACT, OFFERS } from './src/lib/site-config.mjs';
 import { PLANS, APP_PLANS, PAY_OPTIONS, PAY_LABELS, getPlan, payOptionsFor, checkoutSpec, totalCents, dollars } from './src/lib/plans.mjs';
 import { FIELDS as REGISTRATION_FIELDS, SECTIONS as REGISTRATION_SECTIONS } from './src/lib/registration.mjs';
 import { FIELDS as APPORDER_FIELDS, SECTIONS as APPORDER_SECTIONS } from './src/lib/apporder.mjs';
@@ -331,7 +331,13 @@ function step8_trainingPages(content, prelude) {
     // See the note above venuesProse in src/lib/suburb-copy.mjs.
     body += '<p>Every session runs at the Salvation Army Fort Lauderdale Corps gym, 100 SW 9th Ave, and families drive in from Miami, Hollywood and north Broward. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
     body += '</div>\n</section>\n</main>\n';
-    const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }])];
+    // OFFERS only lists the group membership's published price; matching by path (not array
+    // index) means evaluation and private correctly get no offer instead of an invented one.
+    const offer = OFFERS.find((o) => o.path === canonicalPath);
+    const jsonLd = [
+      breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }]),
+      trainingService({ name: page.label, description: page.description, path: canonicalPath, offer })
+    ];
     const html = buildSimplePage({
       title: page.title,
       description: page.description || content.text[page.textKey],
@@ -771,6 +777,14 @@ function step11d_enrollPages(sections, content, prelude) {
   body += '</div>\n</fieldset>\n';
 
   body += '<fieldset class="en-fs">\n' + legend(++n, 'Review and agree') + '<div class="pb-form">\n';
+  // Coupon code. Hand-rendered through field() rather than added to REGISTRATION_FIELDS, the
+  // same call as the two agreement boxes: it is an instruction about the payment, not a
+  // question about the athlete, so it stays out of validateRegistration's values, out of the
+  // admin CSV's registration columns and off the privacy page's list of what the form asks.
+  // It cannot go in the "how to pay" fieldset: enroll.js hides that whole fieldset whenever a
+  // plan prices only one option, which is every evaluation, and an evaluation is exactly what
+  // a coupon is for. Whether a code is real is Stripe's answer, asked by checkout.mjs.
+  body += field({ key: 'coupon', label: 'Coupon code', type: 'text', autocomplete: 'off', placeholder: 'Only if Coach Blake gave you one' });
   body += fieldsIn('agreement');
   body += check('enReviewed', 'reviewed', 'I am this athlete\'s parent or guardian. The details above are correct, and I have read the <a href="/terms">player and parent expectations</a>.');
   // A drawn signature pad sat here until September 2026. It is gone on purpose: the training
@@ -983,10 +997,14 @@ function step11_blogIndex(content, prelude) {
     canonicalPath: '/blog/',
     bodyHtml: body,
     content,
-    prelude
+    prelude,
+    // Nothing is published here yet, so this stays out of search rather than being indexed,
+    // or flagged thin, for an empty placeholder. Revert to index, follow and restore the
+    // sitemap entry below the day a real post ships.
+    robots: 'noindex, follow'
   });
   writeHtml(resolve(DIST, 'blog', 'index.html'), html);
-  return ['/blog/'];
+  return []; // noindex: not in the sitemap
 }
 
 // Canvas pages: the free-positioning half of the site, compiled from src/data/site.json.
