@@ -459,7 +459,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<p>Buying one of the training tools asks for much less, because it is software rather than a place on a court: your name, your email, optionally a phone number, a home city and the athlete\'s name, which of the four "you are" answers fits you, anything you typed in the comments box, which tool you bought, how you chose to pay, and a record that you ticked the two boxes. Your email is where the link is sent, so it is the one thing the purchase cannot work without. No date of birth, no school, and no insurance details: nothing about selling a phone tool needs them.</p>\n';
   body += '<p>The tools themselves send us nothing at all. The Shot Form Watcher uses your camera and the Dribble Listener uses your microphone, and both do their work inside the browser on your own device. No video, no audio and no recording is uploaded anywhere, to us or to anyone else, and neither tool has a login.</p>\n';
   body += '<p>The enrollment form and the contact form both ask how you heard about us. We keep your answer on your record. It changes nothing about what you pay or what your athlete receives: it tells Coach Blake which of his efforts are reaching families, and it sets the fee the person who built this site is paid out of Coach Blake\'s own share rather than out of anything you pay. If you would rather not say, pick "Other" and leave the box blank.</p>\n';
-  body += '<p>One thing gets recorded that you did not type: a playbook request is saved along with the internet address it came from, which is how we stop the form being hammered by a bot. Netlify, which hosts the site, also keeps its own standard server logs, the way every web host does.</p>\n';
+  body += '<p>One thing gets recorded that you did not type: a playbook request is saved along with the internet address it came from, which is how we stop the form being hammered by a bot. Google, which hosts the site, also keeps its own standard server logs, the way every web host does.</p>\n';
 
   body += '<h2>What we do with it</h2>\n';
   body += '<p>We use it to reply with open slots, send the playbook or resource you requested, and follow up once. That is the whole list. We do not sell it, rent it, or hand it to anyone else, and we do not add you to anything you did not ask for.</p>\n';
@@ -471,13 +471,37 @@ function step11b_privacyPage(content, prelude) {
   // the route now, and contact.mjs hands the address back to whoever sends it.
   body += '<p>If you think your under-13 child submitted something here, <a href="/contact">send us a note</a> with the email address they used. We will find it, delete it, and write back to confirm it is gone. No reason needed, and nothing you have to explain.</p>\n';
 
-  body += '<h2>Who else touches it</h2>\n';
-  body += '<p>Two companies, and only because the site cannot work without them.</p>\n';
+  // THE APP SECTION. Until September 2026 this page covered the website only, while
+  // the App Store and Play listings both pointed their privacy policy link here. Apple
+  // requires the linked policy to say what the APP collects, and Play requires the Data
+  // safety answers in the console to match it, so a website-only policy is a rejection
+  // on both stores and a Data-safety mismatch on one. Everything below is checked
+  // against firebase/firestore.rules and src/types.ts in the app repo; if a field is
+  // added there it belongs here too.
+  body += '<h2>The Fast Basketball app</h2>\n';
+  body += '<p>Coach Blake\'s families use an app on their phones for messages, schedules and training. It is invitation only: Coach Blake creates a record for an athlete naming a parent\'s email address, and an account sees nothing at all until a verified address matches one. There is no public sign-up, no profiles to browse, no search, and no way for one family to reach another.</p>\n';
+  body += '<p>What the app holds:</p>\n';
   body += '<ul class="prog-list">\n';
-  body += '<li><b>Netlify</b> hosts this site, receives what the contact, playbook and enrollment forms send, and stores playbook requests and enrollment records where Coach Blake can read them.</li>\n';
-  body += '<li><b>Resend</b> sends the playbook email to you, and sends each enrollment and enquiry to Coach Blake. It gets the email address you gave and the message itself. Nothing else.</li>\n';
+  body += '<li><b>Your account.</b> The email address and password you sign in with, and whether that address has been confirmed. Google\'s Firebase Authentication holds these, and we never see your password.</li>\n';
+  body += '<li><b>The athlete and the guardian.</b> The athlete\'s name and age and the guardian\'s name, typed in by Coach Blake when he sets the family up, plus the email addresses he invited.</li>\n';
+  body += '<li><b>Consent.</b> Whether the guardian has allowed her athlete to send messages, and when she granted it.</li>\n';
+  body += '<li><b>Messages.</b> What is typed in a conversation, who sent it and when. A guardian can read every message between Coach Blake and her athlete, permanently. Nobody can edit or delete a message once it is sent, Coach Blake included, because those messages are the record that protects the child.</li>\n';
+  body += '<li><b>Training.</b> Scheduled sessions with their date, place and notes; the workouts Coach Blake publishes; the answers an athlete types into a worksheet; and how many minutes they actually trained.</li>\n';
+  body += '<li><b>Small preferences.</b> A display name, a chosen chat colour, which conversations you muted, and a streak counting the days in a row the app was opened.</li>\n';
   body += '</ul>\n';
-  body += '<p>That is the complete list. No mailing list tool, no advertising platform, no data broker, nobody else in the middle.</p>\n';
+  body += '<p>Reminders are set by your own phone\'s clock. There is no notification server, and the app has no token that would let anyone send you something you did not schedule yourself.</p>\n';
+  body += '<p>Two optional training tools use the camera and the microphone. Shot Form watches a shooting motion and the Dribble Counter listens for a bouncing ball, and both do that work on the phone itself. No photo, no video and no audio is ever recorded or sent anywhere. The Dribble Counter does save the number of bounces it counted, and a short list of numbers describing the sound of your ball so it recognises the same ball next time, onto the athlete\'s own training record when they press Save.</p>\n';
+  body += '<p>Athletes under 13 are given no login. Those families use the parent\'s account, and the app is rated for 13 and over for that reason.</p>\n';
+  body += '<p><b>Deleting an app account.</b> Open the You tab, then Account, then Delete my account. That removes your login and that account\'s own settings. If you would rather not do it in the app, or you have already uninstalled it, <a href="/contact">send us a note</a> and we will delete it for you and write back to confirm. Messages stay, and the deletion screen says so before you confirm: they are the safety record a guardian is promised, and no one party to a conversation gets to erase it for the others.</p>\n';
+
+  body += '<h2>Who else touches it</h2>\n';
+  body += '<p>Three companies, and only because none of this works without them.</p>\n';
+  body += '<ul class="prog-list">\n';
+  body += '<li><b>Google</b> hosts this site and runs the app. Firebase Hosting serves the pages, Cloud Firestore stores playbook requests, enrollment records and everything in the app, and Firebase Authentication holds app account emails and passwords. Google is where the data physically lives.</li>\n';
+  body += '<li><b>Resend</b> sends the playbook email to you, and sends each enrollment and enquiry to Coach Blake. It gets the email address you gave and the message itself. Nothing else.</li>\n';
+  body += '<li><b>Stripe</b> takes payment on its own checkout pages. It gets what it needs to charge a card, under <a href="https://stripe.com/privacy">Stripe\'s privacy policy</a>. This site never sees a card number.</li>\n';
+  body += '</ul>\n';
+  body += '<p>That is the complete list. No mailing list tool, no advertising platform, no analytics service, no data broker, nobody else in the middle.</p>\n';
 
   body += '<h2>What stays on your own device</h2>\n';
   body += '<p>A few small things your browser keeps for you. None of them are sent anywhere.</p>\n';
@@ -489,7 +513,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<li>The same for the tool purchase form, and for the same reason. It clears when you close the tab.</li>\n';
   body += '<li>A note that you have already seen the opening animation, so it does not replay on every page. That clears when you close the tab too.</li>\n';
   body += '</ul>\n';
-  body += '<p>There is no analytics on this site, no advertising pixel, no session recording and no third-party script of any kind. Every script and font a page here loads is served from this site. Clearing your browser storage removes everything in that list.</p>\n';
+  body += '<p>There is no analytics on this site, no advertising pixel and no session recording. Every page except one serves its scripts and fonts from this site. The exception is the Shot Form Watcher, which downloads a pose-detection library and its model from Google and jsDelivr the first time you open it, because that is how the tool sees a shooting motion at all. It still does the watching on your own device, and nothing it sees goes anywhere. Clearing your browser storage removes everything in that list.</p>\n';
 
   body += '<h2>Paying online</h2>\n';
   body += '<p>Payments happen on Stripe\'s own checkout pages, not here. This site never sees a card number. Stripe keeps what it needs to process the payment, under <a href="https://stripe.com/privacy">Stripe\'s privacy policy</a>. We keep the enrollment record itself: everything the enrollment form asked, the plan, whether Stripe reports it paid, and the dates. That is what running your player\'s sessions takes, for the reasons above.</p>\n';
@@ -499,6 +523,7 @@ function step11b_privacyPage(content, prelude) {
 
   body += '<h2>Want it gone?</h2>\n';
   body += '<p><a href="/contact">Send us a note</a> and we delete what we hold on you. One message, done, no reason owed. You can also just ask what is on file and we will tell you.</p>\n';
+  body += '<p>One carve-out, and the app says the same thing on the screen before you confirm: messages between Coach Blake and an athlete stay. They are the record a guardian is promised when she lets her child be coached, and a record one party can delete is not a safeguard. Everything else, including your login, goes.</p>\n';
 
   body += '<h2>If this page changes</h2>\n';
   body += '<p>The date at the top changes with it. This version is in effect as of ' + LEGAL_EFFECTIVE + '.</p>\n';
