@@ -14,6 +14,7 @@ import { stripeClient, json } from './lib/stripe.mjs';
 import { getPlan, checkoutSpec, dollars, cancelNoticeBy, isAppPlan, leadKey, PAY_LABELS } from '../../src/lib/plans.mjs';
 import { CONTACT, absoluteUrl } from '../../src/lib/site-config.mjs';
 import { accrueFromSession, accrueFromInvoice, reverseFromCharge } from './lib/accrue.mjs';
+import { getDeal, putDeal, expireDealSessions } from './lib/deals.mjs';
 
 export default async (request) => {
   if (request.method !== 'POST') return json(405, { error: 'method not allowed' });
@@ -73,6 +74,11 @@ async function onCheckoutCompleted(event) {
   // The marker is "Blake was told", not "a record exists". A retry or a dashboard resend is
   // the only second chance the owner email gets; skipping on the record alone spent that
   // chance on the run where the send failed.
+  // One family per deal link. Marked the moment a session COMPLETES, paid or not (a delayed payment
+  // method completes as 'unpaid' and pays later), and BEFORE the duplicate check, so a resend still
+  // closes it. Uncaught on purpose: a failed write 500s and Stripe retries, rather than leaving the
+  // link reusable.
+  if (meta.deal) await markDealUsed(meta.deal, session, regId);
   const seen = await getLead(key);
   if (seen && seen.notified) return { duplicate: true };
   const reg = regId && seen ? seen : null;
@@ -82,10 +88,15 @@ async function onCheckoutCompleted(event) {
   const plan = meta.plan || '';
   const pay = meta.pay || '';
   let planLabel = plan;
-  try {
-    planLabel = getPlan(plan).label;
-  } catch (err) {
-    console.error('enrollment ' + session.id + ' has a plan not in the catalog: ' + plan);
+  // A deal is Blake's own price for one family and is not in the catalog by design: its label
+  // is the deal title, carried on the registration row checkout wrote.
+  if (plan === 'deal') planLabel = reg?.planLabel || 'Deal ' + (meta.deal || '');
+  else {
+    try {
+      planLabel = getPlan(plan).label;
+    } catch (err) {
+      console.error('enrollment ' + session.id + ' has a plan not in the catalog: ' + plan);
+    }
   }
   const months = Number(meta.months) || null;
   const noticeDays = Number(meta.noticeDays) || null;
@@ -114,6 +125,7 @@ async function onCheckoutCompleted(event) {
     amount: dollars(amountCents),
     months,
     termTotalCents: Number(meta.totalCents) || null,
+    ...(meta.deal ? { deal: meta.deal, payments: Number(meta.payments) || null } : {}),
     noticeDays,
     startDate: timestamp.slice(0, 10),
     cancelNoticeBy: months ? cancelNoticeBy(timestamp, months, noticeDays) : null,
@@ -123,7 +135,7 @@ async function onCheckoutCompleted(event) {
   };
   await addLead(key, record);
 
-  const scheduleNote = await attachSchedule(session, plan, pay);
+  const scheduleNote = await attachSchedule(session, plan, pay, meta);
 
   // Stripe completes the session before the money lands: a card that attaches but fails its
   // first invoice arrives here as 'unpaid'. Record it either way, but never hand Blake a
@@ -218,7 +230,7 @@ async function onAppPaid(event) {
   // monthly subscription; spec.iterations and endBehavior 'cancel' are inert until a schedule is
   // wrapped around it. Without this a buyer on the 5 month plan would be charged $20 a month
   // forever, which is the exact opposite of what /appbuy promises and of what they agreed to.
-  const scheduleNote = await attachSchedule(session, meta.plan, meta.pay);
+  const scheduleNote = await attachSchedule(session, meta.plan, meta.pay, meta);
 
   let delivered = false;
   if (paid && record.email) {
@@ -308,13 +320,22 @@ function customField(session, key) {
 // Checkout creates an open-ended subscription. A monthly plan has a fixed number of term
 // payments, so a schedule is wrapped around the subscription and released to run on month
 // to month after that many. Returns one line for the owner email; never throws.
-async function attachSchedule(session, plan, pay) {
+async function attachSchedule(session, plan, pay, meta = {}) {
   if (session.mode !== 'subscription' || !session.subscription) return 'not needed, one payment';
   let spec;
-  try {
-    spec = checkoutSpec(plan, pay);
-  } catch (err) {
-    return 'not attached, ' + err.message;
+  // A deal's payment plan is not in the catalog. Its count rides in the session metadata, which
+  // checkout.mjs wrote from the stored deal, and it ENDS after that many: without this the
+  // subscription Checkout created would bill the family every month forever.
+  if (plan === 'deal') {
+    const n = Number(meta.payments);
+    if (!Number.isInteger(n) || n < 2) return 'NOT ATTACHED, the deal session carries no payment count. Fix in the Stripe dashboard: subscription ' + session.subscription;
+    spec = { iterations: n, endBehavior: 'cancel' };
+  } else {
+    try {
+      spec = checkoutSpec(plan, pay);
+    } catch (err) {
+      return 'not attached, ' + err.message;
+    }
   }
   if (!spec.iterations) return 'not needed, one payment';
 
@@ -388,6 +409,23 @@ function longDate(iso) {
 // registration still pending then is a family that filled in the form and never paid, which
 // is a text Blake wants to send. One that is no longer pending was paid through a later
 // session from the same tab and stays as it is.
+async function markDealUsed(dealId, session, regId) {
+  const deal = await getDeal(dealId);
+  if (!deal) return;
+  if (!deal.paidAt) {
+    await putDeal({
+      ...deal,
+      paidAt: new Date().toISOString(),
+      paidBy: session.customer_details?.name || session.customer_details?.email || session.customer_email || null,
+      registrationId: regId, sessionId: session.id
+    });
+  }
+  // Every other session this deal opened is expired, so a forwarded link or a second tab left on
+  // Stripe cannot pay the same price a second time.
+  const stripe = stripeClient();
+  if (stripe) await expireDealSessions(stripe, deal, session.id);
+}
+
 async function onSessionExpired(event) {
   const meta = event.data.object.metadata || {};
   const id = meta.registrationId;

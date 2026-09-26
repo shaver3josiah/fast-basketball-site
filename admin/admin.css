@@ -376,3 +376,127 @@ select{
 .price-note{margin:6px 0 0;color:var(--fg-3);font-size:.85rem;}
 .field.bad input{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,196,61,.2);}
 .field.bad .price-note{color:var(--amber);}
+
+/* --- publishing strip -------------------------------------- */
+/* Edit -> Save -> Publish, on the two tabs that change the website. The step you are on is
+   lit; finished steps go green. It answers "is this on the site yet" without a guide. */
+.flow{
+  list-style:none;display:flex;gap:6px;max-width:960px;margin:0 auto;padding:14px 14px 0;
+}
+.flow li{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;
+  padding:0 8px;border:1px solid var(--line);border-radius:10px;background:var(--card);
+  font-family:var(--cond);font-weight:700;font-size:.84rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--fg-3);white-space:nowrap;
+}
+.flow li b{
+  display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;
+  background:var(--lift);color:var(--fg-2);font-size:.72rem;letter-spacing:0;
+}
+.flow li span{font-weight:500;letter-spacing:.06em;text-transform:none;font-size:.78rem;}
+.flow li.now{border-color:var(--amber);color:var(--fg);background:rgba(255,196,61,.08);}
+.flow li.now b{background:var(--amber);color:#111;}
+.flow li.done{border-color:rgba(57,217,138,.45);color:var(--fg-2);}
+.flow li.done b{background:var(--green);color:#0A0A0C;}
+.flow-note{max-width:960px;margin:8px auto 0;padding:0 14px;font-size:.9rem;color:var(--fg-2);}
+@media(max-width:400px){.flow li span{display:none;}}
+
+/* --- deals tab --------------------------------------------- */
+.live-note{
+  margin:0 0 14px;padding:12px 14px;border-radius:10px;
+  background:rgba(57,217,138,.08);border:1px solid rgba(57,217,138,.35);
+  color:var(--fg-2);font-size:.92rem;
+}
+.live-note b{color:var(--green);}
+/* Segmented switch: two equal halves, the chosen one filled. */
+.seg{
+  display:flex;gap:4px;padding:4px;margin:0 0 14px;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+}
+.seg button{
+  flex:1;min-height:46px;border:0;border-radius:9px;background:none;cursor:pointer;
+  font-family:var(--cond);font-weight:700;font-size:.92rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--fg-3);
+}
+.seg button[aria-selected="true"],.seg button[aria-pressed="true"]{background:var(--red);color:#fff;}
+.seg.small{margin:0;}
+.deal-form{padding:0;}
+.pane-h{
+  margin:0;padding:16px 16px 0;font-family:var(--cond);font-weight:700;font-size:1.25rem;
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.pane-intro{margin:6px 0 0;padding:0 16px;color:var(--fg-2);font-size:.94rem;}
+.sub-label{
+  margin:4px 0 8px;font-family:var(--cond);font-weight:600;font-size:.82rem;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);
+}
+/* A pay option: a checkbox row that opens its own fields when ticked. */
+.opt{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;background:var(--bg);}
+.opt.on{border-color:var(--line-2);}
+.opt-h{
+  display:flex;align-items:center;gap:12px;min-height:52px;padding:0 14px;cursor:pointer;
+  font-weight:600;
+}
+.opt-h input{width:22px;height:22px;min-height:0;margin:0;padding:0;accent-color:var(--red);flex:none;}
+.opt-b{display:none;padding:0 14px 2px;}
+.opt.on .opt-b{display:block;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.preview{
+  margin:4px 0 12px;padding:12px 14px;border-radius:10px;
+  border:1px dashed var(--line-2);background:var(--bg);
+}
+.preview span{
+  display:block;font-family:var(--cond);font-weight:700;font-size:.74rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--fg-3);margin-bottom:2px;
+}
+.preview b{font-weight:600;overflow-wrap:anywhere;}
+.btn.wide{width:100%;margin-bottom:16px;}
+.btn.danger{color:var(--coral);border-color:rgba(255,122,110,.4);}
+.btn.armed{background:var(--coral);border-color:var(--coral);color:#111;}
+.deal-form .error{margin:0 0 10px;}
+.code-in{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;}
+#tabDeals .deal-form{margin-bottom:18px;}
+
+/* Deal and coupon cards reuse the lead card; these are the additions. */
+.chip.ok{background:rgba(57,217,138,.12);color:var(--green);border-color:rgba(57,217,138,.4);}
+.chip.paid{background:rgba(37,224,208,.12);color:var(--teal);border-color:rgba(37,224,208,.38);}
+.lead.fresh{border-color:rgba(57,217,138,.55);box-shadow:0 0 0 3px rgba(57,217,138,.12);margin-bottom:16px;}
+.lead-name.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;}
+.deal .link-out{margin-top:12px;}
+.card-actions{display:flex;gap:8px;margin-top:10px;}
+.card-actions .btn{flex:1;padding:0 10px;min-width:0;}
+.deal .btn.wide{margin:10px 0 0;}
+
+/* --- tour -------------------------------------------------- */
+/* A spotlight cut out of a dimmed screen: the huge box-shadow IS the dimming, so the target
+   shows through at full brightness. The overlay takes every tap, so nothing behind it fires
+   by accident mid-tour. */
+.tour{position:fixed;inset:0;z-index:60;}
+.tour.dim{background:rgba(0,0,0,.72);}
+.tour-spot{
+  position:fixed;border-radius:12px;pointer-events:none;
+  box-shadow:0 0 0 3px var(--amber),0 0 0 200vmax rgba(0,0,0,.72);
+  transition:top .25s,left .25s,width .25s,height .25s;
+}
+.tour-card{
+  position:fixed;left:12px;right:12px;margin:0 auto;max-width:440px;
+  background:var(--bar);border:1px solid var(--line-2);border-radius:16px;
+  padding:16px 16px 14px;box-shadow:0 24px 60px -20px #000;
+}
+.tour-card.top{top:calc(12px + var(--safe-t));}
+.tour-card.bottom{bottom:calc(12px + var(--safe-b));}
+.tour-card.mid{top:50%;transform:translateY(-50%);}
+.tour-count{
+  margin:0 0 4px;font-family:var(--cond);font-weight:700;font-size:.74rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--amber);
+}
+.tour-card h2{margin:0 0 6px;font-family:var(--cond);font-weight:700;font-size:1.35rem;letter-spacing:.04em;}
+.tour-card p{margin:0 0 14px;color:var(--fg-2);}
+.tour-actions{display:flex;gap:8px;}
+.tour-actions .btn{flex:1;padding:0 8px;min-width:0;}
+.tour-actions .btn.ghost{flex:0 0 auto;padding:0 14px;}
+@media(prefers-reduced-motion:reduce){.tour-spot{transition:none;}}
+@media(min-width:760px){
+  .flow{padding:24px 24px 0;}
+  .flow-note{padding:0 24px;}
+}

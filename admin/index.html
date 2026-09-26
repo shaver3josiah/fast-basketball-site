@@ -53,6 +53,16 @@
   <!-- The Canvas Editor is a separate screen, not a tab, so it needs its own way in, and it
        sits ABOVE the panels: below them it was at the bottom of a 26-field scroll, which is
        how it went unfound inside "More" labelled "Full editor". -->
+  <!-- The whole publishing story in one strip, on the two tabs that edit the website. Deals and
+       coupons do not need it: they are live the moment they are made. admin.js lights the step
+       you are on. -->
+  <ol class="flow" id="publishFlow" aria-label="How changes reach the website">
+    <li data-step="edit"><b>1</b> Edit</li>
+    <li data-step="save"><b>2</b> Save <span>private</span></li>
+    <li data-step="publish"><b>3</b> Publish <span>live</span></li>
+  </ol>
+  <p class="flow-note" id="flowNote">Edits stay private until you tap Publish.</p>
+
   <div class="tools-link" id="canvasLink">
     <a class="btn" id="canvasBtn" href="/admin/editor.html">Open the Canvas Editor</a>
     <p class="tools-hint">Edit the site by clicking the words on the page itself. Best on a computer; on a phone you can still drag things to move them.</p>
@@ -62,6 +72,7 @@
   <main id="tabPhotos" class="tab-panel hidden"></main>
   <main id="tabLeads" class="tab-panel hidden"></main>
   <main id="tabPay" class="tab-panel hidden"></main>
+  <main id="tabDeals" class="tab-panel hidden"></main>
 
   <!-- Outside the three panels because admin.js empties those on every render, and
        these buttons are wired up once at load. -->
@@ -70,6 +81,7 @@
     <div class="tools-body">
       <button id="previewLockerBtn" class="btn" type="button">Preview the Locker</button>
       <button id="backupBtn" class="btn" type="button">Download backup</button>
+      <button id="tourBtn" class="btn" type="button">Show the tour again</button>
       <button id="signOutBtn" class="btn" type="button">Sign out</button>
     </div>
   </details>
@@ -83,6 +95,7 @@
     <nav class="tabbar">
       <button data-tab="content" class="tab active" type="button">Content</button>
       <button data-tab="photos" class="tab" type="button">Photos</button>
+      <button data-tab="deals" class="tab" type="button" data-title="Cut a Deal">Deals</button>
       <button data-tab="leads" class="tab" type="button">Leads</button>
       <button data-tab="pay" class="tab" type="button">Pay</button>
     </nav>

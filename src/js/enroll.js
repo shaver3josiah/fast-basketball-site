@@ -155,6 +155,75 @@
   } catch(e){ campaign = (q && q.get('camp')) || ''; }
   syncPay();
 
+  /* ---- A deal link (/enroll?deal=<id>): Blake's own price for one family. The catalog cards
+     step aside and one card for the deal takes their place, built from /api/deal. It carries
+     the same data-full / data-monthly lines as a catalog card, so syncPay and the pay radios
+     work unchanged. The page only ever sends the deal's id back: checkout.mjs re-reads the deal
+     from the server and prices it from there, so nothing written here can change the charge.
+     No coupon on a deal (the deal IS the discount), and no published-rates fine print under it,
+     which would contradict the price on the card. */
+  var dealId = q ? q.get('deal') : '';
+  if(dealId){
+    var plansBox = form.querySelector('.en-plans');
+    var cards = plansBox ? plansBox.querySelectorAll('.en-card') : [];
+    for(var c = 0; c < cards.length; c++){
+      cards[c].hidden = true;
+      var r = cards[c].querySelector('input'); if(r){ r.checked = false; r.disabled = true; }
+    }
+    var couponFld = document.getElementById('en_coupon');
+    if(couponFld && couponFld.closest) couponFld.closest('.fld').style.display = 'none';
+    var fine = document.querySelector('.fine-print');
+    if(fine) fine.style.display = 'none';
+    var legend = plansBox && plansBox.parentNode.querySelector('.en-lg');
+    if(legend && legend.lastChild) legend.lastChild.textContent = 'Your offer from Coach Blake';
+    if(btn) btn.disabled = true;
+
+    var money = function(cents){
+      var s = String(Math.floor(cents / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return '$' + s + (cents % 100 ? '.' + String(cents % 100).padStart(2, '0') : '');
+    };
+    var span = function(cls, text){ var s = document.createElement('span'); s.className = cls; if(text != null) s.textContent = text; return s; };
+
+    fetch('/api/deal?id=' + encodeURIComponent(dealId)).then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(r){ return { ok: res.ok, r: r }; });
+    }).then(function(x){
+      if(!x.ok || !x.r.deal) throw new Error(x.r.error || 'That offer link is not right. Ask Coach Blake to send it again.');
+      var d = x.r.deal;
+      var card = document.createElement('label');
+      card.className = 'en-card';
+      if(d.lines.full) card.setAttribute('data-full', d.lines.full);
+      if(d.lines.monthly) card.setAttribute('data-monthly', d.lines.monthly);
+      var radio = document.createElement('input');
+      radio.type = 'radio'; radio.name = 'plan'; radio.value = 'deal'; radio.required = true; radio.checked = true;
+      card.appendChild(radio);
+      var b = span('en-card-b');
+      b.appendChild(span('en-card-t', d.title));
+      var price = span('prog-price', d.full ? money(d.full) : money(d.monthly.eachCents));
+      var small = document.createElement('small');
+      small.textContent = d.full ? 'paid in full' : 'a month for ' + d.monthly.payments + ' months';
+      price.appendChild(small);
+      b.appendChild(price);
+      if(d.full && d.lines.monthly) b.appendChild(span('en-card-d', 'Or ' + d.lines.monthly + '.'));
+      if(d.details) b.appendChild(span('en-card-d', d.details));
+      b.appendChild(span('en-card-d', (d.forName ? 'Prepared for ' + d.forName + ' by Coach Blake.' : 'Prepared for your family by Coach Blake.') + ' This link is for your family only.'));
+      card.appendChild(b);
+      plansBox.appendChild(card);
+      var idInput = document.createElement('input');
+      idInput.type = 'hidden'; idInput.name = 'deal'; idInput.value = d.id;
+      form.appendChild(idInput);
+      if(btn) btn.disabled = false;
+      syncPay();
+    }).catch(function(err){
+      var note = document.createElement('p');
+      note.className = 'f-err';
+      note.setAttribute('role', 'alert');
+      note.textContent = err.message || 'That offer could not be loaded. Refresh the page, or ask Coach Blake to send the link again.';
+      if(plansBox) plansBox.appendChild(note);
+      if(payBox) payBox.hidden = true;
+      if(btn) btn.textContent = 'This offer is not available';
+    });
+  }
+
   /* ---- Engagement beacon. Blake shares a private /enroll link per family, with a ?ref= tag
      the admin link builder adds. This tells him it was opened and for how long, and pings him
      if a tagged family looks and leaves without submitting. First-party, no cookies, no third

@@ -21,6 +21,7 @@ import { sendEmail, ownerEmail, escapeHtml, recordTable } from './lib/notify.mjs
 import { stripeClient, priceByLookupKey, promotionCodeByCode, couponCoversPlan, json } from './lib/stripe.mjs';
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+import { getDeal, dealProblem, dealSpec, dealPrice, dealSessionExpiry, recordDealSession } from './lib/deals.mjs';
 const RATE_LIMIT_MAX = 10;
 // One message for every way a coupon can fail: unknown, mistyped, expired, spent, not for this
 // plan, or refused by Stripe at the last moment. It is true of all of them, and it names the
@@ -80,7 +81,7 @@ export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds, regis
     ],
     metadata,
     success_url: abs(spec.page + '/thanks'),
-    cancel_url: abs(spec.page + '?plan=' + spec.plan + '&pay=' + spec.pay),
+    cancel_url: abs(spec.cancelPath || (spec.page + '?plan=' + spec.plan + '&pay=' + spec.pay)),
     expires_at: nowSeconds + SESSION_TTL_SECONDS
   };
   if (registrationId) params.client_reference_id = registrationId;
@@ -106,7 +107,8 @@ export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds, regis
 // the admin panel shows one row per family, and paymentStatus 'pending' until the webhook
 // hears from Stripe. name/email/phone/playerName are the columns every lead type shares.
 export function registrationRecord({ id, timestamp, values, spec }) {
-  const plan = getPlan(spec.plan);
+  // A deal is not in the catalog: it has no term, no notice period and its own total.
+  const plan = spec.deal ? {} : getPlan(spec.plan);
   return {
     type: 'enrollment',
     registrationId: id,
@@ -121,7 +123,8 @@ export function registrationRecord({ id, timestamp, values, spec }) {
     amount: dollars(spec.amountCents),
     months: plan.months || null,
     noticeDays: plan.noticeDays || null,
-    termTotalCents: totalCents(spec.plan, spec.pay),
+    termTotalCents: spec.deal ? spec.termTotalCents : totalCents(spec.plan, spec.pay),
+    ...(spec.deal ? { deal: spec.deal, payments: spec.iterations || null } : {}),
     paymentStatus: 'pending',
     termsAccepted: true,
     reviewed: true,
@@ -212,13 +215,28 @@ export default async (request, context) => {
   // the athlete, so it never enters `values`, never reaches validateRegistration and never
   // lands in the admin CSV's registration columns. Whether it means anything is decided
   // against Stripe further down, never here and never on the page.
-  const coupon = typeof body.coupon === 'string' ? body.coupon.trim() : '';
+  // A deal is already the price Blake agreed, so a coupon is not applied on top of one: the page
+  // hides the box, and a value restored into it from an earlier try in the tab is dropped here.
+  const isDeal = !isApp && body.plan === 'deal';
+  const coupon = !isDeal && typeof body.coupon === 'string' ? body.coupon.trim() : '';
   if (coupon.length > COUPON_MAX_CHARS) errors.coupon = COUPON_BAD;
   let spec = null;
-  try {
-    spec = checkoutSpec(body.plan, body.pay);
-  } catch (err) {
-    errors.plan = err.message;
+  let deal = null;
+  if (isDeal) {
+    // The deal is read HERE, from the store, and priced from what the store says. The page only
+    // ever sent its id, so no figure the browser holds can reach Stripe.
+    deal = await getDeal(body.deal);
+    const problem = dealProblem(deal);
+    if (problem) errors.plan = problem;
+    else {
+      try { spec = dealSpec(deal, body.pay); } catch (err) { errors.plan = err.message; }
+    }
+  } else {
+    try {
+      spec = checkoutSpec(body.plan, body.pay);
+    } catch (err) {
+      errors.plan = err.message;
+    }
   }
   const keys = Object.keys(errors);
   if (keys.length) return fail(422, { error: errors[keys[0]], errors });
@@ -277,10 +295,12 @@ export default async (request, context) => {
 
   let session;
   try {
-    const price = await priceByLookupKey(stripe, spec.lookupKey);
+    const price = deal ? await dealPrice(stripe, deal, spec) : await priceByLookupKey(stripe, spec.lookupKey);
     if (!price) {
-      console.error('no active Stripe price for ' + spec.lookupKey + ': scripts/stripe-catalog.mjs has not been run for this mode (test or live)');
-      return isForm ? redirect(thanksPath) : json(503, { error: 'price not configured: ' + spec.lookupKey, registrationId: id });
+      console.error(deal
+        ? 'deal ' + deal.id + ' has no usable Stripe price for ' + spec.pay + ' (missing, archived, or not the stored amount)'
+        : 'no active Stripe price for ' + spec.lookupKey + ': scripts/stripe-catalog.mjs has not been run for this mode (test or live)');
+      return isForm ? redirect(thanksPath) : json(503, { error: 'price not configured: ' + (spec.lookupKey || 'deal ' + spec.deal), registrationId: id });
     }
     // A code the buyer typed, resolved against Stripe and checked against this plan. Both
     // halves matter: the first says the code exists and is live, the second says it is meant
@@ -294,9 +314,17 @@ export default async (request, context) => {
       }
       promotionCodeId = promo.id;
     }
-    session = await stripe.checkout.sessions.create(sessionParams(spec, {
-      email: values.email, priceId: price.id, siteUrl: SITE_URL, nowSeconds: Math.floor(Date.now() / 1000), registrationId: id, promotionCodeId
-    }));
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const params = sessionParams(spec, {
+      email: values.email, priceId: price.id, siteUrl: SITE_URL, nowSeconds, registrationId: id, promotionCodeId
+    });
+    // A deal's session never outlives the deal, so an expired deal cannot be paid on a tab left open.
+    if (deal) params.expires_at = dealSessionExpiry(deal, nowSeconds, SESSION_TTL_SECONDS);
+    session = await stripe.checkout.sessions.create(params);
+    // Remembered so the others can be expired when one family pays or Blake closes the deal.
+    if (deal) {
+      try { await recordDealSession(deal.id, session.id); } catch (err) { console.error('deal ' + deal.id + ' session not recorded: ' + err.message); }
+    }
   } catch (err) {
     console.error('stripe checkout failed: ' + err.message);
     // With a coupon in play the honest answer is "that coupon could not be applied", and it
@@ -320,6 +348,7 @@ async function notifyRegistration(record, reused) {
     html: '<h2>' + (reused ? 'Registration updated' : 'New registration') + '</h2>' +
       '<p>' + escapeHtml(record.name) + ' registered ' + escapeHtml(record.playerName) + ' and is on the way to Stripe to pay ' +
       escapeHtml(record.amount) + (record.pay === 'monthly' ? ' a month' : '') +
+      (record.deal ? ' on your deal "' + escapeHtml(record.planLabel) + '"' : '') +
       // The published price, which is not what the card is charged when a coupon holds. Say so
       // here rather than let the enrollment email arrive for a different figure and look wrong.
       (record.coupon ? ', less coupon <b>' + escapeHtml(record.coupon) + '</b> if Stripe accepts it' : '') +

@@ -12,6 +12,8 @@
 const HANDLERS = {
   'admin-canvas-render': () => import('./functions/admin-canvas-render.mjs'),
   'admin-content': () => import('./functions/admin-content.mjs'),
+  'admin-coupons': () => import('./functions/admin-coupons.mjs'),
+  'admin-deals': () => import('./functions/admin-deals.mjs'),
   'admin-login': () => import('./functions/admin-login.mjs'),
   'admin-otp-request': () => import('./functions/admin-otp-request.mjs'),
   'admin-logout': () => import('./functions/admin-logout.mjs'),
@@ -22,6 +24,7 @@ const HANDLERS = {
   checkout: () => import('./functions/checkout.mjs'),
   contact: () => import('./functions/contact.mjs'),
   'dev-payments': () => import('./functions/dev-payments.mjs'),
+  deal: () => import('./functions/deal.mjs'),
   'enroll-visit': () => import('./functions/enroll-visit.mjs'),
   'leads-list': () => import('./functions/leads-list.mjs'),
   playbook: () => import('./functions/playbook.mjs'),

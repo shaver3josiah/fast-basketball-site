@@ -35,6 +35,30 @@
     el.className = 'status' + (cls ? ' ' + cls : '');
   }
 
+  // The Edit -> Save -> Publish strip above Content and Photos. One word per state, so the owner
+  // never has to wonder whether the website has his change yet:
+  //   live      nothing waiting, the website is what he saved last
+  //   editing   typed but not saved
+  //   saved     saved as a draft, NOT on the website until Publish
+  //   published sent; the site rebuilds in about a minute
+  var FLOW = {
+    live: { at: -1, note: 'The website matches your last save. Edits stay private until you tap Publish.' },
+    editing: { at: 0, note: 'Unsaved edits. Tap Save to keep them. Nobody sees them yet.' },
+    saved: { at: 2, note: 'Saved, but NOT on the website yet. Tap Publish when you are ready.' },
+    published: { at: 3, note: 'Published. fast-basketball.com shows it in about a minute.' }
+  };
+  function setFlow(state){
+    var f = FLOW[state] || FLOW.live;
+    document.querySelectorAll('#publishFlow li').forEach(function(li, i){
+      li.className = i < f.at ? 'done' : (i === f.at ? 'now' : '');
+    });
+    document.getElementById('flowNote').textContent = f.note;
+    if(state === 'editing') setStatus('Unsaved', 'dirty');
+    else if(state === 'saved') setStatus('Not live yet', 'dirty');
+    else if(state === 'published') setStatus('Publishing', 'ok');
+    else setStatus('Live', 'ok');
+  }
+
   var uid = 0;
   function cell(tag, text){
     var el = document.createElement(tag);
@@ -157,8 +181,12 @@
   }
 
   function loadAdmin(){
+    var hasDraft = false;
     api('admin-content').then(function(res){
       if(!res.ok) throw new Error('not authenticated');
+      // A saved draft that was never published is work the website does not have yet: say so
+      // the moment the panel opens, not only after the next Save.
+      hasDraft = res.headers.get('X-FB-Has-Draft') === '1';
       return res.json();
     }).then(function(data){
       state.content = data;
@@ -166,7 +194,9 @@
       adminScreen.classList.remove('hidden');
       renderContentTab();
       renderPhotosTab();
+      setFlow(hasDraft ? 'saved' : 'live');
       scheduleAutoLogout();
+      maybeTour();
     }).catch(function(){
       // Not signed in (or the session lapsed). Show the login screen and drop any stale timer.
       if(logoutTimer){ clearTimeout(logoutTimer); logoutTimer = null; }
@@ -182,17 +212,21 @@
       btn.classList.add('active');
       var name = btn.dataset.tab;
       document.getElementById('tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.remove('hidden');
-      document.getElementById('tabTitle').textContent = btn.textContent;
+      document.getElementById('tabTitle').textContent = btn.dataset.title || btn.textContent;
+      // A new tab starts at its top, not wherever the last one was scrolled to.
+      window.scrollTo(0, 0);
       // Save, Publish and the tools belong to Content and Photos. Leads and Pay have
       // nothing to save, so hiding them there gives the list the bottom of the screen
       // back. The class, not the hidden attribute: .actions sets its own display and
       // would win.
-      document.getElementById('actionBar').classList.toggle('hidden', name === 'leads' || name === 'pay');
-      document.getElementById('tools').classList.toggle('hidden', name === 'leads' || name === 'pay');
-      // Leads and Pay are for reading, not editing the page, and the list wants the screen.
-      document.getElementById('canvasLink').classList.toggle('hidden', name === 'leads' || name === 'pay');
+      // Deals has no Save or Publish either: a deal or a coupon is live the moment it is made.
+      var editsSite = name === 'content' || name === 'photos';
+      ['actionBar', 'tools', 'canvasLink', 'publishFlow', 'flowNote'].forEach(function(id){
+        document.getElementById(id).classList.toggle('hidden', !editsSite);
+      });
       if(name === 'leads') loadLeads();
       else if(name === 'pay') loadPay();
+      else if(name === 'deals') loadDeals();
     });
   });
 
@@ -233,7 +267,7 @@
         input.addEventListener('input', function(){
           state.content.text[key] = input.value;
           state.dirty = true;
-          setStatus('Unsaved', 'dirty');
+          setFlow('editing');
         });
         wrap.appendChild(label);
         wrap.appendChild(input);
@@ -316,7 +350,7 @@
           if(!state.content.prices[plan.key]) state.content.prices[plan.key] = {};
           state.content.prices[plan.key][opt.pay] = cents;
           state.dirty = true;
-          setStatus('Unsaved', 'dirty');
+          setFlow('editing');
         });
 
         wrap.appendChild(label);
@@ -445,7 +479,7 @@
         }
         // A fixed-slot upload stages like everything else; only Publish puts it live.
         // The resume-card path still commits directly, so it says so honestly.
-        say(isExtra ? 'Resume card added and publishing.' : 'Photo uploaded. Press Publish to put it on the site.');
+        say(isExtra ? 'Resume card added and publishing.' : 'Photo uploaded. Tap Publish to put it on the website.');
         loadAdmin();
       }).catch(function(){
         errorLine.textContent = 'Upload failed. Check your connection and try again.';
@@ -660,19 +694,7 @@
     paySel.addEventListener('change', update);
     emailIn.addEventListener('input', update);
     refIn.addEventListener('input', update);
-    copyBtn.addEventListener('click', function(){
-      function fallback(){
-        out.select();
-        var ok = false;
-        try { ok = document.execCommand('copy'); } catch(e){}
-        say(ok ? 'Copied' : 'Copy failed. Select the link and copy it by hand.');
-      }
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(out.value).then(function(){ say('Copied'); }, fallback);
-      } else {
-        fallback();
-      }
-    });
+    copyBtn.addEventListener('click', function(){ copyText(out.value, out); });
     fillPay();
     return box;
   }
@@ -1012,6 +1034,684 @@
       });
   }
 
+  // --- copy and share ------------------------------------------------------
+  // One copy routine for every link and code in the panel. The clipboard API first; the old
+  // select-and-execCommand path for the browsers that refuse it outside a secure gesture.
+  function copyText(text, input){
+    function fallback(){
+      var ok = false;
+      if(input){ input.select(); try { ok = document.execCommand('copy'); } catch(e){} }
+      say(ok ? 'Copied' : 'Copy failed. Press and hold the text to copy it.');
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ say('Copied'); }, fallback);
+    } else fallback();
+  }
+  // The phone's own share sheet (Messages, WhatsApp, Mail) where there is one, which is how a
+  // link actually reaches a parent from a phone. Copy everywhere else.
+  function shareText(title, text, url, input){
+    if(navigator.share){
+      navigator.share({ title: title, text: text, url: url }).catch(function(){});
+    } else copyText(url || text, input);
+  }
+
+  // A destructive button that needs a second tap, and forgets the first after four seconds.
+  // Cheaper than a confirm() dialog on a phone and impossible to trigger by one stray thumb.
+  function twoTap(btn, armedLabel, action){
+    var label = btn.textContent;
+    var timer = null;
+    btn.addEventListener('click', function(){
+      if(!btn.classList.contains('armed')){
+        btn.classList.add('armed');
+        btn.textContent = armedLabel;
+        timer = setTimeout(function(){ btn.classList.remove('armed'); btn.textContent = label; }, 4000);
+        return;
+      }
+      clearTimeout(timer);
+      btn.classList.remove('armed');
+      btn.disabled = true;
+      action(function(){ btn.disabled = false; btn.textContent = label; });
+    });
+  }
+
+  // A labelled control, the same .field shape as every other form in the panel.
+  function fieldEl(labelText, control, hint){
+    var wrap = document.createElement('div');
+    wrap.className = 'field';
+    control.id = control.id || 'd' + (++uid);
+    var label = document.createElement('label');
+    label.textContent = labelText;
+    label.htmlFor = control.id;
+    wrap.appendChild(label);
+    wrap.appendChild(control);
+    if(hint){
+      var h = cell('p', hint);
+      h.className = 'price-note';
+      wrap.appendChild(h);
+    }
+    return wrap;
+  }
+  function inputEl(type, placeholder){
+    var i = document.createElement('input');
+    i.type = type || 'text';
+    if(placeholder) i.placeholder = placeholder;
+    return i;
+  }
+  function selectEl(pairs, value){
+    var s = document.createElement('select');
+    pairs.forEach(function(p){
+      var o = document.createElement('option');
+      o.value = String(p[0]);
+      o.textContent = p[1];
+      s.appendChild(o);
+    });
+    if(value != null) s.value = String(value);
+    return s;
+  }
+  function moneyInput(placeholder){
+    var i = inputEl('text', placeholder);
+    i.inputMode = 'decimal';
+    i.autocomplete = 'off';
+    return i;
+  }
+  function postJson(path, body){
+    return api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function(res){ return res.json().catch(function(){ return {}; }).then(function(data){ return { ok: res.ok, status: res.status, data: data }; }); });
+  }
+
+  // Mirrors EXPIRY_HOURS in server/functions/lib/deals.mjs, which refuses anything else.
+  var EXPIRY = [[24, '24 hours'], [48, '48 hours'], [72, '3 days'], [96, '4 days'], [120, '5 days'],
+    [144, '6 days'], [168, '1 week'], [336, '2 weeks'], [504, '3 weeks'], [720, '30 days']];
+  function whenText(iso){
+    var d = new Date(iso);
+    return d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  // --- the Deals tab ------------------------------------------------------
+  // Two jobs, one tab: Cut a Deal (a private price and link for one family) and Coupon Codes
+  // (a code any family types at checkout). A segmented switch picks which one fills the screen,
+  // so on a phone neither is a scroll away from the other.
+  var dealsPane = 'deal';
+  function loadDeals(which){
+    if(which) dealsPane = which;
+    var root = document.getElementById('tabDeals');
+    root.textContent = '';
+
+    var live = document.createElement('p');
+    live.className = 'live-note';
+    live.appendChild(cell('b', 'Live instantly. '));
+    live.appendChild(document.createTextNode('No Save or Publish on this tab: a deal or coupon works the moment you create it, and stops the moment you close it.'));
+    root.appendChild(live);
+
+    var seg = document.createElement('div');
+    seg.className = 'seg';
+    seg.setAttribute('role', 'tablist');
+    [['deal', 'Cut a Deal'], ['coupon', 'Coupon Codes']].forEach(function(p){
+      var b = cell('button', p[1]);
+      b.type = 'button';
+      b.id = 'seg-' + p[0];
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(dealsPane === p[0]));
+      b.addEventListener('click', function(){ loadDeals(p[0]); });
+      seg.appendChild(b);
+    });
+    root.appendChild(seg);
+
+    var pane = document.createElement('div');
+    root.appendChild(pane);
+    if(dealsPane === 'coupon') renderCouponPane(pane); else renderDealPane(pane);
+  }
+
+  function renderDealPane(pane){
+    var form = document.createElement('form');
+    form.className = 'field-group deal-form';
+    form.id = 'dealForm';
+    form.noValidate = true;
+    var head = cell('h2', 'New deal');
+    head.className = 'pane-h';
+    form.appendChild(head);
+    var intro = cell('p', 'A private price for one family. You get a link; they open it, fill in the normal enrollment form, and pay exactly this on Stripe.');
+    intro.className = 'pane-intro';
+    form.appendChild(intro);
+    var body = document.createElement('div');
+    body.className = 'group-body';
+    form.appendChild(body);
+
+    var title = inputEl('text', '4 weeks of group training');
+    title.setAttribute('list', 'dealTitles');
+    title.maxLength = 80;
+    var titles = document.createElement('datalist');
+    titles.id = 'dealTitles';
+    ['4 weeks of group training', '8 weeks of group training', 'Evaluation session', 'Private 1-on-1 sessions',
+      '3 months of group training', '6 months of group training'].forEach(function(t){
+      var o = document.createElement('option'); o.value = t; titles.appendChild(o);
+    });
+    body.appendChild(fieldEl('What they get', title, 'This is the name the parent sees on the page and on Stripe.'));
+    body.appendChild(titles);
+
+    var forName = inputEl('text', 'The Smith family');
+    forName.maxLength = 80;
+    body.appendChild(fieldEl('Who it is for (optional)', forName, 'Shown to the parent as "Prepared for ...". Also how you find it in your list.'));
+
+    var details = document.createElement('textarea');
+    details.rows = 2;
+    details.maxLength = 400;
+    details.placeholder = 'Thursdays 6 to 7 PM, starting October 2.';
+    body.appendChild(fieldEl('Details they see (optional)', details));
+
+    // How they pay: either or both. Each option reveals its own boxes.
+    var payHead = cell('p', 'How they can pay');
+    payHead.className = 'sub-label';
+    body.appendChild(payHead);
+
+    function option(labelText, on){
+      var box = document.createElement('div');
+      box.className = 'opt' + (on ? ' on' : '');
+      var lab = document.createElement('label');
+      lab.className = 'opt-h';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!on;
+      lab.appendChild(cb);
+      lab.appendChild(cell('span', labelText));
+      box.appendChild(lab);
+      var inner = document.createElement('div');
+      inner.className = 'opt-b';
+      box.appendChild(inner);
+      cb.addEventListener('change', function(){ box.classList.toggle('on', cb.checked); preview(); });
+      body.appendChild(box);
+      return { cb: cb, inner: inner };
+    }
+    var full = option('All at once', true);
+    var fullPrice = moneyInput('750');
+    full.inner.appendChild(fieldEl('Price, paid today', fullPrice));
+
+    var plan = option('A payment plan', false);
+    var planTotal = moneyInput('900');
+    var paymentsPairs = [];
+    for(var n = 2; n <= 12; n++) paymentsPairs.push([n, n + ' monthly payments']);
+    var payments = selectEl(paymentsPairs, 3);
+    var planRow = document.createElement('div');
+    planRow.className = 'two';
+    planRow.appendChild(fieldEl('Total over the plan', planTotal));
+    planRow.appendChild(fieldEl('Split into', payments));
+    plan.inner.appendChild(planRow);
+    var planNote = cell('p', '');
+    planNote.className = 'price-note';
+    plan.inner.appendChild(planNote);
+
+    var expires = selectEl([[0, 'Until I close it']].concat(EXPIRY), 0);
+    body.appendChild(fieldEl('Link works for', expires));
+
+    var pv = document.createElement('div');
+    pv.className = 'preview';
+    body.appendChild(pv);
+
+    var err = cell('p', '');
+    err.className = 'error';
+    err.setAttribute('role', 'alert');
+    body.appendChild(err);
+    var create = cell('button', 'Create deal and get the link');
+    create.type = 'submit';
+    create.className = 'btn primary wide';
+    body.appendChild(create);
+
+    // What the parent will see, recomputed on every keystroke, in the same words the page uses.
+    // Figures here are a preview only: the server recomputes and Stripe charges its own price.
+    function values(){
+      var v = { full: null, total: null, n: Number(payments.value), each: null };
+      if(full.cb.checked) v.full = inputToCents(fullPrice.value);
+      if(plan.cb.checked){
+        v.total = inputToCents(planTotal.value);
+        if(v.total) v.each = Math.floor(v.total / v.n);
+      }
+      return v;
+    }
+    function preview(){
+      var v = values();
+      planNote.textContent = v.each
+        ? dollarsFromCents(v.each) + ' a month, ' + v.n + ' times' + (v.each * v.n !== v.total ? ' (' + dollarsFromCents(v.each * v.n) + ' in total: it cannot split to the cent)' : '') + '. Stops by itself after the last one.'
+        : 'Each payment is the total split evenly. It stops by itself after the last one.';
+      pv.textContent = '';
+      var lines = [];
+      if(full.cb.checked && v.full) lines.push(dollarsFromCents(v.full) + ' today');
+      if(plan.cb.checked && v.each) lines.push(dollarsFromCents(v.each) + ' a month for ' + v.n + ' months');
+      pv.appendChild(cell('span', 'The parent sees'));
+      pv.appendChild(cell('b', (title.value.trim() || 'What they get') + (lines.length ? ': ' + lines.join(', or ') : '')));
+    }
+    [title, fullPrice, planTotal, payments].forEach(function(i){ i.addEventListener('input', preview); i.addEventListener('change', preview); });
+    preview();
+
+    var result = document.createElement('div');
+    pane.appendChild(result);
+    pane.appendChild(form);
+    var list = document.createElement('div');
+    pane.appendChild(list);
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      err.textContent = '';
+      var v = values();
+      if(!title.value.trim()){ err.textContent = 'Say what they get.'; title.focus(); return; }
+      if(!full.cb.checked && !plan.cb.checked){ err.textContent = 'Tick at least one way to pay.'; return; }
+      if(full.cb.checked && !v.full){ err.textContent = 'Type the price as dollars, like 750.'; fullPrice.focus(); return; }
+      if(plan.cb.checked && !v.total){ err.textContent = 'Type the payment plan total as dollars, like 900.'; planTotal.focus(); return; }
+      create.disabled = true;
+      create.textContent = 'Creating...';
+      postJson('admin-deals', {
+        action: 'create', title: title.value, forName: forName.value, details: details.value,
+        fullCents: full.cb.checked ? v.full : null,
+        monthlyTotalCents: plan.cb.checked ? v.total : null,
+        payments: v.n, expiresHours: Number(expires.value)
+      }).then(function(r){
+        if(!r.ok){ err.textContent = r.data.error || 'That did not work. Try again.'; return; }
+        form.reset();
+        full.cb.checked = true; full.cb.dispatchEvent(new Event('change'));
+        plan.cb.checked = false; plan.cb.dispatchEvent(new Event('change'));
+        result.textContent = '';
+        result.appendChild(dealCard(r.data.deal, true, r.data.warning));
+        result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        refresh();
+      }).catch(function(){ err.textContent = 'Could not reach the server. Nothing was created.'; })
+        .finally(function(){ create.disabled = false; create.textContent = 'Create deal and get the link'; });
+    });
+
+    function refresh(){
+      list.textContent = '';
+      var status = cell('p', 'Loading your deals...');
+      status.className = 'leads-count';
+      list.appendChild(status);
+      api('admin-deals').then(function(res){ return res.json(); }).then(function(data){
+        var deals = data.deals || [];
+        status.textContent = deals.length ? 'Your deals · ' + deals.length : 'No deals yet. Your first one will show here.';
+        deals.forEach(function(d){ list.appendChild(dealCard(d, false)); });
+      }).catch(function(){ status.textContent = 'Could not load your deals.'; });
+    }
+    refresh();
+  }
+
+  var STATE_CHIP = { open: ['Open', 'ok'], paid: ['Paid', 'paid'], closed: ['Closed', ''], expired: ['Expired', 'flag'] };
+  function dealCard(d, fresh, warning){
+    var card = document.createElement('div');
+    card.className = 'lead deal' + (fresh ? ' fresh' : '');
+    var top = document.createElement('div');
+    top.className = 'lead-top';
+    var chipInfo = STATE_CHIP[d.state] || [d.state, ''];
+    var chip = cell('span', fresh ? 'Link ready' : chipInfo[0]);
+    chip.className = 'chip ' + (fresh ? 'ok' : chipInfo[1]);
+    top.appendChild(chip);
+    var when = cell('span', ago(d.createdAt));
+    when.className = 'lead-when';
+    top.appendChild(when);
+    card.appendChild(top);
+    card.appendChild(Object.assign(cell('h3', d.title), { className: 'lead-name' }));
+
+    function meta(label, value){
+      if(!value) return;
+      var p = document.createElement('p');
+      p.className = 'lead-meta';
+      p.appendChild(cell('b', label + ': '));
+      p.appendChild(document.createTextNode(value));
+      card.appendChild(p);
+    }
+    meta('For', d.forName);
+    var prices = [];
+    if(d.full) prices.push(dollarsFromCents(d.full) + ' all at once');
+    if(d.monthly) prices.push(dollarsFromCents(d.monthly.eachCents) + ' a month x ' + d.monthly.payments);
+    meta('Price', prices.join(', or '));
+    meta('Details', d.details);
+    if(d.state === 'open') meta('Link works', d.expiresAt ? 'until ' + whenText(d.expiresAt) : 'until you close it');
+    if(d.state === 'paid') meta('Paid', (d.paidBy || 'yes') + (d.paidAt ? ', ' + ago(d.paidAt) : ''));
+    if(d.state === 'expired') meta('Expired', whenText(d.expiresAt));
+    if(warning){
+      var w = cell('p', warning);
+      w.className = 'price-warn';
+      card.appendChild(w);
+    }
+
+    if(d.state === 'open'){
+      var help = cell('p', fresh ? 'Send this link to the parent. It works right now, and only for one family: once they pay, it closes itself.' : '');
+      if(fresh){ help.className = 'lead-meta'; card.appendChild(help); }
+      var out = inputEl('text');
+      out.readOnly = true;
+      out.value = d.link;
+      out.className = 'link-out';
+      out.setAttribute('aria-label', 'Deal link');
+      card.appendChild(out);
+      var row = document.createElement('div');
+      row.className = 'card-actions';
+      var copy = cell('button', 'Copy link');
+      copy.type = 'button'; copy.className = 'btn primary';
+      copy.addEventListener('click', function(){ copyText(d.link, out); });
+      var share = cell('button', 'Send');
+      share.type = 'button'; share.className = 'btn';
+      share.addEventListener('click', function(){
+        shareText(d.title, 'Here is your enrollment link from Coach Blake: ' + d.title + '.', d.link, out);
+      });
+      var view = document.createElement('a');
+      view.className = 'btn'; view.textContent = 'View'; view.href = d.link; view.target = '_blank'; view.rel = 'noopener';
+      row.appendChild(copy); row.appendChild(share); row.appendChild(view);
+      card.appendChild(row);
+      var close = cell('button', 'Close this deal');
+      close.type = 'button'; close.className = 'btn ghost danger wide';
+      twoTap(close, 'Tap again: the link stops working', function(done){
+        postJson('admin-deals', { action: 'close', id: d.id }).then(function(r){
+          if(!r.ok){ say(r.data.error || 'Could not close it.'); done(); return; }
+          say('Deal closed. The link no longer works.');
+          loadDeals('deal');
+        }).catch(function(){ say('Could not reach the server.'); done(); });
+      });
+      card.appendChild(close);
+    }
+    return card;
+  }
+
+  // Coupon codes. Every code lives in Stripe itself, so the /enroll coupon box honours it the
+  // moment it exists, and the Stripe dashboard can see and stop it too.
+  var SCOPES = [['all', 'Any training plan'], ['eval', 'Evaluation sessions only'], ['membership', 'Group memberships only']];
+  function renderCouponPane(pane){
+    var form = document.createElement('form');
+    form.className = 'field-group deal-form';
+    form.id = 'couponForm';
+    form.noValidate = true;
+    form.appendChild(Object.assign(cell('h2', 'New coupon code'), { className: 'pane-h' }));
+    form.appendChild(Object.assign(cell('p', 'A code families type into the Coupon code box on the enrollment page. It comes off the price on Stripe.'), { className: 'pane-intro' }));
+    var body = document.createElement('div');
+    body.className = 'group-body';
+    form.appendChild(body);
+
+    var code = inputEl('text', 'FALL50');
+    code.maxLength = 30;
+    code.autocapitalize = 'characters';
+    code.autocomplete = 'off';
+    code.spellcheck = false;
+    code.className = 'code-in';
+    code.addEventListener('input', function(){
+      var clean = code.value.toUpperCase().replace(/\s+/g, '-').replace(/[^A-Z0-9-]/g, '');
+      if(clean !== code.value) code.value = clean;
+    });
+    body.appendChild(fieldEl('Code name', code, 'Letters, numbers and dashes. Families can type it in lower case.'));
+
+    // Dollars or percent, as two big buttons rather than a dropdown.
+    var kind = 'amount';
+    var kindRow = document.createElement('div');
+    kindRow.className = 'seg small';
+    var amt = moneyInput('50');
+    var valueField = fieldEl('Dollars off', amt);
+    [['amount', '$ off'], ['percent', '% off']].forEach(function(p){
+      var b = cell('button', p[1]);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(p[0] === kind));
+      b.addEventListener('click', function(){
+        kind = p[0];
+        kindRow.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+        valueField.querySelector('label').textContent = kind === 'amount' ? 'Dollars off' : 'Percent off';
+        amt.placeholder = kind === 'amount' ? '50' : '10';
+        preview();
+      });
+      kindRow.appendChild(b);
+    });
+    var kindWrap = fieldEl('Value', kindRow);
+    kindWrap.querySelector('label').removeAttribute('for');
+    body.appendChild(kindWrap);
+    body.appendChild(valueField);
+
+    var scope = selectEl(SCOPES, 'all');
+    body.appendChild(fieldEl('Works on', scope, 'Never on the phone tools, and not on a Cut a Deal link: a deal is already the price.'));
+    var hours = selectEl(EXPIRY, 168);
+    body.appendChild(fieldEl('Stops working after', hours));
+
+    var pv = document.createElement('div');
+    pv.className = 'preview';
+    body.appendChild(pv);
+    var once = cell('p', 'On a monthly plan it comes off the first payment only.');
+    once.className = 'price-note';
+    body.appendChild(once);
+
+    var err = cell('p', '');
+    err.className = 'error';
+    err.setAttribute('role', 'alert');
+    body.appendChild(err);
+    var create = cell('button', 'Create coupon code');
+    create.type = 'submit';
+    create.className = 'btn primary wide';
+    body.appendChild(create);
+
+    function valueCents(){
+      if(kind === 'percent'){
+        var p = Number(String(amt.value).replace(/[%\s]/g, ''));
+        return Number.isInteger(p) && p >= 1 && p <= 100 ? p : null;
+      }
+      var c = inputToCents(amt.value);
+      return c && c <= 200000 ? c : null;
+    }
+    function preview(){
+      var v = valueCents();
+      var off = v == null ? '...' : (kind === 'percent' ? v + '% off' : dollarsFromCents(v) + ' off');
+      var until = new Date(Date.now() + Number(hours.value) * 3600e3).toISOString();
+      pv.textContent = '';
+      pv.appendChild(cell('span', 'Families get'));
+      pv.appendChild(cell('b', (code.value || 'YOURCODE') + ' takes ' + off + ', ' + scope.options[scope.selectedIndex].text.toLowerCase() + '. Stops working ' + whenText(until) + '.'));
+    }
+    [code, amt, scope, hours].forEach(function(i){ i.addEventListener('input', preview); i.addEventListener('change', preview); });
+    preview();
+
+    var result = document.createElement('div');
+    pane.appendChild(result);
+    pane.appendChild(form);
+    var list = document.createElement('div');
+    pane.appendChild(list);
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      err.textContent = '';
+      var v = valueCents();
+      if(code.value.length < 3){ err.textContent = 'Give the code a name, at least 3 characters.'; code.focus(); return; }
+      if(v == null){ err.textContent = kind === 'percent' ? 'Type a percent from 1 to 100.' : 'Type dollars off, from 1 to 2000.'; amt.focus(); return; }
+      create.disabled = true;
+      create.textContent = 'Creating...';
+      postJson('admin-coupons', { action: 'create', code: code.value, kind: kind, value: v, scope: scope.value, hours: Number(hours.value) })
+        .then(function(r){
+          if(!r.ok){ err.textContent = r.data.error || 'That did not work. Try again.'; return; }
+          code.value = ''; amt.value = '';
+          preview();
+          result.textContent = '';
+          result.appendChild(couponCard(r.data.coupon, true));
+          result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          refresh();
+        }).catch(function(){ err.textContent = 'Could not reach the server. Nothing was created.'; })
+        .finally(function(){ create.disabled = false; create.textContent = 'Create coupon code'; });
+    });
+
+    function refresh(){
+      list.textContent = '';
+      var status = cell('p', 'Loading your codes...');
+      status.className = 'leads-count';
+      list.appendChild(status);
+      api('admin-coupons').then(function(res){
+        return res.json().then(function(data){ return { ok: res.ok, data: data }; });
+      }).then(function(r){
+        if(!r.ok){ status.textContent = r.data.error || 'Could not load your codes.'; return; }
+        var codes = r.data.coupons || [];
+        status.textContent = codes.length ? 'Live codes · ' + codes.length : 'No live codes. Your first one will show here.';
+        codes.forEach(function(c){ list.appendChild(couponCard(c, false)); });
+      }).catch(function(){ status.textContent = 'Could not load your codes.'; });
+    }
+    refresh();
+  }
+
+  function couponCard(c, fresh){
+    var card = document.createElement('div');
+    card.className = 'lead deal' + (fresh ? ' fresh' : '');
+    var expired = c.expiresAt && Date.parse(c.expiresAt) <= Date.now();
+    var top = document.createElement('div');
+    top.className = 'lead-top';
+    var chip = cell('span', fresh ? 'Code ready' : (!c.active ? 'Off' : expired ? 'Expired' : 'Live'));
+    chip.className = 'chip ' + (fresh || (c.active && !expired) ? 'ok' : 'flag');
+    top.appendChild(chip);
+    if(c.created){
+      var when = cell('span', ago(c.created));
+      when.className = 'lead-when';
+      top.appendChild(when);
+    }
+    card.appendChild(top);
+    card.appendChild(Object.assign(cell('h3', c.code), { className: 'lead-name code' }));
+    function meta(label, value){
+      if(!value) return;
+      var p = document.createElement('p');
+      p.className = 'lead-meta';
+      p.appendChild(cell('b', label + ': '));
+      p.appendChild(document.createTextNode(value));
+      card.appendChild(p);
+    }
+    meta('Takes off', c.percentOff ? c.percentOff + '%' : c.amountOff ? dollarsFromCents(c.amountOff) : '');
+    meta('Works on', c.worksOn);
+    meta(expired ? 'Stopped' : 'Stops working', c.expiresAt ? whenText(c.expiresAt) : 'never');
+    meta('Used', c.timesRedeemed + (c.timesRedeemed === 1 ? ' time' : ' times'));
+    if(fresh){
+      var help = cell('p', 'Tell families to type ' + c.code + ' in the Coupon code box on the enrollment page. It works right now.');
+      help.className = 'lead-meta';
+      card.appendChild(help);
+    }
+    if(c.active){
+      var row = document.createElement('div');
+      row.className = 'card-actions';
+      var copy = cell('button', 'Copy code');
+      copy.type = 'button'; copy.className = 'btn';
+      copy.addEventListener('click', function(){ copyText(c.code); });
+      row.appendChild(copy);
+      var off = cell('button', 'Turn off');
+      off.type = 'button'; off.className = 'btn ghost danger';
+      twoTap(off, 'Tap again to turn off', function(done){
+        postJson('admin-coupons', { action: 'off', id: c.id }).then(function(r){
+          if(!r.ok){ say(r.data.error || 'Could not turn it off.'); done(); return; }
+          say(c.code + ' is off. It no longer works.');
+          loadDeals('coupon');
+        }).catch(function(){ say('Could not reach the server.'); done(); });
+      });
+      row.appendChild(off);
+      card.appendChild(row);
+    }
+    return card;
+  }
+
+  // --- the tour -----------------------------------------------------------
+  // Shown on the owner's next three visits to the panel, on this device, and skippable every
+  // time. "More > Show the tour again" replays it whenever. A spotlight cut out of a dimmed
+  // screen points at the real control rather than describing where it is.
+  var TOUR_KEY = 'fb_admin_tour_deals';
+  var TOUR_VISITS = 3;
+  var tourShownThisLoad = false;
+  function maybeTour(){
+    if(tourShownThisLoad) return;
+    tourShownThisLoad = true;
+    var seen = Number(lsGet(TOUR_KEY)) || 0;
+    if(seen >= TOUR_VISITS) return;
+    try { localStorage.setItem(TOUR_KEY, String(seen + 1)); } catch(e){}
+    startTour(seen + 1);
+  }
+  function goTab(name){
+    var b = document.querySelector('.tab[data-tab="' + name + '"]');
+    if(b && !b.classList.contains('active')) b.click();
+  }
+  var TOUR = [
+    { title: 'New: deals and coupon codes', body: 'A one-minute tour of what changed. It shows your next three visits. Tap Skip whenever you like.' },
+    { tab: 'deals', target: '.tab[data-tab="deals"]', title: 'The Deals tab', body: 'Special prices live here, in two parts: Cut a Deal, and Coupon Codes.' },
+    { tab: 'deals', pane: 'deal', target: '#seg-deal', title: 'Cut a Deal', body: 'Say what they get and the price: all at once, a payment plan, or both. Tap Create. You get a private link to text the parent. They fill in the normal form and pay exactly that price.' },
+    { tab: 'deals', pane: 'deal', target: '.live-note', title: 'Live the moment you tap Create', body: 'No Publish on this tab. Each link is for one family: once they pay, it closes itself. Close it sooner from its card.' },
+    { tab: 'deals', pane: 'coupon', target: '#seg-coupon', title: 'Coupon Codes', body: 'Name a code, like FALL50. Pick dollars or percent off, what it works on, and how long it lasts: 24 hours up to 30 days. Families type it in the Coupon code box.' },
+    { tab: 'content', target: '#publishFlow', title: 'Website words and photos', body: 'These are different. Edits on Content and Photos stay private until you Publish. This strip always shows which step you are on.' },
+    { tab: 'content', target: '#actionBar', title: 'Save, then Publish', body: 'Save keeps your work, privately. Publish puts it on fast-basketball.com, about a minute later. The word in the top corner says Live, Unsaved or Not live yet.' },
+    { title: 'That is everything', body: 'Replay this any time from More > Show the tour again, at the bottom of the Content tab.' }
+  ];
+  function startTour(visit){
+    var old = document.getElementById('tour');
+    if(old) old.remove();
+    var i = 0;
+    var ov = document.createElement('div');
+    ov.id = 'tour';
+    ov.className = 'tour';
+    var spot = document.createElement('div');
+    spot.className = 'tour-spot';
+    var card = document.createElement('div');
+    card.className = 'tour-card';
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-modal', 'true');
+    card.setAttribute('aria-labelledby', 'tourTitle');
+    ov.appendChild(spot);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+
+    function end(){
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+      document.removeEventListener('keydown', onKey);
+      ov.remove();
+    }
+    function onKey(e){ if(e.key === 'Escape') end(); }
+    document.addEventListener('keydown', onKey);
+
+    function place(){
+      var step = TOUR[i];
+      var t = step.target ? document.querySelector(step.target) : null;
+      if(!t || !t.getClientRects().length){
+        spot.hidden = true;
+        ov.classList.add('dim');
+        card.className = 'tour-card mid';
+        return;
+      }
+      ov.classList.remove('dim');
+      spot.hidden = false;
+      var r = t.getBoundingClientRect();
+      var pad = 6;
+      spot.style.top = (r.top - pad) + 'px';
+      spot.style.left = (r.left - pad) + 'px';
+      spot.style.width = (r.width + pad * 2) + 'px';
+      spot.style.height = (r.height + pad * 2) + 'px';
+      // The card goes on whichever half of the screen the spotlight is not on.
+      card.className = 'tour-card ' + (r.top + r.height / 2 > window.innerHeight / 2 ? 'top' : 'bottom');
+    }
+    function show(){
+      var step = TOUR[i];
+      if(step.tab) goTab(step.tab);
+      if(step.pane && dealsPane !== step.pane) loadDeals(step.pane);
+      card.textContent = '';
+      var count = cell('p', 'Step ' + (i + 1) + ' of ' + TOUR.length + (visit ? ' · visit ' + visit + ' of ' + TOUR_VISITS : ''));
+      count.className = 'tour-count';
+      var h = cell('h2', step.title);
+      h.id = 'tourTitle';
+      card.appendChild(count);
+      card.appendChild(h);
+      card.appendChild(cell('p', step.body));
+      var row = document.createElement('div');
+      row.className = 'tour-actions';
+      var skip = cell('button', 'Skip');
+      skip.type = 'button'; skip.className = 'btn ghost';
+      skip.addEventListener('click', end);
+      row.appendChild(skip);
+      if(i > 0){
+        var back = cell('button', 'Back');
+        back.type = 'button'; back.className = 'btn';
+        back.addEventListener('click', function(){ i--; show(); });
+        row.appendChild(back);
+      }
+      var last = i === TOUR.length - 1;
+      var next = cell('button', last ? 'Done' : 'Next');
+      next.type = 'button'; next.className = 'btn primary';
+      next.addEventListener('click', function(){ if(last) end(); else { i++; show(); } });
+      row.appendChild(next);
+      card.appendChild(row);
+      var t = step.target ? document.querySelector(step.target) : null;
+      if(t && t.scrollIntoView) t.scrollIntoView({ block: 'center' });
+      // The tab switch and the scroll settle before the spotlight measures.
+      setTimeout(place, 60);
+      next.focus();
+    }
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    show();
+  }
+
   // Save and Publish are two buttons because they are two different things now. A save
   // writes a draft and costs nothing; only Publish commits, and a commit is one of the
   // twenty production deploys the free Netlify tier allows in a month. This panel used to
@@ -1034,10 +1734,10 @@
       }
       state.dirty = false;
       if(result.data.draft){
-        setStatus('Saved as draft', 'ok');
-        say('Saved. Press Publish to put it on the site.');
+        setFlow('saved');
+        say('Saved. Not on the website yet: tap Publish when you are ready.');
       } else {
-        setStatus('Saved, rebuilding', 'ok');
+        setFlow('published');
         say('Saved. The site is rebuilding.');
       }
     }).catch(function(){
@@ -1050,7 +1750,7 @@
 
   document.getElementById('publishBtn').addEventListener('click', function(){
     var btn = document.getElementById('publishBtn');
-    if(state.dirty && !window.confirm('You have unsaved changes. Publish anyway? Only saved work goes live.')) return;
+    if(state.dirty && !window.confirm('Some edits are not saved yet, and only SAVED work goes live. Tap Cancel, then Save, then Publish. Tap OK to publish only what was saved before.')) return;
     btn.disabled = true;
     btn.textContent = 'Publishing...';
     api('admin-publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
@@ -1061,8 +1761,8 @@
           say(result.data.error || 'Publish failed.');
           return;
         }
-        setStatus(result.data.local ? 'Live' : 'Published, rebuilding', 'ok');
-        say(result.data.message || 'Published.');
+        setFlow(result.data.local ? 'live' : 'published');
+        say(result.data.local ? result.data.message : 'Published. fast-basketball.com updates in about a minute.');
       }).catch(function(){
         say('Could not reach the server. Nothing was published.');
       }).finally(function(){
@@ -1096,6 +1796,7 @@
   document.getElementById('previewBtn').addEventListener('click', function(){ openPreview('home'); });
   document.getElementById('previewLockerBtn').addEventListener('click', function(){ openPreview('locker'); });
   document.getElementById('signOutBtn').addEventListener('click', function(){ signedOut(); });
+  document.getElementById('tourBtn').addEventListener('click', function(){ startTour(); });
 
   window.addEventListener('beforeunload', function(e){
     if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
