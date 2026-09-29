@@ -207,6 +207,23 @@ test('without Search Console access the run still works, and says which account 
   assert.deepEqual(r.drafts, {});
 });
 
+test('a refusal carries Google’s own reason, because a disabled API and a missing user both say 403', async () => {
+  const { searchConsole, NotConnected } = await import('../lib/searchconsole.mjs');
+  const disabled = 'Google Search Console API has not been used in project 606495868698 before or it is disabled.';
+  const fetchImpl = async (url) => {
+    if (url.includes('/token')) return new Response(JSON.stringify({ access_token: 't' }));
+    if (url.endsWith('/email')) return new Response('sa@example.iam.gserviceaccount.com');
+    return new Response(JSON.stringify({ error: { code: 403, message: disabled } }), { status: 403 });
+  };
+  const err = await searchConsole({ fetchImpl }).property().catch((e) => e);
+  assert.ok(err instanceof NotConnected);
+  assert.match(err.message, /has not been used in project/);
+  assert.equal(err.email, 'sa@example.iam.gserviceaccount.com');
+  // No body to read: the old hint stands.
+  const bare = await searchConsole({ fetchImpl: async (url) => url.includes('/token') ? new Response('{"access_token":"t"}') : new Response('', { status: 403 }) }).property().catch((e) => e);
+  assert.match(bare.message, /Add it as a user/);
+});
+
 // ---------------------------------------------------------------- applying, and the head
 
 test('apply puts a checked title in the draft, a later text save keeps it, and the page head uses it', async () => {

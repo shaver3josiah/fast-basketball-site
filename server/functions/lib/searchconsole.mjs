@@ -51,7 +51,10 @@ export function searchConsole({ fetchImpl = fetch, siteHost = 'fast-basketball.c
       body: body ? JSON.stringify(body) : undefined
     });
     if (res.status === 401 || res.status === 403) {
-      throw new NotConnected('Search Console refused this account (' + res.status + '). Add it as a user on the property.', await accountEmail(fetchImpl));
+      // Pass Google's own reason through. A disabled API and a missing user both answer 403,
+      // and a fixed guess ("add it as a user") once sent the fix to the wrong place.
+      const why = await res.json().then((j) => j?.error?.message).catch(() => null);
+      throw new NotConnected('Search Console refused this account (' + res.status + ')' + (why ? ': ' + String(why).slice(0, 300) : '. Add it as a user on the property.'), await accountEmail(fetchImpl));
     }
     if (!res.ok) throw new Error('Search Console ' + method + ' ' + path.split('?')[0] + ' answered ' + res.status + ': ' + (await res.text()).slice(0, 200));
     return res.status === 204 ? null : res.json().catch(() => null);
