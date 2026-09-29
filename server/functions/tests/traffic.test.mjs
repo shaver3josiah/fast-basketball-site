@@ -235,6 +235,27 @@ test('admin-traffic: signed out is 401, and a range is only ever 7, 30 or 90 day
   assert.equal((await (await admin('GET', null, { query: '?days=90' })).json()).report.daily.length, 90);
 });
 
+test('admin-traffic: compares with the window before, and never with days before counting began', async () => {
+  reset();
+  const visit = (sid, day) => ({ sid: sid + 'aaaaaaaaaaaa', vid: sid + 'bbbbbbbbbbbb', day, ch: 'Direct', pv: 1, ms: 0, pages: ['/'], at: day + 'T16:00:00.000Z' });
+  fs.mkdirSync('.local', { recursive: true });
+  // 15 December, 7 days: this window is 9 to 15 December, the previous one 2 to 8 December.
+  fs.writeFileSync('.local/traffic.json', JSON.stringify([
+    visit('a', '2026-12-14'), visit('b', '2026-12-10'), visit('c', '2026-12-09'),
+    visit('d', '2026-12-08'), visit('e', '2026-12-02'), visit('f', '2026-12-01')
+  ]));
+  const now = Date.parse('2026-12-15T18:00:00Z');
+  let r = (await (await admin('GET', null, { query: '?days=7', now })).json()).report;
+  assert.equal(r.totals.sessions, 3);
+  assert.equal(r.previous.sessions, 2, '8 and 2 December; the 1st is outside both windows');
+  assert.equal(r.trackingSince, '2026-09-29');
+  assert.equal(r.daily[0].day, '2026-12-09');
+
+  // Early October, 30 days: the previous window is all before the counter existed.
+  r = (await (await admin('GET', null, { query: '?days=30', now: Date.parse('2026-10-02T18:00:00Z') })).json()).report;
+  assert.equal(r.previous, null, 'zeros before counting began are not a slow month');
+});
+
 test("admin-traffic: making Josiah's link emails the OWNER, a FAST link emails nobody", async () => {
   reset();
   const sent = [];

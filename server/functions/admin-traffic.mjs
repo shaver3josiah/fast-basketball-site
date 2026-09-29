@@ -13,7 +13,7 @@ import { verifyRequestSession } from './lib/auth.mjs';
 import { json } from './lib/stripe.mjs';
 import { listLeads } from './lib/leads.mjs';
 import { sendEmail, ownerEmail, escapeHtml } from './lib/notify.mjs';
-import { summarize } from './lib/traffic.mjs';
+import { summarize, TRACKING_SINCE } from './lib/traffic.mjs';
 import { visitsSince, listLinks, getLink, putLink, validateLink, DESTINATIONS } from './lib/traffic-store.mjs';
 import { SITE_URL } from '../../src/lib/site-config.mjs';
 
@@ -31,11 +31,18 @@ export async function handle(request, { now, send }) {
   if (request.method === 'GET') {
     const asked = Number(new URL(request.url).searchParams.get('days'));
     const days = RANGES.includes(asked) ? asked : 30;
-    // A day of slack on the read: the report cuts by New York calendar day, the store by write time.
-    const sinceIso = new Date(now - (days + 1) * 864e5).toISOString();
+    // Two windows back, for the "vs the previous N days" comparison, plus a day of slack: the
+    // report cuts by New York calendar day, the store by write time.
+    const sinceIso = new Date(now - (2 * days + 1) * 864e5).toISOString();
     const [sessions, leads, links] = await Promise.all([visitsSince(sinceIso), listLeads(), listLinks()]);
     links.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     const report = summarize({ sessions, leads, links: links.map(view), now, days });
+    // The previous window ends the day before this one starts. Noon UTC is mid-morning in New
+    // York, so stepping from it never lands on the wrong calendar day across a clock change.
+    const prev = summarize({ sessions, leads, links: [], now: Date.parse(report.from + 'T12:00:00Z') - 864e5, days });
+    report.trackingSince = TRACKING_SINCE;
+    // Withheld while any of it predates the counter: a window of zeros is not a slow month.
+    report.previous = prev.from >= TRACKING_SINCE ? prev.totals : null;
     return json(200, { report, destinations: DESTINATIONS });
   }
   if (request.method !== 'POST') return json(405, { error: 'method not allowed' });

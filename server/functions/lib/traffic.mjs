@@ -38,6 +38,11 @@ export function refHost(v) {
 }
 
 export const ID_RE = /^[a-z0-9]{12,40}$/;
+
+// The first day the site counted visits (New York calendar). Every day before it reads as "not
+// counted", never as zero visits, and a comparison window that reaches back past it is withheld:
+// zero before the counter existed is not a slow week.
+export const TRACKING_SINCE = '2026-09-29';
 export const LINK_ID_RE = /^[a-z0-9]{6,20}$/;
 
 // ---------------------------------------------------------------- channels

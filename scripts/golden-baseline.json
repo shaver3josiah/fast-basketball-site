@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-29T16:01:29.755Z",
+  "recorded": "2026-09-29T16:54:18.944Z",
   "files": {
     "0ec211c90d82b90b7b470eb6889ce903.txt": {
       "sha": "c6d3306e64b68843",
@@ -58,12 +58,12 @@
       "bytes": 1656
     },
     "admin/traffic.css": {
-      "sha": "9643464d234ed9e5",
-      "bytes": 9574
+      "sha": "64543c92bf47c1d6",
+      "bytes": 12788
     },
     "admin/traffic.js": {
-      "sha": "0ab6de8c89d93f67",
-      "bytes": 19751
+      "sha": "0a519c5fe7484096",
+      "bytes": 28687
     },
     "admin/vendor/moveable.min.js": {
       "sha": "6c6c78751303afd6",
