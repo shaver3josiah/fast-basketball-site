@@ -76,6 +76,12 @@ export async function getStore(nameOrOptions) {
     async entries() {
       const snap = await col.get();
       return snap.docs.map((d) => ({ key: decodeId(d.id), value: d.get('v') }));
+    },
+    // Only the documents written at or after an ISO time, on the `at` every write stamps. A
+    // single-field range, so Firestore's automatic index serves it with nothing to configure.
+    async since(iso) {
+      const snap = await col.where('at', '>=', iso).get();
+      return snap.docs.map((d) => ({ key: decodeId(d.id), value: d.get('v') }));
     }
   };
 }

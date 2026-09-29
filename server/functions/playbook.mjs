@@ -2,6 +2,7 @@
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
 import { addLead } from './lib/leads.mjs';
 import { sendEmail } from './lib/notify.mjs';
+import { parseTrk } from './lib/traffic.mjs';
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 6;
@@ -144,6 +145,7 @@ export default async (request, context) => {
     focus: skillGap.id,
     guardianConfirmed: payload.guardianConfirmed === true,
     referrer: payload.referrer || null,
+    source: parseTrk(payload.trk),
     ip,
     emailSent
   });

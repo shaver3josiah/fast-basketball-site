@@ -1,0 +1,179 @@
+/* The Traffic tab (admin/traffic.js). Built on tokens.css and the shared controls in admin.css
+   (.btn, .field, .chip, .lead, .field-group, .link-out); everything here is prefixed tr- so it
+   can never collide with a class admin.css grows later. One data hue, the brand red, because
+   every chart here is a single series: the length is the number, the colour never is. */
+
+#tabTraffic.tr-busy{opacity:.6;transition:opacity .2s;}
+.tr-top{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.tr-range{
+  flex:1;display:flex;gap:4px;padding:4px;
+  background:var(--field);border:1px solid var(--line);border-radius:12px;
+}
+.tr-range button{
+  flex:1;min-height:44px;border:0;border-radius:9px;background:none;cursor:pointer;
+  font-family:var(--cond);font-weight:700;font-size:.9rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--fg-3);
+}
+.tr-range button[aria-pressed="true"]{background:var(--red);color:#fff;}
+.tr-refresh{flex:none;min-height:54px;}
+.tr-range-note{margin:0 0 14px;color:var(--fg-3);font-size:.88rem;}
+
+/* ---- cards and headings */
+.tr-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px;margin-bottom:12px;
+}
+.tr-h{
+  margin:0;font-family:var(--cond);font-weight:700;font-size:1.15rem;
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.tr-h3{
+  margin:22px 0 10px;font-family:var(--cond);font-weight:700;font-size:.82rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);
+}
+.tr-sub{margin:6px 0 14px;color:var(--fg-2);font-size:.94rem;line-height:1.5;}
+.tr-card>.tr-h+div,.tr-card>.tr-h+form{margin-top:14px;}
+.tr-empty{color:var(--fg-3);font-size:.94rem;margin:8px 0;}
+.tr-note{margin:12px 0 8px;color:var(--fg-3);font-size:.88rem;line-height:1.5;}
+.tr-foot{margin:18px 2px 8px;color:var(--fg-3);font-size:.85rem;line-height:1.5;}
+
+/* ---- stat tiles */
+.tr-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px;}
+.tr-tile{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;}
+.tr-tile-l{
+  margin:0;font-family:var(--cond);font-weight:700;font-size:.74rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);
+}
+.tr-tile-n{
+  margin:2px 0 0;font-family:var(--cond);font-weight:700;font-size:2rem;line-height:1.05;
+  font-variant-numeric:tabular-nums;color:var(--fg);
+}
+.tr-tile-s{margin:2px 0 0;color:var(--fg-2);font-size:.84rem;}
+
+/* ---- visits per day */
+/* margin-top leaves room for the row of lead dots above the tallest bar. */
+.tr-plot{position:relative;height:170px;margin-top:24px;padding-left:34px;}
+.tr-grid{position:absolute;inset:0;pointer-events:none;}
+.tr-grid span{position:absolute;left:34px;right:0;height:0;border-top:1px solid var(--line);}
+.tr-grid span:last-child{border-top-color:var(--line-2);}
+.tr-grid em{
+  position:absolute;left:-34px;width:28px;top:-.45em;text-align:right;font-style:normal;
+  color:var(--fg-3);font-size:.72rem;line-height:1;font-variant-numeric:tabular-nums;
+}
+.tr-cols{position:absolute;left:34px;right:0;top:0;bottom:0;display:flex;align-items:flex-end;}
+.tr-col{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;position:relative;cursor:default;min-width:0;}
+.tr-bar{background:var(--red);border-radius:3px 3px 0 0;min-height:0;transition:filter .15s;}
+.tr-col.hot .tr-bar{filter:brightness(1.35);}
+.tr-col.hot{background:rgba(255,255,255,.04);}
+.tr-lead-dot{
+  position:absolute;left:50%;top:-12px;width:7px;height:7px;margin-left:-3.5px;
+  border-radius:50%;background:var(--teal);
+}
+.tr-lead-dot.static{position:static;display:inline-block;margin:0 8px 0 0;vertical-align:1px;}
+.tr-axis{
+  display:flex;justify-content:space-between;padding-left:34px;margin-top:6px;
+  color:var(--fg-3);font-size:.76rem;
+}
+.tr-key{margin:10px 0 0;color:var(--fg-3);font-size:.84rem;}
+.tr-tip{
+  position:absolute;top:-8px;transform:translate(-50%,-100%);z-index:2;
+  background:var(--hover);border:1px solid var(--line-2);border-radius:8px;
+  padding:7px 10px;font-size:.84rem;line-height:1.35;white-space:nowrap;
+  box-shadow:0 6px 18px rgba(0,0,0,.4);pointer-events:none;opacity:0;transition:opacity .12s;
+}
+.tr-tip.on{opacity:1;}
+.tr-tip b{display:block;font-weight:600;}
+.tr-tip span{display:block;color:var(--fg-2);}
+.tr-tip .tr-tip-lead{color:var(--teal);}
+
+.tr-more{margin-top:12px;}
+.tr-more summary{cursor:pointer;color:var(--fg-2);font-size:.9rem;min-height:44px;display:flex;align-items:center;}
+.tr-table{width:100%;border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums;}
+.tr-table th,.tr-table td{text-align:right;padding:8px 6px;border-bottom:1px solid var(--line);}
+.tr-table th:first-child,.tr-table td:first-child{text-align:left;}
+.tr-table th{color:var(--fg-3);font-weight:600;font-size:.8rem;}
+
+/* ---- ranked lists */
+.tr-rank{display:grid;gap:4px;}
+.tr-rank-row{display:flex;align-items:center;gap:10px;min-height:38px;}
+.tr-rank-row.head{min-height:0;color:var(--fg-3);font-size:.74rem;font-family:var(--cond);font-weight:700;letter-spacing:.12em;text-transform:uppercase;}
+.tr-rank-row .n{flex:0 0 52px;text-align:right;font-variant-numeric:tabular-nums;color:var(--fg-2);}
+.tr-rank-row:not(.head) .n:nth-child(2){color:var(--fg);font-weight:600;}
+.tr-rank-row>span:first-child{flex:1;min-width:0;}
+.tr-rank-name{position:relative;display:block;padding:8px 10px;border-radius:8px;overflow:hidden;}
+.tr-rank-name i{position:absolute;left:0;top:0;bottom:0;background:var(--red-tint);border-radius:8px;}
+.tr-rank-name b{position:relative;font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ---- whose efforts */
+.tr-who{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 4px;}
+.tr-who-n{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+.tr-who-n:first-child{border-color:rgba(37,224,208,.45);}
+.tr-who-n:first-child .tr-tile-n{color:var(--teal);}
+.tr-who-n.warn .tr-tile-n{color:var(--amber);}
+.tr-who-list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:6px;}
+.tr-who-list li{padding:10px 12px;background:var(--bg);border-radius:10px;color:var(--fg-2);font-size:.92rem;}
+.tr-who-list li b{color:var(--fg);font-weight:600;}
+.tr-why{display:block;margin-top:4px;font-size:.86rem;color:var(--fg-3);}
+.tr-why.link,.tr-why.answer{color:var(--teal);}
+.tr-why.search{color:var(--amber);}
+.tr-why:not(.link):not(.answer):not(.search){color:var(--fg-3);}
+.tr-paid{
+  margin-left:8px;font-family:var(--cond);font-weight:700;font-size:.72rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--green);
+}
+
+/* ---- link maker */
+.tr-form .field{margin-bottom:14px;}
+.tr-form .btn{width:100%;}
+.tr-check{
+  display:flex;gap:12px;align-items:flex-start;margin:0 0 14px;padding:14px;cursor:pointer;
+  background:var(--bg);border:1px solid var(--line-2);border-radius:12px;
+}
+.tr-check input{width:22px;height:22px;min-height:0;margin:1px 0 0;padding:0;flex:none;accent-color:var(--teal);}
+.tr-check b{display:block;font-weight:600;color:var(--fg);}
+.tr-check small{display:block;margin-top:4px;color:var(--fg-2);font-size:.88rem;line-height:1.5;}
+.tr-check:has(input:checked){border-color:rgba(37,224,208,.55);background:rgba(37,224,208,.06);}
+.tr-err{color:var(--red-hot);font-size:.88rem;min-height:1.2em;margin:0 0 8px;}
+.tr-made{
+  margin-top:14px;padding:14px;border-radius:12px;
+  background:rgba(57,217,138,.08);border:1px solid rgba(57,217,138,.35);
+}
+.tr-made .link-out,.tr-link .link-out{margin:8px 0 10px;overflow-wrap:anywhere;user-select:all;}
+.tr-made-btns,.tr-link-btns{display:flex;gap:8px;}
+.tr-made-note{margin:0 0 12px;color:var(--fg-2);font-size:.88rem;line-height:1.5;}
+.tr-made-btns .btn,.tr-link-btns .btn{flex:1;}
+.tr-links{display:grid;gap:10px;}
+.tr-link{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px;}
+.tr-link.off{opacity:.7;}
+.tr-link-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.tr-link-name{font-family:var(--cond);font-size:1.2rem;letter-spacing:.02em;margin-right:auto;}
+.tr-link-meta{margin:6px 0 0;color:var(--fg-3);font-size:.86rem;overflow-wrap:anywhere;}
+.tr-link-stats{display:flex;gap:16px;margin:8px 0 0;color:var(--fg-2);font-size:.9rem;}
+.tr-link-stats b{color:var(--fg);font-variant-numeric:tabular-nums;}
+.chip.tr-chip-dev{background:rgba(37,224,208,.12);color:var(--teal);border-color:rgba(37,224,208,.38);}
+.chip.tr-chip-paid{background:rgba(57,217,138,.12);color:var(--green);border-color:rgba(57,217,138,.38);}
+.tr-revoke{color:var(--coral);}
+
+/* ---- lead cards reuse .lead; only the credit line is new */
+.tr-lead .tr-why{margin-top:10px;font-size:.9rem;}
+.tr-detail{margin-top:12px;}
+
+@media (min-width:760px){
+  .tr-tiles{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .tr-who{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .tr-plot{height:210px;}
+  .tr-form{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;}
+  .tr-form .tr-check,.tr-form .tr-err,.tr-form .btn,.tr-form .field:nth-of-type(3){grid-column:1 / -1;}
+  .tr-links{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .tr-form .btn{width:auto;justify-self:start;padding:0 28px;}
+}
+@media (min-width:1000px){
+  .tr-tiles{grid-template-columns:repeat(6,minmax(0,1fr));}
+}
+/* Six tabs now. At a phone's width the shared letter-spacing pushed CONTENT against the edge. */
+@media (max-width:430px){
+  .tabbar .tab{letter-spacing:.06em;font-size:.8rem;padding:0 2px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .tr-bar,.tr-tip,#tabTraffic.tr-busy{transition:none;}
+}

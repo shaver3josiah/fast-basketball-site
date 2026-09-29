@@ -21,6 +21,7 @@ import { commissionAtRate, rateFor, isAttributed, withinAttributionWindow, appro
 import { isAppPlan, leadKey } from '../../../src/lib/plans.mjs';
 import { getLead } from './leads.mjs';
 import { getEntry, putEntry, listEntries } from './ledger.mjs';
+import { activeClaim } from './traffic-store.mjs';
 
 const isoOf = (epochSeconds) =>
   Number.isFinite(epochSeconds) ? new Date(epochSeconds * 1000).toISOString() : null;
@@ -107,6 +108,25 @@ async function firstPaidAtFor(customerKey, list) {
  * rate; for a tool purchase the rate is fixed and this is only where the buyer's name comes
  * from. leadKey picks the prefix, so an app order is never looked for under 'registration:'.
  */
+/**
+ * The developer link a registration came through, if it still counts: it existed, was marked as
+ * the developer's, and had not been revoked when the family registered (traffic-store.mjs says
+ * why revoking never reaches back). Re-read rather than trusting the stored row, the same stance
+ * as approvedCampaign below. A store blip falls back to the base rate, for the reason
+ * registrationFor gives, and logs loudly: the statement can be corrected (Section 8).
+ */
+async function claimFor(reg) {
+  if (!reg || !reg.claim || typeof reg.claim.id !== 'string') return null;
+  try {
+    // registeredAt first: once Stripe reports the payment the webhook rewrites `timestamp` to the
+    // payment time and keeps the registration's own time in registeredAt.
+    return await activeClaim(reg.claim.id, reg.registeredAt || reg.timestamp || undefined);
+  } catch (err) {
+    console.error('[accrue] could not read link ' + reg.claim.id + ', base rate applied: ' + err.message);
+    return null;
+  }
+}
+
 async function registrationFor(registrationId, planKey) {
   if (typeof registrationId !== 'string' || !registrationId) return null;
   try {
@@ -175,7 +195,8 @@ export async function accrueFromSession(session, event) {
   const paidAt = isoOf(event.created);
   // Attribution is not even computed for an app sale: the rate is fixed, and asking the
   // question would invite a later edit that let an intake answer move a 50/50 product.
-  const attributed = app ? false : isAttributed({ hearAbout: reg?.hearAbout, campaign: reg?.campaign });
+  const claim = app ? null : await claimFor(reg);
+  const attributed = app ? false : isAttributed({ hearAbout: reg?.hearAbout, campaign: reg?.campaign, claimed: !!claim });
   const customerKey = customerKeyOf(reg?.email || session.customer_email);
   const withinWindow = attributed
     ? withinAttributionWindow(await firstPaidAtFor(customerKey, listEntries), paidAt)
@@ -199,6 +220,7 @@ export async function accrueFromSession(session, event) {
       customerKey,
       hearAbout: app ? null : reg?.hearAbout || null,
       campaign: app ? null : approvedCampaign(reg?.campaign),
+      claim: claim ? claim.name : null,
       familyName: reg?.name || null,
       playerName: reg?.playerName || null,
       planLabel: reg?.planLabel || reg?.productLabel || null,
@@ -222,7 +244,8 @@ export async function accrueFromInvoice(inv, event) {
 
   // paid_at is when the money moved; event.created is only when we heard about it.
   const paidAt = isoOf(inv.status_transitions?.paid_at) || isoOf(event.created);
-  const attributed = app ? false : isAttributed({ hearAbout: reg?.hearAbout, campaign: reg?.campaign });
+  const claim = app ? null : await claimFor(reg);
+  const attributed = app ? false : isAttributed({ hearAbout: reg?.hearAbout, campaign: reg?.campaign, claimed: !!claim });
   const customerKey = customerKeyOf(reg?.email || inv.customer_email);
   // The window opens at the customer's FIRST payment, so a renewal in month 13 drops to the
   // base rate on its own. Only looked up when it could change the answer.
@@ -251,6 +274,7 @@ export async function accrueFromInvoice(inv, event) {
       customerKey,
       hearAbout: app ? null : reg?.hearAbout || null,
       campaign: app ? null : approvedCampaign(reg?.campaign),
+      claim: claim ? claim.name : null,
       familyName: reg?.name || inv.customer_name || null,
       playerName: reg?.playerName || null,
       planLabel: reg?.planLabel || reg?.productLabel || null,

@@ -104,7 +104,12 @@ export function approvedCampaign(value, list = APPROVED_CAMPAIGNS) {
  * An unapproved campaign is not an error and does not disqualify anybody: it is simply ignored,
  * and the answer decides, which is the "if the evidence is unclear, 2.5% applies" default.
  */
-export function isAttributed({ hearAbout, campaign } = {}, list = APPROVED_CAMPAIGNS) {
+export function isAttributed({ hearAbout, campaign, claimed } = {}, list = APPROVED_CAMPAIGNS) {
+  // A developer link from the admin panel's Traffic tab: a tracked link Developer created and
+  // FAST approved (the owner is emailed the moment one exists). `claimed` is only ever true
+  // when the caller has re-read that link server-side (traffic-store.mjs activeClaim); nothing
+  // a browser sends can set it.
+  if (claimed === true) return true;
   if (approvedCampaign(campaign, list)) return true;
   return hearAbout === ATTRIBUTING_ANSWER;
 }

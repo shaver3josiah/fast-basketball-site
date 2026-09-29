@@ -13,6 +13,8 @@
 
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
 import { addLead } from './lib/leads.mjs';
+import { parseTrk } from './lib/traffic.mjs';
+import { activeClaim } from './lib/traffic-store.mjs';
 import { sendEmail, ownerEmail, escapeHtml, recordTable } from './lib/notify.mjs';
 import { CONTACT } from '../../src/lib/site-config.mjs';
 
@@ -113,6 +115,16 @@ export default async (request, context) => {
     guardianConfirmed: true,
     ...(spam ? { spam } : {})
   };
+  // How they found the site, and a developer link they arrived on (re-read here, never trusted
+  // from the page). Neither changes what happens to the enquiry; the Traffic tab reads both.
+  const source = parseTrk(body.trk);
+  if (source) record.source = source;
+  if (typeof body.claim === 'string' && body.claim) {
+    try {
+      const claim = await activeClaim(body.claim.trim().toLowerCase());
+      if (claim) record.claim = { id: claim.id, name: claim.name };
+    } catch (err) { console.error('contact claim not read: ' + err.message); }
+  }
 
   // Store first, notify second, for the reason checkout.mjs gives: an email that fails to
   // send is a lead Blake can still find in the admin panel, but a lead that was never

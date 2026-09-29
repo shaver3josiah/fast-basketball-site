@@ -99,9 +99,13 @@ export function validateFields(fields, body) {
 
 // Pure, so it runs in a test without a request. Returns every problem at once, keyed by
 // field, so the page can mark each one rather than the first.
-export function validateRegistration(body) {
+export function validateRegistration(body, { claimed = false } = {}) {
   const { errors, values } = validateFields(FIELDS, body);
   const src = body && typeof body === 'object' ? body : {};
+  // A family on a developer link (checkout has already re-read the link) is not asked how they
+  // heard about FAST: the link is the answer, and the page hides the question. An answer they
+  // DID give is still held to the Schedule 1 list.
+  if (claimed && !values.hearAbout) delete errors.hearAbout;
   // The two agreement boxes. A drawn signature pad sat beside them until September 2026 and
   // was removed: the training agreement's own Step 2 says a family agrees "by entering your
   // full name on the checkout form" and ticking the I-agree box, which is Stripe Checkout's

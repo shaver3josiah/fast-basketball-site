@@ -78,7 +78,8 @@ export function summarise(entries, { nowPeriodKey = null } = {}) {
           customerKey: e.customerKey || null,
           familyName: e.familyName || null,
           hearAbout: e.hearAbout || null,
-          campaign: e.campaign || null
+          campaign: e.campaign || null,
+          claim: e.claim || null
         });
       }
     }
@@ -129,7 +130,8 @@ function rowsFor(period) {
     playerName: e.playerName || '',
     planLabel: e.planLabel || '',
     billingReason: e.billingReason || '',
-    hearAbout: e.hearAbout || '',
+    // A family on a developer link was not asked; the link is their answer.
+    hearAbout: e.hearAbout || (e.claim ? "Josiah's link: " + e.claim : ''),
     // Says WHY the rate is what it is: an attributed customer past 12 months reads 'Yes, expired'
     // rather than looking like a mistake on the statement.
     attributed: e.attributed ? (e.withinWindow ? 'Yes' : 'Yes, 12 months expired') : 'No',

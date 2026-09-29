@@ -20,16 +20,18 @@ const HANDLERS = {
   'admin-media': () => import('./functions/admin-media.mjs'),
   'admin-publish': () => import('./functions/admin-publish.mjs'),
   'admin-site': () => import('./functions/admin-site.mjs'),
+  'admin-traffic': () => import('./functions/admin-traffic.mjs'),
   'admin-upload': () => import('./functions/admin-upload.mjs'),
   checkout: () => import('./functions/checkout.mjs'),
   contact: () => import('./functions/contact.mjs'),
-  'dev-payments': () => import('./functions/dev-payments.mjs'),
   deal: () => import('./functions/deal.mjs'),
+  'dev-payments': () => import('./functions/dev-payments.mjs'),
   'enroll-visit': () => import('./functions/enroll-visit.mjs'),
   'leads-list': () => import('./functions/leads-list.mjs'),
   playbook: () => import('./functions/playbook.mjs'),
   preview: () => import('./functions/preview.mjs'),
-  'stripe-webhook': () => import('./functions/stripe-webhook.mjs')
+  'stripe-webhook': () => import('./functions/stripe-webhook.mjs'),
+  track: () => import('./functions/track.mjs')
 };
 
 export const ENDPOINTS = Object.keys(HANDLERS);

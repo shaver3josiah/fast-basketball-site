@@ -58,8 +58,9 @@ function summaryHtml(period, extra) {
     (period.attributedCustomers && period.attributedCustomers.length
       ? '<ul>' + period.attributedCustomers.map((c) =>
           '<li>' + escapeHtml(c.familyName || c.customerKey || 'unnamed') +
-          (c.campaign ? ' (campaign: ' + escapeHtml(c.campaign) + ')'
-                      : ' (answered: ' + escapeHtml(c.hearAbout || 'unknown') + ')') +
+          (c.claim ? " (Josiah's link: " + escapeHtml(c.claim) + ')'
+            : c.campaign ? ' (campaign: ' + escapeHtml(c.campaign) + ')'
+            : ' (answered: ' + escapeHtml(c.hearAbout || 'unknown') + ')') +
           '</li>').join('') + '</ul>'
       : '<p>None this month. Every payment was charged at the 2.5% rate.</p>') +
     '<p>The CSV and the spreadsheet attached hold one row per payment, with how each family said ' +

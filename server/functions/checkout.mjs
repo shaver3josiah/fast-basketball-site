@@ -13,15 +13,17 @@ import { randomUUID } from 'node:crypto';
 import { checkoutSpec, getPlan, totalCents, dollars, isAppPlan, leadKey, PAY_LABELS } from '../../src/lib/plans.mjs';
 import { validateRegistration } from '../../src/lib/registration.mjs';
 import { validateAppOrder } from '../../src/lib/apporder.mjs';
+import { activeClaim } from './lib/traffic-store.mjs';
+import { parseTrk } from './lib/traffic.mjs';
 import { approvedCampaign } from '../../src/lib/commission.mjs';
 import { SITE_URL, absoluteUrl } from '../../src/lib/site-config.mjs';
 import { checkRateLimit, clientIp } from './lib/rate-limit.mjs';
 import { addLead, getLead } from './lib/leads.mjs';
 import { sendEmail, ownerEmail, escapeHtml, recordTable } from './lib/notify.mjs';
 import { stripeClient, priceByLookupKey, promotionCodeByCode, couponCoversPlan, json } from './lib/stripe.mjs';
+import { getDeal, dealProblem, dealSpec, dealPrice, dealSessionExpiry, recordDealSession } from './lib/deals.mjs';
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-import { getDeal, dealProblem, dealSpec, dealPrice, dealSessionExpiry, recordDealSession } from './lib/deals.mjs';
 const RATE_LIMIT_MAX = 10;
 // One message for every way a coupon can fail: unknown, mistyped, expired, spent, not for this
 // plan, or refused by Stripe at the last moment. It is true of all of them, and it names the
@@ -209,7 +211,14 @@ export default async (request, context) => {
   const allowed = await checkRateLimit('checkout:' + ip, { windowMs: RATE_LIMIT_WINDOW_MS, max: RATE_LIMIT_MAX });
   if (!allowed) return fail(429, { error: 'too many requests, try again later' });
 
-  const { errors, values } = isApp ? validateAppOrder(body) : validateRegistration(body);
+  // A developer link the family arrived on (the page sends the id it stored). Re-read HERE,
+  // server-side, because it decides a commission rate: the page only ever holds an id. It is
+  // never read for a tool, which pays 50/50 whoever sent the buyer.
+  let claim = null;
+  if (!isApp && typeof body.claim === 'string' && body.claim) {
+    try { claim = await activeClaim(body.claim.trim().toLowerCase()); } catch (err) { console.error('claim ' + body.claim + ' not read: ' + err.message); }
+  }
+  const { errors, values } = isApp ? validateAppOrder(body) : validateRegistration(body, { claimed: !!claim });
   // The typed coupon code. Deliberately NOT a FIELDS answer, the same call as the campaign tag
   // below: it is an instruction about the payment, not something the registration asks about
   // the athlete, so it never enters `values`, never reaches validateRegistration and never
@@ -271,6 +280,11 @@ export default async (request, context) => {
   // put a campaign name on a row it can never have priced.
   const campaign = isApp ? null : approvedCampaign(body.campaign);
   if (campaign) record.campaign = campaign;
+  if (claim) record.claim = { id: claim.id, name: claim.name };
+  // How this family found the site, from the hidden field src/js/track.js adds to the form. The
+  // Traffic tab reads it; nothing on the money path does.
+  const source = parseTrk(body.trk);
+  if (source) record.source = source;
   // Stored as typed, before Stripe has been asked whether it is real, so the record and the
   // email Blake gets say what the family entered. What the card is actually charged is not
   // this number and never was: the webhook writes amount_total over it once Stripe reports

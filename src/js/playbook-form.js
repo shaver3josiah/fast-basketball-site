@@ -69,7 +69,9 @@
            ponytail: server/functions/playbook.mjs currently drops unknown keys. Its owner
            should add guardianConfirmed to storeLead() so the confirmation is actually kept. */
         guardianConfirmed: true,
-        referrer: document.referrer || window.location.href
+        referrer: document.referrer || window.location.href,
+        /* How this visitor found the site: the hidden field js/track.js adds to every form. */
+        trk: (form.elements.trk && form.elements.trk.value) || ''
       })
     }).then(function(res){
       return res.json().then(function(data){ return { ok: res.ok, data: data }; });

@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/styles/fonts.css">
 <link rel="stylesheet" href="/admin/tokens.css">
 <link rel="stylesheet" href="/admin/admin.css">
+<link rel="stylesheet" href="/admin/traffic.css">
 </head>
 <body>
 <div id="loginScreen" class="screen">
@@ -73,6 +74,7 @@
   <main id="tabLeads" class="tab-panel hidden"></main>
   <main id="tabPay" class="tab-panel hidden"></main>
   <main id="tabDeals" class="tab-panel hidden"></main>
+  <main id="tabTraffic" class="tab-panel hidden"></main>
 
   <!-- Outside the three panels because admin.js empties those on every render, and
        these buttons are wired up once at load. -->
@@ -98,6 +100,7 @@
       <button data-tab="deals" class="tab" type="button" data-title="Cut a Deal">Deals</button>
       <button data-tab="leads" class="tab" type="button">Leads</button>
       <button data-tab="pay" class="tab" type="button">Pay</button>
+      <button data-tab="traffic" class="tab" type="button" data-title="Traffic &amp; Links">Traffic</button>
     </nav>
   </div>
 </div>
@@ -107,5 +110,6 @@
 <script src="/admin/schema.js"></script>
 <script src="/admin/plans.js"></script>
 <script src="/admin/admin.js" defer></script>
+<script src="/admin/traffic.js" defer></script>
 </body>
 </html>

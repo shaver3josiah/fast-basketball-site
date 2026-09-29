@@ -42,7 +42,7 @@ in on can publish. On a brand-new phone or computer, it is the same steps: press
 get the code, type it in. If a code does not arrive, press "Send a new code," and check your
 spam folder once (if it is there, mark it "not spam" and it will not happen again).
 
-The panel is built for a phone. The five tabs (Content, Photos, Deals, Leads, Pay) and
+The panel is built for a phone. The six tabs (Content, Photos, Deals, Leads, Pay, Traffic) and
 the Save and Publish buttons sit in a bar across the bottom, where your thumb already is.
 The line at the top right says where your work stands: amber "Unsaved" or "Not live yet"
 while there is work the website does not have, green "Live" once it does.
@@ -169,6 +169,41 @@ that search engines show, and the Motion switches that turn the animations up, d
 or off.
 
 Save and Publish here are the same two buttons as the other screen, with the same rule.
+
+Traffic tab: where families come from
+
+The site counts its own visits: no Google Analytics, no cookies, and search engines and
+bots are left out. Pick 7, 30 or 90 days at the top. Your own visits from the phone or
+computer you run this panel on are not counted.
+
+  - The number tiles: visitors, visits, pages viewed, leads, registrations, and paid
+    enrollments for the range.
+  - Visits per day. A teal dot over a day means a lead came in that day. Hover a bar
+    for the numbers.
+  - Whose efforts brought them. This is the question the website agreement pays on. A
+    family counts as Josiah's when they came through one of his links, or answered
+    "Google or online search". Everything else is yours. "To talk over" lists families
+    who first found the site from a search engine but answered something else: Google
+    hides the search words, so the panel cannot tell a search for "Fast Basketball"
+    (yours) from one for "basketball training near me" (his). The agreement says you two
+    talk those over.
+  - How people find you: search, social, tracked links, other websites, or typed in
+    directly, with the leads and paid enrollments each one brought. A family is credited
+    to how they FIRST found the site.
+  - Every lead and how they found you, one card each.
+
+Tracked links. Also on the Traffic tab. Name the link, pick where it opens, and tap
+Make the link. Give one to anything you hand out: a flyer, your Instagram bio, the
+website button on your Google Business Profile. Each link shows its own visits, leads
+and paid enrollments, so you can see which of your efforts is working.
+
+Tick "Josiah brought this person in" only for a family Josiah actually found. That link
+counts the family as his customer (8% for their first 12 months instead of 2.5%), and
+the form does not ask them how they heard about you, because the link already says. You
+get an email every time one of those links is made, whoever made it. If you did not
+agree to it, tap Revoke on that link: no new family is counted through it from then on.
+Families who came through it before you revoked it still count; if you disagree about
+one of those, the agreement says you two talk it over.
 
 What happens when a parent enrolls
 

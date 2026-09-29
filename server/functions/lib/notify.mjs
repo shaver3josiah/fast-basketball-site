@@ -46,11 +46,25 @@ export function escapeHtml(str) {
 // something Blake reads. `signature` is still skipped though nothing writes one any more:
 // the enrollment form's drawing pad went in September 2026, and a stray record carrying one
 // would otherwise print a screenful of base64 into an email.
+// The two object fields a lead can carry (src/js/track.js via lib/traffic.mjs), in words.
+// Anything else that is an object prints as JSON rather than "[object Object]".
+function readable(key, v) {
+  if (v == null) return '';
+  if (typeof v !== 'object') return v;
+  if (key === 'claim') return "Josiah's link: " + (v.name || v.id);
+  if (key === 'source') {
+    const f = v.first || {};
+    return 'First found the site via ' + (f.ch || 'unknown') +
+      (f.src || f.ref ? ' (' + (f.src || f.ref) + ')' : '') + (f.landing ? ', landing on ' + f.landing : '');
+  }
+  return JSON.stringify(v);
+}
+
 export function recordTable(record, skip = ['signature', 'notified']) {
   return '<table border="1" cellpadding="4" style="border-collapse:collapse">' +
     Object.entries(record)
       .filter(([k]) => !skip.includes(k))
-      .map(([k, v]) => '<tr><th align="left">' + escapeHtml(k) + '</th><td>' + escapeHtml(v ?? '') + '</td></tr>')
+      .map(([k, v]) => '<tr><th align="left">' + escapeHtml(k) + '</th><td>' + escapeHtml(readable(k, v)) + '</td></tr>')
       .join('') +
     '</table>';
 }

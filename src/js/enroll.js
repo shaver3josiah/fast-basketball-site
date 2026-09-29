@@ -350,6 +350,10 @@
         }
         if(res.status === 429) return fail('Too many tries. Wait a few minutes.');
         if(res.status === 422){
+          /* The server refused a personal-link claim (revoked since the page loaded, or unreadable)
+             and wants the intake answer after all: js/track.js puts the question back first, so
+             the error below lands on a field the parent can see. */
+          if(r.errors && r.errors.hearAbout) document.dispatchEvent(new CustomEvent('fb:unclaim'));
           var first = null;
           for(var k in (r.errors || {})){
             var el = document.getElementById('en_' + k) || document.getElementById(FIXED[k] || '');

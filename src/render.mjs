@@ -828,6 +828,9 @@ export function buildHead({ title, description, canonicalPath, ogImage, includeH
   head += fontPreloadLinks() + '\n';
   head += stylesheetLinks() + extraStyles.map((href) => '<link rel="stylesheet" href="' + asset(href) + '">').join('') + '\n';
   head += themeScript() + '\n';
+  // The site's own visit counter (no third party, no cookie; see the file). Deferred, so it
+  // never holds up a paint, and on every page, because a family can land anywhere.
+  head += '<script src="' + asset('/js/track.js') + '" defer></script>\n';
   // Emitted on every page, at every setting: the CSS vars have to exist before any
   // animation reads them, and the script has to run before main.js (deferred, so it
   // always executes after every plain <script> in <head>) so window.__FB_MOTION is
