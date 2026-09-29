@@ -2,28 +2,28 @@
 //
 // Runs as a scheduled Cloud Function every Monday, and on demand from the admin panel (which
 // writes a request document that a Firestore-triggered function picks up: a research run with
-// live web search takes minutes, and Firebase Hosting cuts a request off at 60 seconds).
+// paced autocomplete takes minutes, and Firebase Hosting cuts a request off at 60 seconds).
 //
 // Every input is live, gathered at run time, never remembered from a previous guess:
 //   1. The live site: its sitemap, and each page's current <title> and meta description.
 //   2. Google Search Console: which searches showed each page in the last 28 days, and the 28
 //      before (lib/searchconsole.mjs). Needs the one owner step described there.
 //   3. Google autocomplete: what people are typing right now, seeded per page (lib/seo.mjs).
-//   4. Claude with live web search (optional, ANTHROPIC_API_KEY): researches the current
-//      results for the page's searches and drafts a title and description from all of the
-//      above. A draft is kept only if it passes lib/seo.mjs checkProposal.
+//   4. The site's own writer (lib/seo-writer.mjs, no AI service, no key) drafts a title and
+//      description from the above. A draft is kept only if it passes lib/seo.mjs checkProposal.
 // Nothing here changes the public site. A draft reaches the site only when someone presses
 // "Put in my draft" in the admin panel and then publishes, the same path as any edit.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { analyze, checkProposal, seedsFor, usefulPhrase, isBranded } from './seo.mjs';
 import { searchConsole, NotConnected, accountEmail } from './searchconsole.mjs';
+import { NothingBetter } from './seo-writer.mjs';
 
 export const SITE = 'https://fast-basketball.com';
 // Search Console data settles about two days behind; the window ends three days ago.
 const LAG_DAYS = 3;
 const WINDOW_DAYS = 28;
-// How many pages get a researched draft per run. Each is one Claude request with web search.
+// How many pages get a draft per run: the ones with the most to gain, so the panel stays short.
 export const DRAFTS_PER_RUN = 4;
 
 // ---------------------------------------------------------------- store
@@ -128,7 +128,7 @@ export function windows(now) {
 /**
  * One research run. Every dependency is a parameter so the tests can drive it offline:
  * `fetchImpl` for the live site and autocomplete, `gsc` for Search Console, `drafter` for the
- * researched drafts (null when there is no API key).
+ * drafts (lib/seo-writer.mjs siteWriter in production; null drafts nothing).
  */
 export async function runResearch({ now = Date.now(), fetchImpl = fetch, gsc = searchConsole({ fetchImpl }), drafter = null, site = SITE, reason = 'weekly' } = {}) {
   const started = Date.now();
@@ -157,7 +157,7 @@ export async function runResearch({ now = Date.now(), fetchImpl = fetch, gsc = s
   const { phrases, asked } = await livePhrases(pages, fetchImpl);
   const analysis = analyze({ rows, prevRows, pages, phrases });
 
-  // Researched drafts, for the pages with the most to gain. Kept only if they pass the
+  // Drafts, for the pages with the most to gain. Kept only if they pass the
   // site's rules; a rejected draft is recorded with why, so a bad week is visible, not silent.
   const drafts = {};
   const rejected = [];
@@ -174,7 +174,8 @@ export async function runResearch({ now = Date.now(), fetchImpl = fetch, gsc = s
         if (check.ok) drafts[path] = { title: check.title, description: check.description, why: d.why || '', sources: d.sources || [], at: new Date(now).toISOString() };
         else rejected.push({ path, problems: check.problems, title: d.title || '', description: d.description || '' });
       } catch (err) {
-        rejected.push({ path, problems: ['research failed: ' + err.message] });
+        // "Nothing better to suggest" is the writer declining, not a rule broken: skip it.
+        if (!(err instanceof NothingBetter)) rejected.push({ path, problems: ['drafting failed: ' + err.message] });
       }
     }
   }
@@ -184,7 +185,7 @@ export async function runResearch({ now = Date.now(), fetchImpl = fetch, gsc = s
     reason,
     tookMs: Date.now() - started,
     window: w,
-    sources: { pages: pages.length, searchConsole: gscStatus, autocomplete: { asked, phrases: phrases.length }, research: drafter ? 'claude-web-search' : null },
+    sources: { pages: pages.length, searchConsole: gscStatus, autocomplete: { asked, phrases: phrases.length }, research: drafter ? 'site-writer' : null },
     ...analysis,
     drafts,
     rejected

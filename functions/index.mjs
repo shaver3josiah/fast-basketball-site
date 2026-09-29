@@ -69,13 +69,14 @@ export const payPeriod = onSchedule(
 );
 
 // Weekly SEO research, Monday 6am Eastern: reads the live site, Google Search Console, live
-// autocomplete and (with ANTHROPIC_API_KEY) Claude with web search, and stores one report for
-// the admin Traffic tab. Changes nothing public; see server/functions/lib/seo-research.mjs.
-// 540 seconds because each researched draft is a live web search.
+// autocomplete, drafts titles from that data with the site's own writer (no AI service, no key),
+// and stores one report for the admin Traffic tab. Changes nothing public; see
+// server/functions/lib/seo-research.mjs. 540 seconds for up to 40 page reads and 30 paced
+// autocomplete calls.
 async function seoRun(reason, now) {
   const { runResearch } = await import('./server/functions/lib/seo-research.mjs');
-  const { claudeDrafter } = await import('./server/functions/lib/seo-drafter.mjs');
-  const report = await runResearch({ now, reason, drafter: await claudeDrafter() });
+  const { siteWriter } = await import('./server/functions/lib/seo-writer.mjs');
+  const report = await runResearch({ now, reason, drafter: siteWriter });
   console.log('[seo] ' + reason + ': ' + report.opportunities.length + ' findings, ' + Object.keys(report.drafts).length + ' drafts, search console ' + (report.sources.searchConsole.connected ? 'connected' : 'not connected'));
   return report;
 }

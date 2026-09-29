@@ -21,7 +21,8 @@ import { getSeo, putSeo, cityOf, runResearch } from './lib/seo-research.mjs';
 import { accountEmail } from './lib/searchconsole.mjs';
 
 const CONTENT_PATH = 'src/data/content.json';
-// A queued run costs a few Claude requests with web search; one per quarter hour is plenty.
+// A queued run reads the whole live site and asks Google autocomplete 30 times; one per quarter
+// hour is plenty.
 const RUN_EVERY_MS = 15 * 60 * 1000;
 const PATH_RE = /^\/[a-z0-9/_-]{0,120}$/;
 

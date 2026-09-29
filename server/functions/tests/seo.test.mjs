@@ -1,6 +1,6 @@
 // Run: node --test server/functions/tests/seo.test.mjs
 //
-// Offline. Search Console, the live site, Google autocomplete and Claude are all fakes; FB_LOCAL
+// Offline. Search Console, the live site and Google autocomplete are all fakes; FB_LOCAL
 // sends the seo store and content.json to a scratch directory.
 process.env.FB_LOCAL = 'true';
 process.env.ADMIN_SESSION_SECRET = 'test-secret-1234567890';
@@ -14,7 +14,7 @@ import path from 'node:path';
 process.chdir(fs.mkdtempSync(path.join(os.tmpdir(), 'fb-seo-')));
 const { analyze, checkProposal, isBranded, covers, expectedCtr, pathOf, usefulPhrase } = await import('../lib/seo.mjs');
 const { runResearch, readHead, cityOf, windows, getSeo } = await import('../lib/seo-research.mjs');
-const { parseDraft, claudeDrafter } = await import('../lib/seo-drafter.mjs');
+const { writeDraft, siteWriter, NothingBetter } = await import('../lib/seo-writer.mjs');
 const { handle: adminSeo } = await import('../admin-seo.mjs');
 const { handle: ping } = await import('../seo-ping.mjs');
 const { createSessionCookie } = await import('../lib/auth.mjs');
@@ -104,30 +104,52 @@ test('reading a live page head, a city from a path, and the date windows', () =>
   assert.deepEqual(w, { start: '2026-12-01', end: '2026-12-28', prevStart: '2026-11-03', prevEnd: '2026-11-30' });
 });
 
-// ---------------------------------------------------------------- Claude, faked
+// ---------------------------------------------------------------- the site's own writer
 
-test('a draft is read from the final JSON, and its sources from the searches actually made', async () => {
-  assert.deepEqual(parseDraft([{ type: 'text', text: 'Here it is.\n{"title": "T | Fast Basketball", "description": "D", "why": "W"}' }]), { title: 'T | Fast Basketball', description: 'D', why: 'W' });
-  assert.throws(() => parseDraft([{ type: 'text', text: 'no json' }]));
+test('the writer leads with the real search, keeps each page on its own subject, and always names the gym', () => {
+  const old = { title: 'Old', description: 'Old' };
+  const gym = /Every session is at one Fort Lauderdale gym\./;
 
-  const calls = [];
-  const fake = { beta: { messages: { create: async (p) => {
-    calls.push(p);
-    if (calls.length === 1) return { stop_reason: 'pause_turn', content: [{ type: 'web_search_tool_result', content: [{ type: 'web_search_result', url: 'https://rival.example/coral-springs', title: 'Rival' }] }] };
-    return { stop_reason: 'end_turn', content: [
-      { type: 'text', text: 'Families searching here compare group and private options.', citations: [{ type: 'web_search_result_location', url: 'https://cited.example/', title: 'Cited' }] },
-      { type: 'text', text: '{"title": "Basketball Training in Coral Springs | Fast Basketball", "description": "Group and private basketball training for Coral Springs players, all at one Fort Lauderdale gym with Coach Blake Kingsley.", "why": "Top results lead with the city."}' }
-    ] };
-  } } } };
-  const drafter = await claudeDrafter({ client: fake });
-  const d = await drafter({ url: 'https://fast-basketball.com/basketball-training/coral-springs', city: 'Coral Springs', title: 'Old', description: 'Old' }, { queries: [{ query: 'basketball training coral springs', impressions: 400, position: 5 }] });
-  assert.equal(calls.length, 2, 'the paused turn was resumed');
-  assert.equal(calls[1].messages.length, 2, 'by resending it, with no extra user message');
-  assert.equal(calls[0].model, 'claude-opus-5');
-  assert.equal(calls[0].tools[0].type, 'web_search_20260209');
-  assert.equal(calls[0].fallbacks, 'default');
-  assert.deepEqual(d.sources.map((s) => s.url), ['https://cited.example/', 'https://rival.example/coral-springs'], 'cited first, then searched, across the pause');
-  assert.equal(await claudeDrafter({ apiKey: '' }), null, 'no key, no drafter');
+  // Search Console beats autocomplete, and small words stay small.
+  let d = writeDraft({ path: '/training/private', ...old }, {
+    queries: [{ query: 'private basketball lessons for kids', impressions: 80, position: 9 }],
+    phrases: ['one on one basketball training near me']
+  });
+  assert.equal(d.title, 'Private Basketball Lessons for Kids | Fast Basketball');
+  assert.match(d.description, /^Private basketball lessons for kids with Coach Blake Kingsley/, 'sentence case mid-description');
+  assert.match(d.description, gym);
+  assert.match(d.why, /search that showed this page most/);
+
+  // A private-lessons search is not about the group page, so it keeps its own subject.
+  d = writeDraft({ path: '/training/group-training', ...old }, { queries: [{ query: 'private basketball lessons', impressions: 500, position: 6 }] });
+  assert.doesNotMatch(d.title + d.description, /private/i);
+  assert.match(d.title, /^Group Basketball Training/);
+
+  // A city page keeps its city in the title, even when the searched wording would not fit with it.
+  d = writeDraft({ path: '/basketball-training/coconut-creek', city: 'Coconut Creek', ...old }, {
+    queries: [{ query: 'one on one basketball training coconut creek', impressions: 40, position: 12 }]
+  });
+  assert.equal(d.title, 'Basketball Training in Coconut Creek | Fast Basketball');
+  assert.match(d.description, /1-on-1 basketball training in Coconut Creek/);
+  assert.match(d.description, gym, 'the gym survives a long lead');
+
+  // Branded searches are never a lead, and every draft passes the site's rules.
+  d = writeDraft({ path: '/', ...old }, { queries: [{ query: 'fast basketball training', impressions: 900, position: 1 }], phrases: ['youth basketball training'] });
+  assert.equal(d.title, 'Youth Basketball Training in South Florida | Fast Basketball');
+  assert.equal(checkProposal(d, {}).ok, true);
+
+  // Nothing better than what is there, or a page with no profile: no draft.
+  const same = writeDraft({ path: '/training/evaluation', ...old }, {});
+  assert.equal(writeDraft({ path: '/training/evaluation', title: same.title, description: same.description }, {}), null);
+  assert.equal(writeDraft({ path: '/contact', ...old }, { phrases: ['basketball training'] }), null);
+});
+
+test('the run skips a page the writer has nothing for, and does not call that a broken rule', async () => {
+  await assert.rejects(siteWriter({ path: '/contact', title: 'x', description: 'x' }, {}), NothingBetter);
+  const gsc = { rows: async () => [], property: async () => null, submitSitemap: async () => null };
+  const r = await runResearch({ now: Date.parse('2026-12-31T12:00:00Z'), fetchImpl: fakeFetch, gsc, drafter: async () => { throw new NothingBetter('nothing'); } });
+  assert.deepEqual(r.rejected, []);
+  assert.equal(r.sources.research, 'site-writer');
 });
 
 // ---------------------------------------------------------------- a whole run, faked

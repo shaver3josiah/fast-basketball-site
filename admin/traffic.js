@@ -685,7 +685,7 @@
       r ? 'Last researched ' + ago(r.at) + ' from live data: ' + [
         connected ? 'Google Search Console' : null,
         r.sources.autocomplete && r.sources.autocomplete.phrases ? r.sources.autocomplete.phrases + ' live Google searches' : 'live Google searches',
-        r.sources.research ? 'web research by Claude' : null,
+        r.sources.research ? 'suggestions written by the site' : null,
         r.sources.pages + ' pages read off the live site'
       ].filter(Boolean).join(', ') + '. Runs by itself every Monday morning.'
         : 'No research yet. It runs by itself every Monday morning, or now if you ask.'));
@@ -738,7 +738,7 @@
         (byPage[path] || []).map(function(o){ return h('p.tr-seo-find', o.text); }),
         pg.title ? h('div.tr-seo-now', h('span.tr-seo-lab', 'Google shows now'), h('p.tr-serp-t', pg.title), h('p.tr-serp-d', pg.description)) : null,
         d ? h('div.tr-seo-new',
-          h('span.tr-seo-lab', 'Researched suggestion'),
+          h('span.tr-seo-lab', 'Suggested from this week’s data'),
           h('p.tr-serp-t', d.title), h('p.tr-serp-d', d.description),
           d.why ? h('p.tr-seo-why', d.why) : null,
           d.sources && d.sources.length ? h('p.tr-seo-src', 'Based on: ', d.sources.slice(0, 4).map(function(x, i){ return [i ? ', ' : '', external(x.url, x.title)]; })) : null,
@@ -751,7 +751,6 @@
     if(paths.length > SEO_SHOWN) parts.push(h('button.btn.tr-showall', { type: 'button', on: { click: function(){ state.seoAll = !state.seoAll; render(); } } },
       state.seoAll ? 'Show fewer pages' : 'Show ' + (Math.min(paths.length, 8) - SEO_SHOWN) + ' more ' + plural(Math.min(paths.length, 8) - SEO_SHOWN, 'page', 'pages')));
     if(r.rejected && r.rejected.length) parts.push(h('p.tr-note', r.rejected.length + plural(r.rejected.length, ' suggestion was', ' suggestions were') + ' held back for breaking the site’s rules (' + r.rejected[0].problems[0] + ').'));
-    if(!r.sources.research) parts.push(h('p.tr-note', 'Researched title suggestions switch on once the site has a Claude API key. The live data above works without it.'));
 
     var livePhr = [];
     (r.pages || []).forEach(function(p){ (p.phrases || []).forEach(function(x){ if(livePhr.length < 14) livePhr.push([x, p.path]); }); });

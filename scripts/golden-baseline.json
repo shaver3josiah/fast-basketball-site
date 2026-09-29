@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-29T19:16:16.971Z",
+  "recorded": "2026-09-29T19:43:01.198Z",
   "files": {
     "0ec211c90d82b90b7b470eb6889ce903.txt": {
       "sha": "c6d3306e64b68843",
@@ -62,8 +62,8 @@
       "bytes": 18661
     },
     "admin/traffic.js": {
-      "sha": "ce0a999de964a7c3",
-      "bytes": 50609
+      "sha": "7ed30d090709056b",
+      "bytes": 50458
     },
     "admin/vendor/moveable.min.js": {
       "sha": "6c6c78751303afd6",
