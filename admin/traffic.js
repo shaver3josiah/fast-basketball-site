@@ -18,7 +18,7 @@
      js/track.js reads this flag and counts nothing from here. */
   try { localStorage.setItem('fb_notrack', '1'); } catch(e){}
 
-  var state = { days: 30, report: null, loading: false, error: '', dests: {}, made: null, whoseOpen: false, allLeads: false, hideTip: null, qrOpen: '', whoOpen: {} };
+  var state = { seo: null, seoError: '', days: 30, report: null, loading: false, error: '', dests: {}, made: null, whoseOpen: false, allLeads: false, hideTip: null, qrOpen: '', whoOpen: {} };
   var LEADS_SHOWN = 8;
 
   function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
@@ -145,7 +145,8 @@
     '/': 'Homepage', '/enroll': 'Enroll page', '/enroll/thanks': 'Enroll thank-you page', '/contact': 'Contact page',
     '/locker': 'The Locker', '/playbook': 'Free playbook', '/privacy': 'Privacy page', '/terms': 'Terms page',
     '/appbuy': 'Tools shop', '/appbuy/thanks': 'Tools thank-you page', '/shotform': 'Shot Form Watcher', '/dribble': 'Dribble Listener',
-    '/coach-blake-kingsley': 'Coach page', '/blog/': 'Blog'
+    '/coach-blake-kingsley': 'Coach page', '/blog/': 'Blog',
+    '/training/private': 'Private training page', '/training/group-training': 'Group training page', '/training/evaluation': 'Evaluation page'
   };
   function page(p){
     if(!p) return '';
@@ -186,6 +187,7 @@
       state.report = out.report; state.dests = out.destinations || {};
     }).catch(function(err){ state.error = err.message; })
       .then(function(){ state.loading = false; render(); });
+    loadSeo().then(function(){ if(state.report) render(); if(state.seo && state.seo.queued) pollSeo(Date.now()); });
   }
   tabBtn.addEventListener('click', function(){
     if(tabBtn.classList.contains('tr-new')){ tabBtn.classList.remove('tr-new'); lsSet(SEEN_KEY, '1'); }
@@ -625,6 +627,148 @@
     );
   }
 
+  /* ---- On Google: the weekly search research (/api/admin-seo). Loaded beside the traffic
+     report, never in front of it, so a slow or unconnected Search Console never holds up the
+     visit numbers. Nothing here changes the live site: "Put in my draft" writes the draft, and
+     the draft goes live when Blake publishes, like any other edit. */
+  function seoApi(method, body){
+    var opts = { method: method, credentials: 'same-origin', headers: {} };
+    if(body){ opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+    return fetch('/api/admin-seo', opts).then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(out){
+        if(res.status === 401) throw new Error('Your sign-in has ended. Reload the page and sign in again.');
+        if(!res.ok && res.status !== 202) { var e = new Error(out.error || 'That did not work. Try again.'); e.body = out; throw e; }
+        return out;
+      });
+    }, function(){ throw new Error('Could not reach the site. Check your connection and try again.'); });
+  }
+  function loadSeo(){
+    return seoApi('GET').then(function(out){ state.seo = out; state.seoError = ''; })
+      .catch(function(err){ state.seoError = err.message; });
+  }
+  /* A queued run finishes in a few minutes; check back every 20 seconds, for up to 12 minutes. */
+  var seoPoll = null;
+  function pollSeo(startedAt){
+    clearTimeout(seoPoll);
+    seoPoll = setTimeout(function(){
+      loadSeo().then(function(){
+        var done = !state.seo || !state.seo.queued;
+        if(!done && Date.now() - startedAt < 12 * 60 * 1000) pollSeo(startedAt);
+        render();
+      });
+    }, 20000);
+  }
+
+  function external(url, text){
+    return /^https?:\/\//.test(url) ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, text || url) : h('span', text || url);
+  }
+
+  function seoSection(){
+    var s = state.seo;
+    if(state.seoError && !s) return card('On Google', null, h('p.tr-err', state.seoError));
+    if(!s) return card('On Google', null, h('p.tr-empty', 'Loading the search research...'));
+    var r = s.report;
+    var gsc = r && r.sources && r.sources.searchConsole;
+    var connected = !!(gsc && gsc.connected);
+    var applied = s.applied || {};
+    var runBtn = h('button.btn', { type: 'button', disabled: !!s.queued, on: { click: function(e){
+      var b = e.currentTarget; b.disabled = true; b.textContent = 'Asking...';
+      seoApi('POST', { action: 'run' }).then(function(out){
+        if(out.ran) return loadSeo().then(render);
+        state.seo.queued = out.queued; render(); pollSeo(Date.now());
+      }).catch(function(err){ b.disabled = false; b.textContent = 'Research now'; state.seoError = err.message; render(); });
+    } } }, s.queued ? 'Researching now, a few minutes...' : 'Research now');
+
+    var parts = [];
+    if(state.seoError) parts.push(h('p.tr-err', { role: 'alert' }, state.seoError));
+    parts.push(h('p.tr-seo-meta',
+      r ? 'Last researched ' + ago(r.at) + ' from live data: ' + [
+        connected ? 'Google Search Console' : null,
+        r.sources.autocomplete && r.sources.autocomplete.phrases ? r.sources.autocomplete.phrases + ' live Google searches' : 'live Google searches',
+        r.sources.research ? 'web research by Claude' : null,
+        r.sources.pages + ' pages read off the live site'
+      ].filter(Boolean).join(', ') + '. Runs by itself every Monday morning.'
+        : 'No research yet. It runs by itself every Monday morning, or now if you ask.'));
+    parts.push(runBtn);
+
+    if(!connected){
+      var email = s.account || (gsc && gsc.email) || '';
+      parts.push(h('div.tr-connect',
+        h('p.tr-connect-t', 'One step to see Google’s numbers'),
+        h('p.tr-sub', 'Search Console is where Google reports which searches show your pages. The site can read it and submit your sitemap once you add its account there:'),
+        h('ol.tr-guide-list',
+          h('li', 'Open ', external('https://search.google.com/search-console', 'Google Search Console'), ' and pick fast-basketball.com.'),
+          h('li', 'Settings, then Users and permissions, then Add user.'),
+          h('li', 'Paste the address below and choose Full permission.')),
+        email ? h('div.tr-connect-row', h('p.link-out', email), h('button.btn', { type: 'button', on: { click: function(e){ copy(email, e.currentTarget); } } }, 'Copy')) :
+          h('p.tr-note', 'The address shows here once the research has run on the live site.'),
+        gsc && gsc.message ? h('p.tr-note', 'Last attempt: ' + gsc.message) : null));
+    }
+    if(!r) return card.apply(null, ['On Google', 'How the site shows up in Google search, and what to change next, from live data.'].concat(parts));
+
+    if(connected){
+      var t = r.totals, nb = t.clicks ? Math.round(t.nonBrandedClicks / t.clicks * 100) : 0;
+      parts.push(h('div.tr-tiles.tr-seo-tiles',
+        h('div.tr-tile', h('p.tr-tile-l', 'Clicks from Google'), h('p.tr-tile-n', num(t.clicks)), t.prevClicks != null ? delta(t.clicks, t.prevClicks) : null),
+        h('div.tr-tile', h('p.tr-tile-l', 'Times shown'), h('p.tr-tile-n', num(t.impressions)), t.prevImpressions != null ? delta(t.impressions, t.prevImpressions) : null),
+        h('div.tr-tile', h('p.tr-tile-l', 'Average position'), h('p.tr-tile-n', t.position ? t.position.toFixed(1) : '–'), h('p.tr-tile-s', 'lower is better')),
+        h('div.tr-tile', h('p.tr-tile-l', 'Not searching your name'), h('p.tr-tile-n', t.clicks ? nb + '%' : '–'), h('p.tr-tile-s', 'of clicks came from searches without FAST or Blake in them'))));
+      parts.push(h('p.tr-note', 'Last 28 days to ' + dayLabel(r.window.end) + ', compared with the 28 before. Google reports two or three days behind.'));
+      if(r.queries.length) parts.push(h('h3.tr-h3', 'What people searched'),
+        h('div.tr-queries', r.queries.slice(0, 10).map(function(q){
+          return h('div.tr-query', h('span.tr-q', q.query, q.branded ? h('span.chip', 'Your name') : null),
+            h('span.tr-q-n', num(q.clicks) + plural(q.clicks, ' click', ' clicks') + ' · shown ' + num(q.impressions) + ' · #' + Math.round(q.position)));
+        })));
+    }
+
+    /* Findings, one card per page, with the researched suggestion when there is one. */
+    var byPage = {};
+    r.opportunities.forEach(function(o){ (byPage[o.path] = byPage[o.path] || []).push(o); });
+    var paths = Object.keys(byPage).concat(Object.keys(r.drafts || {}).filter(function(p){ return !byPage[p]; }));
+    parts.push(h('h3.tr-h3', 'What to change next'));
+    if(!paths.length) parts.push(h('p.tr-empty', 'Nothing stands out this week. That changes as Google shows the site more.'));
+    /* The top three pages open; the rest wait behind one button, or a phone scrolls forever. */
+    var SEO_SHOWN = 3;
+    paths.slice(0, state.seoAll ? 8 : SEO_SHOWN).forEach(function(path){
+      var pg = (r.pages || []).filter(function(p){ return p.path === path; })[0] || { path: path };
+      var d = (r.drafts || {})[path];
+      var inDraft = applied[path];
+      var box = h('article.tr-seo-page',
+        h('p.tr-seo-page-t', page(path)),
+        (byPage[path] || []).map(function(o){ return h('p.tr-seo-find', o.text); }),
+        pg.title ? h('div.tr-seo-now', h('span.tr-seo-lab', 'Google shows now'), h('p.tr-serp-t', pg.title), h('p.tr-serp-d', pg.description)) : null,
+        d ? h('div.tr-seo-new',
+          h('span.tr-seo-lab', 'Researched suggestion'),
+          h('p.tr-serp-t', d.title), h('p.tr-serp-d', d.description),
+          d.why ? h('p.tr-seo-why', d.why) : null,
+          d.sources && d.sources.length ? h('p.tr-seo-src', 'Based on: ', d.sources.slice(0, 4).map(function(x, i){ return [i ? ', ' : '', external(x.url, x.title)]; })) : null,
+          inDraft && inDraft.title === d.title
+            ? h('div.tr-seo-done', h('span', 'In your draft. It goes live when you publish.'),
+                h('button.tr-textbtn', { type: 'button', on: { click: function(){ seoApply('remove', path); } } }, 'Take it out'))
+            : h('button.btn.primary', { type: 'button', on: { click: function(e){ e.currentTarget.disabled = true; seoApply('apply', path, d); } } }, 'Put in my draft')) : null);
+      parts.push(box);
+    });
+    if(paths.length > SEO_SHOWN) parts.push(h('button.btn.tr-showall', { type: 'button', on: { click: function(){ state.seoAll = !state.seoAll; render(); } } },
+      state.seoAll ? 'Show fewer pages' : 'Show ' + (Math.min(paths.length, 8) - SEO_SHOWN) + ' more ' + plural(Math.min(paths.length, 8) - SEO_SHOWN, 'page', 'pages')));
+    if(r.rejected && r.rejected.length) parts.push(h('p.tr-note', r.rejected.length + plural(r.rejected.length, ' suggestion was', ' suggestions were') + ' held back for breaking the site’s rules (' + r.rejected[0].problems[0] + ').'));
+    if(!r.sources.research) parts.push(h('p.tr-note', 'Researched title suggestions switch on once the site has a Claude API key. The live data above works without it.'));
+
+    var livePhr = [];
+    (r.pages || []).forEach(function(p){ (p.phrases || []).forEach(function(x){ if(livePhr.length < 14) livePhr.push([x, p.path]); }); });
+    if(livePhr.length) parts.push(h('h3.tr-h3', 'Searches people are typing right now'),
+      h('div.tr-chips', livePhr.map(function(x){ return h('span.tr-chipq', { title: 'Matches the ' + page(x[1]) }, x[0]); })));
+
+    return card.apply(null, ['On Google', 'How the site shows up in Google search, and what to change next, from live data.'].concat(parts));
+  }
+
+  function seoApply(action, path, d){
+    var body = { action: action, path: path };
+    if(d){ body.title = d.title; body.description = d.description; }
+    seoApi('POST', body).then(function(out){
+      state.seo.applied = out.applied; state.seoError = ''; render();
+    }).catch(function(err){ state.seoError = err.message; render(); });
+  }
+
   /* ---- first visit: three sentences on what this page is for, dismissed once per device */
   function guide(){
     return h('section.tr-card.tr-guide',
@@ -688,6 +832,7 @@
         h('h2.tr-h', 'Counting has started'),
         h('p.tr-sub', 'The site began counting visits on ' + dayLabel(since || r.to) + '. From now on every visit shows up here within seconds: how people found the site, what they looked at, and which of them sent you a form.'),
         h('p.tr-sub', 'Make a link below for your next flyer or post, and you will see exactly what it brings in.')));
+      root.appendChild(seoSection());
       root.appendChild(links(r.links));
     } else {
       if(!lsGet(GUIDE_KEY)) root.appendChild(guide());
@@ -697,6 +842,7 @@
       root.appendChild(card('How people find you',
         'A family is counted under the way they FIRST found the site, even if they came back later another way.',
         ranked(r.channels, 'sessions', [['sessions', 'Visits'], ['leads', 'Leads'], ['enrolled', 'Paid']], 'No visits in this period yet.', channel)));
+      root.appendChild(seoSection());
       if(r.funnel && r.funnel.visits) root.appendChild(funnel(r.funnel));
       root.appendChild(links(r.links));
       var w = r.when ? when(r.when) : null;

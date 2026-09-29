@@ -796,6 +796,13 @@ function motionScriptTag(motion) {
 // keeps those bytes off the 16 pages that do not use them.
 export function buildHead({ title, description, canonicalPath, ogImage, includeHeroPreload, content, responsiveManifest, jsonLd = [], robots = 'index, follow', extraStyles = [] }) {
   const canonical = absoluteUrl(canonicalPath);
+  // A search title and description the owner approved in the admin panel (content.seo, written
+  // by /api/admin-seo after the site's rules were checked) replaces the page's own. Bounds are
+  // checked again here so a hand-edited content.json can never put a novel in a <title>.
+  const seoKey = canonicalPath.length > 1 ? canonicalPath.replace(/\/$/, '') : canonicalPath;
+  const seo = content && content.seo && content.seo[seoKey];
+  if (seo && typeof seo.title === 'string' && seo.title.length >= 10 && seo.title.length <= 70) title = seo.title;
+  if (seo && typeof seo.description === 'string' && seo.description.length >= 50 && seo.description.length <= 170) description = seo.description;
   const ogImagePath = ogImage ? absoluteUrl(ogImage) : absoluteUrl('/brand/og-image-1200x630.png');
   const motion = deriveMotion(content);
   let head = '<!DOCTYPE html>\n<html lang="en" class="fb-light"' + motionHtmlAttrs(motion) + '>\n<head>\n';

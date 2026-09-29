@@ -8,6 +8,7 @@
     "node": "22"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
     "firebase-admin": "^13.0.2",
     "firebase-functions": "^6.1.1",
     "stripe": "^22.6.1"

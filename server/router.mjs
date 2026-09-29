@@ -19,6 +19,7 @@ const HANDLERS = {
   'admin-logout': () => import('./functions/admin-logout.mjs'),
   'admin-media': () => import('./functions/admin-media.mjs'),
   'admin-publish': () => import('./functions/admin-publish.mjs'),
+  'admin-seo': () => import('./functions/admin-seo.mjs'),
   'admin-site': () => import('./functions/admin-site.mjs'),
   'admin-traffic': () => import('./functions/admin-traffic.mjs'),
   'admin-upload': () => import('./functions/admin-upload.mjs'),
@@ -30,6 +31,7 @@ const HANDLERS = {
   'leads-list': () => import('./functions/leads-list.mjs'),
   playbook: () => import('./functions/playbook.mjs'),
   preview: () => import('./functions/preview.mjs'),
+  'seo-ping': () => import('./functions/seo-ping.mjs'),
   'stripe-webhook': () => import('./functions/stripe-webhook.mjs'),
   track: () => import('./functions/track.mjs')
 };

@@ -71,3 +71,16 @@ jobs:
       # ping warns and leaves the run green: the site is already published either way.
       - name: Announce changed URLs to IndexNow
         run: node scripts/indexnow.mjs
+
+      # Google left both the sitemap ping and IndexNow, so the site's own function submits the
+      # sitemap to Search Console as its service account (/api/seo-ping, at most once every ten
+      # minutes). Only after a deploy that changed pages, and only for the real domain. It
+      # answers 200 either way; a Search Console that is not connected yet leaves the run green.
+      - name: Submit the sitemap to Google Search Console
+        if: ${{ vars.SITE_URL == 'https://fast-basketball.com' }}
+        run: |
+          if node -e "const q=require('./indexnow-changed.json');process.exit(Array.isArray(q.urls)&&q.urls.length?0:1)" 2>/dev/null; then
+            curl -sS -X POST https://fast-basketball.com/api/seo-ping || true
+          else
+            echo "No pages changed; nothing to tell Google."
+          fi

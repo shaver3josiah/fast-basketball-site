@@ -280,6 +280,36 @@
 .tr-qr-s{margin:6px 0 12px;color:var(--fg-2);font-size:.88rem;line-height:1.5;}
 .tr-qr-side .btn{width:100%;}
 
+/* ---- On Google (search research). The one new colour is Google's own dark-mode result-title
+   blue, used only where a title is shown the way a searcher will see it. */
+.tr-seo-meta{margin:0 0 10px;color:var(--fg-3);font-size:.86rem;line-height:1.5;}
+.tr-card>.btn{width:100%;}
+.tr-connect{margin-top:14px;padding:14px;border:1px solid rgba(255,196,61,.4);border-radius:12px;background:rgba(255,196,61,.05);}
+.tr-connect-t{margin:0;font-weight:600;color:var(--amber);}
+.tr-connect a,.tr-seo-src a{color:var(--teal);}
+.tr-connect-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.tr-connect-row .link-out{flex:1 1 200px;margin:0;overflow-wrap:anywhere;}
+.tr-seo-tiles{margin-top:14px;}
+.tr-queries{display:grid;gap:4px;}
+.tr-query{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;padding:8px 0;border-bottom:1px solid var(--line);}
+.tr-q{display:inline-flex;align-items:center;gap:8px;font-weight:500;overflow-wrap:anywhere;}
+.tr-q-n{color:var(--fg-3);font-size:.86rem;font-variant-numeric:tabular-nums;}
+.tr-seo-page{margin-top:10px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);}
+.tr-seo-page-t{margin:0 0 6px;font-family:var(--cond);font-weight:700;font-size:1.15rem;letter-spacing:.02em;}
+.tr-seo-find{margin:6px 0 0;color:var(--fg-2);font-size:.92rem;line-height:1.5;}
+.tr-seo-now,.tr-seo-new{margin-top:12px;padding:12px;border-radius:10px;background:var(--card);border:1px solid var(--line);}
+.tr-seo-new{border-color:rgba(57,217,138,.4);}
+.tr-seo-lab{display:block;margin-bottom:6px;font-family:var(--cond);font-weight:700;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);}
+.tr-seo-new .tr-seo-lab{color:var(--green);}
+.tr-serp-t{margin:0;color:#8AB4F8;font-size:1.05rem;line-height:1.3;overflow-wrap:anywhere;}
+.tr-serp-d{margin:4px 0 0;color:var(--fg-2);font-size:.9rem;line-height:1.5;}
+.tr-seo-why{margin:10px 0 0;color:var(--fg-2);font-size:.88rem;line-height:1.5;}
+.tr-seo-src{margin:8px 0 12px;color:var(--fg-3);font-size:.84rem;line-height:1.5;overflow-wrap:anywhere;}
+.tr-seo-new .btn{width:100%;}
+.tr-seo-done{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;color:var(--green);font-size:.9rem;}
+.tr-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.tr-chipq{padding:6px 10px;border-radius:999px;border:1px solid var(--line-2);color:var(--fg-2);font-size:.86rem;}
+
 /* ---- lead cards reuse .lead; only the credit line is new */
 .tr-lead .tr-why{margin-top:10px;font-size:.9rem;}
 .tr-detail{margin-top:12px;}

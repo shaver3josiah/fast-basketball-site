@@ -52,6 +52,17 @@ export default async (request) => {
       return new Response(JSON.stringify({ error: 'save rejected', details: errors }), { status: 422 });
     }
 
+    // content.seo (search titles put in the draft from the Traffic tab) is written by
+    // /api/admin-seo, not by this panel, which only posts back the object it loaded. Carry it
+    // over when the payload has none, or saving any text edit would silently drop them.
+    if (payload.seo === undefined) {
+      try {
+        const current = usesDraft ? await getDraft(CONTENT_PATH) : null;
+        const prior = JSON.parse(current || (await getFile(CONTENT_PATH)).content || '{}');
+        if (prior.seo) payload.seo = prior.seo;
+      } catch { /* nothing to carry */ }
+    }
+
     payload.version = 1;
     payload.updated = new Date().toISOString();
     if (!Array.isArray(payload.resumeExtra)) payload.resumeExtra = [];

@@ -14,6 +14,7 @@
 
 import { onRequest } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { route } from './server/router.mjs';
 
 // 60s and 512MiB because the canvas renderer and the preview builder both compile a page
@@ -63,6 +64,36 @@ export const payPeriod = onSchedule(
       console.log('[payPeriod] pruned ' + (await pruneVisits(Date.parse(event.scheduleTime) || Date.now())) + ' old visits');
     } catch (err) {
       console.error('[payPeriod] visit pruning failed: ' + err.message);
+    }
+  }
+);
+
+// Weekly SEO research, Monday 6am Eastern: reads the live site, Google Search Console, live
+// autocomplete and (with ANTHROPIC_API_KEY) Claude with web search, and stores one report for
+// the admin Traffic tab. Changes nothing public; see server/functions/lib/seo-research.mjs.
+// 540 seconds because each researched draft is a live web search.
+async function seoRun(reason, now) {
+  const { runResearch } = await import('./server/functions/lib/seo-research.mjs');
+  const { claudeDrafter } = await import('./server/functions/lib/seo-drafter.mjs');
+  const report = await runResearch({ now, reason, drafter: await claudeDrafter() });
+  console.log('[seo] ' + reason + ': ' + report.opportunities.length + ' findings, ' + Object.keys(report.drafts).length + ' drafts, search console ' + (report.sources.searchConsole.connected ? 'connected' : 'not connected'));
+  return report;
+}
+export const seoWeekly = onSchedule(
+  { region: 'us-central1', schedule: '0 6 * * 1', timeZone: 'America/New_York', maxInstances: 1, timeoutSeconds: 540, memory: '512MiB' },
+  async (event) => { await seoRun('weekly', Date.parse(event.scheduleTime) || Date.now()); }
+);
+// "Research now" in the admin panel writes a document to seo-requests; this runs it. A request
+// through Firebase Hosting is cut off at 60 seconds, which a live research run does not fit in.
+export const seoResearchNow = onDocumentCreated(
+  { document: 'seo-requests/{id}', region: 'us-central1', maxInstances: 1, timeoutSeconds: 540, memory: '512MiB', retry: false },
+  async () => {
+    const { getSeo, putSeo } = await import('./server/functions/lib/seo-research.mjs');
+    try {
+      await seoRun('on demand', Date.now());
+    } finally {
+      const q = await getSeo('queued');
+      if (q) await putSeo('queued', { ...q, doneAt: new Date().toISOString() });
     }
   }
 );
