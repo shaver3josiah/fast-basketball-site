@@ -82,6 +82,19 @@ export async function getStore(nameOrOptions) {
     async since(iso) {
       const snap = await col.where('at', '>=', iso).get();
       return snap.docs.map((d) => ({ key: decodeId(d.id), value: d.get('v') }));
+    },
+    // Deletes everything last written before an ISO time, in batches of at most 400 (a Firestore
+    // batch stops at 500), and returns how many went. Same `at` field and index as since().
+    async deleteBefore(iso) {
+      let removed = 0;
+      for (;;) {
+        const snap = await col.where('at', '<', iso).limit(400).get();
+        if (snap.empty) return removed;
+        const batch = db.batch();
+        snap.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+        removed += snap.size;
+      }
     }
   };
 }

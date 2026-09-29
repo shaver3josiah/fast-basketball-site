@@ -208,6 +208,20 @@ function bump(map, key, field, n = 1) {
   if (!map.has(key)) map.set(key, { name: key, sessions: 0, leads: 0, enrolled: 0, views: 0 });
   map.get(key)[field] += n;
 }
+// Weekday and hour in Fort Lauderdale time, for "when people visit". Monday first, the way a
+// coach's week runs.
+const WHEN_FMT = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hourCycle: 'h23' });
+export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+export function whenOf(ms) {
+  const parts = Object.fromEntries(WHEN_FMT.formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
+  return { weekday: WEEKDAYS.indexOf(parts.weekday), hour: Number(parts.hour) % 24 };
+}
+// "On the site now": seen within this long.
+export const LIVE_MS = 5 * 60 * 1000;
+// A link's drill-down lists at most this many families.
+const LINK_LEADS = 25;
+const isEnrollPage = (p) => p === '/enroll' || p.startsWith('/enroll?') || p === '/enroll/';
+
 const top = (map, field, n) => [...map.values()].sort((a, b) => b[field] - a[field] || (a.name < b.name ? -1 : 1)).slice(0, n);
 
 /**
@@ -233,6 +247,18 @@ export function summarize({ sessions = [], leads = [], links = [], now, days = 3
   const devices = new Map();
   const referrers = new Map();
   const byLink = new Map();
+  const linkLeads = new Map();
+  const byWeekday = WEEKDAYS.map(() => 0);
+  const byHour = Array.from({ length: 24 }, () => 0);
+  const live = new Set();
+  let sawEnroll = 0;
+
+  // Live is judged on every row read, not only this range's: someone mid-visit right now is on
+  // today, and today is always in range, but a visit that began before midnight is not.
+  for (const s of sessions) {
+    const last = Date.parse(s.last || s.start || '');
+    if (Number.isFinite(last) && last >= now - LIVE_MS && last <= now + 60000) live.add(s.vid || s.sid);
+  }
 
   let sessionCount = 0;
   for (const s of sessions) {
@@ -253,6 +279,13 @@ export function summarize({ sessions = [], leads = [], links = [], now, days = 3
     bump(devices, s.dev || 'unknown', 'sessions');
     if (s.ref && !SELF.test(s.ref)) bump(referrers, s.ref, 'sessions');
     if (s.via) bump(byLink, s.via, 'sessions');
+    if ((s.pages || []).some(isEnrollPage)) sawEnroll += 1;
+    const start = Date.parse(s.start || '');
+    if (Number.isFinite(start)) {
+      const w = whenOf(start);
+      if (w.weekday >= 0) byWeekday[w.weekday] += 1;
+      byHour[w.hour] += 1;
+    }
   }
 
   const recent = [];
@@ -300,13 +333,18 @@ export function summarize({ sessions = [], leads = [], links = [], now, days = 3
       credit: c
     };
     recent.push(row);
+    if (via) {
+      if (!linkLeads.has(via)) linkLeads.set(via, []);
+      linkLeads.get(via).push({ name: row.name, player: row.player, typeLabel: row.typeLabel, paid: isPaid, at: row.at });
+    }
     if (credit[c.who]) credit[c.who].push(row);
   }
   recent.sort((a, b) => (a.at < b.at ? 1 : -1));
 
   const linkRows = links.map((link) => {
     const m = byLink.get(link.id) || { sessions: 0, leads: 0, enrolled: 0 };
-    return { ...link, sessions: m.sessions, leads: m.leads, enrolled: m.enrolled };
+    const who = (linkLeads.get(link.id) || []).sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, LINK_LEADS);
+    return { ...link, sessions: m.sessions, leads: m.leads, enrolled: m.enrolled, who };
   });
 
   return {
@@ -321,8 +359,12 @@ export function summarize({ sessions = [], leads = [], links = [], now, days = 3
       avgEngagedMs: sessionCount ? Math.round(engagedMs / sessionCount) : 0,
       bounceRate: sessionCount ? bounces / sessionCount : 0,
       ...counts,
-      conversion: visitors.size ? counts.leads / visitors.size : 0
+      conversion: visitors.size ? counts.leads / visitors.size : 0,
+      liveNow: live.size
     },
+    // Visit to enrollment, as four counts; the page works out the step-to-step rates.
+    funnel: { visits: sessionCount, enrollPage: sawEnroll, registrations: counts.registrations, paid: counts.enrolled },
+    when: { byWeekday, byHour },
     daily: [...daily.values()].map((d) => ({ day: d.day, sessions: d.sessions, visitors: d.visitors.size, leads: d.leads })),
     channels: [...channels.values()].filter((c) => c.sessions || c.leads),
     sources: top(sources, 'sessions', 12),
@@ -332,6 +374,8 @@ export function summarize({ sessions = [], leads = [], links = [], now, days = 3
     referrers: top(referrers, 'sessions', 10),
     links: linkRows,
     credit,
-    recent: recent.slice(0, 60)
+    // Every lead in the window, up to a bound no season comes near: the panel shows eight and the
+    // CSV download takes all of them, so a cap here would silently drop rows from the export.
+    recent: recent.slice(0, 1000)
   };
 }

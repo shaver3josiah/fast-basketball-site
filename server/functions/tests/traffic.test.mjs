@@ -166,6 +166,50 @@ test('summarize counts visits, leads and paid registrations per channel and per 
   assert.equal(r.sources[0].name === 'The Rivera family' || r.sources.some((s) => s.name === 'The Rivera family'), true, 'a link shows by its name');
 });
 
+test('the report carries the funnel, when people visit, who is on now, and who came per link', () => {
+  const now = Date.parse('2026-12-15T18:00:00Z');
+  const sessions = [
+    // Tue 8 Dec, 7:30pm in New York (00:30 UTC on the 9th); still on the enroll page
+    { sid: 's1', vid: 'v1', day: '2026-12-08', start: '2026-12-09T00:30:00Z', last: '2026-12-09T00:40:00Z', ch: 'Direct', pages: ['/', '/enroll'], pv: 2, ms: 0 },
+    // Mon 14 Dec, 10am New York
+    { sid: 's2', vid: 'v2', day: '2026-12-14', start: '2026-12-14T15:00:00Z', last: '2026-12-14T15:05:00Z', ch: 'Tracked link', via: 'josiah01', pages: ['/enroll'], pv: 1, ms: 0 },
+    // on the site right now
+    { sid: 's3', vid: 'v3', day: '2026-12-15', start: '2026-12-15T17:50:00Z', last: '2026-12-15T17:58:00Z', ch: 'Direct', pages: ['/'], pv: 1, ms: 0 }
+  ];
+  const leads = [
+    { key: 'registration:a', type: 'enrollment', timestamp: '2026-12-14T16:00:00Z', name: 'Rivera', paymentStatus: 'paid', claim: { id: 'josiah01', name: 'The Rivera family' } },
+    { key: 'registration:b', type: 'enrollment', timestamp: '2026-12-10T16:00:00Z', name: 'Kim', paymentStatus: 'pending' }
+  ];
+  const r = summarize({ sessions, leads, links: [link()], now, days: 30 });
+  assert.deepEqual(r.funnel, { visits: 3, enrollPage: 2, registrations: 2, paid: 1 });
+  // 8 December 7:30pm (Wednesday the 9th in UTC) and 15 December are both Tuesdays in Fort Lauderdale.
+  assert.equal(r.when.byWeekday[1], 2, 'the 7:30pm visit counts as Tuesday, not as a UTC Wednesday');
+  assert.equal(r.when.byWeekday[2], 0);
+  assert.equal(r.when.byHour[19], 1);
+  assert.equal(r.when.byWeekday[0], 1);
+  assert.equal(r.when.byHour[10], 1);
+  assert.equal(r.totals.liveNow, 1, 'only the visit seen in the last five minutes');
+  assert.equal(r.links[0].who.length, 1);
+  assert.equal(r.links[0].who[0].name, 'Rivera');
+  assert.equal(r.links[0].who[0].paid, true);
+});
+
+test('visits older than 25 months are pruned, and nothing newer', async () => {
+  reset();
+  const { pruneVisits, retentionCutoff, RETAIN_MONTHS } = await import('../lib/traffic-store.mjs');
+  assert.equal(RETAIN_MONTHS, 25);
+  const now = Date.parse('2028-11-01T13:00:00Z');
+  assert.equal(retentionCutoff(now), '2026-10-01T00:00:00.000Z');
+  fs.mkdirSync('.local', { recursive: true });
+  fs.writeFileSync('.local/traffic.json', JSON.stringify([
+    { sid: 'old', at: '2026-09-30T23:00:00.000Z' },
+    { sid: 'edge', at: '2026-10-01T00:00:00.000Z' },
+    { sid: 'new', at: '2028-10-31T00:00:00.000Z' }
+  ]));
+  assert.equal(await pruneVisits(now), 1);
+  assert.deepEqual(JSON.parse(fs.readFileSync('.local/traffic.json', 'utf8')).map((v) => v.sid), ['edge', 'new']);
+});
+
 // ---------------------------------------------------------------- /api/track
 
 test('track: a first view opens a visit, later views add pages, a hide adds capped time', async () => {

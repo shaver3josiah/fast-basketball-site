@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-09-29T16:54:18.944Z",
+  "recorded": "2026-09-29T17:10:41.401Z",
   "files": {
     "0ec211c90d82b90b7b470eb6889ce903.txt": {
       "sha": "c6d3306e64b68843",
@@ -42,8 +42,8 @@
       "bytes": 99920
     },
     "admin/index.html": {
-      "sha": "5da05de19ec9026d",
-      "bytes": 5408
+      "sha": "392d9108ffb32176",
+      "bytes": 5462
     },
     "admin/plans.js": {
       "sha": "e5818abca7623e3b",
@@ -58,16 +58,20 @@
       "bytes": 1656
     },
     "admin/traffic.css": {
-      "sha": "64543c92bf47c1d6",
-      "bytes": 12788
+      "sha": "7bc95175cea50ba4",
+      "bytes": 16243
     },
     "admin/traffic.js": {
-      "sha": "0a519c5fe7484096",
-      "bytes": 28687
+      "sha": "30cc37d97e753997",
+      "bytes": 40397
     },
     "admin/vendor/moveable.min.js": {
       "sha": "6c6c78751303afd6",
       "bytes": 245551
+    },
+    "admin/vendor/qrcode.js": {
+      "sha": "79ec86f82856005b",
+      "bytes": 56694
     },
     "appbuy/index.html": {
       "sha": "ad2be6ac8b569bbf",
@@ -198,8 +202,8 @@
       "bytes": 16642
     },
     "privacy/index.html": {
-      "sha": "3f75f1a4dd0e448f",
-      "bytes": 20599
+      "sha": "5c7bb6b2fe3a6372",
+      "bytes": 20642
     },
     "robots.txt": {
       "sha": "331ea9090db0c9f6",

@@ -55,6 +55,15 @@ export const payPeriod = onSchedule(
     const { runPayPeriod } = await import('./server/jobs/pay-period.mjs');
     const result = await runPayPeriod(event.scheduleTime);
     console.log('[payPeriod] ' + JSON.stringify(result));
+    // Monthly housekeeping rides the same schedule: visit rows older than the retention period
+    // (traffic-store.mjs RETAIN_MONTHS, stated on /privacy) are deleted. After the statement,
+    // and caught, so it can never stop or retry the statement.
+    try {
+      const { pruneVisits } = await import('./server/functions/lib/traffic-store.mjs');
+      console.log('[payPeriod] pruned ' + (await pruneVisits(Date.parse(event.scheduleTime) || Date.now())) + ' old visits');
+    } catch (err) {
+      console.error('[payPeriod] visit pruning failed: ' + err.message);
+    }
   }
 );
 

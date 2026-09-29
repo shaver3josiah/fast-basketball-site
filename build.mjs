@@ -223,7 +223,9 @@ function step3c_copyVendor() {
   // nothing loaded it — 40KB shipped to the admin for nothing. It comes back the day
   // marquee selection does, not before.
   const files = [
-    ['node_modules/moveable/dist/moveable.min.js', 'moveable.min.js']
+    ['node_modules/moveable/dist/moveable.min.js', 'moveable.min.js'],
+    // The Traffic tab's QR codes for printed flyers (admin/traffic.js). MIT, no dependencies.
+    ['node_modules/qrcode-generator/dist/qrcode.js', 'qrcode.js']
   ];
   for (const [from, to] of files) {
     const src = resolve(ROOT, from);
@@ -233,7 +235,7 @@ function step3c_copyVendor() {
     }
     cpSync(src, resolve(vendorDir, to));
   }
-  console.log('Copied ' + files.length + ' editor libraries into admin/vendor/.');
+  console.log('Copied ' + files.length + ' admin libraries into admin/vendor/.');
 }
 
 function step3_copyStatic() {
@@ -457,7 +459,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<p>The enrollment form asks for more, because it is the registration for a training program: the athlete\'s name, date of birth, gender, grade, school, experience, and optionally their own email, phone, team, position and goals; the parent or guardian\'s name, relationship, email, phone, home city and preferred way to be contacted; the program, frequency, day and T-shirt size; the athlete\'s health insurance provider and policy number, which is what a coach needs if a player is hurt on the court; the plan chosen; any questions; and a record that you ticked the two agreement boxes. Your signature itself is not collected here: you sign by typing your full name on Stripe\'s checkout page, and Stripe keeps that.</p>\n';
   body += '<p>When you open an enrollment link Coach Blake sent you, the page records that it was opened and how long it stayed open, tied to the tag in that link, so he knows to follow up. No cookie, no third party, and nothing you typed leaves your browser until you submit the form.</p>\n';
   // js/track.js and server/functions/track.mjs. If either starts recording more, this changes too.
-  body += '<p>The site counts its own visits. For each visit it records which pages were opened, roughly how long they stayed on screen, whether you were on a phone or a computer, and how you arrived: the website that sent you (google.com, instagram.com), the tag on a link Coach Blake shared, or neither. It does not record your internet address, anything you type, or where you are. When you send a form, how you first found the site goes with it, so Coach Blake can see which of his efforts are reaching families. Search engines and bots are not counted.</p>\n';
+  body += '<p>The site counts its own visits. For each visit it records which pages were opened, roughly how long they stayed on screen, whether you were on a phone or a computer, and how you arrived: the website that sent you (google.com, instagram.com), the tag on a link Coach Blake shared, or neither. It does not record your internet address, anything you type, or where you are. When you send a form, how you first found the site goes with it, so Coach Blake can see which of his efforts are reaching families. Search engines and bots are not counted. Visit records are deleted after 25 months.</p>\n';
   body += '<p>Buying one of the training tools asks for much less, because it is software rather than a place on a court: your name, your email, optionally a phone number, a home city and the athlete\'s name, which of the four "you are" answers fits you, anything you typed in the comments box, which tool you bought, how you chose to pay, and a record that you ticked the two boxes. Your email is where the link is sent, so it is the one thing the purchase cannot work without. No date of birth, no school, and no insurance details: nothing about selling a phone tool needs them.</p>\n';
   body += '<p>The tools themselves send us nothing at all. The Shot Form Watcher uses your camera and the Dribble Listener uses your microphone, and both do their work inside the browser on your own device. No video, no audio and no recording is uploaded anywhere, to us or to anyone else, and neither tool has a login.</p>\n';
   body += '<p>The enrollment form and the contact form both ask how you heard about us. We keep your answer on your record. It changes nothing about what you pay or what your athlete receives: it tells Coach Blake which of his efforts are reaching families, and it sets the fee the person who built this site is paid out of Coach Blake\'s own share rather than out of anything you pay. If you would rather not say, pick "Other" and leave the box blank. If you arrived through a personal link, the form does not ask: the link already says how you found us.</p>\n';

@@ -144,7 +144,7 @@
 .tr-made-btns,.tr-link-btns{display:flex;gap:8px;}
 .tr-made-note{margin:0 0 12px;color:var(--fg-2);font-size:.88rem;line-height:1.5;}
 .tr-made-btns .btn,.tr-link-btns .btn{flex:1;}
-.tr-links{display:grid;gap:10px;}
+.tr-links{display:grid;gap:10px;align-items:start;}
 .tr-link{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px;}
 .tr-link.off{opacity:.7;}
 .tr-link-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -222,6 +222,64 @@
 @keyframes tr-shimmer{from{background-position:100% 0;}to{background-position:-100% 0;}}
 .tr-refresh:disabled{opacity:.6;}
 
+/* ---- the tab's "new" marker, until it is first opened on this device */
+.tabbar .tab.tr-new::after{
+  content:"";position:absolute;top:14px;right:calc(50% - 32px);width:7px;height:7px;border-radius:50%;
+  background:var(--teal);box-shadow:0 0 0 2px var(--bar);
+}
+
+/* ---- range line and the live count */
+.tr-range-note{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;}
+.tr-live{display:inline-flex;align-items:center;gap:7px;color:var(--green);font-weight:600;}
+.tr-live i{width:8px;height:8px;border-radius:50%;background:var(--green);animation:tr-pulse 2s ease-out infinite;}
+@keyframes tr-pulse{0%{box-shadow:0 0 0 0 rgba(57,217,138,.55);}70%,100%{box-shadow:0 0 0 7px rgba(57,217,138,0);}}
+
+/* ---- first-visit guide */
+.tr-guide{border-color:rgba(37,224,208,.4);}
+.tr-guide-list{margin:12px 0 16px;padding-left:1.25em;display:grid;gap:10px;color:var(--fg-2);font-size:.94rem;line-height:1.5;}
+.tr-guide-list b{color:var(--fg);font-weight:600;}
+.tr-guide .btn{width:100%;}
+
+/* ---- keyboard focus on the chart, and the downloads */
+.tr-plot:focus-visible{outline:3px solid var(--red-hot);outline-offset:6px;border-radius:4px;}
+.tr-dl{width:100%;margin-top:12px;}
+
+/* ---- visit to enrollment */
+.tr-fn{display:grid;gap:0;margin-top:14px;}
+.tr-fn-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px;}
+.tr-fn-l{color:var(--fg-2);font-size:.94rem;}
+.tr-fn-n{font-family:var(--cond);font-size:1.5rem;line-height:1;font-variant-numeric:tabular-nums;}
+.tr-fn-track{height:10px;border-radius:5px;background:var(--bg);overflow:hidden;}
+.tr-fn-track i{display:block;height:100%;background:var(--red);border-radius:5px;}
+.tr-fn-rate{margin:6px 0 6px 2px;color:var(--fg-3);font-size:.82rem;font-variant-numeric:tabular-nums;}
+
+/* ---- when people visit */
+.tr-when-row{display:flex;align-items:flex-end;gap:3px;height:96px;}
+.tr-when-row.days{gap:8px;max-width:520px;}
+.tr-when-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.tr-when-bar{flex:1;width:100%;display:flex;align-items:flex-end;}
+.tr-when-bar i{display:block;width:100%;background:var(--red);border-radius:3px 3px 0 0;}
+.tr-when-col span{font-size:.72rem;color:var(--fg-3);line-height:1;white-space:nowrap;}
+.tr-when-row.hours .tr-when-col span{overflow:visible;}
+
+/* ---- link cards: QR, who came, a quiet footer for the rare actions */
+.tr-link-btns .btn{padding:0 10px;}
+.tr-link-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;}
+.tr-textbtn{
+  min-height:44px;padding:0 4px;border:0;background:none;cursor:pointer;
+  color:var(--fg-2);font:inherit;font-size:.9rem;text-decoration:underline;text-underline-offset:3px;
+}
+.tr-textbtn.tr-revoke{color:var(--coral);margin-left:auto;}
+.tr-link-none{color:var(--fg-3);font-size:.86rem;}
+.tr-link-who{margin-top:6px;}
+.tr-link-who .tr-why{display:inline;margin:0 0 0 8px;}
+.tr-qr{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card);}
+.tr-qr-img canvas{display:block;width:148px;height:148px;image-rendering:pixelated;border-radius:6px;}
+.tr-qr-side{flex:1 1 180px;min-width:0;}
+.tr-qr-t{margin:0;font-weight:600;overflow-wrap:anywhere;}
+.tr-qr-s{margin:6px 0 12px;color:var(--fg-2);font-size:.88rem;line-height:1.5;}
+.tr-qr-side .btn{width:100%;}
+
 /* ---- lead cards reuse .lead; only the credit line is new */
 .tr-lead .tr-why{margin-top:10px;font-size:.9rem;}
 .tr-detail{margin-top:12px;}
@@ -243,5 +301,6 @@
 }
 @media (prefers-reduced-motion:reduce){
   .tr-bar,.tr-tip,#tabTraffic.tr-busy,.tr-whose-btn .tr-ico{transition:none;}
+  .tr-live i{animation:none;}
   .tr-skel .tr-tile{animation:none;}
 }

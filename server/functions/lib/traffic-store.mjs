@@ -61,6 +61,31 @@ export async function visitsSince(sinceIso) {
   return out;
 }
 
+/**
+ * How long a visit row is kept. Twenty-five months holds a full year-on-year comparison, any
+ * customer's twelve-month attribution window (Section 7) and the 60 days of records access after
+ * a final statement (Section 8), with room to spare. The privacy page states the same number.
+ */
+export const RETAIN_MONTHS = 25;
+
+/** The cutoff for `now`: RETAIN_MONTHS calendar months back, by UTC month arithmetic. */
+export function retentionCutoff(now) {
+  const d = new Date(now);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - RETAIN_MONTHS, d.getUTCDate())).toISOString();
+}
+
+/** Deletes visits last touched before the retention cutoff. Returns how many went. */
+export async function pruneVisits(now) {
+  const cutoff = retentionCutoff(now);
+  if (LOCAL) {
+    const rows = readLocal('traffic');
+    const kept = rows.filter((v) => (v.at || v.last || v.start || '') >= cutoff);
+    writeLocal('traffic', kept);
+    return rows.length - kept.length;
+  }
+  return (await store('traffic')).deleteBefore(cutoff);
+}
+
 // ---------------------------------------------------------------- tracked links
 
 // Where a link can land. A fixed list, because the id rides on these paths and a free-typed

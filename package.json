@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "moveable": "^0.53.0",
+    "qrcode-generator": "^2.0.4",
     "sharp": "^0.35.3"
   }
 }

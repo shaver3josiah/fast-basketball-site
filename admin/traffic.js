@@ -18,8 +18,51 @@
      js/track.js reads this flag and counts nothing from here. */
   try { localStorage.setItem('fb_notrack', '1'); } catch(e){}
 
-  var state = { days: 30, report: null, loading: false, error: '', dests: {}, made: null, whoseOpen: false, allLeads: false, hideTip: null };
+  var state = { days: 30, report: null, loading: false, error: '', dests: {}, made: null, whoseOpen: false, allLeads: false, hideTip: null, qrOpen: '', whoOpen: {} };
   var LEADS_SHOWN = 8;
+
+  function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function lsSet(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+  /* A "new" marker on the tab until it is first opened on this device. */
+  var SEEN_KEY = 'fb_traffic_seen', GUIDE_KEY = 'fb_traffic_guide';
+  if(!lsGet(SEEN_KEY)) tabBtn.classList.add('tr-new');
+
+  /* ---- downloads: CSV built here from the report already on screen, never a second fetch */
+  function csvCell(v){
+    var s = v == null ? '' : String(v);
+    /* Text only: a formula-looking cell (=, +, -, @) is opened in Excel as a formula, so it is
+       quoted with a leading apostrophe. Numbers go through untouched so a column still sums. */
+    if(typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function download(name, text, type){
+    var blob = new Blob(['﻿' + text], { type: type || 'text/csv;charset=utf-8' });
+    var a = h('a', { href: URL.createObjectURL(blob), download: name });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function csv(header, rows){ return [header].concat(rows).map(function(r){ return r.map(csvCell).join(','); }).join('\r\n') + '\r\n'; }
+  var slug = function(s){ return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'link'; };
+
+  /* ---- QR codes, drawn from admin/vendor/qrcode.js (qrcode-generator, MIT) onto a canvas.
+     Error correction M survives a crease or a coffee ring on a flyer; a quiet zone of four
+     modules is what scanners need around the code, and it is part of the image, not left to
+     whoever lays out the flyer. */
+  function qrCanvas(text, px){
+    if(typeof window.qrcode !== 'function') return null;
+    var qr = window.qrcode(0, 'M');
+    qr.addData(text); qr.make();
+    var n = qr.getModuleCount(), quiet = 4;
+    var scale = Math.max(1, Math.floor(px / (n + quiet * 2)));
+    var size = scale * (n + quiet * 2);
+    var c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    var g = c.getContext('2d');
+    g.fillStyle = '#FFFFFF'; g.fillRect(0, 0, size, size);
+    g.fillStyle = '#000000';
+    for(var r = 0; r < n; r++) for(var k = 0; k < n; k++) if(qr.isDark(r, k)) g.fillRect((k + quiet) * scale, (r + quiet) * scale, scale, scale);
+    return c;
+  }
 
   /* ---- tiny DOM helper: h('div.cls', {attrs}, children...) */
   function h(tag, attrs){
@@ -144,7 +187,10 @@
     }).catch(function(err){ state.error = err.message; })
       .then(function(){ state.loading = false; render(); });
   }
-  tabBtn.addEventListener('click', load);
+  tabBtn.addEventListener('click', function(){
+    if(tabBtn.classList.contains('tr-new')){ tabBtn.classList.remove('tr-new'); lsSet(SEEN_KEY, '1'); }
+    load();
+  });
   /* One listener for the life of the page: a tap anywhere outside the chart closes its tooltip. */
   document.addEventListener('click', function(e){
     if(state.hideTip && !(e.target.closest && e.target.closest('.tr-plot'))) state.hideTip();
@@ -219,7 +265,8 @@
     function hide(){ tip.classList.remove('on'); if(hot) hot.classList.remove('hot'); hot = null; }
     state.hideTip = hide;
     var anyPre = false;
-    var cols = daily.map(function(d){
+    var showers = [];
+    var cols = daily.map(function(d, i){
       var pre = since && d.day < since;
       if(pre) anyPre = true;
       var col = h('div.tr-col' + (pre ? '.pre' : ''),
@@ -241,7 +288,9 @@
         tip.classList.add('on');
         col.classList.add('hot');
         hot = col;
+        cursor = i;
       }
+      showers.push(show);
       /* A mouse previews on hover; a finger taps to open and taps again (or elsewhere) to close.
          Touch fires pointerleave the instant the finger lifts, so hover alone flashes and vanishes. */
       col.addEventListener('pointerenter', function(e){ if(e.pointerType === 'mouse') show(); });
@@ -250,7 +299,24 @@
       return col;
     });
     var total = daily.reduce(function(s, d){ return s + d.sessions; }, 0);
-    var plot = h('div.tr-plot', { role: 'img', 'aria-label': num(total) + ' visits over ' + daily.length + ' days, busiest day ' + num(max) + '. The table below lists every day.' },
+    /* Keyboard: the chart is one tab stop, and the arrow keys walk the days, reading each one
+       out through the tooltip's live region. Home and End jump to the first and last day. */
+    var cursor = -1;
+    function onKey(e){
+      var k = e.key, last = showers.length - 1;
+      if(k === 'Escape'){ hide(); return; }
+      var next = k === 'ArrowRight' ? Math.min(last, (cursor < 0 ? last : cursor + 1))
+        : k === 'ArrowLeft' ? Math.max(0, (cursor < 0 ? last : cursor - 1))
+        : k === 'Home' ? 0 : k === 'End' ? last : null;
+      if(next == null) return;
+      e.preventDefault();
+      showers[next]();
+    }
+    var plot = h('div.tr-plot', {
+      tabIndex: 0, role: 'group',
+      'aria-label': 'Visits per day: ' + num(total) + ' visits over ' + daily.length + ' days, busiest day ' + num(max) + '. Use the left and right arrow keys to read each day.',
+      on: { keydown: onKey, focus: function(){ if(cursor < 0 && showers.length) showers[showers.length - 1](); }, blur: hide }
+    },
       h('div.tr-grid', [1, 0.5, 0].map(function(f){ return h('span', { style: 'bottom:' + f * 100 + '%' }, h('em', num(top * f))); })),
       h('div.tr-cols', { style: 'gap:' + (daily.length > 40 ? 1 : 2) + 'px' }, cols),
       tip
@@ -263,7 +329,13 @@
           var pre = since && d.day < since;
           return h('tr' + (pre ? '.pre' : ''), h('td', dayLabel(d.day, true)),
             pre ? h('td', { colSpan: 3 }, 'Not counted yet') : [h('td', num(d.sessions)), h('td', num(d.visitors)), h('td', num(d.leads))]);
-        }))));
+        }))),
+      h('button.btn.tr-dl', { type: 'button', on: { click: function(){
+        download('fast-basketball-daily-' + daily[0].day + '-to-' + daily[daily.length - 1].day + '.csv',
+          csv(['Day', 'Visits', 'Visitors', 'Leads'], daily.map(function(d){
+            return since && d.day < since ? [d.day, '', '', ''] : [d.day, d.sessions, d.visitors, d.leads];
+          })));
+      } } }, 'Download day by day (CSV)'));
     return h('div', plot, axis,
       h('p.tr-key', h('span.tr-lead-dot.static', { 'aria-hidden': 'true' }), 'A dot marks a day a lead came in.',
         anyPre ? h('span.tr-key-pre', 'Faded days came before counting started on ' + dayLabel(since) + '.') : null),
@@ -324,6 +396,61 @@
     return box;
   }
 
+  /* ---- from visit to enrollment. Four counts, each bar scaled to the first; the line between
+     two steps says what share went on, which is the number worth acting on. */
+  function funnel(f){
+    var steps = [
+      ['Visits', f.visits],
+      ['Saw the enroll page', f.enrollPage],
+      ['Registered', f.registrations],
+      ['Paid', f.paid]
+    ];
+    var base = f.visits || 1;
+    var out = [];
+    steps.forEach(function(s, i){
+      if(i > 0){
+        var prev = steps[i - 1][1];
+        out.push(h('p.tr-fn-rate', prev ? pct(s[1] / prev) + ' went on' : '–'));
+      }
+      out.push(h('div.tr-fn-step',
+        h('div.tr-fn-top', h('span.tr-fn-l', s[0]), h('b.tr-fn-n', num(s[1]))),
+        h('div.tr-fn-track', h('i', { style: 'width:' + (s[1] ? Math.max(1.5, s[1] / base * 100) : 0) + '%' }))));
+    });
+    return card('From visit to enrollment',
+      'Most families reach the enroll page through a link you sent them, so the first step is the widest drop by design. Watch the last two: registered, then paid.',
+      h('div.tr-fn', out));
+  }
+
+  /* ---- when people visit: two small single-series bar rows, days then hours, with the
+     answer written out above them so nobody has to read it off the bars. */
+  var DAY_NAMES = ['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays'];
+  var DAY_SHORT = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  function hourLabel(hr){ var ap = hr < 12 ? 'am' : 'pm'; var n = hr % 12 || 12; return n + ap; }
+  function when(w){
+    var total = w.byWeekday.reduce(function(a, b){ return a + b; }, 0);
+    if(total < 10) return null;
+    var maxD = Math.max.apply(null, w.byWeekday), maxH = Math.max.apply(null, w.byHour);
+    var bestD = w.byWeekday.indexOf(maxD);
+    /* The busiest three-hour stretch, not the single busiest hour: one hour is noise. */
+    var bestH = 0, bestSum = -1;
+    for(var i = 0; i < 24; i++){ var s = w.byHour[i] + w.byHour[(i + 1) % 24] + w.byHour[(i + 2) % 24]; if(s > bestSum){ bestSum = s; bestH = i; } }
+    function bars(values, max, labels, cls, names){
+      return h('div.tr-when-row' + cls, { role: 'img', 'aria-label': values.map(function(v, i){ return names[i] + ' ' + v; }).join(', ') },
+        values.map(function(v, i){
+          return h('div.tr-when-col', { title: names[i] + ': ' + num(v) + plural(v, ' visit', ' visits') },
+            h('div.tr-when-bar', h('i', { style: 'height:' + (max ? Math.max(v ? 4 : 0, v / max * 100) : 0) + '%' })),
+            labels[i] != null ? h('span', labels[i]) : h('span', ' '));
+        }));
+    }
+    var hourNames = w.byHour.map(function(v, i){ return hourLabel(i); });
+    return card('When people visit',
+      'Busiest on ' + DAY_NAMES[bestD] + ', and between ' + hourLabel(bestH) + ' and ' + hourLabel((bestH + 3) % 24) + '. A good time to post, or to follow up on a lead.',
+      h('h3.tr-h3', 'By day'),
+      bars(w.byWeekday, maxD, DAY_SHORT, '.days', DAY_NAMES),
+      h('h3.tr-h3', 'By hour, Fort Lauderdale time'),
+      bars(w.byHour, maxH, w.byHour.map(function(v, i){ return i % 6 === 0 ? hourLabel(i) : null; }), '.hours', hourNames));
+  }
+
   /* ---- the link maker */
   function linkForm(){
     var nameIn = h('input', { id: 'trName', type: 'text', maxLength: 60, placeholder: 'The Rivera family, or Spring flyer', autocomplete: 'off', required: true });
@@ -381,9 +508,46 @@
       maker);
   }
 
+  /* The words that go out with a shared link. The share sheet (Messages, WhatsApp, email) lets
+     Blake edit them before sending; this is only a sensible start. */
+  function shareText(l){
+    return l.dest === '/enroll' ? 'Here is the link to enroll with Fast Basketball:'
+      : l.dest === '/contact' ? 'Here is where to book a call with Coach Blake at Fast Basketball:'
+      : 'Here is Fast Basketball:';
+  }
+
   function linkRow(l){
     var revoked = !!l.revokedAt;
     var err = h('p.tr-err', { role: 'alert' });
+    var qrOpen = state.qrOpen === l.id && !revoked;
+    var whoOpen = !!state.whoOpen[l.id];
+    var who = l.who || [];
+
+    var qrPanel = null;
+    if(qrOpen){
+      var preview = qrCanvas(l.url, 220);
+      qrPanel = h('div.tr-qr',
+        preview ? h('div.tr-qr-img', preview) : h('p.tr-err', 'The QR code maker did not load. Reload the page and try again.'),
+        h('div.tr-qr-side',
+          h('p.tr-qr-t', 'QR code for “' + l.name + '”'),
+          h('p.tr-qr-s', 'Put it on a flyer, a banner or a business card. A phone camera opens the link, and every scan counts under this link.'),
+          preview ? h('button.btn.primary', { type: 'button', on: { click: function(){
+            var big = qrCanvas(l.url, 1200);
+            big.toBlob(function(blob){
+              var a = h('a', { href: URL.createObjectURL(blob), download: 'fast-basketball-' + slug(l.name) + '-qr.png' });
+              document.body.appendChild(a); a.click(); a.remove();
+              setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+            }, 'image/png');
+          } } }, 'Download for printing') : null));
+      preview && preview.setAttribute('role', 'img');
+      preview && preview.setAttribute('aria-label', 'QR code that opens ' + l.url);
+    }
+
+    var whoPanel = whoOpen ? h('ul.tr-who-list.tr-link-who', who.map(function(r){
+      return h('li', h('b', r.name), r.player ? ' (' + r.player + ')' : '', ' · ', r.typeLabel,
+        r.paid ? h('span.tr-paid', 'Paid') : null, h('span.tr-why', ago(r.at)));
+    })) : null;
+
     return h('div.tr-link' + (revoked ? '.off' : ''),
       h('div.tr-link-top',
         h('b.tr-link-name', l.name),
@@ -396,9 +560,21 @@
         h('span', h('b', num(l.leads)), plural(l.leads, ' lead', ' leads')),
         h('span', h('b', num(l.enrolled)), ' paid')),
       h('p.link-out', l.url),
-      h('div.tr-link-btns',
+      revoked ? null : h('div.tr-link-btns',
         h('button.btn', { type: 'button', on: { click: function(e){ copy(l.url, e.currentTarget); } } }, 'Copy'),
-        !revoked ? h('button.btn.tr-revoke', { type: 'button', on: { click: function(e){
+        navigator.share ? h('button.btn', { type: 'button', on: { click: function(){
+          navigator.share({ title: 'Fast Basketball', text: shareText(l), url: l.url }).catch(function(){});
+        } } }, 'Share') : null,
+        h('button.btn', { type: 'button', 'aria-expanded': String(qrOpen), on: { click: function(){
+          state.qrOpen = qrOpen ? '' : l.id; render();
+        } } }, qrOpen ? 'Hide QR' : 'QR code')
+      ),
+      qrPanel,
+      h('div.tr-link-foot',
+        who.length ? h('button.tr-textbtn', { type: 'button', 'aria-expanded': String(whoOpen), on: { click: function(){
+          state.whoOpen[l.id] = !whoOpen; render();
+        } } }, (whoOpen ? 'Hide who came' : 'Who came') + ' (' + num(who.length) + ')') : h('span.tr-link-none', 'No leads through it yet'),
+        !revoked ? h('button.tr-textbtn.tr-revoke', { type: 'button', on: { click: function(e){
           var b = e.currentTarget;
           if(b.dataset.armed !== '1'){
             b.dataset.armed = '1'; b.textContent = 'Tap again to revoke';
@@ -411,6 +587,7 @@
           }).catch(function(e2){ b.disabled = false; b.dataset.armed = ''; b.textContent = 'Revoke'; err.textContent = e2.message; });
         } } }, 'Revoke') : null
       ),
+      whoPanel,
       err,
       revoked && l.developer ? h('p.tr-note', 'New families through this link are no longer counted as Josiah’s. Families who came through it before it was revoked still are.') : null
     );
@@ -448,6 +625,30 @@
     );
   }
 
+  /* ---- first visit: three sentences on what this page is for, dismissed once per device */
+  function guide(){
+    return h('section.tr-card.tr-guide',
+      h('h2.tr-h', 'What this page tells you'),
+      h('ol.tr-guide-list',
+        h('li', h('b', 'The numbers at the top'), ' are visitors and leads for the days you pick, with the change from the period before.'),
+        h('li', h('b', 'How people find you'), ' says whether families came from Google, social media, your own links or somewhere else, and which of them enrolled.'),
+        h('li', h('b', 'Your tracked links'), ' give every flyer, post or family its own link and QR code, so you can see exactly what each one brings in.')),
+      h('button.btn', { type: 'button', on: { click: function(){ lsSet(GUIDE_KEY, '1'); render(); } } }, 'Got it'));
+  }
+
+  function leadsCsvButton(r){
+    if(!r.recent.length) return null;
+    return h('button.btn.tr-dl', { type: 'button', on: { click: function(){
+      download('fast-basketball-leads-' + r.from + '-to-' + r.to + '.csv',
+        csv(['Date', 'Name', 'Player', 'Kind', 'Paid', 'Found the site', 'Source', 'First page', 'Told us', 'Whose'],
+          r.recent.map(function(x){
+            return [x.at.slice(0, 10), x.name, x.player, x.typeLabel, x.paid ? 'Yes' : '',
+              x.channel === 'Unknown' ? 'Before counting started' : channel(x.channel), x.source ? source(x.source) : '',
+              page(x.landing), x.hearAbout, verdict(x.credit)];
+          })));
+    } } }, 'Download leads (CSV)');
+  }
+
   /* ---- the tab */
   function render(){
     state.hideTip = null;
@@ -475,9 +676,10 @@
     var counting = !since || r.to >= since;
     var empty = !t.sessions && !t.leads;
     var partial = since && r.from < since;
-    root.appendChild(h('p.tr-range-note',
-      dayLabel(r.from) + ' to ' + dayLabel(r.to) +
-      (r.previous ? ', compared with the ' + state.days + ' days before.' : partial ? '. Counting started ' + dayLabel(since) + '.' : '.')));
+    root.appendChild(h('div.tr-range-note',
+      h('span', dayLabel(r.from) + ' to ' + dayLabel(r.to) +
+        (r.previous ? ', compared with the ' + state.days + ' days before.' : partial ? '. Counting started ' + dayLabel(since) + '.' : '.')),
+      t.liveNow ? h('span.tr-live', h('i', { 'aria-hidden': 'true' }), num(t.liveNow) + ' on the site now') : null));
 
     if(empty && counting && !r.recent.length){
       /* First days: a page of zeros reads as "broken". Say what is happening and put the one
@@ -488,14 +690,18 @@
         h('p.tr-sub', 'Make a link below for your next flyer or post, and you will see exactly what it brings in.')));
       root.appendChild(links(r.links));
     } else {
+      if(!lsGet(GUIDE_KEY)) root.appendChild(guide());
       root.appendChild(tiles(t, r.previous));
       root.appendChild(card('Visits per day', null, chart(r.daily, since)));
       root.appendChild(whose(r.credit));
       root.appendChild(card('How people find you',
         'A family is counted under the way they FIRST found the site, even if they came back later another way.',
         ranked(r.channels, 'sessions', [['sessions', 'Visits'], ['leads', 'Leads'], ['enrolled', 'Paid']], 'No visits in this period yet.', channel)));
+      if(r.funnel && r.funnel.visits) root.appendChild(funnel(r.funnel));
       root.appendChild(links(r.links));
-      root.appendChild(card('Every lead and how they found you', null, leadsList(r.recent)));
+      var w = r.when ? when(r.when) : null;
+      if(w) root.appendChild(w);
+      root.appendChild(card('Every lead and how they found you', null, leadsList(r.recent), leadsCsvButton(r)));
       root.appendChild(h('details.field-group.tr-detail',
         h('summary', 'More detail', h('span.count', 'Sources, pages, devices')),
         h('div.group-body',
