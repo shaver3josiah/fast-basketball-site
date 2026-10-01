@@ -515,21 +515,26 @@ function readReferencePose(lm2d, lm3d) {
   const side = lm2d[15].y < lm2d[16].y ? 'L' : 'R', a = ARM[side];
   const P = i => lm3d[i];
   const out = { view, ratio: +ratio.toFixed(2), side, missing: [] };
-  const need = (label, idxs, f) => { if (idxs.every(i => vis(i) > 0.4)) { const v = f(); if (Number.isFinite(v)) return v; } out.missing.push(label); return null; };
-  out.elbowDeg = need('elbow', [a.sho, a.elb, a.wri], () => angle3(P(a.sho), P(a.elb), P(a.wri)));
-  out.kneeDeg = need('knee', [23, 25, 27, 24, 26, 28], () => (angle3(P(23), P(25), P(27)) + angle3(P(24), P(26), P(28))) / 2);
-  out.armElevDeg = need('arm', [a.sho, a.wri], () => { const d = [P(a.wri).x - P(a.sho).x, P(a.wri).y - P(a.sho).y, P(a.wri).z - P(a.sho).z];
+  // Side on, the far half of the body is behind the near half, and that is exactly the photo a coach should take.
+  // So every reading takes whichever of a pair it can see, as the live tracker does, and never insists on both.
+  const seen = (...idxs) => idxs.every(i => vis(i) > 0.4), either = (i, j) => seen(i) || seen(j);
+  const at = (i, j) => (seen(i) && seen(j) ? mid(lm2d[i], lm2d[j]) : lm2d[seen(i) ? i : j]);
+  const need = (label, ok, f) => { if (ok) { const v = f(); if (Number.isFinite(v)) return v; } out.missing.push(label); return null; };
+  const legs = [[23, 25, 27], [24, 26, 28]].filter(l => seen(...l));
+  out.elbowDeg = need('elbow', seen(a.sho, a.elb, a.wri), () => angle3(P(a.sho), P(a.elb), P(a.wri)));
+  out.kneeDeg = need('knee', legs.length > 0, () => legs.reduce((s, [h, k, f]) => s + angle3(P(h), P(k), P(f)), 0) / legs.length);
+  out.armElevDeg = need('arm', seen(a.sho, a.wri), () => { const d = [P(a.wri).x - P(a.sho).x, P(a.wri).y - P(a.sho).y, P(a.wri).z - P(a.sho).z];
     return deg(Math.atan2(-d[1], Math.hypot(d[0], d[2]))); });
   const knuckles = [a.idx, a.pnk, a.thb].filter(i => vis(i) > 0.3);
   out.wristSnapDeg = knuckles.length ? (() => { const h = { x: 0, y: 0, z: 0 };
     for (const i of knuckles) { h.x += P(i).x / knuckles.length; h.y += P(i).y / knuckles.length; h.z += P(i).z / knuckles.length; }
     return 180 - angle3(P(a.elb), P(a.wri), h); })() : (out.missing.push('hand'), null);
   // these two are read against the picture, so they are only as level as the camera was
-  out.trunkLeanDeg = need('trunk', [11, 12, 23, 24], () => { const sho = mid(lm2d[11], lm2d[12]), hip = mid(lm2d[23], lm2d[24]), nose = lm2d[0];
+  out.trunkLeanDeg = need('trunk', either(11, 12) && either(23, 24), () => { const sho = at(11, 12), hip = at(23, 24), nose = lm2d[0];
     const facing = Math.sign(nose.x - (vis(7) >= vis(8) ? lm2d[7] : lm2d[8]).x) || 1;
     return deg(Math.atan2((sho.x - hip.x) * facing, -(sho.y - hip.y))); });
-  out.releaseHeightRatio = need('height', [a.wri, 27, 28, 0], () => {
-    const ankleY = Math.max(lm2d[27].y, lm2d[28].y), hPx = (ankleY - lm2d[0].y) / STATURE_ANKLE_TO_NOSE;
+  out.releaseHeightRatio = need('height', seen(a.wri, 0) && either(27, 28), () => {
+    const ankleY = Math.max(...[27, 28].filter(i => seen(i)).map(i => lm2d[i].y)), hPx = (ankleY - lm2d[0].y) / STATURE_ANKLE_TO_NOSE;
     return hPx > 0 ? (ankleY - lm2d[a.wri].y) / hPx : NaN; });
   out.cameraDependent = ['trunkLeanDeg', 'releaseHeightRatio'];
   return out;
@@ -546,7 +551,7 @@ function bandsFromReference(read, phase) {
     const [from, to] = spec.includes('->') ? spec.split('->') : [spec, spec];
     const src = from === 'elbowSetDeg' ? read.elbowDeg : read[from];
     if (src == null || !Number.isFinite(src)) continue;
-    const lo = +(src - pad).toFixed(2), hi = +(src + pad).toFixed(2);
+    const lo = +(src - pad).toFixed(2), hi = +Math.min(src + pad, /^(elbow|knee)/.test(to) ? 180 : Infinity).toFixed(2);   // no joint opens past straight
     out[to] = { lo, hi, from: +src.toFixed(1) };
   }
   return out;
@@ -712,20 +717,21 @@ class BounceLearner {
       for (const s of g) { const k = s.t.toFixed(3); if (!byT.has(k) || byT.get(k).r < s.r) byT.set(k, s); }
       const path = [...byT.values()].sort((a, b) => a.t - b.t);
       if (path.length < 6) continue;
-      let travel = 0, reversals = 0, dir = 0;
+      let travel = 0, vtravel = 0, reversals = 0, dir = 0;
       for (let i = 1; i < path.length; i++) {
-        travel += Math.hypot(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y);
+        travel += Math.hypot(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y); vtravel += Math.abs(path[i].y - path[i - 1].y);
         const d = Math.sign(path[i].y - path[i - 1].y);
         if (d && dir && d !== dir) reversals++;
         if (d) dir = d;
       }
       const med = a => { const s2 = [...a].sort((x, y) => x - y); return s2[s2.length >> 1]; };
       const cand = { r: med(path.map(p => p.r)), rn: med(path.map(p => p.rn)), gn: med(path.map(p => p.gn)),
-        travel: travel / med(path.map(p => p.r)), reversals, n: path.length };
-      if (!best || cand.travel > best.travel) best = cand;
+        travel: travel / med(path.map(p => p.r)), vtravel: vtravel / med(path.map(p => p.r)), reversals, n: path.length };
+      if (!best || cand.vtravel > best.vtravel) best = cand;
     }
-    // a bounce travels many times its own width and turns around; a stationary orange thing does neither
-    if (!best || best.travel < 8 || best.reversals < 1) return null;
+    // A bounce travels many times its own width UP AND DOWN and turns around; a stationary orange thing does neither.
+    // Up and down, not just far: an orange shirt walking across the picture travels far and bobs, and was learned.
+    if (!best || best.vtravel < 8 || best.reversals < 1) return null;
     return best;
   }
 }
@@ -741,8 +747,13 @@ class ShotMachine {
     this.reset('idle'); this.ground = null; this.ppmBody = null; this.idleHip = null; this.sideVotes = { L: 0, R: 0 }; this.side = null; this.bad = 0;
     this.idlePitch = []; this.dt = 1 / 30;
   }
-  get ppm() { return this.ppmBall || this.ppmBody; }
-  reset(state = 'idle') { this.state = state; this.tDip = this.tLow = this.tArm = this.tRel = this.tApex = this.tLand = this.upSince = null;
+  // The taught ball gives the scale where it was taught. When the athlete walks to a new spot that scale is wrong by
+  // exactly how much their own size on screen changed, so it is carried by that ratio. Stature in pixels, not the
+  // body scale itself, so a corrected height box does not read as a move.
+  set ppmBall(v) { this._ppmBall = v; this.ballStature = null; }
+  get ppmBall() { return this._ppmBall; }
+  get ppm() { const b = this._ppmBall; return !b ? this.ppmBody : this.ppmBody && this.ballStature ? b * this.ppmBody * this.heightM / this.ballStature : b; }
+  reset(state = 'idle') { this.state = state; this.tDip = this.tLow = this.tArm = this.tRel = this.tApex = this.tLand = this.upSince = null; this.armOnly = false;
     this.setSeen = false; this.wriTop = this.tWriTop = this.wriTopRec = null; this.holdPath = [];
     this.hipMax = -Infinity; this.hipMin = Infinity; this.kneeMin = Infinity; this.elbowMin = Infinity; this.elbowMax = 0; this.ankleMin = Infinity; this.arc = []; this.lostBall = 0; this.rel = null;
     this.downCount = 0; this.upCount = 0; this.sepCount = 0; this.ballVel = null; this.cooldownUntil = -1; this.holdUntil = null; this.snapMax = -Infinity; this.relBy = null; }
@@ -753,7 +764,8 @@ class ShotMachine {
     const sho = mid(P(11), P(12)), hip = mid(P(23), P(24));
     const ank = [27, 28].filter(i => vis(i) > 0.5).map(i => P(i).y);
     const ankleY = ank.length ? Math.max(...ank) : null;
-    const knees = [[23, 25, 27], [24, 26, 28]].filter(t => t.every(i => vis(i) > 0.5)).map(([a, b, c]) => angleAt(P(a), P(b), P(c)));
+    // a model that collapses two joints onto one point makes the angle 0/0; that leg is unread, not NaN
+    const knees = [[23, 25, 27], [24, 26, 28]].filter(t => t.every(i => vis(i) > 0.5)).map(([a, b, c]) => angleAt(P(a), P(b), P(c))).filter(Number.isFinite);
     const knee = knees.length ? knees.reduce((s, v) => s + v, 0) / knees.length : null;
     const earL = P(7), earR = P(8), ear = earL.v >= earR.v ? earL : earR, nose = P(0);
     const facing = Math.sign(nose.x - ear.x) || 1;
@@ -769,7 +781,16 @@ class ShotMachine {
     // noisiest landmark on the body, and the follow-through is read entirely from it.
     const knuckles = [a.idx, a.pnk, a.thb].map(i => lm[i]).filter(p => p && p.v > 0.3);
     const hand = knuckles.length ? { x: knuckles.reduce((s, p) => s + p.x, 0) / knuckles.length, y: knuckles.reduce((s, p) => s + p.y, 0) / knuckles.length, n: knuckles.length } : null;
-    return { sho, elb, wri, idx: idx.v > 0.3 ? idx : null, hand, elbow: angleAt(sho, elb, wri) };
+    const elbow = angleAt(sho, elb, wri); if (!Number.isFinite(elbow)) return null;   // joints collapsed onto one point
+    return { sho, elb, wri, idx: idx.v > 0.3 ? idx : null, hand, elbow };
+  }
+  // The arm at an instant the model could not read it, from the frames either side. The hand is the fastest thing
+  // in the picture at release, so that is exactly when it blurs. Nothing is guessed across a gap of more than 0.15 s.
+  armAround(t) {
+    let b = null, a = null; for (const r of this.h) if (r.arm) { if (r.t <= t) b = r; else if (!a) a = r; }
+    if (!b || !a || a.t - b.t > 0.15) { const one = [b, a].filter(r => r && Math.abs(r.t - t) < 0.07).sort((p, q) => Math.abs(p.t - t) - Math.abs(q.t - t))[0]; return one ? one.arm : null; }
+    const u = (t - b.t) / (a.t - b.t), L = (p, q) => ({ x: p.x + (q.x - p.x) * u, y: p.y + (q.y - p.y) * u, v: Math.min(p.v, q.v) });
+    return { sho: L(b.arm.sho, a.arm.sho), elb: L(b.arm.elb, a.arm.elb), wri: L(b.arm.wri, a.arm.wri), idx: null, hand: null, elbow: b.arm.elbow + (a.arm.elbow - b.arm.elbow) * u };
   }
   // Velocity over a fixed WINDOW OF TIME, not a fixed number of frames. A three-frame slope spans 100 ms at 30 fps
   // but only 50 ms at 60 fps, where the same landmark noise then reads as twice the speed and trips the phase gates.
@@ -784,7 +805,7 @@ class ShotMachine {
   ballHint(ppmVideo) { // in video pixels
     const last = this.h[this.h.length - 1]; if (!last) return null;
     const seen = this.lastSeen, gap = seen ? Math.max(this.dt, last.t - seen.t + this.dt) : 0;
-    const r = seen ? seen.r : (this.ppmBall ? this.ppmBall * BALL_DIAM_M / 2 : null);
+    const r = seen ? seen.r : (this.ppmBall ? this.ppm * BALL_DIAM_M / 2 : null);
     if (this.state === 'flight' && seen && this.ballVel) {
       const g = G * (ppmVideo || 0);
       return { x: seen.x + this.ballVel.vx * gap, y: seen.y + this.ballVel.vy * gap + 0.5 * g * gap * gap,
@@ -798,7 +819,11 @@ class ShotMachine {
   // a rep that started but could not be finished: the caller tells the coach instead of staying silent
   // Only a movement that actually reached the set is reported as a missed rep. Bending to pick the ball up and
   // jogging through frame both start a dip, and announcing those would cry wolf on every rebound.
-  missed(reason) { const started = this.tDip != null && this.setSeen; this.reset('idle'); return started ? { missed: reason } : null; }
+  missed(reason) { const started = this.tDip != null && this.setSeen; this.reset('idle'); this.forgetHand(); return started ? { missed: reason } : null; }
+  // Between reps the hand is decided again. A whole rep's votes would otherwise outweigh a new athlete for seconds,
+  // and a left-hander after a right-hander was measured on the guide arm. Ten frames of the old evidence are kept, so
+  // one frame of catching with the other hand cannot flip it, and a new shooter takes over in a third of a second.
+  forgetHand() { this.sideVotes.L = Math.min(this.sideVotes.L, 10); this.sideVotes.R = Math.min(this.sideVotes.R, 10); }
   // frame = { t (s), lm: [{x,y,v}] in video px, ball: {x,y,r} | null, w, h }
   push(frame) {
     const f = this.frameFeatures(frame.lm);
@@ -830,15 +855,22 @@ class ShotMachine {
     if (this.state === 'idle' && f.ankleY != null && Math.abs(stillV) < (ppm ? 0.12 * ppm : 0.033 * (frame.h || 720))) {
       if (this.learnT0 == null) this.learnT0 = rec.t; this.learnN = (this.learnN || 0) + 1;
       const hPx = (f.ankleY - f.nose.y) / STATURE_ANKLE_TO_NOSE;
-      if (hPx > 40) this.ppmBody = this.ppmBody ? this.ppmBody * 0.95 + (hPx / this.heightM) * 0.05 : hPx / this.heightM;
+      // Slow while the reading only wobbles with posture, fast when it has really moved: an athlete who walks to a new
+      // spot stands still for about a second, and at 5% a frame the old scale was still a quarter in force when they shot.
+      const est = hPx / this.heightM, k = this.ppmBody && Math.abs(est / this.ppmBody - 1) > 0.06 ? 0.3 : 0.05;
+      if (hPx > 40) this.ppmBody = this.ppmBody ? this.ppmBody * (1 - k) + est * k : est;
+      if (this._ppmBall && this.ballStature == null && this.ppmBody) this.ballStature = this.ppmBody * this.heightM;
       this.ground = this.ground == null ? f.ankleY : Math.max(this.ground * 0.9 + f.ankleY * 0.1, f.ankleY * 0.98 + this.ground * 0.02);
       this.idleHip = this.idleHip == null ? f.hip.y : this.idleHip * 0.9 + f.hip.y * 0.1;
       this.idlePitch.push(f.pitch); if (this.idlePitch.length > 60) this.idlePitch.shift();
     }
     if (!this.ppm || this.ground == null) return null;
     const P = this.ppm, t = rec.t, hipVm = hipV / P; // m/s, +down
-    const rRef = this.ppmBall ? this.ppmBall * BALL_DIAM_M / 2 : (frame.ball ? frame.ball.r : 0);   // a hand over the ball shrinks the blob, not the ball
-    const held = frame.ball && arm ? dist(frame.ball, arm.wri) < rRef * 2.4 : false;
+    const rRef = this.ppmBall ? this.ppm * BALL_DIAM_M / 2 : (frame.ball ? frame.ball.r : 0);   // a hand over the ball shrinks the blob, not the ball
+    // Whether the ball is in the hand needs only where the wrist is, not an angle at it, so a wrist too blurred to
+    // read an elbow from still answers it. With no wrist at all the answer is unknown (null), never "free".
+    const wl = frame.lm[ARM[side].wri], wrist = arm ? arm.wri : wl.v > 0.2 ? wl : null;
+    const held = !frame.ball ? false : wrist ? dist(frame.ball, wrist) < rRef * 2.4 : null;
     rec.held = held;
     // The set: the shooting hand carried the ball above the shoulder. Every real shot passes through it and no
     // dribble, pickup or jog does, so it is what separates a shot attempt from ordinary movement with a ball.
@@ -856,7 +888,16 @@ class ShotMachine {
         if (this.downCount >= 0.06 && dropped && (held || !frame.ball || (arm && arm.wri.y > f.sho.y))) {
           let i = this.h.length - 1; while (i > 0 && this.h[i - 1].hipY < this.h[i].hipY && t - this.h[i - 1].t < 1) i--;   // walk back to where the hips started down
           this.reset('dip'); this.tDip = this.h[i].t; this.tLow = t; this.hipMax = f.hip.y; this.kneeMin = f.knee ?? Infinity; this.elbowMin = arm ? arm.elbow : Infinity; }
-        else if (arm && arm.wri.y < f.sho.y && elbowV > 120 && held) { this.reset('rise'); this.tDip = this.tLow = t; this.hipMax = f.hip.y; }
+        else if (arm && arm.wri.y < f.sho.y && elbowV > 120 && held) {
+          // A set shot with little or no dip starts here, on the arm. If the hips did sink, by less than the dip gate,
+          // that dip is found in the history so the timing and the set elbow are read from it. If they did not sink at
+          // all there is no dip to time, and the timing is left unread rather than timed from the arm and called rushed.
+          const recent = this.h.filter(r => t - r.t < 1.0); let low = recent[0]; for (const r of recent) if (r.hipY > low.hipY) low = r;
+          const sank = this.idleHip != null && low.hipY - this.idleHip > 0.02 * P;
+          let i = this.h.indexOf(low); while (sank && i > 0 && this.h[i - 1].hipY < this.h[i].hipY && low.t - this.h[i - 1].t < 1) i--;
+          this.reset('rise'); this.tDip = sank ? this.h[i].t : t; this.tLow = sank ? low.t : t; this.armOnly = !sank; this.hipMax = sank ? low.hipY : f.hip.y;
+          for (const r of this.h) if (r.t >= (sank ? this.tDip : t - 0.6)) { if (r.knee != null) this.kneeMin = Math.min(this.kneeMin, r.knee); if (r.arm) this.elbowMin = Math.min(this.elbowMin, r.arm.elbow); }
+        }
         break; }
       case 'dip': {
         if (f.hip.y >= this.hipMax) { this.hipMax = f.hip.y; this.tLow = t; }
@@ -884,15 +925,15 @@ class ShotMachine {
         if (arm && (this.wriTop == null || arm.wri.y < this.wriTop - 0.02 * P)) { this.wriTop = arm.wri.y; this.tWriTop = t; this.wriTopRec = rec; }
         let released = false;
         const rBody = BALL_DIAM_M / 2 * (this.ppmBody || P), plausibleBall = !!frame.ball && frame.ball.r > 0.6 * rBody && frame.ball.r < 1.6 * rBody;
-        const sep = frame.ball && arm && rRef ? dist(frame.ball, arm.wri) / rRef : 0;
+        const sep = frame.ball && wrist && rRef ? dist(frame.ball, wrist) / rRef : 0;
         // A ball leaving the hand only counts once the hand has reached the set. Without this a dribble rising off
         // the floor toward the hand passes the separation test and cuts a phantom card mid-dribble.
-        this.sepCount = (this.setSeen && frame.ball && arm && sep > 2.6 && this.ballVel && this.ballVel.vy < 0) ? this.sepCount + 1 : 0;
+        this.sepCount = (this.setSeen && frame.ball && wrist && sep > 2.6 && this.ballVel && this.ballVel.vy < 0) ? this.sepCount + 1 : 0;
         if (this.sepCount >= 2) {
           // The ball left the hand between the last frame it was in the hand and the first frame it was not. At 60 fps
           // the first free frame sits under the 2.6 gate, so walk back to the true handover rather than assuming two frames.
           let i = this.h.length - 2;
-          while (i > 1 && !this.h[i - 1].held && this.h[i - 1].ball && t - this.h[i - 1].t < 0.2) i--;
+          while (i > 1 && this.h[i - 1].held === false && this.h[i - 1].ball && t - this.h[i - 1].t < 0.2) i--;   // only frames KNOWN to be free
           const free1 = this.h[i], heldF = this.h[i - 1] && this.h[i - 1].held ? this.h[i - 1] : null;
           this.tRel = heldF ? (heldF.t + free1.t) / 2 : free1.t - this.dt / 2;
           const blend = heldF && heldF.arm && free1.arm ? { ...free1.arm, elbow: (heldF.arm.elbow + free1.arm.elbow) / 2, wri: mid(heldF.arm.wri, free1.arm.wri) } : free1.arm;
@@ -925,7 +966,7 @@ class ShotMachine {
           if (this.holdUntil == null && arm.wri.y > f.sho.y) this.holdUntil = t; }
         if (this.tLand == null && t - this.tRel > 0.25 && this.ankleMin < this.ground - 0.03 * P && f.ankleY != null && f.ankleY >= this.ground - 0.03 * P) this.tLand = t;
         const done = (this.tLand != null && t - this.tRel >= 0.7) || t - this.tRel >= 1.6;
-        if (done) { const shot = this.finish(frame); this.reset('idle'); this.cooldownUntil = t + 0.6; return shot; }
+        if (done) { const shot = this.finish(frame); this.reset('idle'); this.forgetHand(); this.cooldownUntil = t + 0.6; return shot; }
         break; }
     }
     return null;
@@ -933,14 +974,16 @@ class ShotMachine {
   at(t) { let best = this.h[0]; for (const r of this.h) if (Math.abs(r.t - t) < Math.abs(best.t - t)) best = r; return best; }
   finish(frame) {
     const P = this.ppm, Pb = this.ppmBody || P;   // body metrics in the body's plane; the taught ball sits nearer the phone
-    const rel = this.rel, f = rel.f, arm = rel.arm, facing = f.facing, t = frame.t;
+    // read in finish, not at the moment of release, so the frames after the blur are in the history to interpolate to
+    const rel = this.rel, f = rel.f, arm = rel.arm || this.armAround(this.tRel), facing = f.facing, t = frame.t;
     const tLow = this.tLow ?? this.tDip ?? this.tRel;
     const low = this.at(tLow), follow = this.at(this.tRel + 0.4);
     const m = {};
     // timing
-    m.dipToRelease = this.tDip != null ? this.tRel - this.tDip : null;
-    m.lowToRelease = this.tLow != null ? this.tRel - this.tLow : null;
-    m.legArmLag = this.tArm != null && this.tLow != null ? this.tArm - this.tLow : null;
+    const dipped = this.tDip != null && !this.armOnly;
+    m.dipToRelease = dipped ? this.tRel - this.tDip : null;
+    m.lowToRelease = dipped && this.tLow != null ? this.tRel - this.tLow : null;
+    m.legArmLag = dipped && this.tArm != null && this.tLow != null ? this.tArm - this.tLow : null;
     m.releaseVsApex = this.tApex != null && this.ankleMin < this.ground - 0.03 * P ? this.tRel - this.tApex : null;
     m.jumpHeightCm = this.ankleMin < Infinity ? Math.max(0, (this.ground - this.ankleMin) / Pb * 100) : null;
     // body at release
@@ -966,9 +1009,10 @@ class ShotMachine {
     // occluded frame dominated any percentile: the real side-view clip read 21°, an angle no elbow reaches.
     // Frames under 30° are occlusion, not anatomy, and are dropped; if none survive, the row says so.
     const setEnd = this.tArm != null ? this.tArm : this.tRel - 0.3;
-    const es = this.h.filter(r => r.t >= Math.max(this.tDip, setEnd - 0.5) && r.t <= setEnd && r.elbow > 30).map(r => r.elbow).sort((a, b) => a - b);
+    const es = this.h.filter(r => r.t >= (this.armOnly ? setEnd - 0.5 : Math.max(this.tDip, setEnd - 0.5)) && r.t <= setEnd && r.elbow > 30).map(r => r.elbow).sort((a, b) => a - b);
     m.elbowSetDeg = es.length >= 3 ? es[Math.floor(es.length * 0.2)] : null;
     m.elbowReleaseDeg = arm ? arm.elbow : null;                       // at the release instant, as the papers measure it
+    m.armBetween = !rel.arm && !!arm;   // read across a blur: shown, but the elbow locks out right there, so it is not graded
     m.elbowLockDeg = arm ? Math.max(arm.elbow, this.elbowMax) : null; // the most it opened afterwards, for reference
     m.armElevDeg = arm ? deg(Math.atan2(-(arm.wri.y - arm.sho.y), Math.abs(arm.wri.x - arm.sho.x))) : null;
     m.releaseHeightM = arm ? (this.ground - arm.wri.y) / Pb : null;   // hand height at release, the papers' definition
@@ -1012,18 +1056,24 @@ const unpackAnim = a => { const o = Array.from({ length: 33 }, () => [0, 0, 0]);
 // the launch point and velocity are fitted and four points are enough. Fitting the acceleration too, from five or
 // six noisy centroids, is what produced release speeds of hundreds of metres a second: a 2 px wobble moved the
 // fitted g by a factor of three and the speed scaled with it. Anything not a falling parabola is refused, not drawn.
-function fitArc(arc, tRel, r, ppm) {
+// One stray centroid (the finder on a hand, a head or a second ball for a frame) used to throw the whole arc away.
+// The worst point is dropped and the arc refitted instead, at most twice and never below five points, so an arc that
+// is wrong all the way along still fails. The residual counts x as well as y: x is a straight line, and a stray
+// point off to the side bent the slope without ever showing in y.
+function fitArc(arc, tRel, r, ppm, drops = 2) {
   if (!ppm || arc.length < 4) return null;
-  const ts = arc.map(p => p[2] - tRel), xs = arc.map(p => p[0]), ys = arc.map(p => p[1]);
-  if (ts[ts.length - 1] - ts[0] < 0.1) return null;
-  const vx = slope(ts.map((t, i) => [t, xs[i]])), x0 = xs[0] - vx * ts[0];
+  const ts = arc.map(p => p[2] - tRel), xs = arc.map(p => p[0]), ys = arc.map(p => p[1]), n = ts.length;
+  if (ts[n - 1] - ts[0] < 0.1) return null;
+  const tm = ts.reduce((s, t) => s + t, 0) / n;
+  const vx = slope(ts.map((t, i) => [t, xs[i]])), x0 = xs.reduce((s, x) => s + x, 0) / n - vx * tm;
   const a = G * ppm;
   const vy = slope(ts.map((t, i) => [t, ys[i] - 0.5 * a * t * t]));
-  const y0 = ys.reduce((s, y, i) => s + y - vy * ts[i] - 0.5 * a * ts[i] * ts[i], 0) / ts.length;
-  let ss = 0; for (let i = 0; i < ts.length; i++) { const e = ys[i] - (y0 + vy * ts[i] + 0.5 * a * ts[i] * ts[i]); ss += e * e; }
-  const rms = Math.sqrt(ss / ts.length); if (rms > 0.6 * r) return null;
+  const y0 = ys.reduce((s, y, i) => s + y - vy * ts[i] - 0.5 * a * ts[i] * ts[i], 0) / n;
+  const res = ts.map((t, i) => Math.hypot(xs[i] - (x0 + vx * t), ys[i] - (y0 + vy * t + 0.5 * a * t * t)));
+  const rms = Math.sqrt(res.reduce((s, e) => s + e * e, 0) / n);
+  if (rms > 0.6 * r) { if (!drops || n <= 5) return null; const worst = res.indexOf(Math.max(...res)); return fitArc(arc.filter((_, i) => i !== worst), tRel, r, ppm, drops - 1); }
   if (vy >= 0) return null;                                       // it has to be going up at release
-  return { x0, vx, y0, vy, a, rms, n: ts.length, angle: deg(Math.atan2(-vy, Math.abs(vx))), dir: Math.sign(vx) };
+  return { x0, vx, y0, vy, a, rms, n, angle: deg(Math.atan2(-vy, Math.abs(vx))), dir: Math.sign(vx) };
 }
 
 // ---------- targets and cues ----------
@@ -1078,11 +1128,14 @@ let TARGET_EDITS = {};
 let TARGETS = DEFAULT_TARGETS.map(t => ({ ...t }));
 function setTargetEdits(edits) {
   TARGET_EDITS = edits && typeof edits === 'object' ? edits : {};
+  const num = x => (x === null || x === '' || x === undefined ? NaN : +x);   // an emptied box is no opinion, never zero
   TARGETS = DEFAULT_TARGETS.map(t => {
     const e = TARGET_EDITS[t.key];
     if (!e || t.info || t.lo == null) return { ...t };
-    const lo = Number.isFinite(+e.lo) ? +e.lo : t.lo;
-    const hi = e.hi === null || e.hi === '' ? Infinity : (Number.isFinite(+e.hi) ? +e.hi : t.hi);
+    // Only an end the grading reads can be moved. A cap on something judged only from below changes no verdict, so
+    // taking it would mark the row "coach set" for a number that does nothing. A null upper end is "no cap".
+    const lo = t.low && Number.isFinite(num(e.lo)) ? num(e.lo) : t.lo;
+    const hi = !t.high ? t.hi : e.hi === null ? Infinity : Number.isFinite(num(e.hi)) ? num(e.hi) : t.hi;
     if (!(hi > lo)) return { ...t };                       // a backwards range is not an opinion, it is a typo
     return { ...t, lo, hi, edited: lo !== t.lo || hi !== t.hi };
   });
@@ -1096,7 +1149,8 @@ const targetText = tg => tg.tgt ? tg.tgt
   : !tg.low ? `up to ${tg.hi}`
   : `${tg.lo} to ${tg.hi}`;
 function statusOf(tg, v) {
-  if (tg.info || v == null) return v == null ? 'na' : 'info';
+  if (v == null || !Number.isFinite(v)) return 'na';   // NaN or Infinity is a reading that failed, never a fault
+  if (tg.info) return 'info';
   if (v >= tg.lo && v <= tg.hi) return 'good';
   if ((v > tg.hi && !tg.high) || (v < tg.lo && !tg.low)) return 'good';   // a side with no cue is not a fault
   if (v >= tg.lo - tg.slack && v <= tg.hi + tg.slack) return 'watch';
@@ -1106,8 +1160,11 @@ function evaluate(m) {
   const cues = [];
   // Without the ball, release is read from the wrist's highest point, which landmark noise can place up to about a
   // tenth of a second out. The timing numbers are still shown, flagged, but no correction is spoken off them.
-  const soft = m.releaseBy === 'wrist' ? new Set(['dipToRelease', 'legArmLag', 'lowToRelease', 'releaseVsApex', 'quietHeadSec', 'holdSec']) : null;
-  for (const tg of TARGETS) { const v = m[tg.key]; if (tg.info || v == null || (soft && soft.has(tg.key))) continue;
+  // An elbow read across a blurred release is interpolated toward a joint that is locking out, so it runs low: shown,
+  // never spoken.
+  const soft = new Set(m.releaseBy === 'wrist' ? ['dipToRelease', 'legArmLag', 'lowToRelease', 'releaseVsApex', 'quietHeadSec', 'holdSec'] : []);
+  if (m.armBetween) soft.add('elbowReleaseDeg');
+  for (const tg of TARGETS) { const v = m[tg.key]; if (tg.info || !Number.isFinite(v) || soft.has(tg.key)) continue;
     const st = statusOf(tg, v); if (st === 'good') continue;
     const text = v < tg.lo ? tg.low : tg.high; if (!text) continue;
     cues.push({ key: tg.key, status: st, text, w: tg.w * (st === 'fix' ? 2 : 1), value: v }); }
@@ -1212,7 +1269,7 @@ const CSV_META = [
   { h: 'Result', get: s => s.result || '' },
   { h: 'Hand', get: s => (s.side === 'L' ? 'left' : s.side === 'R' ? 'right' : '') },
   { h: 'Height (cm)', get: s => s.heightCm ?? '' },
-  { h: 'Read from', get: s => s.metrics.releaseBy || '' },
+  { h: 'Read from', get: s => (s.metrics.releaseBy || '') + (s.metrics.armBetween ? ', arm read across a blur' : '') },
   { h: 'Arc points', get: s => s.metrics.arcPoints ?? '' },
 ];
 function csvOf(shots) {
@@ -1394,7 +1451,7 @@ function build() {
   if (st.finder && st.finder.taught) { finder.model = st.finder.model; finder.rExp = st.finder.rExp / (st.finder.w / st.finder.videoW) * (det.width / W); finder.taught = true; }
   finder.videoW = W; st.finder = finder;
   const machine = new ShotMachine({ heightM: (+$('heightIn').value || 178) / 100, hand: $('handSel').value });
-  if (st.machine && st.machine.ppmBall) machine.ppmBall = st.machine.ppmBall * Math.sqrt((W * H) / (st.machine.videoW * st.machine.videoH));
+  if (st.machine && st.machine.ppmBall) machine.ppmBall = st.machine.ppm * Math.sqrt((W * H) / (st.machine.videoW * st.machine.videoH));
   machine.videoW = W; machine.videoH = H; st.machine = machine; st.lastT = -1; st.smoother.reset();
 }
 function armLoop() {
@@ -1584,6 +1641,7 @@ function renderLast(shot, older = false) {
   const groups = ['Timing', 'Body', 'Head', 'Arm', 'Ball'];
   $('metrics').innerHTML = groups.map(g => `<div class="mgroup"><h3>${g}</h3>` + TARGETS.filter(t => t.group === g).map(tg => { const v = shot.metrics[tg.key], s = statusOf(tg, v);
     return `<div class="mrow"><div class="lbl">${tg.label}${tg.src ? `<small>${tg.src}</small>` : ''}</div><div class="val ${v == null ? 'na' : ''}">${v == null ? 'not read' : tg.fmt(v, shot.metrics) + (tg.unit ? `<small style="font:600 .72rem var(--cond);color:var(--dim);margin-left:4px">${tg.unit}</small>` : '')}</div><div class="tgt"><i class="dot ${s}"></i>${s === 'watch' || s === 'fix' ? `<b class="sw ${s}">${s}</b>&nbsp;· ` : ''}${targetText(tg)}</div></div>`; }).join('') + '</div>').join('');
+  if (shot.metrics.armBetween) $('metrics').insertAdjacentHTML('afterbegin', '<p class="muted">The hand blurred at release, so the arm there is read across the blur. The elbow runs a little low that way, so it is shown and not graded.</p>');
   if (shot.metrics.releaseBy === 'wrist') $('metrics').insertAdjacentHTML('afterbegin', `<p class="muted">${st.finder && st.finder.taught ? 'The ball was lost on this rep' : 'The ball was not tracked on this rep'}, so release was read from the wrist peak and there is no arc.${st.finder && st.finder.taught ? '' : ' Press Find the ball and bounce it.'}</p>`);
 }
 const labelOf = labelOfKey;
@@ -1649,19 +1707,20 @@ function saveTargetEdits() { try { localStorage.setItem('fb_shotform_targets', J
 setTargetEdits(loadTargetEdits());
 const sameEdits = p => JSON.stringify(setTargetEdits(TARGET_EDITS) && TARGET_EDITS) === JSON.stringify(PRESETS[p] || {});
 
-const fmtBand = tg => tg.hi === Infinity ? `at least ${tg.lo}` : `${tg.lo} to ${tg.hi}`;
 function renderForm() {
   const groups = ['Ball', 'Arm', 'Body', 'Head', 'Timing'];
   $('formRows').innerHTML = groups.map(g => {
     const rows = TARGETS.filter(t => t.group === g && !t.info && t.lo != null).map(tg => {
-      const d = defaultTarget(tg.key), open = tg.hi === Infinity;
+      // Only an end the grading reads gets a box. A cap on something judged only from below changes no verdict, and a
+      // box that does nothing tells the coach it does.
+      const d = defaultTarget(tg.key), showLo = !!tg.low, showHi = !!tg.high && tg.hi !== Infinity, step = Math.max(Math.abs(d.lo), d.hi === Infinity ? 0 : Math.abs(d.hi)) < 3 ? '0.01' : '1';   // lean is whole degrees, the hold is hundredths
       return `<div class="frow" data-key="${tg.key}">
         <div class="fl">${tg.label}${tg.edited ? '<i class="tagd">coach set</i>' : ''}</div>
-        <div class="fi"><input type="number" step="${d.lo < 3 ? '0.01' : '1'}" value="${tg.lo}" data-b="lo" aria-label="${esc(tg.label)} lower limit">
-          <span>${open ? 'and up' : 'to'}</span>
-          ${open ? '' : `<input type="number" step="${d.lo < 3 ? '0.01' : '1'}" value="${tg.hi}" data-b="hi" aria-label="${esc(tg.label)} upper limit">`}
+        <div class="fi">${showLo ? `<input type="number" step="${step}" value="${tg.lo}" data-b="lo" aria-label="${esc(tg.label)} lower limit">` : ''}
+          <span>${showLo && showHi ? 'to' : showLo ? 'and up' : 'up to'}</span>
+          ${showHi ? `<input type="number" step="${step}" value="${tg.hi}" data-b="hi" aria-label="${esc(tg.label)} upper limit">` : ''}
           <span>${(tg.unit || '').split(' ')[0]}</span></div>
-        <div class="fs">${esc(tg.src || '')}${tg.edited ? ` · published ${fmtBand(d)} <button class="undo" data-undo="${tg.key}" type="button">use it</button>` : ''}</div>
+        <div class="fs">${esc(tg.src || '')}${tg.edited ? ` · published ${targetText(d)} <button class="undo" data-undo="${tg.key}" type="button">use it</button>` : ''}</div>
       </div>`;
     }).join('');
     return rows ? `<div class="fhead">${g}</div>${rows}` : '';
@@ -1678,9 +1737,13 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('formPa
 $('formRows').addEventListener('change', e => {
   const inp = e.target.closest('input[data-b]'); if (!inp) return;
   const key = inp.closest('.frow').dataset.key, d = defaultTarget(key), cur = TARGET_EDITS[key] || {};
-  const lo = +(inp.dataset.b === 'lo' ? inp.value : (cur.lo ?? d.lo));
-  const hi = inp.dataset.b === 'hi' ? +inp.value : (cur.hi ?? (d.hi === Infinity ? null : d.hi));
-  if (hi !== null && !(hi > lo)) { inp.value = inp.dataset.b === 'lo' ? d.lo : d.hi; cue('That range runs backwards.', 'The upper limit has to be above the lower one'); return; }
+  // An emptied box goes back to the published value for that end. Read as a number it was zero, which silently
+  // switched the lower limit off; on the upper box it claimed the range ran backwards.
+  const box = inp.value.trim() === '' ? null : +inp.value, pubHi = d.hi === Infinity ? null : d.hi;
+  const lo = inp.dataset.b === 'lo' ? (box ?? d.lo) : (cur.lo ?? d.lo);
+  const hi = inp.dataset.b === 'hi' ? (box ?? pubHi) : (cur.hi ?? pubHi);
+  // the box goes back to the range in force, not to the published one, or it would show a band that is not applied
+  if (hi !== null && !(hi > lo)) { renderForm(); cue('That range runs backwards.', 'The upper limit has to be above the lower one'); return; }
   TARGET_EDITS[key] = { lo, hi }; setTargetEdits(TARGET_EDITS); saveTargetEdits(); renderForm(); markPreset();
   if (st.cards[0]) renderLast(st.cards[0]);   // the last rep is re-graded against the new range at once
 });

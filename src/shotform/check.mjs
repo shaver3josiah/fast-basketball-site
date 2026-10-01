@@ -53,28 +53,32 @@ const FPS = 30, PPM = 200, HEIGHT = 1.78, VW = 1280, VH = 720;
 function rot(v, a) { const c = Math.cos(a), s = Math.sin(a); return { x: v.x*c - v.y*s, y: v.x*s + v.y*c }; }
 // Build one rep. facing = +1 (rim to the right) or -1 (mirrored). withBall false => ball null on every frame.
 const LEG = 0.2655; // each leg link as a fraction of stature; standing hip-to-ankle is 0.53
-const DIP_M = (0.53 - 2*LEG*Math.sin(60*Math.PI/180)) * HEIGHT; // hip drop that closes the knee to 120 degrees
-function rep({ facing = 1, withBall = true, angleDeg = 50, speed = 7, lean = 5, headUp = 15, snap = 50, tRel = 1.70, fps = FPS, occludeElbow = null, holdDrift = 0, dropKnuckles = 0 } = {}) {
-  const frames = [];
-  const ankleY0 = 650, hPx = HEIGHT*PPM, baseX = 640;
-  const g = G*PPM; let relPos = null, relV = null;
-  for (let i = 0; i < fps*4.5; i++) {
+// Every scene parameter defaults to the original rep, so the cases written against it are unchanged. pace stretches
+// or squeezes the BODY's timeline around the start of the dip; the ball still flies in real time, since gravity does not.
+function rep({ facing = 1, withBall = true, angleDeg = 50, speed = 7, lean = 5, headUp = 15, snap = 50, tRel, fps = FPS, occludeElbow = null, holdDrift = 0, dropKnuckles = 0,
+  ppm = PPM, height = HEIGHT, jumpM = 0.25, kneeDeg = 120, vw = VW, vh = VH, baseX = 640, ankleY0 = 650, pace = 1, wristBlur = 0 } = {}) {
+  const frames = [], T = x => 1.0 + (x - 1.0) * pace;
+  if (tRel === undefined) tRel = T(1.70);
+  const dipM = (0.53 - 2*LEG*Math.sin(kneeDeg/2*Math.PI/180)) * height; // hip drop that closes the knee to kneeDeg
+  const hPx = height*ppm, sc = ppm / PPM;   // sc: head and hand offsets were written in pixels at the default scale
+  const g = G*ppm; let relPos = null, relV = null;
+  for (let i = 0; i < fps*(3.5 + pace); i++) {
     const t = i/fps;
     let dip = 0, jump = 0, elbow = 90, armUp = 0, flexed = 0, leanNow = 0, headNow = 0;
-    if (t >= 1.0 && t < 1.4) { const u = (t-1.0)/0.4; dip = DIP_M*Math.sin(u*Math.PI/2); }
-    else if (t >= 1.4 && t < 1.6) { const u = (t-1.4)/0.2; dip = DIP_M*(1-u); }
-    if (t >= 1.6 && t < 2.0) { const u = (t-1.6)/0.4; jump = 0.25*4*u*(1-u); }        // parabolic 0.25 m jump, apex 1.8
-    if (t >= 1.5) { armUp = Math.min(1, (t-1.5)/0.2); elbow = 90 + 85*armUp; }
-    if (t >= 2.4) { const u = Math.min(1,(t-2.4)/0.3); armUp = 1-u; elbow = 175 - 85*u; }
-    if (t >= tRel+0.08 && t < 2.4) flexed = snap;
-    if (t >= 1.4 && t < 2.4) { leanNow = lean; headNow = headUp; }
-    const ankleY = ankleY0 - jump*PPM;
-    const hipY = ankleY - 0.53*hPx + dip*PPM; const D = ankleY - hipY, L = LEG*hPx; const kneeY = (hipY + ankleY)/2, kneeFwd = Math.sqrt(Math.max(0, L*L - (D/2)*(D/2)));
+    if (t >= 1.0 && t < T(1.4)) { const u = (t-1.0)/(0.4*pace); dip = dipM*Math.sin(u*Math.PI/2); }
+    else if (t >= T(1.4) && t < T(1.6)) { const u = (t-T(1.4))/(0.2*pace); dip = dipM*(1-u); }
+    if (jumpM && t >= T(1.6) && t < T(2.0)) { const u = (t-T(1.6))/(0.4*pace); jump = jumpM*4*u*(1-u); }        // parabolic jump, apex at 1.8
+    if (t >= T(1.5)) { armUp = Math.min(1, (t-T(1.5))/(0.2*pace)); elbow = 90 + 85*armUp; }
+    if (t >= T(2.4)) { const u = Math.min(1,(t-T(2.4))/(0.3*pace)); armUp = 1-u; elbow = 175 - 85*u; }
+    if (t >= tRel+0.08 && t < T(2.4)) flexed = snap;
+    if (t >= T(1.4) && t < T(2.4)) { leanNow = lean; headNow = headUp; }
+    const ankleY = ankleY0 - jump*ppm;
+    const hipY = ankleY - 0.53*hPx + dip*ppm; const D = ankleY - hipY, L = LEG*hPx; const kneeY = (hipY + ankleY)/2, kneeFwd = Math.sqrt(Math.max(0, L*L - (D/2)*(D/2)));
     const shoY = hipY - 0.29*hPx, noseY = shoY - 0.11*hPx;
     const hipX = baseX, shoX = hipX + Math.tan(leanNow*Math.PI/180)*(hipY-shoY)*facing;
     const kneeX = hipX + kneeFwd*facing, ankX = hipX;
-    const noseX = shoX + 20*facing;
-    const headV = rot({ x: 30*facing, y: -5 }, -headNow*Math.PI/180*facing); // ear->nose, tilt up
+    const noseX = shoX + 20*sc*facing;
+    const headV = rot({ x: 30*sc*facing, y: -5*sc }, -headNow*Math.PI/180*facing); // ear->nose, tilt up
     const ear = { x: noseX - headV.x, y: noseY - headV.y };
     const upper = 0.17*hPx, fore = 0.15*hPx, hand = 0.09*hPx;
     const shoulderAng = (-30 + (-130 - -30)*armUp) * Math.PI/180;           // -30 = slightly ahead and down, -130 = up-forward
@@ -87,15 +91,15 @@ function rep({ facing = 1, withBall = true, angleDeg = 50, speed = 7, lean = 5, 
     const idx = { x: wri.x + hd.x*hand, y: wri.y + hd.y*hand };
     let ball = null;
     if (withBall) {
-      if (t < tRel) { ball = { x: wri.x + 0.12*PPM*facing, y: wri.y - 0.06*PPM, r: BALL_DIAM_M/2*PPM }; relPos = ball; }
-      else { if (!relV) { const a = angleDeg*Math.PI/180; relV = { vx: speed*Math.cos(a)*PPM*facing, vy: -speed*Math.sin(a)*PPM }; }
+      if (t < tRel) { ball = { x: wri.x + 0.12*ppm*facing, y: wri.y - 0.06*ppm, r: BALL_DIAM_M/2*ppm }; relPos = ball; }
+      else { if (!relV) { const a = angleDeg*Math.PI/180; relV = { vx: speed*Math.cos(a)*ppm*facing, vy: -speed*Math.sin(a)*ppm }; }
         const dt = t - tRel + 1/(2*fps);   // the ball left the hand half a frame before the first free frame
         const x = relPos.x + relV.vx*dt, y = relPos.y + relV.vy*dt + 0.5*g*dt*dt;
-        ball = (x > 0 && x < VW && y > 0) ? { x, y, r: BALL_DIAM_M/2*PPM } : null; }
+        ball = (x > 0 && x < vw && y > 0) ? { x, y, r: BALL_DIAM_M/2*ppm } : null; }
     }
     const lm = Array.from({ length: 33 }, () => ({ x: 0, y: 0, v: 0 }));
     const set = (i, p, v = 0.95) => { lm[i] = { x: p.x, y: p.y, v }; };
-    set(0, { x: noseX, y: noseY }); set(2, { x: noseX - 8*facing, y: noseY - 12 }); set(5, { x: noseX - 8*facing, y: noseY - 12 }, 0.4);
+    set(0, { x: noseX, y: noseY }); set(2, { x: noseX - 8*sc*facing, y: noseY - 12*sc }); set(5, { x: noseX - 8*sc*facing, y: noseY - 12*sc }, 0.4);
     set(7, ear); set(8, ear, 0.3);
     const nearSide = facing > 0 ? 'R' : 'L';
     const A = { R: [12,14,16,20], L: [11,13,15,19] };
@@ -103,20 +107,22 @@ function rep({ facing = 1, withBall = true, angleDeg = 50, speed = 7, lean = 5, 
     // guide hand or the body hides it. The angle then reads near zero, which is anatomically impossible.
     const occluded = occludeElbow && t >= occludeElbow[0] && t <= occludeElbow[1];
     // holdDrift: centimetres the hand wanders after release, the difference between a frozen finish and a collapsing one
-    const drift = holdDrift && t > tRel + 0.1 ? Math.sin((t - tRel) * 9) * holdDrift / 100 * PPM : 0;
+    const drift = holdDrift && t > tRel + 0.1 ? Math.sin((t - tRel) * 9) * holdDrift / 100 * ppm : 0;
     const wriD = { x: wri.x + drift * facing, y: wri.y + drift * 0.4 };
-    set(A[nearSide][0], { x: shoX, y: shoY }); set(A[nearSide][1], occluded ? { x: shoX + 2, y: shoY + 2 } : elbP); set(A[nearSide][2], wriD);
+    // wristBlur: the hand is the fastest thing in the picture at release, so a real model loses confidence in it there
+    const blurred = wristBlur && Math.abs(t - tRel) <= wristBlur;
+    set(A[nearSide][0], { x: shoX, y: shoY }); set(A[nearSide][1], occluded ? { x: shoX + 2, y: shoY + 2 } : elbP); set(A[nearSide][2], wriD, blurred ? 0.3 : 0.95);
     // the knuckles the hand direction is averaged from; dropKnuckles hides some, as a real model does
-    const knu = [[A[nearSide][3], idx], [nearSide === 'R' ? 18 : 17, { x: idx.x - 6*facing, y: idx.y + 3 }], [nearSide === 'R' ? 22 : 21, { x: idx.x + 5*facing, y: idx.y - 3 }]];
-    knu.forEach(([j, p], k) => set(j, { x: p.x + drift * facing, y: p.y + drift * 0.4 }, k < 3 - dropKnuckles ? 0.9 : 0.1));
+    const knu = [[A[nearSide][3], idx], [nearSide === 'R' ? 18 : 17, { x: idx.x - 6*sc*facing, y: idx.y + 3*sc }], [nearSide === 'R' ? 22 : 21, { x: idx.x + 5*sc*facing, y: idx.y - 3*sc }]];
+    knu.forEach(([j, p], k) => set(j, { x: p.x + drift * facing, y: p.y + drift * 0.4 }, blurred ? 0.2 : k < 3 - dropKnuckles ? 0.9 : 0.1));
     const farSide = nearSide === 'R' ? 'L' : 'R';
-    set(A[farSide][0], { x: shoX - 6*facing, y: shoY + 4 }, 0.7); set(A[farSide][1], { x: elbP.x - 20*facing, y: elbP.y + 10 }, 0.6);
-    set(A[farSide][2], { x: wri.x - 40*facing, y: wri.y + 10 }, 0.6); set(A[farSide][3], { x: idx.x - 40*facing, y: idx.y + 10 }, 0.5);
+    set(A[farSide][0], { x: shoX - 6*sc*facing, y: shoY + 4*sc }, 0.7); set(A[farSide][1], { x: elbP.x - 20*sc*facing, y: elbP.y + 10*sc }, 0.6);
+    set(A[farSide][2], { x: wri.x - 40*sc*facing, y: wri.y + 10*sc }, 0.6); set(A[farSide][3], { x: idx.x - 40*sc*facing, y: idx.y + 10*sc }, 0.5);
     set(23, { x: hipX, y: hipY }); set(24, { x: hipX, y: hipY });
     set(25, { x: kneeX, y: kneeY }); set(26, { x: kneeX, y: kneeY });
     set(27, { x: ankX, y: ankleY }); set(28, { x: ankX, y: ankleY });
-    set(31, { x: ankX + 25*facing, y: ankleY + 8 }); set(32, { x: ankX + 25*facing, y: ankleY + 8 });
-    frames.push({ t, lm, ball, w: VW, h: VH });
+    set(31, { x: ankX + 25*sc*facing, y: ankleY + 8*sc }); set(32, { x: ankX + 25*sc*facing, y: ankleY + 8*sc });
+    frames.push({ t, lm, ball, w: vw, h: vh });
   }
   return frames;
 }
@@ -490,13 +496,14 @@ console.log('follow-through');
 // ---------- setting the ideal form from a photo ----------
 // The finding this exists to answer: two of three reference photos were not side on, so no angle could be read off
 // them. In three dimensions the joint angle is the same from any camera, which is the whole point.
+let posed;
 console.log('reference photo');
 {
   const { readReferencePose, bandsFromReference, angle3 } = api;
   ok(near(angle3({x:0,y:0,z:0},{x:1,y:0,z:0},{x:1,y:1,z:0}), 90, 1e-9), 'a right angle in the picture plane');
   ok(near(angle3({x:0,y:0,z:0},{x:1,y:0,z:0},{x:1,y:0,z:1}), 90, 1e-9), 'and the same angle turned out of the picture plane');
   // a shooter posed with a known 95 degree elbow and 120 degree knee, rendered at four camera yaws
-  const posed = yawDeg => {
+  posed = yawDeg => {
     const yaw = yawDeg * Math.PI / 180, rotY = p => ({ x: p.x * Math.cos(yaw) + p.z * Math.sin(yaw), y: p.y, z: -p.x * Math.sin(yaw) + p.z * Math.cos(yaw) });
     const A = 95 * Math.PI / 180, K = 120 * Math.PI / 180;
     const w3 = { 12: {x:0,y:-0.5,z:0}, 14: {x:0.17,y:-0.32,z:0.02}, 16: null,
@@ -584,5 +591,393 @@ console.log('animation');
   ok(animSvg(back).length === svg.length, 'it rebuilds identically after being saved and reloaded');
   ok(JSON.stringify(s.anim).length < 9000, 'a rep\'s flip-book stays small enough to keep forty of them', JSON.stringify(s.anim).length + ' bytes');
 }
+// =====================================================================================================================
+// The wider field. Each block stands for a condition a phone on a tripod really meets: the camera wherever the coach
+// put it, frames that arrive late or not at all, a whole set on one machine, a hand that blurs at release, a ball the
+// finder loses for a frame. Every case says what it protects, so a failure reads as a sentence about the court.
+// =====================================================================================================================
+const rng = seed => { let a = seed * 2654435761 >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+const ALL = [];   // every card cut below, swept at the end for NaN and broken markup
+const cut = (frames, opts) => { const r = run(frames, opts); ALL.push(...r.shots); return r; };
+const shift = (frames, dt) => frames.map(f => ({ ...f, t: f.t + dt }));
+const metricsOf = r => (r.shots[0] ? r.shots[0].metrics : {});
+const REF = run(rep()).shots[0].metrics;          // the plain rep every variant is compared against
+const ELB_REL = 90 + 85 * (T_REL - 1.5) / 0.2;    // the generator's true elbow at the release instant
+const show = v => (v == null ? 'null' : typeof v === 'number' ? v.toFixed(2) : String(v));
+
+// ---------- where the camera is ----------
+// Every threshold has to be in metres or in the athlete's own size, never in pixels, or a phone at the far baseline
+// grades a different athlete than one at the free-throw line.
+console.log('camera distance');
+for (const [ppm, ankleY0] of [[90, 600], [140, 640], [260, 700]]) {
+  const r = cut(rep({ ppm, ankleY0 })), mt = metricsOf(r), tag = `${ppm} px per metre:`;
+  ok(r.shots.length === 1 && r.missed.length === 0, `${tag} one card`, r.shots.length);
+  ok(near(mt.kneeMinDeg, 120, 4) && near(mt.elbowReleaseDeg, ELB_REL, 6), `${tag} knee and elbow`, `${show(mt.kneeMinDeg)} / ${show(mt.elbowReleaseDeg)}`);
+  ok(near(mt.releaseHeightRatio, REF.releaseHeightRatio, 0.05) && near(mt.jumpHeightCm, 25, 4), `${tag} release height and jump`, `${show(mt.releaseHeightRatio)} / ${show(mt.jumpHeightCm)}`);
+  ok(near(mt.trunkLeanDeg, 5, 2) && near(mt.dipToRelease, REF.dipToRelease, 0.06), `${tag} lean and timing`, `${show(mt.trunkLeanDeg)} / ${show(mt.dipToRelease)}`);
+  // close in, the ball leaves the top of the picture within a frame or two: no angle is fine, a wrong one is not
+  ok(ppm > 200 ? mt.launchAngleDeg == null || near(mt.launchAngleDeg, 50, 2) : near(mt.launchAngleDeg, 50, 2), `${tag} launch angle right, or absent when the ball leaves the frame`, show(mt.launchAngleDeg));
+}
+{
+  // a phone held upright: the stream is 720 x 1280 and the ball crosses the narrow width in a quarter of a second
+  const r = cut(rep({ vw: 720, vh: 1280, baseX: 260, ankleY0: 1180, ppm: 300 })), mt = metricsOf(r);
+  ok(r.shots.length === 1, 'portrait 720x1280: one card', r.shots.length);
+  ok(near(mt.kneeMinDeg, 120, 4) && near(mt.releaseHeightRatio, REF.releaseHeightRatio, 0.05), 'portrait: body readings unchanged', `${show(mt.kneeMinDeg)} / ${show(mt.releaseHeightRatio)}`);
+  ok(near(mt.launchAngleDeg, 50, 2), 'portrait: the short arc still gives the angle', `${show(mt.launchAngleDeg)} from ${mt.arcPoints} points`);
+}
+for (const height of [1.45, 2.0]) {
+  const r = cut(rep({ height, ankleY0: 680 }), { heightM: height }), mt = metricsOf(r);
+  ok(r.shots.length === 1 && near(mt.kneeMinDeg, 120, 4) && near(mt.releaseHeightRatio, REF.releaseHeightRatio, 0.04) && near(mt.jumpHeightCm, 25, 4),
+    `a ${height} m athlete measures the same rep the same way`, `${r.shots.length} card, knee ${show(mt.kneeMinDeg)}, ratio ${show(mt.releaseHeightRatio)}, jump ${show(mt.jumpHeightCm)}`);
+}
+{
+  // nobody typed the height: a 1.55 m athlete graded with the 1.78 default. Angles, ratios and times must not move.
+  const truth = cut(rep({ height: 1.55 }), { heightM: 1.55 }), wrong = cut(rep({ height: 1.55 }), { heightM: 1.78 });
+  const a = metricsOf(truth), b = metricsOf(wrong);
+  const moved = ['kneeMinDeg', 'elbowReleaseDeg', 'elbowSetDeg', 'trunkLeanDeg', 'releaseHeightRatio', 'wristSnapDeg', 'headPitchDeltaDeg']
+    .filter(k => !near(b[k], a[k], k === 'releaseHeightRatio' ? 0.005 : 0.5));
+  ok(!moved.length, 'a wrong height in the box moves no angle and no ratio', moved.map(k => `${k} ${show(a[k])}->${show(b[k])}`).join(', '));
+  ok(near(b.dipToRelease, a.dipToRelease, 0.034) && near(b.legArmLag, a.legArmLag, 0.034), 'and no time by more than a frame', `${show(a.dipToRelease)}->${show(b.dipToRelease)}`);
+  // gravity in pixels needs a scale, so the launch angle does move a little: about a degree for a 13% height error
+  ok(near(b.launchAngleDeg, a.launchAngleDeg, 1.5), 'the launch angle moves under 1.5°', `${show(a.launchAngleDeg)}->${show(b.launchAngleDeg)}`);
+  ok(near(b.jumpHeightCm / a.jumpHeightCm, 1.78 / 1.55, 0.03), 'only centimetres and speeds scale with it, by exactly the error', show(b.jumpHeightCm / a.jumpHeightCm));
+}
+
+// ---------- frames as a phone actually delivers them ----------
+console.log('frame delivery');
+{
+  // a busy phone drops frames
+  let cards = 0, worstRel = 0, worstAngle = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const rnd = rng(seed), r = cut(rep().filter((f, i) => i < 5 || rnd() > 0.15));
+    if (r.shots.length !== 1) continue; cards++;
+    worstRel = Math.max(worstRel, Math.abs(r.shots[0].tRel - T_REL));
+    if (r.shots[0].metrics.launchAngleDeg != null) worstAngle = Math.max(worstAngle, Math.abs(r.shots[0].metrics.launchAngleDeg - 50));
+  }
+  ok(cards >= 19, '15% of frames dropped at random: one card on nearly every rep', cards + ' of 20');
+  ok(worstRel < 0.05 && worstAngle < 2.5, 'and release and angle hold', `${(worstRel * 1000).toFixed(0)} ms, ${worstAngle.toFixed(1)}°`);
+}
+{
+  // capture intervals wobble between 29 and 38 ms; every timestamp is still true, as a camera's are
+  const fine = rep({ fps: 240 }), trueRel = 1.70 - 1 / 480;
+  let cards = 0, worstRel = 0, worstAngle = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const rnd = rng(seed), pick = []; for (let i = 0; i < fine.length; i += 7 + Math.floor(rnd() * 3)) pick.push(fine[i]);
+    const r = cut(pick); if (r.shots.length !== 1) continue; cards++;
+    worstRel = Math.max(worstRel, Math.abs(r.shots[0].tRel - trueRel));
+    worstAngle = Math.max(worstAngle, Math.abs((r.shots[0].metrics.launchAngleDeg ?? 99) - 50));
+  }
+  // release is found between the last held frame and the first free one, so its resolution is one interval, here up to 38 ms
+  ok(cards === 12 && worstRel < 0.04 && worstAngle < 2, 'uneven capture intervals: one card, release within one frame, angle within 2°', `${cards} cards, ${(worstRel * 1000).toFixed(0)} ms, ${worstAngle.toFixed(1)}°`);
+}
+{
+  // a phone that warms up falls from 60 fps to 30 halfway through the dip
+  const fine = rep({ fps: 60 }), trueRel = 1.70 - 1 / 120;
+  const r = cut(fine.filter((f, i) => f.t < 1.2 || i % 2 === 0)), s = r.shots[0];
+  ok(r.shots.length === 1 && Math.abs(s.tRel - trueRel) < 0.025 && near(s.metrics.launchAngleDeg, 50, 2), '60 fps falling to 30 mid-rep: one card, release and angle hold', s && `${((s.tRel - trueRel) * 1000).toFixed(0)} ms, ${show(s.metrics.launchAngleDeg)}`);
+}
+{
+  // the same frame delivered twice (the glue filters this, the machine must survive it anyway)
+  const r = cut(rep().flatMap(f => (f.t > 1.3 && f.t < 2.0 ? [f, { ...f }] : [f])));
+  ok(r.shots.length === 1 && Math.abs(r.shots[0].tRel - T_REL) < 0.02, 'duplicated frames: one card, release unmoved', r.shots[0] && show(r.shots[0].tRel));
+}
+
+// ---------- a whole set on one machine ----------
+// Nothing may accumulate from rep to rep: not the scale, not the hand, not the history.
+console.log('session');
+{
+  const truth = [46, 48, 50, 52, 54, 47, 49, 51, 53, 55, 50, 50];
+  const r = cut(truth.flatMap((a, k) => shift(rep({ angleDeg: a }), k * 4.5)));
+  ok(r.shots.length === truth.length && r.missed.length === 0, 'twelve reps in a row: twelve cards and no missed notice', `${r.shots.length} cards, missed: ${r.missed.join('|')}`);
+  const errs = r.shots.map((s, k) => Math.abs((s.metrics.launchAngleDeg ?? 99) - truth[k]));
+  ok(errs.every(e => e < 1.5), 'each card carries its own rep\'s angle, the last as well as the first', errs.map(e => e.toFixed(1)).join(' '));
+  const knees = r.shots.map(s => s.metrics.kneeMinDeg);
+  ok(Math.max(...knees) - Math.min(...knees) < 3, 'the body readings do not drift across a set', knees.map(v => v.toFixed(0)).join(' '));
+}
+{
+  const r = cut([0, 1, 2, 3].flatMap(k => shift(rep().filter(f => f.t < 2.8), k * 2.8)));
+  ok(r.shots.length === 4, 'quick reps 2.8 s apart all cut', r.shots.length);
+}
+{
+  // one phone, two athletes, and nobody touched the hand setting between them
+  const r = cut([...rep(), ...shift(rep({ facing: -1 }), 4.5), ...shift(rep(), 9)]);
+  ok(r.shots.map(s => s.side).join('') === 'RLR', 'a right-hander, a left-hander, a right-hander: each read off their own shooting arm', r.shots.map(s => s.side).join(''));
+  ok(r.shots[1] && near(r.shots[1].metrics.elbowReleaseDeg, ELB_REL, 6) && near(r.shots[1].metrics.wristSnapDeg, 50, 8), 'the left-hander\'s elbow and wrist are the left arm\'s', r.shots[1] && `${show(r.shots[1].metrics.elbowReleaseDeg)} / ${show(r.shots[1].metrics.wristSnapDeg)}`);
+}
+{
+  // the athlete walks to a new spot between reps, further from the phone and along the baseline
+  const r = cut([...rep(), ...shift(rep({ ppm: 150, baseX: 420, ankleY0: 600 }), 4.5)]), mt = r.shots[1] ? r.shots[1].metrics : {};
+  ok(r.shots.length === 2, 'a new spot between reps: both cut', r.shots.length);
+  ok(near(mt.releaseHeightRatio, REF.releaseHeightRatio, 0.06) && near(mt.jumpHeightCm, 25, 5) && near(mt.launchAngleDeg, 50, 2), 'and the second is measured at its own scale', `${show(mt.releaseHeightRatio)} / ${show(mt.jumpHeightCm)} / ${show(mt.launchAngleDeg)}`);
+}
+{
+  // the same move after the ball was taught at the first spot: the taught size belongs to where it was taught
+  const frames = [...rep(), ...shift(rep({ ppm: 150, baseX: 420, ankleY0: 600 }), 4.5)];
+  const m = new ShotMachine({ heightM: HEIGHT }); m.ppmBall = PPM; const shots = [];
+  for (const f of frames) { const s = m.push(f); if (s && !s.missed) shots.push(s); }
+  ALL.push(...shots);
+  const mt = shots[1] ? shots[1].metrics : {};
+  ok(shots.length === 2 && near(mt.launchAngleDeg, 50, 2) && near(mt.releaseSpeedMs, 7, 0.6), 'a taught ball, then a new spot: angle and speed still right at the new spot', `${shots.length} cards, ${show(mt.launchAngleDeg)}°, ${show(mt.releaseSpeedMs)} m/s`);
+}
+
+// ---------- shots that are not the textbook jump shot ----------
+console.log('shot styles');
+{
+  const r = cut(rep({ jumpM: 0 })), mt = metricsOf(r);
+  ok(r.shots.length === 1 && near(mt.launchAngleDeg, 50, 1.5) && near(mt.kneeMinDeg, 120, 4), 'a free throw with no jump cuts a card and measures right', `${r.shots.length} card, ${show(mt.launchAngleDeg)}°`);
+  ok(mt.jumpHeightCm < 3 && mt.releaseVsApex == null, 'it reports no jump, and no release-versus-peak for a jump that did not happen', `${show(mt.jumpHeightCm)} cm, ${show(mt.releaseVsApex)}`);
+}
+for (const pace of [0.7, 1.4, 2.0]) {
+  // a quick catch-and-shoot, a deliberate one, and a young athlete's slow push
+  const trueRel = 1.0 + 0.7 * pace - 1 / (2 * FPS), trueElbow = 90 + 85 * Math.min(1, (trueRel - (1.0 + 0.5 * pace)) / (0.2 * pace));
+  const r = cut(rep({ pace })), s = r.shots[0], mt = metricsOf(r);
+  ok(r.shots.length === 1 && r.missed.length === 0, `pace ×${pace}: one card`, `${r.shots.length} cards, missed: ${r.missed.join('|')}`);
+  ok(s && Math.abs(s.tRel - trueRel) < 0.025 && near(mt.dipToRelease, trueRel - 1.0, 0.08), `pace ×${pace}: release time and dip-to-release follow the shot`, s && `${((s.tRel - trueRel) * 1000).toFixed(0)} ms, ${show(mt.dipToRelease)} vs ${show(trueRel - 1)}`);
+  ok(near(mt.elbowReleaseDeg, trueElbow, 7) && near(mt.launchAngleDeg, 50, 1.5), `pace ×${pace}: elbow at release and angle`, `${show(mt.elbowReleaseDeg)} vs ${trueElbow.toFixed(0)}, ${show(mt.launchAngleDeg)}`);
+}
+for (const kneeDeg of [100, 140, 155]) {
+  // a deep load, a shallow one, and a set shot with barely any bend
+  const r = cut(rep({ kneeDeg })), mt = metricsOf(r);
+  ok(r.shots.length === 1, `knee closed to ${kneeDeg}°: one card`, r.shots.length);
+  ok(near(mt.kneeMinDeg, kneeDeg, kneeDeg > 150 ? 8 : 5), `knee closed to ${kneeDeg}°: read as such`, show(mt.kneeMinDeg));
+}
+
+// ---------- what goes wrong in tracking ----------
+console.log('tracking hazards');
+for (const w of [0.035, 0.07]) {
+  // the hand is the fastest thing in the picture at release, so a real model is least sure of it exactly then
+  const r = cut(rep({ wristBlur: w })), s = r.shots[0], mt = metricsOf(r), tag = `hand blurred ±${Math.round(w * 1000)} ms around release:`;
+  ok(r.shots.length === 1, `${tag} one card`, r.shots.length);
+  ok(s && Math.abs(s.tRel - T_REL) < 0.04, `${tag} release time holds`, s && `${((s.tRel - T_REL) * 1000).toFixed(0)} ms`);
+  // A short blur is read across from the frames either side. The elbow is locking out right there, so the straight
+  // line between them runs about ten degrees low: it is shown, and it is never spoken. A long blur is left unread.
+  const read = mt.elbowReleaseDeg != null;
+  ok(w < 0.05 ? read && near(mt.elbowReleaseDeg, ELB_REL, 12) && near(mt.releaseHeightRatio, REF.releaseHeightRatio, 0.05) : !read || near(mt.elbowReleaseDeg, ELB_REL, 12),
+    `${tag} ${w < 0.05 ? 'the arm at release is read across the blur' : 'the arm is read, or honestly left unread'}`, `${show(mt.elbowReleaseDeg)} / ${show(mt.releaseHeightRatio)} / ${show(mt.armElevDeg)}`);
+  ok(!(s && s.cues.some(c => c.key === 'elbowReleaseDeg')), `${tag} no elbow correction is spoken off a blurred release`);
+  if (w < 0.05) ok(csvOf([s]).includes('ball, arm read across a blur'), `${tag} and the spreadsheet says the arm was read across it`);
+  ok(near(mt.launchAngleDeg, 50, 1.5), `${tag} the angle holds`, show(mt.launchAngleDeg));
+}
+{
+  // the guide hand covers the ball for the last fifth of a second before release
+  const r = cut(rep().map(f => (f.t > T_REL - 0.2 && f.t < T_REL ? { ...f, ball: null } : f))), s = r.shots[0];
+  ok(r.shots.length === 1 && Math.abs(s.tRel - T_REL) < 0.04 && near(s.metrics.launchAngleDeg, 50, 1.5), 'ball hidden at the set: release and angle hold', s && `${((s.tRel - T_REL) * 1000).toFixed(0)} ms, ${show(s.metrics.launchAngleDeg)}`);
+}
+for (const [dx, dy, what] of [[-140, 110, 'a hand'], [60, -40, 'a second ball'], [-30, 30, 'the head']]) {
+  // the finder locks onto something else for a single frame in flight
+  const r = cut(rep().map(f => (Math.abs(f.t - (T_REL + 0.2)) < 0.017 && f.ball ? { ...f, ball: { ...f.ball, x: f.ball.x + dx, y: f.ball.y + dy } } : f)));
+  ok(r.shots.length === 1 && near(metricsOf(r).launchAngleDeg, 50, 1.5), `one stray centroid on ${what} in flight does not cost the angle`, show(metricsOf(r).launchAngleDeg));
+}
+{
+  const r = cut(rep({ angleDeg: 58, speed: 8.5, ankleY0: 560 })), mt = metricsOf(r);
+  ok(r.shots.length === 1 && (mt.launchAngleDeg == null ? mt.arcOk === false : near(mt.launchAngleDeg, 58, 2)), 'a ball that leaves the top at once: the angle is right or absent, never wrong', show(mt.launchAngleDeg));
+}
+
+// ---------- the launch angle across the range a coach will see ----------
+console.log('arc sweep');
+{
+  let fits = 0, runs = 0, worstA = 0, worstV = 0; const worst = [];
+  for (const angleDeg of [35, 42, 48, 55, 62]) for (const speed of [6, 7.5, 9]) for (const facing of [1, -1]) {
+    runs++; const mt = metricsOf(cut(rep({ angleDeg, speed, facing })));
+    if (mt.launchAngleDeg == null) continue; fits++;
+    const ea = Math.abs(mt.launchAngleDeg - angleDeg), ev = Math.abs(mt.releaseSpeedMs - speed);
+    if (ea > worstA) { worstA = ea; worst[0] = `${angleDeg}°/${speed}`; } if (ev > worstV) { worstV = ev; worst[1] = `${angleDeg}°/${speed}`; }
+  }
+  ok(fits >= runs - 2, 'an arc is fitted for nearly every angle and speed', `${fits} of ${runs}`);
+  ok(worstA < 1.5, 'launch angle within 1.5° from 35° to 62°, both directions', `${worstA.toFixed(2)}° at ${worst[0]}`);
+  ok(worstV < 0.4, 'release speed within 0.4 m/s across the range', `${worstV.toFixed(2)} at ${worst[1]}`);
+  const up = fitArc([[0, 0, 0], [0, -10, 0.05], [0, -18, 0.1], [0, -24, 0.15], [0, -28, 0.2]], 0, 10, 100);
+  ok(up && near(up.angle, 90, 1e-6), 'a ball thrown straight up reads 90°, not NaN', up && up.angle);
+  // one gross outlier among ten good points: the fit drops it rather than refusing the whole arc
+  const pts = Array.from({ length: 10 }, (_, i) => { const t = i / 30; return [100 + 900 * t, 400 - 1100 * t + 0.5 * G * 200 * t * t, t]; });
+  pts[6] = [pts[6][0] - 140, pts[6][1] + 110, pts[6][2]];
+  const fo = fitArc(pts, 0, 24, 200);
+  ok(fo && near(fo.angle, Math.atan2(1100, 900) * 180 / Math.PI, 1), 'fitArc survives one stray point', fo && fo.angle);
+  pts[3] = [pts[3][0] + 90, pts[3][1] - 120, pts[3][2]];
+  const f2o = fitArc(pts, 0, 24, 200);
+  ok(f2o === null || near(f2o.angle, Math.atan2(1100, 900) * 180 / Math.PI, 1), 'and two stray points give the right angle or none, never a wrong one', f2o && f2o.angle);
+}
+
+// ---------- landmarks a model can return that are not geometry ----------
+console.log('degenerate landmarks');
+{
+  // a model collapses two landmarks onto one point, so an angle at them is 0/0
+  const collapse = (frames, a, b, t0, t1) => frames.map(f => (f.t > t0 && f.t < t1 ? { ...f, lm: f.lm.map((p, i) => (i === a ? { ...f.lm[b] } : p)) } : f));
+  const cases = [['wrist onto elbow at release', collapse(rep(), 16, 14, 1.55, 1.75)], ['knee onto hip in the dip', collapse(rep(), 26, 24, 1.1, 1.3)],
+    ['elbow onto shoulder at the set', collapse(rep(), 14, 12, 1.25, 1.35)], ['knuckle onto wrist in the follow-through', collapse(rep(), 20, 16, 1.8, 1.9)]];
+  for (const [what, frames] of cases) {
+    const r = cut(frames), mt = metricsOf(r);
+    const notNum = Object.entries(mt).filter(([, v]) => typeof v === 'number' && !Number.isFinite(v)).map(([k, v]) => `${k}=${v}`);
+    ok(r.shots.length === 1 && !notNum.length, `${what}: one card and every number a number`, `${r.shots.length} card ${notNum.join(', ')}`);
+    ok(mt.kneeMinDeg != null && mt.elbowReleaseDeg != null && mt.legArmLag != null, `${what}: one bad frame costs no whole reading`, `knee ${show(mt.kneeMinDeg)} elbow ${show(mt.elbowReleaseDeg)} lag ${show(mt.legArmLag)}`);
+  }
+}
+
+// ---------- the grading itself ----------
+console.log('grading');
+{
+  const s = run(rep()).shots[0];
+  const missing = DEFAULT_TARGETS.filter(t => !(t.key in s.metrics)).map(t => t.key);
+  ok(!missing.length, 'every target names a metric the machine actually produces', missing.join(','));
+  const graded = DEFAULT_TARGETS.filter(t => !t.info);
+  const badBand = graded.filter(t => !(t.hi > t.lo) || !(t.slack > 0) || !(t.w > 0) || !(t.low || t.high) || !t.src).map(t => t.key);
+  ok(!badBand.length, 'every graded target has a band, slack, weight, a cue and a source', badBand.join(','));
+  const badFmt = DEFAULT_TARGETS.filter(t => { const out = t.fmt(Number.isFinite(t.lo) ? t.lo : 1, { holdOpen: false, quietOpen: false }); return typeof out !== 'string' || !out || /NaN|undefined/.test(out); }).map(t => t.key);
+  ok(!badFmt.length, 'every target formats a value', badFmt.join(','));
+  const la = graded.find(t => t.key === 'launchAngleDeg');
+  ok(statusOf(la, la.lo) === 'good' && statusOf(la, la.hi) === 'good', 'the band edges are inside the band');
+  ok(statusOf(la, la.lo - la.slack) === 'watch' && statusOf(la, la.lo - la.slack - 0.01) === 'fix', 'slack is borderline and past it is a fix');
+  ok([NaN, Infinity, -Infinity].every(v => statusOf(la, v) === 'na'), 'a number that is not a number is "not read", never a fault', [NaN, Infinity, -Infinity].map(v => statusOf(la, v)).join(','));
+  const c = evaluate({ kneeMinDeg: NaN, launchAngleDeg: Infinity, trunkLeanDeg: -Infinity, releaseBy: 'ball' });
+  ok(c.length === 0, 'and it never speaks a correction', c.map(x => `${x.key}: ${x.text}`).join(' | '));
+  ok(!s.cues.some(x => x.status === 'fix'), 'a clean rep is told to fix nothing under the published bands', s.cues.filter(x => x.status === 'fix').map(x => x.key).join(','));
+}
+{
+  // The presets live in the page glue, so they are read out of the html. Youth must only ever be kinder than the
+  // papers and strict only ever harder, on every end that is actually judged, or the names lie.
+  const PRESETS = vm.runInNewContext('(' + html.match(/const PRESETS = (\{[\s\S]*?\n\});/)[1] + ')');
+  const pub = k => defaultTarget(k), problems = [];
+  for (const [name, p] of Object.entries(PRESETS)) for (const [k, e] of Object.entries(p)) {
+    const d = pub(k); if (!d || d.info) { problems.push(`${name}.${k} is not a graded target`); continue; }
+    const lo = e.lo ?? d.lo, hi = e.hi ?? d.hi;
+    if (!(hi > lo)) problems.push(`${name}.${k} runs backwards`);
+    const kinder = name === 'youth';
+    if (d.low && e.lo != null && (kinder ? e.lo > d.lo : e.lo < d.lo)) problems.push(`${name}.${k}.lo ${e.lo} vs ${d.lo}`);
+    if (d.high && e.hi != null && (kinder ? e.hi < d.hi : e.hi > d.hi)) problems.push(`${name}.${k}.hi ${e.hi} vs ${d.hi}`);
+  }
+  ok(!problems.length, 'youth is kinder than the papers and strict is harder, on every judged end', problems.join('; '));
+  setTargetEdits(JSON.parse(JSON.stringify(PRESETS.youth)));
+  const youthFix = evaluate({ ...REF, releaseBy: 'ball' }).filter(x => x.status === 'fix').map(x => x.key);
+  ok(!youthFix.length, 'a clean rep is told to fix nothing under the youth bands', youthFix.join(','));
+  setTargetEdits({});
+}
+{
+  // The coach's boxes. An emptied box is "no opinion", never zero, and an end the grading never reads must not be
+  // editable as if it were: a cap on a one-sided target changes nothing, so marking it "coach set" lies.
+  const tg = k => api.TARGETS.find(t => t.key === k);
+  setTargetEdits({ elbowReleaseDeg: { lo: null, hi: 180 } });
+  ok(tg('elbowReleaseDeg').lo === defaultTarget('elbowReleaseDeg').lo, 'an emptied lower box keeps the published lower limit, not zero', tg('elbowReleaseDeg').lo);
+  setTargetEdits({ elbowSetDeg: { lo: '', hi: 90 } });
+  ok(tg('elbowSetDeg').lo === defaultTarget('elbowSetDeg').lo && tg('elbowSetDeg').hi === 90, 'the same for an empty string', `${tg('elbowSetDeg').lo} to ${tg('elbowSetDeg').hi}`);
+  setTargetEdits({ elbowReleaseDeg: { lo: 150, hi: 172 }, releaseHeightRatio: { lo: 1.08, hi: 1.2 } });
+  ok(!tg('elbowReleaseDeg').edited && !tg('releaseHeightRatio').edited, 'a cap on a target that is only judged from below is not "coach set"', `${tg('elbowReleaseDeg').edited} / ${tg('releaseHeightRatio').edited}`);
+  ok(statusOf(tg('releaseHeightRatio'), 1.3) === 'good', 'and does not fault a high release', statusOf(tg('releaseHeightRatio'), 1.3));
+  setTargetEdits({});
+}
+
+// ---------- a reference photo that is not a studio shot ----------
+console.log('reference photo, real ones');
+{
+  const { readReferencePose, bandsFromReference } = api;
+  // side on, the far side of the body behind the near side: the very photo a coach should take
+  const { lm2, lm3 } = posed(90);
+  for (const i of [11, 13, 15, 17, 19, 21, 23, 25, 27]) { lm2[i].visibility = 0.15; lm3[i].visibility = 0.15; }
+  const r = readReferencePose(lm2, lm3);
+  ok(near(r.elbowDeg, 95, 2) && near(r.kneeDeg, 120, 3), 'far side hidden: elbow and knee read off the near side', `${show(r.elbowDeg)} / ${show(r.kneeDeg)} missing: ${r.missing.join(',')}`);
+  ok(r.trunkLeanDeg != null && r.releaseHeightRatio != null, 'and lean and release height too', `${show(r.trunkLeanDeg)} / ${show(r.releaseHeightRatio)}`);
+  // a left-hander: left and right exchanged and the picture mirrored
+  const pairs = [[1, 4], [2, 5], [3, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16], [17, 18], [19, 20], [21, 22], [23, 24], [25, 26], [27, 28], [29, 30], [31, 32]];
+  const swap = (lm, mirror) => { const o = lm.map(p => ({ ...p, x: mirror(p.x) })); for (const [a, b] of pairs) [o[a], o[b]] = [o[b], o[a]]; return o; };
+  const p = posed(60), L = readReferencePose(swap(p.lm2, x => 1 - x), swap(p.lm3, x => -x));
+  ok(L.side === 'L' && near(L.elbowDeg, 95, 2) && near(L.kneeDeg, 120, 3), 'a left-hander\'s photo reads the left arm', `${L.side} ${show(L.elbowDeg)} / ${show(L.kneeDeg)}`);
+  // a nearly straight arm in the photo must not become a band past straight
+  const straight = { elbowDeg: 176, kneeDeg: 172, armElevDeg: 70, wristSnapDeg: 40, missing: [], cameraDependent: [] };
+  const rel = bandsFromReference(straight, 'release'), set = bandsFromReference(straight, 'set');
+  const over = [rel.elbowReleaseDeg, set.elbowSetDeg, set.kneeMinDeg].filter(b => b && b.hi > 180).length;
+  ok(!over, 'a band read off a straight joint stops at 180°', `${rel.elbowReleaseDeg.hi} / ${set.kneeMinDeg.hi}`);
+}
+
+// ---------- the ball finder on pictures a gym actually makes ----------
+console.log('ball finder, real light');
+{
+  const lit = frame(({ px, rect }) => { rect(0, 140, W, H, FLOOR);
+    // lit from above: bright on top, half as bright underneath, with a white glint
+    for (let y = 80; y <= 100; y++) for (let x = 190; x <= 210; x++) { const dx = x - 200, dy = y - 90; if (dx * dx + dy * dy > 100) continue;
+      const k = 1.15 - 0.6 * (dy + 10) / 20, glint = (dx + 4) ** 2 + (dy + 5) ** 2 < 6;
+      px(x, y, glint ? [250, 232, 214] : ORANGE.map(c => Math.min(255, Math.round(c * k)))); } });
+  const b1 = new BallFinder(W, H).find(lit, null);
+  ok(b1 && near(b1.x, 200, 2) && near(b1.y, 90, 2) && near(b1.r, 10, 2.5), 'a ball lit from above with a glint is still one ball', b1 && `${b1.x.toFixed(1)},${b1.y.toFixed(1)} r ${b1.r.toFixed(1)}`);
+  // motion blur: in flight at 7 m/s a ball smears about its own width along the arc
+  const blur = frame(({ disc, rect }) => { rect(0, 140, W, H, FLOOR); for (let k = 0; k <= 20; k++) disc(190 + k * 0.64, 98 - k * 0.77, 10, ORANGE); });
+  const taught = new BallFinder(W, H); taught.learn({ r: 10, rn: ORANGE[0] / 395, gn: ORANGE[1] / 395 });
+  const b2 = new BallFinder(W, H).find(blur, null), b3 = taught.find(blur, { x: 196, y: 90, radius: 40 });
+  ok(b2 && b3 && near(b3.x, 196.4, 3) && near(b3.y, 90.3, 3), 'a motion-blurred ball is found, taught or not, at the middle of the smear', b3 && `${b3.x.toFixed(1)},${b3.y.toFixed(1)}`);
+  // the shooting hand covers a third of it
+  const hand = frame(({ disc, rect }) => { rect(0, 140, W, H, FLOOR); disc(200, 90, 10, ORANGE); disc(209, 84, 7, SKIN); });
+  const b4 = taught.find(hand, { x: 200, y: 90, radius: 30 });
+  ok(b4 && near(b4.x, 200, 4) && near(b4.y, 90, 4), 'a ball with a hand over a third of it', b4 && `${b4.x.toFixed(1)},${b4.y.toFixed(1)}`);
+  // two balls, a teammate's nearby: the hint keeps the shooter's
+  const two = frame(({ disc, rect }) => { rect(0, 140, W, H, FLOOR); disc(100, 90, 10, ORANGE); disc(220, 92, 10, ORANGE); });
+  const b5 = taught.find(two, { x: 214, y: 95, radius: 40 });
+  ok(b5 && near(b5.x, 220, 2), 'with a second ball in the picture the hint keeps the shooter\'s', b5 && b5.x.toFixed(1));
+  // half out of the picture, and a hint that has run off the edge: nothing throws, nothing is invented
+  const edge = frame(({ disc }) => disc(W - 2, 90, 10, ORANGE));
+  let threw = null, b6, b7;
+  try { b6 = taught.find(edge, null); b7 = taught.find(edge, { x: W + 30, y: 90, radius: 20 }); } catch (e) { threw = e.message; }
+  ok(!threw && (!b6 || (b6.x <= W && Number.isFinite(b6.x))) && !b7, 'a ball half out of frame and a hint off the edge: no throw, no ghost', threw || `${b6 && b6.x} / ${b7 && b7.x}`);
+  // a ball at 25 ft through the 1x lens is only a few pixels across
+  const tiny = frame(({ disc, rect }) => { rect(0, 140, W, H, FLOOR); disc(160, 60, 2.5, ORANGE); });
+  const b8 = new BallFinder(W, H).find(tiny, null);
+  ok(b8 && near(b8.x, 160, 1.5), 'a ball five pixels across is still found', b8 && b8.x.toFixed(1));
+}
+{
+  // Learning from a bounce must take a bounce and nothing else that moves.
+  const { BounceLearner } = api;
+  const learn = frames => { const bf = new BallFinder(W, H), bl = new BounceLearner(); frames.forEach((img, i) => { bf.find(img, null); bl.push(i / 30, bf.cands); }); return bl.verdict(); };
+  // an orange shirt walks across the picture while nobody bounces anything; it travels, and it bobs
+  const walk = Array.from({ length: 45 }, (_, i) => { const t = i / 30, x = Math.round(30 + t * 160), y = Math.round(70 + Math.sin(t * 4 * Math.PI) * 5);
+    return frame(({ rect }) => { rect(0, 150, W, H, FLOOR); rect(x, y, x + 26, y + 34, ORANGE); }); });
+  const v = learn(walk);
+  ok(v === null, 'an orange shirt walking past is not learned as the ball', v && `r ${v.r.toFixed(0)} travel ${v.travel.toFixed(0)} reversals ${v.reversals}`);
+  // a ball bounced while the athlete drifts sideways is still a bounce
+  const drift = Array.from({ length: 45 }, (_, i) => { const t = i / 30, u = (t * 1.4) % 1, y = 40 + 100 * (1 - Math.pow(2 * u - 1, 2));
+    return frame(({ disc, rect }) => { rect(0, 150, W, H, FLOOR); disc(150 + t * 40, y, 9, ORANGE); }); });
+  ok(learn(drift) !== null, 'a ball bounced while drifting sideways is still learned');
+}
+
+// ---------- an old card from the phone's store ----------
+console.log('stored cards');
+{
+  // a card saved before the flip-book, the hand points and the drift existed
+  const s = JSON.parse(JSON.stringify(run(rep()).shots[0]));
+  delete s.anim; delete s.metrics.holdDriftCm; delete s.metrics.handPoints; delete s.metrics.wristSnapDeg;
+  let threw = null, out = '';
+  try { out = animSvg(s) + cardHtml([s]) + csvOf([s]); } catch (e) { threw = e.message; }
+  ok(!threw && !/NaN|undefined/.test(out), 'a card saved by an older version still renders, exports and opens', threw || (out.match(/.{0,20}(NaN|undefined).{0,10}/) || [''])[0]);
+}
+
+// ---------- every output, every rep ----------
+console.log('every card above');
+{
+  const bad = [];
+  for (const s of ALL) {
+    for (const [k, v] of Object.entries(s.metrics)) if (typeof v === 'number' && !Number.isFinite(v)) bad.push(`${k}=${v}`);
+    const out = cardSvg(s) + animSvg(s) + cardHtml([s]) + csvOf([s]);
+    const hit = out.match(/.{0,24}(NaN|undefined|Infinity).{0,8}/); if (hit) bad.push(hit[0]);
+  }
+  ok(ALL.length > 60 && !bad.length, `${ALL.length} cards from every scene: no NaN, undefined or Infinity in a number or in the markup`, bad.slice(0, 4).join(' | '));
+}
+
+// ---------- cost ----------
+// A phone is several times slower than this machine. These ceilings are loose on purpose: they catch an accidental
+// quadratic, not a slow day. Timed on a copy compiled in this realm, the way a browser runs it: inside the vm sandbox
+// every global (Math.abs, per pixel) goes through an interceptor and the sandbox itself is what gets measured.
+console.log('cost per frame');
+{
+  const { ShotMachine, BallFinder } = vm.runInThisContext('(function(){' + block + '\nreturn {ShotMachine,BallFinder};})()');
+  const frames = rep({ fps: 60 });
+  let t0 = performance.now(); for (let k = 0; k < 5; k++) { const mm = new ShotMachine({ heightM: HEIGHT }); for (const f of frames) mm.push(f); }
+  const perPush = (performance.now() - t0) / (frames.length * 5);
+  ok(perPush < 0.25, 'the state machine costs a small fraction of a millisecond a frame', perPush.toFixed(3) + ' ms');
+  const DW = 480, DH = 270, d = new Uint8ClampedArray(DW * DH * 4), rnd = rng(7);
+  for (let i = 0; i < DW * DH; i++) { const y = (i / DW) | 0, warm = y > 180; const n = rnd() * 30;
+    d[i * 4] = (warm ? 210 : 60) + n; d[i * 4 + 1] = (warm ? 128 : 62) + n; d[i * 4 + 2] = (warm ? 62 : 70) + n; d[i * 4 + 3] = 255; }
+  for (const [cx, cy, r] of [[300, 120, 9], [80, 200, 14], [420, 60, 6]]) for (let y = cy - r; y <= cy + r; y++) for (let x = cx - r; x <= cx + r; x++) if ((x - cx) ** 2 + (y - cy) ** 2 <= r * r) { const i = (y * DW + x) * 4; d[i] = 235; d[i + 1] = 120; d[i + 2] = 40; }
+  const img = { data: d, width: DW, height: DH }, bf = new BallFinder(DW, DH);
+  const batches = []; for (let b = 0; b < 5; b++) { t0 = performance.now(); for (let k = 0; k < 10; k++) bf.find(img, null); batches.push((performance.now() - t0) / 10); }
+  const perFind = Math.min(...batches);   // the best batch: a busy machine slows a run, it never speeds one up
+  ok(perFind < 8, 'a full-frame ball search at detector size, on a speckled warm floor', perFind.toFixed(2) + ' ms');
+}
+
 console.log(`${n - fails} passed, ${fails} failed of ${n}`);
 process.exit(fails ? 1 : 0);

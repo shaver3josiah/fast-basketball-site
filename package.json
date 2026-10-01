@@ -13,7 +13,7 @@
     "golden:check": "node scripts/golden.mjs check",
     "dev": "node --watch-path=./src/lib --watch-path=./server scripts/dev-server.mjs",
     "serve": "node build.mjs && npx --yes serve dist -l 8888",
-    "test": "node --test src/lib/*.test.mjs src/*.test.mjs scripts/*.test.mjs server/functions/tests/*.test.mjs server/functions/lib/*.test.mjs",
+    "test": "node --test src/lib/*.test.mjs src/*.test.mjs src/shotform/check.mjs scripts/*.test.mjs server/functions/tests/*.test.mjs server/functions/lib/*.test.mjs",
     "stripe:catalog": "node scripts/stripe-catalog.mjs",
     "stripe:check": "node scripts/stripe-check.mjs",
     "pack:functions": "node scripts/functions-pack.mjs",
