@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { absoluteUrl, AREA_SERVED, HEADLINE_AREAS, PROGRAM_PAGES, OFFERS } from './lib/site-config.mjs';
-import { faqPage, jsonLdScript, breadcrumbList, businessEntity } from './lib/structured-data.mjs';
+import { faqPage, jsonLdScript, breadcrumbList, businessEntity, websiteEntity } from './lib/structured-data.mjs';
 import { CONTENT_GROUPS } from './lib/content-groups.mjs';
 // One list of breakpoints for the whole product: the editor draws its device switch from
 // it and the nudge CSS below writes its media queries from it, so a phone nudged in the
@@ -66,8 +66,9 @@ const FAQ_PAIRS = [
 // service area is renamed, not two — falling back to AREA_SERVED (in its existing order)
 // when a slot is absent so an un-seeded content.json renders exactly what it always has.
 // `count` caps how many slots the caller wants; the footer has only ever shown 4.
-// Tile order on the homepage: the three headline cities, then the five with a page.
-const AREA_TILE_ORDER = [...HEADLINE_AREAS.map((a) => a.name), ...AREA_SERVED];
+// Same order as the tiles in areas.html: Fort Lauderdale (the gym's city), then the cities
+// with no page yet, then the rest of the paged cities.
+const AREA_TILE_ORDER = [AREA_SERVED[0], ...HEADLINE_AREAS.map((a) => a.name), ...AREA_SERVED.slice(1)];
 const PAGED = new Set(AREA_SERVED);
 
 function deriveAreaNames(content, count) {
@@ -886,8 +887,11 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   // cannot describe the business differently. meta.desc can override the page's own
   // description, but the JSON-LD business entity keeps this exact constant — the
   // contract only asks the <title>/meta description/og tags to read from content.text.
-  const HOMEPAGE_DESCRIPTION = 'Group and private basketball training in South Florida with Coach Blake Kingsley: Fort Lauderdale, Miami and Hollywood. Start with a call.';
-  const HOMEPAGE_TITLE = 'Basketball Training in South Florida | Fast Basketball';
+  // Fort Lauderdale, not South Florida, in the title (October 2026): the gym is there, local
+  // search ranks by distance to it, and parents search a city, not a region. The visible
+  // headline is Blake's and still says South Florida; the h1 already said Fort Lauderdale.
+  const HOMEPAGE_DESCRIPTION = 'Group and private basketball training in Fort Lauderdale with Coach Blake Kingsley, for players 11 to 18 across South Florida. Start with a call.';
+  const HOMEPAGE_TITLE = 'Basketball Training in Fort Lauderdale | Fast Basketball';
 
   let page = '';
   page += buildHead({
@@ -903,6 +907,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
       // No email or telephone on the entity since September 2026: JSON-LD is the first
       // thing a harvester parses, and the Google Business Profile carries both anyway.
       businessEntity({ description: HOMEPAGE_DESCRIPTION, offers: OFFERS, suburbs, extraAreas: HEADLINE_AREAS }),
+      websiteEntity(),
       faqPage(deriveFaqPairs(content)),
       breadcrumbList([{ name: 'Home', path: '/' }])
     ]

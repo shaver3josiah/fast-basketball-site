@@ -14,8 +14,11 @@
          href by matching the <b> text, so a tile that is not a suburb record stays on #contact. -->
     <div class="areas">
       <a href="#contact" class="area"><b data-edit="area.1.name">Fort Lauderdale</b><span data-edit="area.1.tier">Home Base</span></a>
-      <a href="#contact" class="area"><b data-edit="area.2.name">Miami</b><span data-edit="area.2.tier">Home Base</span></a>
-      <a href="#contact" class="area"><b data-edit="area.3.name">Hollywood</b><span data-edit="area.3.tier">Home Base</span></a>
+      <!-- Only Fort Lauderdale is the home base: the gym is there. Miami and Hollywood carried
+           that label while all three were page-less headline cities, which read as three home
+           gyms. Their tiers now match their suburb records (hollywood 1, and miami 2 in its held record). -->
+      <a href="#contact" class="area"><b data-edit="area.2.name">Miami</b><span data-edit="area.2.tier">Tier 2</span></a>
+      <a href="#contact" class="area"><b data-edit="area.3.name">Hollywood</b><span data-edit="area.3.tier">Tier 1</span></a>
       <a href="#contact" class="area"><b data-edit="area.4.name">Coral Springs</b><span data-edit="area.4.tier">Tier 1</span></a>
       <a href="#contact" class="area"><b data-edit="area.5.name">Parkland</b><span data-edit="area.5.tier">Tier 1</span></a>
       <a href="#contact" class="area"><b data-edit="area.6.name">Coconut Creek</b><span data-edit="area.6.tier">Tier 1</span></a>

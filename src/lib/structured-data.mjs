@@ -1,5 +1,5 @@
 import { absoluteUrl, BUSINESS_NAME } from './site-config.mjs';
-import { founderSameAs } from './credential.mjs';
+import { founderSameAs, businessSameAs, GOOGLE_PROFILE_URL } from './credential.mjs';
 
 // One stable id per real thing, referenced everywhere else. Inlining a copy of the
 // Person or the business on each page creates N unlinked entities instead of one.
@@ -20,8 +20,10 @@ export function founderPerson() {
 }
 
 // The canonical business. This ships on the homepage and nowhere else; every other
-// page points at BUSINESS_ID. No `address`: this is a service-area business with no
-// premises, and asserting one it does not have is what the per-city version did wrong.
+// page points at BUSINESS_ID. The address is the gym, the one place every session runs and
+// the address the Google Business Profile shows; it has to match the profile, because
+// that match is how Google ties this entity to the map listing. What the
+// per-city version did wrong was invent an address in every city, not publish the real one.
 // areaServed comes from the suburb records rather than a parallel city list, so the
 // entity can never drift out of sync with the pages that actually exist.
 export function businessEntity({ description, offers = [], suburbs, extraAreas = [] }) {
@@ -47,6 +49,17 @@ export function businessEntity({ description, offers = [], suburbs, extraAreas =
     })),
     image: absoluteUrl('/brand/og-image-1200x630.png'),
     logo: absoluteUrl('/brand/logo.svg'),
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: '100 SW 9th Ave',
+      addressLocality: 'Fort Lauderdale',
+      addressRegion: 'FL',
+      postalCode: '33312',
+      addressCountry: 'US'
+    },
+    // OpenStreetMap's point for 100 SW 9th Ave, October 2026.
+    geo: { '@type': 'GeoCoordinates', latitude: 26.1212, longitude: -80.1534 },
+    hasMap: GOOGLE_PROFILE_URL,
     // Headline cities first (no page of their own), then every city with a page.
     areaServed: [...extraAreas, ...suburbs].map((s) => ({
       '@type': 'City',
@@ -55,7 +68,39 @@ export function businessEntity({ description, offers = [], suburbs, extraAreas =
     })),
     founder: { '@id': PERSON_ID },
     employee: { '@id': PERSON_ID },
-    sameAs: founderSameAs()
+    sameAs: businessSameAs()
+  };
+}
+
+// One Service per training page. The page-level counterpart to makesOffer on the business:
+// makesOffer says the business sells this, this says the page is about it. Only pages with a
+// PUBLIC price carry an `offers` block - the evaluation and the 1-on-1 are quoted on the call
+// (Blake, September 2026), and a Service with no offers is correct for them, not incomplete.
+export function trainingService({ name, description, path, offer }) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    '@id': absoluteUrl(path + '#service'),
+    name,
+    description,
+    serviceType: 'Basketball Skills Training',
+    provider: { '@id': BUSINESS_ID },
+    url: absoluteUrl(path),
+    ...(offer
+      ? {
+          offers: {
+            '@type': 'Offer',
+            url: absoluteUrl(path),
+            priceCurrency: 'USD',
+            priceSpecification: {
+              '@type': 'PriceSpecification',
+              minPrice: offer.price,
+              maxPrice: offer.maxPrice,
+              priceCurrency: 'USD'
+            }
+          }
+        }
+      : {})
   };
 }
 
@@ -81,6 +126,20 @@ export function breadcrumbList(items) {
       name: item.name,
       item: absoluteUrl(item.path)
     }))
+  };
+}
+
+// The homepage's WebSite entity is what Google reads for the site name shown above a search
+// result. alternateName carries the all-caps form the Google profile and Instagram use.
+export function websiteEntity() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': absoluteUrl('/#website'),
+    name: BUSINESS_NAME,
+    alternateName: 'FAST Basketball',
+    url: absoluteUrl('/'),
+    publisher: { '@id': BUSINESS_ID }
   };
 }
 

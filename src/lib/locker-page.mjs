@@ -16,8 +16,8 @@ export function renderLockerPage({ sections, content, prelude, playbookTemplates
   body = applyGroupOrder(body, content.order);
   body = '<main id="main">\n' + promoteFirstH2(body) + '</main>\n';
   return buildSimplePage({
-    title: 'The Locker: Workouts, Drill Packs and a Free Playbook | Fast Basketball',
-    description: 'Workout blocks, drill packs and film guides Coach Blake Kingsley assigns, plus a free four week playbook built for your player. Fast Basketball, South Florida.',
+    title: 'The Locker: Workouts and a Free Playbook | Fast Basketball',
+    description: 'Workout blocks, drill packs and film guides Coach Blake Kingsley assigns, plus a free four week playbook built for your player.',
     canonicalPath: '/locker',
     bodyHtml: body,
     content,

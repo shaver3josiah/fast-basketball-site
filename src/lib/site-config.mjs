@@ -11,21 +11,22 @@ export const SITE_URL = process.env.SITE_URL || 'https://fast-basketball.com';
 
 export const BUSINESS_NAME = 'Fast Basketball';
 
-// The three cities Blake headlines (September 2026: "South Florida", with Fort Lauderdale,
-// Miami and Hollywood as the specifics). They have NO dedicated page and no suburb record:
-// their tiles stay on #contact, the footer sends them to /#areas, and they appear in the
-// contact select and the LocalBusiness areaServed. Building a page for one needs verified
-// local data in src/data/suburbs.json, the same bar the five below cleared.
+// Cities served but with no page of their own: the tile stays on #contact, the footer sends
+// it to /#areas, and it still appears in the contact select and the LocalBusiness areaServed.
+// Miami is held here on purpose (October 2026). Its suburb record is verified and kept in
+// docs/held-city-records/miami.json at the project root, but the gym is 25 miles away, every
+// sentence on the page would have to say so, and one more far city page is the pattern Google
+// reads as a doorway. Paging it is: move the record back into suburbs.json, move the name below.
 export const HEADLINE_AREAS = [
-  { name: 'Fort Lauderdale', county: 'Broward' },
-  { name: 'Miami', county: 'Miami-Dade' },
-  { name: 'Hollywood', county: 'Broward' }
+  { name: 'Miami', county: 'Miami-Dade' }
 ];
 
 // Cities WITH a dedicated page. Must stay in lockstep with src/data/suburbs.json: fixAreaLinks
 // and the footer build /basketball-training/<slug> links from these names, so a name with no
-// matching suburb record is a 404.
+// matching suburb record is a 404. Fort Lauderdale leads because the gym is there, which is
+// also why it is the first tile and the first footer link (AREA_TILE_ORDER in render.mjs).
 export const AREA_SERVED = [
+  'Fort Lauderdale', 'Hollywood',
   'Coral Springs', 'Parkland', 'Coconut Creek', 'Margate', 'Tamarac'
 ];
 

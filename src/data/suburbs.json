@@ -1,5 +1,176 @@
 [
   {
+    "name": "Fort Lauderdale",
+    "slug": "fort-lauderdale",
+    "county": "Broward",
+    "tier": 1,
+    "zip_codes": [
+      "33301",
+      "33304",
+      "33305",
+      "33311",
+      "33312"
+    ],
+    "drive_time_from_base_min": 10,
+    "high_schools": [
+      {
+        "name": "Fort Lauderdale High School",
+        "type": "public",
+        "note": "Serves the area from 1600 NE 4th Ave, 2,260 students"
+      },
+      {
+        "name": "Stranahan High School",
+        "type": "public",
+        "note": "Serves the area from 1800 SW 5th Place, 1,286 students"
+      },
+      {
+        "name": "Dillard 6-12",
+        "type": "public",
+        "note": "A combined 6-12 school at 2501 NW 11th St, close to 2,000 students"
+      }
+    ],
+    "middle_schools": [
+      {
+        "name": "Sunrise Middle School",
+        "type": "public",
+        "note": "Feeds Fort Lauderdale High"
+      },
+      {
+        "name": "New River Middle School",
+        "type": "public",
+        "note": "A marine science magnet on Riverland Road, feeds Stranahan High"
+      }
+    ],
+    "training_venues": [
+      {
+        "name": "Holiday Park",
+        "address": "1150 G. Harold Martin Dr, Fort Lauderdale, FL 33304",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "93 acres with lighted full basketball courts, open 6am to 11pm"
+      },
+      {
+        "name": "Riverland Park",
+        "address": "950 SW 27th Ave, Fort Lauderdale, FL 33312",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Full basketball court, open 6am to 9pm"
+      },
+      {
+        "name": "Mills Pond Park",
+        "address": "2201 NW 9th Ave, Fort Lauderdale, FL 33311",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Basketball courts, open 6am to 9pm"
+      },
+      {
+        "name": "George English Park",
+        "address": "1101 Bayview Dr, Fort Lauderdale, FL 33304",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Full basketball court on Bayview Drive"
+      }
+    ],
+    "local_paragraph": "Fort Lauderdale is the program's own city: the training gym sits at 100 SW 9th Ave, a short drive from most neighborhoods here. Three public high schools carry the city's players. Fort Lauderdale High on NE 4th Avenue enrolls 2,260 students and takes Sunrise Middle's eighth graders from NE 14th Street. Stranahan High on SW 5th Place runs on New River Middle, a marine science magnet down Riverland Road in the same zip code as the gym itself. Dillard, a combined 6-12 school on NW 11th Street with close to 2,000 students, skips the separate middle school step entirely. Being the home city cuts both ways: shorter drives, but also the most competition for the same weekly slot.",
+    "landmarks": [
+      "Las Olas Boulevard",
+      "the Riverwalk along the New River",
+      "Fort Lauderdale Beach"
+    ],
+    "nearest_neighbors": [
+      "hollywood",
+      "margate",
+      "tamarac"
+    ],
+    "testimonial_slot": null,
+    "meta_title": "Fort Lauderdale Basketball Training | Fast Basketball",
+    "meta_description": "Basketball training for Fort Lauderdale players 11 to 18, the program's home city. Sessions run at the Salvation Army gym, Fort Lauderdale."
+  },
+  {
+    "name": "Hollywood",
+    "slug": "hollywood",
+    "county": "Broward",
+    "tier": 1,
+    "zip_codes": [
+      "33019",
+      "33020",
+      "33021",
+      "33024"
+    ],
+    "drive_time_from_base_min": null,
+    "high_schools": [
+      {
+        "name": "South Broward High School",
+        "type": "public",
+        "note": "Serves the area from 1901 N Federal Highway, a marine science magnet, 2,358 students"
+      },
+      {
+        "name": "McArthur High School",
+        "type": "public",
+        "note": "Serves the area from 6501 Hollywood Boulevard, shared with Pembroke Pines, 1,866 students"
+      },
+      {
+        "name": "Hollywood Hills High School",
+        "type": "public",
+        "note": "Serves the area from 5400 Stirling Road, 1,711 students"
+      }
+    ],
+    "middle_schools": [
+      {
+        "name": "Driftwood Middle School",
+        "type": "public",
+        "note": "Opened in 1959 as a feeder to McArthur High, still feeds it"
+      },
+      {
+        "name": "Attucks Middle School",
+        "type": "public",
+        "note": "Feeds Hollywood Hills High"
+      },
+      {
+        "name": "McNicol Middle School",
+        "type": "public",
+        "note": "Magnet and STEM middle school near downtown Hollywood"
+      }
+    ],
+    "training_venues": [
+      {
+        "name": "Jefferson Park",
+        "address": "1501 Jefferson Street, Hollywood, FL 33020",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Two outdoor basketball courts"
+      },
+      {
+        "name": "David Park",
+        "address": "108 N 33rd Court, Hollywood, FL 33020",
+        "type": "city park",
+        "courts": "outdoor",
+        "note": "Outdoor basketball court next to two racquetball courts"
+      },
+      {
+        "name": "T.Y. Park",
+        "address": "3300 N Park Road, Hollywood, FL 33021",
+        "type": "county park",
+        "courts": "outdoor",
+        "note": "Broward County park on 138 acres with basketball courts"
+      }
+    ],
+    "local_paragraph": "Hollywood sits between Fort Lauderdale and Miami, big enough to run three public high schools of its own. South Broward High, a marine science magnet on Federal Highway, enrolls 2,358 students. McArthur High on Hollywood Boulevard splits its roster with Pembroke Pines. Hollywood Hills High, on Stirling Road, runs closer to 1,700. Two of the middle schools have documented paths: Driftwood, opened in 1959 as a McArthur feeder, still sends its eighth graders there, and Attucks feeds Hollywood Hills. McNicol, a magnet and STEM school near downtown, is the third public middle school in the city. Jefferson Park and David Park both keep outdoor courts near downtown; T.Y. Park, the Broward County park on North Park Road, adds more space to work with.",
+    "landmarks": [
+      "ArtsPark at Young Circle",
+      "Hollywood Beach Broadwalk",
+      "Downtown Hollywood along Hollywood Boulevard"
+    ],
+    "nearest_neighbors": [
+      "fort-lauderdale",
+      "margate",
+      "tamarac"
+    ],
+    "testimonial_slot": null,
+    "meta_title": "Hollywood Basketball Training | Fast Basketball",
+    "meta_description": "Basketball training for Hollywood, FL players 11 to 18, near South Broward and McArthur. Sessions run at the Salvation Army gym, Fort Lauderdale."
+  },
+  {
     "name": "Coral Springs",
     "slug": "coral-springs",
     "county": "Broward",

@@ -1,3 +1,5 @@
+import { OFFERS } from './site-config.mjs';
+
 function joinList(items) {
   if (items.length === 1) return items[0];
   if (items.length === 2) return items[0] + ' and ' + items[1];
@@ -81,7 +83,8 @@ export function schoolsProse(suburb) {
 // reframed as recommendations for the homework the program sets between sessions, which is what
 // they were always good for. Same gym as faq.2.a in faq.html, FAQ_PAIRS in render.mjs and the
 // /enroll page; four hand-typed copies now, so change them together.
-const HOME_GYM = 'the Salvation Army Fort Lauderdale Corps gym, 100 SW 9th Ave, Fort Lauderdale';
+const HOME_CITY = 'Fort Lauderdale';
+export const HOME_GYM = 'the Salvation Army Fort Lauderdale Corps gym, 100 SW 9th Ave, ' + HOME_CITY;
 
 export function venuesProse(suburb) {
   const venues = (suburb.training_venues || []).filter((v) => v && v.name);
@@ -135,10 +138,93 @@ export function whyHereProse(suburb) {
   const tierLine = suburb.tier === 1
     ? suburb.name + ' is core coverage, so weekly recurring slots are easiest to hold here and rarely get bumped.'
     : suburb.name + ' runs on a scheduled rotation, so booking a recurring weekly slot early keeps the same time all season.';
-  return 'Coach Blake came to North Broward straight off the college side of the recruiting table: two staffs, two championships, an NCAA Tournament run. Every ' + suburb.name + ' session gets the same read a college staff would give. ' +
+  return 'Coach Blake came to South Florida straight off the college side of the recruiting table: two staffs, two championships, an NCAA Tournament run. Every ' + suburb.name + ' session gets the same read a college staff would give. ' +
     // "just closer to home" went with the same correction: the gym is in Fort Lauderdale, so for
     // most of these cities it is a drive, and the page should not pretend otherwise.
     tierLine + ' The method does not change by zip code: screen, isolate, load, read, log. A ' + suburb.name + ' player builds the exact same foundation as every player in the program.';
+}
+
+// FAQ answers below feed both the visible HTML and the FAQPage JSON-LD from the same
+// {question, answer} array (suburb-page.mjs renders one and hands the other straight to
+// faqPage()), so the two can never say something different. Every answer traces to a
+// field on the suburb record; a question whose data is missing is left out rather than
+// padded with a generic line, which is why suburbFaqPairs() below returns 4 to 6 pairs
+// instead of a fixed six.
+
+function faqTrainingAnswer(suburb) {
+  const zips = (suburb.zip_codes || []).join(', ');
+  // Same honesty rule as venuesProse: the gym is in Fort Lauderdale, not the city on this
+  // page, so the answer has to say so instead of letting the question imply otherwise. The
+  // one exception is the gym's own city, where "no location of its own" would be false.
+  if (suburb.name === HOME_CITY) {
+    return 'Every session runs at ' + HOME_GYM + ', the one Fast Basketball location, so ' + suburb.name +
+      ' players have the shortest drive in the program.';
+  }
+  return 'Every session runs at ' + HOME_GYM + '. ' + suburb.name + (zips ? ' (' + zips + ')' : '') +
+    ' has no Fast Basketball location of its own, so players drive in for every session.';
+}
+
+// Names only, no street addresses: these are public parks, not the business's own premises,
+// and the owner's policy is to keep the FAQ to the one address (the gym, above) that the
+// site already publishes elsewhere.
+function faqPracticeAnswer(suburb) {
+  const venues = (suburb.training_venues || []).filter((v) => v && v.name);
+  if (venues.length === 0) return '';
+  return 'Between sessions, ' + suburb.name + ' players can get shots up on their own at ' +
+    joinList(venues.map((v) => v.name)) + '. These are public courts we recommend for practice, not Fast Basketball locations.';
+}
+
+function faqSchoolsAnswer(suburb) {
+  // De-duplicated: Tamarac's Millennium 6-12 Collegiate Academy is both the record's one
+  // high school and its one middle school, and naming it twice would read as a stutter.
+  const names = [];
+  for (const school of [...(suburb.high_schools || []), ...(suburb.middle_schools || [])]) {
+    if (school && school.name && !names.includes(school.name)) names.push(school.name);
+  }
+  if (names.length === 0) return '';
+  // Says which schools serve the city, never that players come from them: nobody has checked
+  // a roster against this list, and "players train with us from" every school on it would be
+  // a claim the site cannot stand behind.
+  return 'No. The schools serving ' + suburb.name + ' include ' + joinList(names) +
+    ', and players from any school, public or private, are welcome. Fast Basketball is not affiliated with, endorsed by, or partnered with any school.';
+}
+
+// Ages and the one published price are the same in every city; only the evaluation and the
+// private 1-on-1 stay off this page because Blake quotes those on the call, not in markup.
+// Ages, price and the intake path are the same in every city, so these two answers take no
+// suburb argument. Threading the city name through them ("<City> included", "every <City>
+// family") would read as personalised while saying nothing a family could not read on the
+// homepage - the same fake specificity venuesProse above exists to avoid. Two cities giving
+// the same answer to the same universal question is honest; dressing it up is not.
+// From OFFERS, the same figures the homepage's business markup carries, not a third typed copy.
+const GROUP = OFFERS.find((o) => o.path === '/training/group-training');
+function faqCostAnswer() {
+  return 'The program trains players roughly ages 11 through 18. ' +
+    'The Group Training Membership runs $' + GROUP.price + ' to $' + Number(GROUP.maxPrice).toLocaleString('en-US') +
+    ' for a 3 or 6 month term. The evaluation session ' +
+    'and private 1-on-1 training are priced on the intro call, not published here.';
+}
+
+function faqStartAnswer() {
+  return 'Start with a 15 to 20 minute call. If it looks like a fit, next is a 60 minute on-court ' +
+    'evaluation, then enrollment.';
+}
+
+export function suburbFaqPairs(suburb) {
+  const pairs = [{ question: 'Where do ' + suburb.name + ' players actually train?', answer: faqTrainingAnswer(suburb) }];
+
+  const practice = faqPracticeAnswer(suburb);
+  if (practice) pairs.push({ question: 'Where can my player practice between sessions in ' + suburb.name + '?', answer: practice });
+
+  const schools = faqSchoolsAnswer(suburb);
+  if (schools) pairs.push({ question: 'Does it matter which ' + suburb.name + ' school my player attends?', answer: schools });
+
+  // `shared`: the same answer on every city page, so only the visible copy carries it (see
+  // suburb-page.mjs); Google asks for one marked-up instance of a repeated FAQ.
+  pairs.push({ question: 'What ages do you train, and what does it cost?', answer: faqCostAnswer(), shared: true });
+  pairs.push({ question: 'How do we start?', answer: faqStartAnswer(), shared: true });
+
+  return pairs;
 }
 
 export function slugToName(slug) {

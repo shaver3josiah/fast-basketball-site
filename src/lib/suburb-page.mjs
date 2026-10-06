@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { renderCredentialBlock } from './credential.mjs';
 import { renderResumeCards } from './coach-page.mjs';
-import { schoolsProse, venuesProse, drivingProse, landmarksProse, neighborsProse, whyHereProse, slugToName } from './suburb-copy.mjs';
-import { suburbService, breadcrumbList, jsonLdScript } from './structured-data.mjs';
+import { schoolsProse, venuesProse, drivingProse, landmarksProse, neighborsProse, whyHereProse, suburbFaqPairs, slugToName } from './suburb-copy.mjs';
+import { suburbService, breadcrumbList, faqPage, jsonLdScript } from './structured-data.mjs';
 import { PROGRAM_PAGES } from './site-config.mjs';
 import { buildHead, buildNav, buildFooter, renderImage, escapeHtml, scriptsBlock } from '../render.mjs';
 
@@ -42,6 +42,10 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   const description = suburb.meta_description;
   const canonicalPath = '/basketball-training/' + suburb.slug;
 
+  // One array feeds both the FAQ section rendered below and the FAQPage entity here, so the
+  // schema can never advertise a Q&A the page itself does not show (Google's FAQPage policy).
+  const faqPairs = suburbFaqPairs(suburb);
+
   const jsonLd = [
     // No per-city LocalBusiness: that declared one business per city, each with a
     // fabricated PostalAddress. The Service now points at the single real entity.
@@ -50,7 +54,9 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
       { name: 'Home', path: '/' },
       { name: 'Service Areas', path: '/#areas' },
       { name: suburb.name, path: canonicalPath }
-    ])
+    ]),
+    // Only the city's own questions are marked up; the shared ones repeat on every city page.
+    faqPage(faqPairs.filter((p) => !p.shared))
   ];
 
   // Hero borrows the homepage/coach .coach grid. Copy comes first in source so
@@ -104,6 +110,16 @@ export function renderSuburbPage({ suburb, content, prelude, responsiveManifest 
   const neighbors = neighborsProse(suburb);
   if (neighbors) {
     body += '<section class="band band-ink">\n<div class="shell">\n<div class="eyebrow rise">Close By</div>\n<h2 class="zr">Nearby areas we also serve</h2>\n<p class="rise">' + neighbors + '</p>\n</div>\n</section>\n';
+  }
+
+  // Same faq/faq-i/faq-q/faq-a class names as templates/sections/faq.html, so this reuses that
+  // CSS and the accordion JS in main.js instead of needing either one written a second time.
+  if (faqPairs.length > 0) {
+    body += '<section class="band band-light">\n<div class="shell">\n<div class="eyebrow rise">Questions</div>\n<h2 class="zr">' + escapeHtml(suburb.name) + ' questions, answered</h2>\n<div class="faq">\n';
+    for (const pair of faqPairs) {
+      body += '<div class="faq-i">\n<button class="faq-q">' + escapeHtml(pair.question) + '</button>\n<div class="faq-a"><p>' + escapeHtml(pair.answer) + '</p></div>\n</div>\n';
+    }
+    body += '</div>\n</div>\n</section>\n';
   }
 
   body += '<section class="band band-dark">\n<div class="shell">\n<div class="eyebrow rise">First Step</div>\n<h2 class="zr">Start with a call about ' + escapeHtml(suburb.name) + '</h2>\n';

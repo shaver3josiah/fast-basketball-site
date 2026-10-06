@@ -4,13 +4,14 @@ import { validateSuburbs, formatErrors } from './src/lib/validate-suburbs.mjs';
 import { generateResponsiveImages } from './scripts/responsive-images.mjs';
 import { resolveDates } from './scripts/page-dates.mjs';
 import { INDEXNOW_KEY, INDEXNOW_HOST, QUEUE_FILE } from './scripts/indexnow.mjs';
-import { loadData, loadSections, assembleHomepage, buildSimplePage, applyTextEdits, applyPriceFigures, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, promoteFirstH2, scanBalancedElement, stripReviewBlock, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
+import { loadData, loadSections, deriveFaqPairs, assembleHomepage, buildSimplePage, applyTextEdits, applyPriceFigures, applyAttrEdits, applyGroupOrder, fixContactForm, fixContactAreaSelect, fixPlaybookForm, trimToFirstSectionClose, promoteFirstH2, scanBalancedElement, stripReviewBlock, escapeHtml, escapeAttr, renderImage, stylesheetLinks, asset, SECTION_IDS, FOOTER_TEXT_KEYS } from './src/render.mjs';
 import { renderLockerPage } from './src/lib/locker-page.mjs';
 import { compilePage, scalePx } from './src/lib/canvas-compile.mjs';
 import { renderSuburbPage } from './src/lib/suburb-page.mjs';
 import { renderCoachPage } from './src/lib/coach-page.mjs';
-import { breadcrumbList } from './src/lib/structured-data.mjs';
-import { SITE_URL, CONTACT } from './src/lib/site-config.mjs';
+import { breadcrumbList, trainingService } from './src/lib/structured-data.mjs';
+import { SITE_URL, CONTACT, OFFERS, BUSINESS_NAME } from './src/lib/site-config.mjs';
+import { HOME_GYM } from './src/lib/suburb-copy.mjs';
 import { PLANS, APP_PLANS, PAY_OPTIONS, PAY_LABELS, getPlan, payOptionsFor, checkoutSpec, totalCents, dollars } from './src/lib/plans.mjs';
 import { FIELDS as REGISTRATION_FIELDS, SECTIONS as REGISTRATION_SECTIONS } from './src/lib/registration.mjs';
 import { FIELDS as APPORDER_FIELDS, SECTIONS as APPORDER_SECTIONS } from './src/lib/apporder.mjs';
@@ -27,27 +28,31 @@ const DIST = resolve(ROOT, 'dist');
 // Amounts must match the homepage cards in src/templates/sections/programs.html.
 const TRAINING_PAGES = [
   {
-    slug: 'evaluation', textKey: 'prog.1', title: 'Evaluation Session | Fast Basketball', label: 'Evaluation Session',
-    description: 'A 60 minute on-court evaluation with Coach Blake Kingsley in South Florida. The step before any commitment; the cost is covered on your intro call.',
+    slug: 'evaluation', textKey: 'prog.1', title: 'Basketball Evaluation Session | Fast Basketball', label: 'Evaluation Session',
+    description: 'A 60 minute on-court evaluation with Coach Blake Kingsley in Fort Lauderdale. The step before any commitment; the cost is covered on your intro call.',
     // No public price: Blake quotes it on the call (September 2026). The amount slot carries the length.
     price: { amount: '60', unit: 'Minutes on Court', line: 'Coach Blake goes over the cost on your intro call, along with the membership options. The call itself is free.' },
     features: ['Movement, handle, and shooting form screen', 'Live reads against a defender', 'Coach Blake gets to know your player and their goals', 'Enrollment call within 24 hours: what we saw, and the plan'],
+    // Indexes into the homepage FAQ (deriveFaqPairs in render.mjs), shown on this page too.
+    faq: [3, 1, 0],
     next: 'Bring your player, their shoes, a ball, water, and sixty minutes. Coach Blake screens how they move, puts them through live reads, and talks to them about what they want. Then you both decide whether the program fits.'
   },
   {
-    slug: 'group-training', textKey: 'prog.2', title: 'Group Training Membership | Fast Basketball', label: 'Group Training Membership',
-    description: 'Group basketball training in South Florida on a 3 to 6 month commitment, once a week or unlimited. $450 to $1,000 a term. Start with a call.',
+    slug: 'group-training', textKey: 'prog.2', title: 'Group Basketball Training Membership | Fast Basketball', label: 'Group Training Membership',
+    description: 'Group basketball training in Fort Lauderdale on a 3 or 6 month commitment, once a week or unlimited. $450 to $1,000 a term. Start with a call.',
     price: { amount: '$450\u2013$1,000', unit: 'Per Term', line: '3 months: $450 once a week, or $650 unlimited. 6 months: $800 once a week, or $1,000 unlimited. Pay in full and save $100 on the once-a-week terms: monthly comes to $550 total for 3 months, $900 total for 6.' },
     features: ['60 minute sessions with level matched players', 'Unlimited means up to two sessions a week', 'Journal, homework, and daily check-ins in the members area', 'Weekly game evaluations and quarterly progress reports'],
+    faq: [2, 4, 1, 0],
     next: 'Three months is the minimum because that is how long it takes a new habit to survive speed, contact, and a Friday night. Six months is for players who already know they are all in. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.'
   },
   {
-    slug: 'private', textKey: 'prog.3', title: 'Private 1-on-1 Basketball Training in South Florida | Fast Basketball', label: 'Private 1-on-1 Training',
-    description: 'Private 1-on-1 basketball training in South Florida with Coach Blake Kingsley. Individualized development built around the athlete. Limited availability; pricing after a consultation.',
+    slug: 'private', textKey: 'prog.3', title: 'Private 1-on-1 Basketball Training | Fast Basketball', label: 'Private 1-on-1 Training',
+    description: 'Private basketball training in Fort Lauderdale with Coach Blake Kingsley, built around one athlete. Limited availability; pricing after a consultation.',
     // No public price: Blake quotes it after a consultation (September 2026).
     price: { amount: 'Limited', unit: 'Availability', line: 'Pricing available after a consultation. Book a call to talk through your player\'s goals.' },
     cta: 'Book a Consultation',
     features: ['Individualized training built around the athlete\'s specific goals, strengths, and areas for improvement', 'Footwork, handle, finishing, and shooting blocks', 'Same journal and homework standard as the membership', 'Film review and college coaching advice on request'],
+    faq: [5, 1, 0],
     next: 'Every session is built around the two or three things standing between your player and the role they want. Coach Blake sets the schedule with you after the consultation, and the journal and homework standard is the same as the membership, because the standard does not change with the format.'
   }
 ];
@@ -331,9 +336,24 @@ function step8_trainingPages(content, prelude) {
     body += '<h2>How it works</h2>\n<p style="max-width:70ch;">' + escapeHtml(page.next) + '</p>\n';
     // Was "Sessions run at courts across South Florida", which was not true of any session.
     // See the note above venuesProse in src/lib/suburb-copy.mjs.
-    body += '<p>Every session runs at the Salvation Army Fort Lauderdale Corps gym, 100 SW 9th Ave, and families drive in from Miami, Hollywood and north Broward. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
-    body += '</div>\n</section>\n</main>\n';
-    const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }])];
+    body += '<p>Every session runs at the Salvation Army <a href="/basketball-training/fort-lauderdale">Fort Lauderdale</a> Corps gym, 100 SW 9th Ave, and families drive in from Miami, Hollywood and north Broward. See the <a href="/#areas">service areas</a> for your neighborhood, or <a href="/contact">ask about open slots</a>.</p>\n';
+    body += '</div>\n</section>\n';
+    // The same answers the homepage FAQ gives (and its content.json edits), so these pages say
+    // more than 300 words without a second copy of anything. Visible only: the FAQPage markup
+    // stays on the homepage, because Google asks for one marked-up instance of a repeated FAQ.
+    const faqs = deriveFaqPairs(content);
+    body += '<section class="band band-light">\n<div class="shell">\n<div class="eyebrow rise">Questions</div>\n<h2 class="zr">' + escapeHtml(page.label) + ' questions</h2>\n<div class="faq">\n';
+    for (const i of page.faq) {
+      body += '<div class="faq-i">\n<button class="faq-q">' + escapeHtml(faqs[i].question) + '</button>\n<div class="faq-a"><p>' + escapeHtml(faqs[i].answer) + '</p></div>\n</div>\n';
+    }
+    body += '</div>\n</div>\n</section>\n</main>\n';
+    // OFFERS only lists the group membership's published price; matching by path (not array
+    // index) means evaluation and private correctly get no offer instead of an invented one.
+    const offer = OFFERS.find((o) => o.path === canonicalPath);
+    const jsonLd = [
+      breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }]),
+      trainingService({ name: page.label, description: page.description, path: canonicalPath, offer })
+    ];
     const html = buildSimplePage({
       title: page.title,
       description: page.description || content.text[page.textKey],
@@ -406,8 +426,8 @@ function step10_contactPage(sections, content, prelude) {
   body = applyGroupOrder(body, content.order);
   const jsonLd = [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Contact', path: '/contact' }])];
   const html = buildSimplePage({
-    title: 'Contact Fast Basketball | Book a Call, South Florida',
-    description: 'Book a 15 to 20 minute call with Coach Blake Kingsley about your player. Fast Basketball, South Florida. Replies within one business day.',
+    title: 'Contact Fast Basketball | Book a Call, Fort Lauderdale',
+    description: 'Book a 15 to 20 minute call with Coach Blake Kingsley about your player. Fast Basketball, Fort Lauderdale. Replies within one business day.',
     canonicalPath: '/contact',
     bodyHtml: body,
     content,
@@ -1022,10 +1042,14 @@ function step11_blogIndex(content, prelude) {
     canonicalPath: '/blog/',
     bodyHtml: body,
     content,
-    prelude
+    prelude,
+    // Nothing is published here yet, so this stays out of search rather than being indexed,
+    // or flagged thin, for an empty placeholder. Revert to index, follow and restore the
+    // sitemap entry below the day a real post ships.
+    robots: 'noindex, follow'
   });
   writeHtml(resolve(DIST, 'blog', 'index.html'), html);
-  return ['/blog/'];
+  return []; // noindex: not in the sitemap
 }
 
 // Canvas pages: the free-positioning half of the site, compiled from src/data/site.json.
@@ -1174,6 +1198,37 @@ function writeRobots(siteUrl) {
   writeFileSync(resolve(DIST, 'robots.txt'), robots);
 }
 
+// /llms.txt (llmstxt.org): a plain index of the site for AI assistants that fetch it. Google
+// ignores it; it costs nothing. Built from the pages actually written, so it cannot list a
+// page the sitemap does not, and it carries no prices, which the admin panel can change.
+function writeLlms(allPaths, siteUrl) {
+  const base = siteUrl.replace(/\/$/, '');
+  const decode = (s) => s.replace(/&amp;/g, '&').replace(/&#39;|&#x27;/g, "'").replace(/&quot;/g, '"');
+  const line = (p) => {
+    const html = readFileSync(distFileFor(p), 'utf8');
+    const title = decode((html.match(/<title>([^<]*)<\/title>/) || [])[1] || p).replace(/ \| Fast Basketball$/, '');
+    const desc = decode((html.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '');
+    return '- [' + title + '](' + base + p + ')' + (desc ? ': ' + desc : '');
+  };
+  const minor = new Set(['/privacy', '/terms']);
+  const txt = [
+    '# ' + BUSINESS_NAME,
+    '',
+    '> Youth basketball skills training in Fort Lauderdale, Florida, with Coach Blake Kingsley, for players roughly 11 to 18. ' +
+      'Every session is at ' + HOME_GYM + ', FL 33312. Families start with a 15 to 20 minute call.',
+    '',
+    '## Pages',
+    '',
+    ...allPaths.filter((p) => !minor.has(p)).map(line),
+    '',
+    '## Optional',
+    '',
+    ...allPaths.filter((p) => minor.has(p)).map(line),
+    ''
+  ].join('\n');
+  writeFileSync(resolve(DIST, 'llms.txt'), txt);
+}
+
 // The editor must never reach a visitor. The whole design rests on the public site
 // staying static HTML with no editor runtime, and the way that promise usually dies is
 // quietly: one <script> added to a shared template and suddenly every page ships a
@@ -1247,6 +1302,7 @@ async function main() {
 
   const sitemap = writeSitemap(allPaths, SITE_URL);
   writeRobots(SITE_URL);
+  writeLlms(allPaths, SITE_URL);
   step13_assertNoEditorLeak();
 
   if ((LIVE_BUILD || process.env.SITE_ENV === 'production') && SITE_URL.includes('SITE-DOMAIN-PENDING')) {

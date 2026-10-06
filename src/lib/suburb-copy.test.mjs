@@ -2,7 +2,7 @@
 // Guards the 0 / 1 / many and missing-field shapes of the suburb prose so no
 // record can ship unpunctuated or fused into the next one.
 import assert from 'node:assert/strict';
-import { schoolsProse, venuesProse } from './suburb-copy.mjs';
+import { schoolsProse, venuesProse, suburbFaqPairs } from './suburb-copy.mjs';
 
 const ends = (s) => assert.ok(/[.!?]$/.test(s.trim()), 'must end in punctuation: ' + s);
 
@@ -133,6 +133,16 @@ for (const venues of [[], [{ name: 'Some Park', address: '1 Main St' }], [{ name
   assert.ok(out.startsWith('Every session runs at the Salvation Army'), 'must lead with the real gym: ' + out);
   assert.ok(!/sessions run at (?!the Salvation Army)/.test(out), 'no session may be placed anywhere else: ' + out);
   if (venues.length) assert.ok(/courts? we recommend in Testville/.test(out), 'parks must read as recommendations: ' + out);
+}
+
+// October 2026. The FAQ must not call the gym's own city a place with no location, and must
+// not claim players come from every school on a record, which nobody has checked.
+{
+  const faq = (name) => suburbFaqPairs({ name, zip_codes: ['33312'], high_schools: [{ name: 'X High' }], middle_schools: [] });
+  const home = faq('Fort Lauderdale')[0].answer;
+  assert.ok(!home.includes('no Fast Basketball location'), 'the gym is in Fort Lauderdale: ' + home);
+  assert.ok(faq('Testville')[0].answer.includes('no Fast Basketball location'), 'every other city drives in');
+  for (const p of faq('Testville')) assert.ok(!/train with us from/i.test(p.answer), 'no roster claim: ' + p.answer);
 }
 
 console.log('suburb-copy: ok');

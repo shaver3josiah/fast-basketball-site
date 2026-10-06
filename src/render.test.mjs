@@ -140,9 +140,12 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
   const selectFixture = '<select id="cArea" name="area">\n<option>Coral Springs</option><option>Parkland</option>\n<option>Other</option>\n</select>';
   const out = fixContactAreaSelect(selectFixture, { text: {} });
   const expected = '<select id="cArea" name="area">' +
-    [...HEADLINE_AREAS.map((a) => a.name), ...AREA_SERVED].map((n) => '<option>' + n + '</option>').join('') +
+    // The gym's city first, then the city with no page yet, then the other paged cities: the
+    // same order as the tiles in areas.html.
+    ['Fort Lauderdale', 'Miami', 'Hollywood', 'Coral Springs', 'Parkland', 'Coconut Creek', 'Margate', 'Tamarac']
+      .map((n) => '<option>' + n + '</option>').join('') +
     '<option>Other</option></select>';
-  assert.equal(out, expected, 'contact area select fallback must list the 3 headline cities, then all 5 paged cities, plus Other: ' + out);
+  assert.equal(out, expected, 'contact area select fallback must list every city in tile order, plus Other: ' + out);
 }
 
 {
@@ -164,13 +167,16 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
 }
 
 {
-  // Tiles carry data-edit on the <b>; a paged city must still get its page link, and a
-  // headline city with no page must stay on #contact.
-  const tiles = '<a href="#contact" class="area"><b data-edit="area.1.name">Fort Lauderdale</b><span>Home Base</span></a>' +
+  // Tiles carry data-edit on the <b>; a paged city must still get its page link, and a city
+  // with no suburb record must stay on #contact. Pompano Beach stands in for the second case
+  // because every city the site names now has a page: Fort Lauderdale, Miami and Hollywood
+  // moved into AREA_SERVED in September 2026. The rule still has to hold for the next city
+  // Blake headlines before its local data is verified.
+  const tiles = '<a href="#contact" class="area"><b data-edit="area.1.name">Pompano Beach</b><span>Coming Soon</span></a>' +
     '<a href="#contact" class="area"><b data-edit="area.4.name">Coral Springs</b><span>Tier 1</span></a>';
   const linked = fixAreaLinks(tiles);
   assert.ok(linked.includes('<a href="/basketball-training/coral-springs" class="area"><b data-edit="area.4.name">Coral Springs</b>'), 'paged city tile must link to its page: ' + linked);
-  assert.ok(linked.includes('<a href="#contact" class="area"><b data-edit="area.1.name">Fort Lauderdale</b>'), 'headline city without a page must stay on #contact: ' + linked);
+  assert.ok(linked.includes('<a href="#contact" class="area"><b data-edit="area.1.name">Pompano Beach</b>'), 'a city without a suburb record must stay on #contact: ' + linked);
 }
 
 {
@@ -206,6 +212,22 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
   assert.equal(nudgeStyleTag({ nudges: { desktop: { 'a.b': null } } }), '', 'a null entry must be skipped');
   assert.equal(nudgeStyleTag({ nudges: { nosuchdevice: { 'a.b': { x: 5, y: 5 } } } }), '',
     'an unknown breakpoint id has no media query and must be ignored');
+}
+
+{
+  // The business entity is what ties the site to the Google Business Profile: the gym's
+  // address, the profile itself as hasMap and in sameAs, and the business's own Instagram
+  // (Blake's personal one belongs to the Person, not here).
+  const { businessEntity, websiteEntity, founderPerson } = await import('./lib/structured-data.mjs');
+  const biz = businessEntity({ description: 'd', suburbs: [] });
+  assert.equal(biz.address.streetAddress, '100 SW 9th Ave');
+  assert.equal(biz.address.postalCode, '33312');
+  assert.ok(biz.hasMap.includes('cid=8149558339790634144'), 'hasMap must be the Google profile');
+  assert.ok(biz.sameAs.includes(biz.hasMap), 'the Google profile must be in sameAs too');
+  assert.ok(biz.sameAs.some((u) => u.includes('instagram.com/fast_basketball')), 'business sameAs must be the business account');
+  assert.ok(!biz.sameAs.some((u) => u.includes('blakekingsleyjr')), 'the personal account belongs to the Person');
+  assert.ok(founderPerson().sameAs.some((u) => u.includes('instagram.com/blakekingsleyjr')));
+  assert.equal(websiteEntity().publisher['@id'], biz['@id'], 'the WebSite must point at the same business');
 }
 
 console.log('render: ok');
