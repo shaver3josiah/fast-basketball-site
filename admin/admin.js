@@ -286,6 +286,9 @@
   // These write content.json's top-level `prices` in CENTS. plans.mjs reads that back and
   // validates every entry before it overrides anything, so what is typed here can only
   // ever change a figure that already exists.
+  // The programs plans.mjs groups the training plans into, as /enroll names them.
+  var PROGRAM_NAMES = { evaluation: 'Evaluation', individual: 'Individual training', group: 'Group training' };
+
   function renderPricing(){
     var PLANS = window.FB_PLANS;
     if(!PLANS || !PLANS.plans) return null;
@@ -311,10 +314,17 @@
       + 'checkout page when you Publish. Two things it does NOT do, so tell your developer whenever '
       + 'you change one: a card is still charged whatever Stripe has on file until they run the '
       + 'catalog sync, and the sentences that talk about a price in words (the per-session line, the '
-      + 'published rates on the terms page, the group training page) are written by hand.';
+      + 'published rates on the terms page, the group and private training pages) are written by hand.';
     body.appendChild(warn);
 
+    var lastProgram = null;
     PLANS.plans.forEach(function(plan){
+      // One heading per program, in the order /enroll shows them. Under it the label drops the
+      // program's own name ("Individual Training, once a week" reads "once a week").
+      if(plan.program && plan.program !== lastProgram){
+        lastProgram = plan.program;
+        body.appendChild(Object.assign(cell('h3', PROGRAM_NAMES[plan.program] || plan.program), { className: 'price-h' }));
+      }
       plan.payOptions.forEach(function(opt){
         var wrap = document.createElement('div');
         wrap.className = 'field';
@@ -325,7 +335,8 @@
         var label = document.createElement('label');
         // Both evaluations carry the same label, because it is the product name Stripe
         // shows the parent. The link builder tells them apart the same way.
-        var name = plan.key === 'eval-call' ? plan.label + ' (48-hour rate)' : plan.label;
+        var comma = plan.label.indexOf(', ');
+        var name = plan.key === 'eval-call' ? plan.label + ' (48-hour rate)' : (comma > -1 ? plan.label.slice(comma + 2) : plan.label);
         label.textContent = name + (plan.payOptions.length > 1 ? ' · ' + opt.label : '');
         label.htmlFor = input.id;
 
@@ -334,8 +345,9 @@
 
         var note = document.createElement('p');
         note.className = 'price-note';
+        // A weekly individual plan has no count: it bills until Blake cancels it in Stripe.
         note.textContent = opt.mode === 'subscription'
-          ? 'Charged ' + opt.amount + ' a month, ' + opt.iterations + ' times.'
+          ? (opt.iterations ? 'Charged ' + opt.amount + ' a month, ' + opt.iterations + ' times.' : 'Charged ' + opt.amount + ' every month until you cancel it in Stripe.')
           : 'Charged once.';
 
         input.addEventListener('input', function(){
@@ -645,11 +657,21 @@
     }
 
     var planSel = field('Plan', document.createElement('select'));
+    var groups = {};
     PLANS.plans.forEach(function(p){
       // Both evaluations share one label on purpose (it is the product name Stripe shows
       // the parent), so the panel tells them apart here.
       var label = p.key === 'eval-call' ? p.label + ' (48-hour rate)' : p.label;
-      option(planSel, p.key, p.kind === 'once' ? label + ', ' + p.payOptions[0].amount : label);
+      var parent = planSel;
+      if(p.program){
+        if(!groups[p.program]){
+          groups[p.program] = document.createElement('optgroup');
+          groups[p.program].label = PROGRAM_NAMES[p.program] || p.program;
+          planSel.appendChild(groups[p.program]);
+        }
+        parent = groups[p.program];
+      }
+      option(parent, p.key, p.kind === 'once' ? label + ', ' + p.payOptions[0].amount : label);
     });
     var paySel = field('Payment', document.createElement('select'));
     var emailIn = field('Parent email (optional)', document.createElement('input'));
@@ -686,7 +708,7 @@
     function fillPay(){
       paySel.textContent = '';
       PLANS.plans.filter(function(p){ return p.key === planSel.value; })[0].payOptions.forEach(function(o){
-        option(paySel, o.pay, o.label + ', ' + o.amount + (o.iterations ? ' x ' + o.iterations : ''));
+        option(paySel, o.pay, o.label + ', ' + o.amount + (o.iterations ? ' x ' + o.iterations : (o.mode === 'subscription' ? ' a month until cancelled' : '')));
       });
       update();
     }
@@ -1408,7 +1430,7 @@
 
   // Coupon codes. Every code lives in Stripe itself, so the /enroll coupon box honours it the
   // moment it exists, and the Stripe dashboard can see and stop it too.
-  var SCOPES = [['all', 'Any training plan'], ['eval', 'Evaluation sessions only'], ['membership', 'Group memberships only']];
+  var SCOPES = [['all', 'Any training plan'], ['eval', 'Evaluation sessions only'], ['individual', 'Individual training only'], ['membership', 'Group memberships only']];
   function renderCouponPane(pane){
     var form = document.createElement('form');
     form.className = 'field-group deal-form';

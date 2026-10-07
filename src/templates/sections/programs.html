@@ -3,7 +3,7 @@
     <div class="head">
       <div class="eyebrow" data-edit="prog.eyebrow">Training &amp; Pricing</div>
       <h2 data-edit="prog.h2">Pricing and options.</h2>
-      <p class="lede" data-edit="prog.lede">Group basketball training on a 3 to 6 month commitment, private 1-on-1 basketball lessons by consultation, and an evaluation session to start.</p>
+      <p class="lede" data-edit="prog.lede">Group basketball training on a 3 to 6 month commitment, private 1-on-1 basketball lessons by the session or by the week, and an evaluation session to start.</p>
       <figure class="head-art"><img src="/images/court-dusk-wide-brand.jpg" width="1024" height="559" alt="An outdoor basketball hoop silhouetted against a pale sky at dusk, with palm trees and the ocean beyond" loading="lazy" decoding="async"></figure>
     </div>
     <!-- FOLD (September 2026): the page carried too much at once, so this body ships closed in a
@@ -14,8 +14,9 @@
       <summary><span class="btn btn-ghost fold-pill"><img class="fold-mark" src="/brand/icon.svg" width="24" height="24" alt="" decoding="async"><span class="fold-show">See pricing</span><span class="fold-hide">Hide pricing</span><svg class="fold-ic" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path class="fold-v" d="M6 1v10"/><path d="M1 6h10"/></svg></span><span class="fold-fact"><span data-price="range-to">$450 to $1,000</span> a term</span></summary>
     <!-- Three parallel options, no stagger. Group amounts trace to docs/source-of-truth/fast-basketball-facts.md
          and must match PLANS in src/lib/plans.mjs, TRAINING_PAGES in build.mjs and OFFERS in
-         src/lib/site-config.mjs. The evaluation and the 1-on-1 carry NO public price by Blake's
-         decision (September 2026): he quotes both on the call. Do not add one back here. -->
+         src/lib/site-config.mjs. The evaluation carries NO public price by Blake's decision
+         (September 2026): he quotes it on the call. Do not add one back here. The 1-on-1 has been
+         publicly priced since 7 October 2026 (the individual-* plans in plans.mjs). -->
     <div class="prog">
       <div class="prog-c">
         <span class="prog-tag" data-edit="prog.1.tag">Start Here</span>
@@ -44,8 +45,8 @@
           <div class="prog-price"><span data-price="range">$450&ndash;$1,000</span><small data-edit="prog.2.unit">Per Term</small></div>
         </div>
         <!-- The number a parent can compare. A 3 month term holds 12 or 13 weekly sessions depending on
-             the calendar, hence the range; "elsewhere" keeps it from reading as the 1-on-1 rate, which has
-             no public price. The $450 here mirrors the grid below and src/lib/plans.mjs. -->
+             the calendar, hence the range; "elsewhere" keeps it from reading as the 1-on-1 rate, which is
+             priced on its own card. The $450 here mirrors the grid below and src/lib/plans.mjs. -->
         <p class="prog-per" data-edit="prog.2.persession">Once a week for three months is $450, about $35 to $38 a session. Private lessons elsewhere in Fort Lauderdale run $39 to $80 each.</p>
         <p data-edit="prog.2">60 minute group sessions with players at a similar level. 3-6 month commitment.</p>
         <table class="price-grid">
@@ -73,16 +74,31 @@
       </div>
 
       <!-- Blake's card, September 2026: title, subtitle, one paragraph, "Limited Availability",
-           "Pricing Available After Consultation", "Book a Consultation". No price, no bullets. -->
-      <div class="prog-c">
+           "Book a Consultation". Priced since 7 October 2026: $100 a session, or a weekly plan billed
+           monthly until cancelled. Figures come from data-price (src/lib/plans.mjs), so the panel's
+           Prices section moves them; the row labels are hard-coded, the same call as the fold pill. -->
+      <div class="prog-c prog-private">
         <span class="prog-tag" data-edit="prog.3.tag">Limited Availability</span>
         <div class="prog-top">
           <h3 data-edit="prog.3.title">Private 1-on-1 Training</h3>
+          <div class="prog-price"><span data-price="individual-single:full">$100</span><small>Per Session</small></div>
         </div>
         <p class="prog-sub" data-edit="prog.3.sub">Customized Player Development</p>
         <p data-edit="prog.3">Individualized training built around the athlete's specific goals, strengths, and areas for improvement.</p>
+        <table class="price-grid">
+          <caption class="sr-only">Private 1-on-1 weekly plans, billed monthly</caption>
+          <thead><tr><th scope="col">Weekly plan</th><th scope="col">Once a week</th><th scope="col">Twice a week</th><th scope="col">Three times a week</th></tr></thead>
+          <tbody>
+            <tr>
+              <th scope="row">Monthly</th>
+              <td><b data-price="individual-1x:monthly">$300</b><span>a month</span></td>
+              <td><b data-price="individual-2x:monthly">$550</b><span>a month</span></td>
+              <td><b data-price="individual-3x:monthly">$750</b><span>a month</span></td>
+            </tr>
+          </tbody>
+        </table>
         <a href="#contact" class="btn btn-ghost" data-program="Private 1-on-1 Training" data-edit="prog.3.cta">Book a Consultation</a>
-        <p class="trust-line" data-edit="prog.3.trust">Pricing available after consultation.</p>
+        <p class="trust-line" data-edit="prog.3.trust">Weekly plans bill monthly until you cancel. Spots are limited, so start with a call.</p>
       </div>
     </div>
 

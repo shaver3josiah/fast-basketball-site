@@ -170,13 +170,30 @@ test('honeypot filled gets the thanks page without writing or touching Stripe', 
 });
 
 test('tampered plan is 422 naming the plan, before anything is written', async () => {
-  for (const bad of [{ plan: 'group-99m-9x' }, { plan: '__proto__' }, { plan: 'eval', pay: 'monthly' }]) {
+  for (const bad of [{ plan: 'group-99m-9x' }, { plan: '__proto__' }, { plan: 'group-3m-1x', pay: 'split' }, { plan: 'group-3m-1x', pay: '' }]) {
     const res = await handler(post({ ...VALID, ...bad }), CTX);
     assert.equal(res.status, 422, JSON.stringify(bad));
     const body = await res.json();
     assert.ok(body.errors.plan, 'plan error named');
   }
   assert.equal(records().length, 0);
+});
+
+test('a plan with one way to pay takes it, whatever radio arrived', async () => {
+  // Blake: "it wouldn't matter which option they click". With JS off the pay in full radio is
+  // still the default, and a weekly individual plan bills monthly only.
+  for (const [plan, pay, want] of [['individual-2x', 'full', 'monthly'], ['eval', 'monthly', 'full'], ['individual-single', 'nonsense', 'full']]) {
+    clearRecords();
+    const res = await handler(post({ ...VALID, plan, pay }), CTX);
+    assert.equal(res.status, 503, plan + ' saved, then no Stripe key');
+    const [r] = records();
+    assert.equal(r.plan, plan);
+    assert.equal(r.pay, want, plan + ' stored with the option it prices');
+  }
+  const [weekly] = (clearRecords(), await handler(post({ ...VALID, plan: 'individual-1x', pay: 'monthly' }), CTX), records());
+  assert.equal(weekly.amountCents, 30000);
+  assert.equal(weekly.months, null, 'no term');
+  clearRecords();
 });
 
 test('a missing answer or an unticked box is 422 naming every field, nothing written', async () => {

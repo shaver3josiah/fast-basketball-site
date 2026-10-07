@@ -74,8 +74,8 @@ export function businessEntity({ description, offers = [], suburbs, extraAreas =
 
 // One Service per training page. The page-level counterpart to makesOffer on the business:
 // makesOffer says the business sells this, this says the page is about it. Only pages with a
-// PUBLIC price carry an `offers` block - the evaluation and the 1-on-1 are quoted on the call
-// (Blake, September 2026), and a Service with no offers is correct for them, not incomplete.
+// PUBLIC price carry an `offers` block - the evaluation is quoted on the call (Blake,
+// September 2026), and a Service with no offers is correct for it, not incomplete.
 export function trainingService({ name, description, path, offer }) {
   return {
     '@context': 'https://schema.org',

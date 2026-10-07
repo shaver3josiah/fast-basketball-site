@@ -47,9 +47,10 @@ const TRAINING_PAGES = [
   },
   {
     slug: 'private', textKey: 'prog.3', title: 'Private 1-on-1 Basketball Training | Fast Basketball', label: 'Private 1-on-1 Training',
-    description: 'Private basketball training in Fort Lauderdale with Coach Blake Kingsley, built around one athlete. Limited availability; pricing after a consultation.',
-    // No public price: Blake quotes it after a consultation (September 2026).
-    price: { amount: 'Limited', unit: 'Availability', line: 'Pricing available after a consultation. Book a call to talk through your player\'s goals.' },
+    description: 'Private basketball training in Fort Lauderdale with Coach Blake Kingsley, built around one athlete. $100 a session, or a weekly plan from $300 a month.',
+    // Public since 7 October 2026 (Blake's sheet, Josiah's call). Must match the individual-*
+    // plans in src/lib/plans.mjs, the private card in programs.html and OFFERS in site-config.
+    price: { amount: '$100', unit: 'Per Session', line: 'Or a weekly plan, billed monthly until you cancel: $300 a month once a week, $550 twice a week, $750 three times a week. Spots are limited, so book a call first to talk through your player\'s goals.' },
     cta: 'Book a Consultation',
     features: ['Individualized training built around the athlete\'s specific goals, strengths, and areas for improvement', 'Footwork, handle, finishing, and shooting blocks', 'Same journal and homework standard as the membership', 'Film review and college coaching advice on request'],
     faq: [5, 1, 0],
@@ -124,7 +125,7 @@ function step3b_emitAdminSchema() {
   // The catalog, for the admin's enrollment records and per-family links. Generated from
   // plans.mjs for the same reason schema.js is: a hand-typed copy of a price drifts.
   const plans = Object.keys(PLANS).map((key) => ({
-    key, label: PLANS[key].label, kind: PLANS[key].kind,
+    key, label: PLANS[key].label, kind: PLANS[key].kind, program: PLANS[key].program,
     payOptions: payOptionsFor(key).map((pay) => {
       const spec = checkoutSpec(key, pay);
       return { pay, label: PAY_LABELS[pay], amountCents: spec.amountCents, amount: dollars(spec.amountCents), mode: spec.mode, iterations: spec.iterations };
@@ -347,8 +348,8 @@ function step8_trainingPages(content, prelude) {
       body += '<div class="faq-i">\n<button class="faq-q">' + escapeHtml(faqs[i].question) + '</button>\n<div class="faq-a"><p>' + escapeHtml(faqs[i].answer) + '</p></div>\n</div>\n';
     }
     body += '</div>\n</div>\n</section>\n</main>\n';
-    // OFFERS only lists the group membership's published price; matching by path (not array
-    // index) means evaluation and private correctly get no offer instead of an invented one.
+    // OFFERS lists only published prices; matching by path (not array index) means the
+    // evaluation correctly gets no offer instead of an invented one.
     const offer = OFFERS.find((o) => o.path === canonicalPath);
     const jsonLd = [
       breadcrumbList([{ name: 'Home', path: '/' }, { name: page.label, path: canonicalPath }]),
@@ -599,12 +600,13 @@ function step11c_termsPage(content, prelude) {
   // pricing Blake set in his Sales Mastery worksheet, and is labelled so nobody mistakes it
   // for agreement text.
   body += '<h3 class="terms-sub">Published rates</h3>\n';
-  body += '<p>The $840 above, and the $420 renewal figure in the last section of this page, are the figures in the signed agreement, which is being re-issued to match the current rates. The group membership rates below are what Coach Blake charges today:</p>\n';
+  body += '<p>The $840 above, and the $420 renewal figure in the last section of this page, are the figures in the signed agreement, which is being re-issued to match the current rates. The rates below are what Coach Blake charges today:</p>\n';
   body += li([
     'Group training membership, 3 months: $450 once a week paid in full, or $550 paid monthly. $650 unlimited, paid in full.',
     'Group training membership, 6 months: $800 once a week paid in full, or $900 paid monthly. $1,000 unlimited, paid in full.',
     'Unlimited means up to two group sessions a week.',
-    'The evaluation session and private 1-on-1 training are quoted on your call.'
+    'Individual (private 1-on-1) training: $100 for a single session, or a weekly plan billed monthly until you cancel: $300 a month once a week, $550 twice a week, $750 three times a week.',
+    'The evaluation session is quoted on your call.'
   ]);
   body += '<p>If you choose to cancel after 6 or 12 months, you agree to provide Coach Blake Kingsley 60 days written notice at <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> to cancel any future recurring payment after the contract is complete. If you do not follow our terms, you will be automatically enrolled into the same agreement for the next 12 months, no exceptions.</p>\n';
   body += '<p>By registering for the program, you agree to the terms and conditions below, the player expectations and the parent expectations, which state Coach Kingsley&rsquo;s refund, cancellation and early termination policies.</p>\n';
@@ -719,6 +721,7 @@ function step11d_enrollPages(sections, content, prelude) {
   const payLine = (key, pay) => {
     const spec = checkoutSpec(key, pay);
     if (pay === 'full') return dollars(spec.amountCents) + ' today';
+    if (!spec.iterations) return dollars(spec.amountCents) + ' a month until you cancel';
     return dollars(spec.amountCents) + ' a month for ' + spec.iterations + ' months, ' + dollars(totalCents(key, pay)) + ' in total';
   };
   const card = (key) => {
@@ -728,7 +731,16 @@ function step11d_enrollPages(sections, content, prelude) {
     // never listed: enroll.js un-hides it for ?plan=eval-call only.
     let out = '<label class="en-card"' + attrs + (key === 'eval-call' ? ' hidden' : '') + '>\n';
     out += '<input type="radio" name="plan" value="' + key + '" required>\n<span class="en-card-b">\n';
-    if (plan.kind === 'once') {
+    if (plan.program === 'individual') {
+      // The panel heading already says Individual training, so the card names only the package.
+      const weekly = plan.kind === 'recurring';
+      const many = { 'once a week': 'One private session', 'twice a week': 'Two private sessions', 'three times a week': 'Three private sessions' };
+      out += '<span class="en-card-t">' + escapeHtml(weekly ? plan.frequency : 'Single session') + '</span>\n';
+      out += '<span class="prog-price">' + dollars(weekly ? plan.totals.monthly : plan.cents) + '<small>' + (weekly ? 'a month' : 'one session') + '</small></span>\n';
+      out += '<span class="en-card-d">' + escapeHtml(weekly
+        ? (many[plan.frequency] || 'Private sessions') + ' a week with Coach Blake. Billed monthly until you cancel.'
+        : plan.description) + '</span>\n';
+    } else if (plan.kind === 'once') {
       out += '<span class="en-card-t">' + escapeHtml(plan.label) + '</span>\n';
       out += '<span class="prog-price">' + dollars(plan.cents) + '<small>60 minutes</small></span>\n';
       out += '<span class="en-card-d">' + escapeHtml(key === 'eval-call' ? 'The 48-hour rate from your intro call.' : plan.description) + '</span>\n';
@@ -806,8 +818,37 @@ function step11d_enrollPages(sections, content, prelude) {
     body += '<fieldset class="en-fs">\n' + legend(++n, s.title) + '<div class="pb-form">\n' + fieldsIn(s.id) + '</div>\n</fieldset>\n';
   }
 
-  body += '<fieldset class="en-fs">\n' + legend(++n, 'Choose your plan');
-  body += '<div class="en-plans">\n' + Object.keys(PLANS).map(card).join('') + '</div>\n</fieldset>\n';
+  // The evaluation, then a choice of Individual or Group, each opening its own packages (Blake,
+  // 7 October 2026). Every card is still a radio named "plan" in one form, so the no-JS post and
+  // checkout.mjs see exactly what they always did. The two program tiles ship hidden and do
+  // nothing without JS: then both panels show under their own headings, which is the whole
+  // catalog, still choosable. enroll.js unhides the tiles and opens one panel at a time.
+  const keysIn = (program) => Object.keys(PLANS).filter((k) => PLANS[k].program === program);
+  const fulls = keysIn('group').map((k) => totalCents(k, 'full')).sort((a, b) => a - b);
+  const weeklies = keysIn('individual').filter((k) => PLANS[k].kind === 'recurring').map((k) => totalCents(k, 'monthly')).sort((a, b) => a - b);
+  const single = keysIn('individual').find((k) => PLANS[k].kind === 'once');
+  const PROGRAMS = [
+    { id: 'individual', title: 'Individual training',
+      line: 'One on one with Coach Blake. ' + (single ? dollars(PLANS[single].cents) + ' a session, or ' : '') + 'from ' + dollars(weeklies[0]) + ' a month.' },
+    { id: 'group', title: 'Group training',
+      line: 'Level matched groups. 3 or 6 month memberships, ' + dollars(fulls[0]) + ' to ' + dollars(fulls[fulls.length - 1]) + '.' }
+  ];
+  const chevron = '<svg class="en-track-i" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 5l4.5 4.5L11.5 5"/></svg>';
+  // One grid holds the tiles and the panels, so CSS order can put each panel straight under its
+  // own tile on a phone and under both tiles on a wide screen (features.css, .en-choose).
+  body += '<fieldset class="en-fs" id="enPlan">\n' + legend(++n, 'Choose your plan');
+  body += '<div class="en-plans en-plans-eval">\n' + keysIn('evaluation').map(card).join('') + '</div>\n';
+  body += '<div class="en-choose">\n<p class="en-or">Or choose your training</p>\n';
+  for (const p of PROGRAMS) {
+    body += '<label class="en-track" data-track="' + p.id + '" hidden><input type="radio" name="track" value="' + p.id + '" aria-controls="enTrack_' + p.id + '">' +
+      '<span class="en-track-b"><span class="en-track-t">' + p.title + chevron + '</span><span class="en-track-d">' + escapeHtml(p.line) + '</span></span></label>\n';
+  }
+  for (const p of PROGRAMS) {
+    body += '<div class="en-panel" id="enTrack_' + p.id + '" data-track="' + p.id + '" role="group" aria-labelledby="enTrackH_' + p.id + '">\n' +
+      '<h3 class="en-panel-h" id="enTrackH_' + p.id + '">' + p.title + '</h3>\n' +
+      '<div class="en-plans">\n' + keysIn(p.id).map(card).join('') + '</div>\n</div>\n';
+  }
+  body += '</div>\n</fieldset>\n';
 
   // The pay options a plan does not price are hidden by a CSS rule keyed off the card's own
   // data-monthly attribute (features.css), which is how the page matches syncPay() before JS runs.

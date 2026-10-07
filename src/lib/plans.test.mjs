@@ -5,10 +5,10 @@ import { PLANS, APP_PLANS, isAppPlan, leadKey, instalmentsIn, catalog, checkoutS
 
 // Counted rather than derived, on purpose: the point of the pin is that the catalog did not
 // change size by accident, and a count taken from the catalog itself can never notice that.
-const TRAINING_SPECS = 8;  // 2 evaluations, 4 memberships, and monthly on the two once-a-week terms
+const TRAINING_SPECS = 12; // 2 evaluations, 4 individual, 4 memberships, and monthly on the two once-a-week terms
 const APP_SPECS = 10;      // 2 tools x (pay in full + four payment plans)
 
-test('catalog is 18 specs with unique lookup keys and whole-cent amounts', () => {
+test('catalog is 22 specs with unique lookup keys and whole-cent amounts', () => {
   const specs = catalog();
   assert.equal(specs.length, TRAINING_SPECS + APP_SPECS);
   const keys = new Set(specs.map((s) => s.lookupKey));
@@ -164,6 +164,41 @@ test('the rates on the page', () => {
   assert.equal(monthlyCents(90000, 6), 15000);
   assert.equal(monthlyCents(2000, 3), 666, 'rounding here would bill $20.01 for a $20 product');
   assert.ok(monthlyCents(2000, 3) * 3 <= 2000);
+});
+
+test('individual training: $100 a session, or $300 / $550 / $750 a month until cancelled', () => {
+  assert.deepEqual(payOptionsFor('individual-single'), ['full']);
+  assert.equal(checkoutSpec('individual-single', 'full').amountCents, 10000);
+  assert.equal(checkoutSpec('individual-single', 'full').mode, 'payment');
+  for (const [key, cents] of [['individual-1x', 30000], ['individual-2x', 55000], ['individual-3x', 75000]]) {
+    assert.deepEqual(payOptionsFor(key), ['monthly'], key + ' is monthly only');
+    assert.throws(() => checkoutSpec(key, 'full'), key + ' has no pay in full');
+    const spec = checkoutSpec(key, 'monthly');
+    assert.equal(spec.amountCents, cents, key);
+    assert.equal(spec.mode, 'subscription');
+    assert.equal(spec.interval, 'month');
+    // No schedule: the webhook only wraps one around a subscription that has a count, so a
+    // null here is what makes it bill every month until Blake cancels it.
+    assert.equal(spec.iterations, null, key + ' has no term');
+    assert.equal(spec.page, '/enroll');
+  }
+});
+
+test('every training plan names its program, and only three exist', () => {
+  for (const [key, plan] of Object.entries(PLANS)) {
+    assert.ok(['evaluation', 'individual', 'group'].includes(plan.program), key + ' program ' + plan.program);
+  }
+  // kind says how a plan bills, program what it is: the single session bills like an evaluation.
+  assert.equal(PLANS['individual-single'].kind, PLANS.eval.kind);
+  assert.notEqual(PLANS['individual-single'].program, PLANS.eval.program);
+});
+
+test('an owner price reaches an individual plan, and cannot add pay in full to a weekly one', () => {
+  const plans = structuredClone({ a: PLANS['individual-1x'], b: PLANS['individual-single'] });
+  applyOwnerPrices(plans, { a: { monthly: 32500, full: 99900 }, b: { full: 12000 } });
+  assert.equal(plans.a.totals.monthly, 32500);
+  assert.equal(Object.hasOwn(plans.a.totals, 'full'), false);
+  assert.equal(plans.b.cents, 12000);
 });
 
 test('six month terms carry the 60 day notice, three month terms 7 days', () => {

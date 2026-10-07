@@ -702,6 +702,20 @@ html[data-night="off"] .net.sway,html[data-night="off"] .net.sway .net-cord,html
   .price-grid td b{font-size:1.3rem;}
   .price-grid tbody th{font-size:.72rem;letter-spacing:.06em;}
 }
+/* The grid above is drawn for the dark membership card. The 1-on-1 card is white in BOTH
+   themes (.band-light), so its copy of the grid takes dark ink unconditionally, and the figure
+   takes --fast-red: --red-hot is 3.5:1 on white, under AA at the phone size. */
+.prog-private .price-grid th,.prog-private .price-grid td{border-bottom-color:var(--chalk-2);}
+.prog-private .price-grid thead th{color:var(--slate);}
+.prog-private .price-grid tbody th{color:var(--court-black);}
+.prog-private .price-grid td b{color:var(--fast-red);}
+.prog-private .price-grid td span{color:var(--text-soft-light);}
+/* The figure sat flush under the corner tag, and the 16ch title cap broke "1-on-1" at a
+   hyphen once a price shared the row. The title takes its own width; on a phone the price
+   wraps under it instead of squeezing it. */
+.prog-private .prog-top{flex-wrap:wrap;}
+.prog-private h3{max-width:none;}
+.prog-private .prog-price{margin-top:14px;}
 .fine-print{margin-top:48px;padding:30px 32px;border:1px solid var(--line-light);border-radius:var(--r-card-light);background:var(--bone);box-shadow:var(--shadow-light);}
 /* The box is --bone in both themes, so the eyebrow must not inherit the dark section's bone
    text: in dark mode it measured white on white. */

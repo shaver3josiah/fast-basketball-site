@@ -160,6 +160,49 @@ body.egg-open{overflow:hidden;}
 .en-card input:checked+.en-card-b{border-color:var(--fast-red);box-shadow:inset 0 0 0 1px var(--fast-red);}
 .en-card input:checked+.en-card-b .en-card-t::after{content:" \2713";color:var(--fast-red);}
 .en-card input:focus-visible+.en-card-b{outline:3px solid var(--fast-red);outline-offset:3px;}
+/* The evaluation alone on its row reads as a strip, not a tall card: name and line on the
+   left, the figure on the right. One card in a 1fr track was 1190px of mostly nothing. */
+@media(min-width:641px){
+  .en-plans-eval .en-card-b{display:grid;grid-template-columns:1fr auto;column-gap:28px;align-items:center;}
+  .en-plans-eval .en-card-t{grid-column:1;grid-row:1;}
+  .en-plans-eval .en-card-d{grid-column:1;grid-row:2;}
+  .en-plans-eval .prog-price{grid-column:2;grid-row:1/3;text-align:right;}
+}
+/* Evaluation, or Individual / Group training (October 2026). One grid holds both program
+   tiles and both panels so `order` can seat a panel directly under its own tile on a phone,
+   and under both tiles once they sit side by side. Without JS the tiles stay [hidden] and
+   both panels list in full under their headings. */
+.en-choose{display:grid;grid-template-columns:1fr;gap:14px;margin-top:30px;}
+.en-choose[hidden],.en-track[hidden],.en-panel[hidden]{display:none;}
+.en-or{grid-column:1/-1;margin:0;font-family:var(--font-eyebrow);font-size:.82rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim-dark);}
+.en-panel{grid-column:1/-1;}
+.en-panel-h{margin:14px 0 14px;font-family:var(--font-eyebrow);font-size:.95rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--bone);}
+.en-live .en-panel-h{display:none;}
+@media(max-width:699px){
+  .en-live .en-track[data-track="individual"]{order:1;}
+  .en-live .en-panel[data-track="individual"]{order:2;}
+  .en-live .en-track[data-track="group"]{order:3;}
+  .en-live .en-panel[data-track="group"]{order:4;}
+}
+@media(min-width:700px){
+  .en-live{grid-template-columns:1fr 1fr;}
+  .en-live .en-track{order:1;}
+  .en-live .en-panel{order:2;margin-top:4px;}
+}
+.en-track{position:relative;display:block;cursor:pointer;}
+.en-track input{position:absolute;opacity:0;width:1px;height:1px;margin:0;}
+.en-track-b{display:flex;flex-direction:column;gap:8px;height:100%;padding:22px 22px 20px;border-radius:16px;background:var(--ink-lift);border:1px solid var(--line-dark);transition:border-color .25s,box-shadow .25s,background-color .25s;}
+.en-track-t{display:flex;justify-content:space-between;align-items:center;gap:14px;font-family:var(--font-display);font-size:clamp(1.25rem,2vw,1.5rem);line-height:1;letter-spacing:.01em;text-transform:uppercase;color:var(--bone);}
+.en-track-i{flex:0 0 auto;fill:none;stroke:var(--fast-red);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .45s var(--ease-rush);}
+.en-track-d{font-size:.9rem;line-height:1.5;color:var(--text-body-dark);}
+.en-track:hover .en-track-b{border-color:rgba(230,12,32,.55);}
+.en-track input:checked+.en-track-b{border-color:var(--fast-red);box-shadow:inset 0 0 0 1px var(--fast-red);}
+.en-track input:checked+.en-track-b .en-track-i{transform:rotate(180deg);}
+.en-track input:focus-visible+.en-track-b{outline:3px solid var(--fast-red);outline-offset:3px;}
+@media(prefers-reduced-motion:no-preference){
+  html:not([data-motion="off"]) .en-live .en-panel:not([hidden]){animation:enPanelIn .5s var(--ease-rush);}
+}
+@keyframes enPanelIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
 .en-pays{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
 .en-pay{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:16px 18px;border-radius:12px;background:var(--ink-lift);border:1px solid var(--line-dark);cursor:pointer;transition:border-color .25s;}
 .en-pay input{width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;accent-color:var(--fast-red);cursor:pointer;}
@@ -203,6 +246,11 @@ html.fb-light .en-lg,html.fb-light .en-card-t,html.fb-light .en-pay-l{color:var(
 html.fb-light .en-card-b,html.fb-light .en-pay{background:var(--bone);border-color:var(--chalk-2);}
 html.fb-light .en-card input:checked+.en-card-b,html.fb-light .en-pay:has(input:checked){border-color:var(--fast-red);}
 html.fb-light .en-card-d,html.fb-light .en-pay-a{color:var(--text-body-light);}
+html.fb-light .en-track-b{background:var(--bone);border-color:var(--chalk-2);}
+html.fb-light .en-track input:checked+.en-track-b{border-color:var(--fast-red);}
+html.fb-light .en-track-t,html.fb-light .en-panel-h{color:var(--court-black);}
+html.fb-light .en-track-d{color:var(--text-body-light);}
+html.fb-light .en-or{color:var(--text-soft-light);}
 @media(max-width:640px){.en-form{gap:32px;}.en-card-b{padding:20px 18px;}}
 
 /* --- The "how did you hear about us" confirmation pulse --------------------

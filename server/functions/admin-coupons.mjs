@@ -16,11 +16,14 @@ import { stripeClient, json } from './lib/stripe.mjs';
 import { EXPIRY_HOURS } from './lib/deals.mjs';
 import { PLANS } from '../../src/lib/plans.mjs';
 
-const keysOf = (kind) => Object.keys(PLANS).filter((k) => !kind || PLANS[k].kind === kind);
+// By program, never by kind: a single individual session bills exactly like an evaluation
+// (kind 'once'), and "evaluations only" must not quietly come off it too.
+const keysOf = (program) => Object.keys(PLANS).filter((k) => !program || PLANS[k].program === program);
 export const COUPON_SCOPES = {
   all: { label: 'Any training plan', plans: keysOf(null) },
-  eval: { label: 'Evaluation sessions only', plans: keysOf('once') },
-  membership: { label: 'Group memberships only', plans: keysOf('membership') }
+  eval: { label: 'Evaluation sessions only', plans: keysOf('evaluation') },
+  individual: { label: 'Individual training only', plans: keysOf('individual') },
+  membership: { label: 'Group memberships only', plans: keysOf('group') }
 };
 const CODE_RE = /^[A-Z0-9-]{3,30}$/;
 

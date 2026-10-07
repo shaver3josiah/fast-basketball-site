@@ -10,7 +10,7 @@
 // was disabled between the registration form shipping and the signature pad being removed,
 // because a canvas cannot be drawn on without scripting; nothing else about it changed.
 import { randomUUID } from 'node:crypto';
-import { checkoutSpec, getPlan, totalCents, dollars, isAppPlan, leadKey, PAY_LABELS } from '../../src/lib/plans.mjs';
+import { checkoutSpec, getPlan, payOptionsFor, totalCents, dollars, isAppPlan, leadKey, PAY_LABELS } from '../../src/lib/plans.mjs';
 import { validateRegistration } from '../../src/lib/registration.mjs';
 import { validateAppOrder } from '../../src/lib/apporder.mjs';
 import { activeClaim } from './lib/traffic-store.mjs';
@@ -242,7 +242,12 @@ export default async (request, context) => {
     }
   } else {
     try {
-      spec = checkoutSpec(body.plan, body.pay);
+      // A plan that prices one way to pay takes it, whatever radio arrived. With JS the page
+      // folds the pay step away for these; with JS off the "Pay in full" radio is still the
+      // default, and an individual weekly plan bills monthly only, so honouring the radio would
+      // refuse every one of them. A plan with two options still has to be told which.
+      const offered = payOptionsFor(body.plan);
+      spec = checkoutSpec(body.plan, offered.length === 1 ? offered[0] : body.pay);
     } catch (err) {
       errors.plan = err.message;
     }

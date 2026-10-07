@@ -93,6 +93,30 @@
     if(payBox) payBox.hidden = !!card && offered < 2;
   }
 
+  /* ---- The evaluation, or Individual / Group training (Blake, October 2026). Every package is
+     still a "plan" radio; the two program tiles only decide which program's packages show.
+     Without this script the tiles stay hidden and both programs list in full under their own
+     headings, so nothing here is needed to enroll. The three choices are one choice: opening a
+     program clears a plan picked outside it, and picking the evaluation closes both. */
+  var chooser = form.querySelector('.en-choose');
+  var panels = form.querySelectorAll('.en-panel');
+  function openTrack(value){
+    for(var i = 0; i < panels.length; i++) panels[i].hidden = panels[i].getAttribute('data-track') !== value;
+    var tracks = form.querySelectorAll('input[name="track"]');
+    for(var j = 0; j < tracks.length; j++) tracks[j].checked = tracks[j].value === value;
+  }
+  /* The open program follows the chosen plan: a ?plan= link to a package opens its panel. */
+  function trackFromPlan(){
+    var plan = checked('plan');
+    var panel = plan && plan.closest ? plan.closest('.en-panel') : null;
+    openTrack(panel ? panel.getAttribute('data-track') : '');
+  }
+  if(chooser){
+    chooser.classList.add('en-live');
+    var tiles = chooser.querySelectorAll('.en-track');
+    for(var t = 0; t < tiles.length; t++) tiles[t].hidden = false;
+  }
+
   /* ?plan= / ?pay= preselect by value. Compared in a loop rather than spliced into a
      selector so a crafted query string can never become a selector. */
   function pick(name, value){
@@ -153,6 +177,7 @@
     campaign = (q && q.get('camp')) || sessionStorage.getItem(STORE + '_camp') || '';
     if(campaign) sessionStorage.setItem(STORE + '_camp', campaign);
   } catch(e){ campaign = (q && q.get('camp')) || ''; }
+  if(chooser) trackFromPlan();
   syncPay();
 
   /* ---- A deal link (/enroll?deal=<id>): Blake's own price for one family. The catalog cards
@@ -165,7 +190,8 @@
   var dealId = q ? q.get('deal') : '';
   if(dealId){
     var plansBox = form.querySelector('.en-plans');
-    var cards = plansBox ? plansBox.querySelectorAll('.en-card') : [];
+    var cards = form.querySelectorAll('.en-card');
+    if(chooser) chooser.hidden = true;
     for(var c = 0; c < cards.length; c++){
       cards[c].hidden = true;
       var r = cards[c].querySelector('input'); if(r){ r.checked = false; r.disabled = true; }
@@ -252,7 +278,16 @@
   })();
 
   form.addEventListener('change', function(e){
-    if(e.target.name === 'plan') syncPay();
+    if(e.target.name === 'plan'){
+      if(chooser) trackFromPlan();
+      syncPay();
+    } else if(e.target.name === 'track'){
+      var plan = checked('plan');
+      var panel = document.getElementById('enTrack_' + e.target.value);
+      if(plan && panel && !panel.contains(plan)) plan.checked = false;
+      openTrack(e.target.value);
+      syncPay();
+    }
   });
   form.addEventListener('input', function(e){
     clearErr(e.target);
@@ -268,13 +303,16 @@
     var els = form.querySelectorAll('input, select, textarea');
     for(var i = 0; i < els.length; i++){
       var el = els[i];
-      if(el === hp || el.name === 'pay' || el.type === 'hidden') continue;
+      if(el === hp || el.name === 'pay' || el.name === 'track' || el.type === 'hidden') continue;
       if(el.name === 'plan'){
         if(planSeen) continue;
         planSeen = true;
         if(!checked('plan')){
           showFormErr('Pick a plan. It is the one you settled on with Coach Blake.');
-          if(!bad) bad = form.querySelector('.en-card:not([hidden]) input[name="plan"]') || el;
+          /* The first package on screen: inside an open program, or the evaluation when none is. */
+          var opts = form.querySelectorAll('input[name="plan"]');
+          for(var o = 0; o < opts.length && !bad; o++) if(opts[o].getClientRects().length) bad = opts[o];
+          if(!bad) bad = el;
         }
         continue;
       }
@@ -320,6 +358,7 @@
 
     var data = {};
     new FormData(form).forEach(function(v, k){ if(typeof v === 'string') data[k] = v; });
+    delete data.track;
     data.plan = plan.value;
     data.pay = pay ? pay.value : 'full';
     data.reviewed = document.getElementById('enReviewed').checked === true;

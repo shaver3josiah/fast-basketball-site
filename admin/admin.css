@@ -374,6 +374,12 @@ select{
   border-radius:10px;color:var(--fg-2);font-size:.92rem;
 }
 .price-note{margin:6px 0 0;color:var(--fg-3);font-size:.85rem;}
+.price-h{
+  margin:26px 0 14px;padding-top:16px;border-top:1px solid var(--line);
+  font-family:var(--cond);font-weight:700;font-size:1rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--fg);
+}
+.price-warn+.price-h{margin-top:0;padding-top:0;border-top:0;}
 .field.bad input{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,196,61,.2);}
 .field.bad .price-note{color:var(--amber);}
 

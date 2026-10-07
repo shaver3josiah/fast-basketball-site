@@ -337,7 +337,8 @@ async function attachSchedule(session, plan, pay, meta = {}) {
       return 'not attached, ' + err.message;
     }
   }
-  if (!spec.iterations) return 'not needed, one payment';
+  // A weekly individual plan has no term: Checkout's open-ended subscription is the whole deal.
+  if (!spec.iterations) return 'not needed, bills monthly until you cancel it in Stripe';
 
   try {
     const stripe = stripeClient();
@@ -391,6 +392,8 @@ function welcomeHtml(r) {
       ? ' Your card is billed monthly and keeps going until you cancel in writing.'
       : ' Coach Blake will send you a renewal link before the term ends.';
     steps.push(renewal);
+  } else if (r.pay === 'monthly') {
+    steps.push('Your card is billed monthly and keeps going until you cancel.');
   }
   return '<p>Hi ' + escapeHtml(firstName) + ',</p>' +
     '<p>Thanks for completing the steps to enroll' + (r.playerName ? ' ' + escapeHtml(r.playerName) : '') + ' in our program.</p>' +

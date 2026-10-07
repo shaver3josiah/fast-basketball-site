@@ -18,9 +18,17 @@
 //   - The Unlimited tiers publish one figure each, so they are pay-in-full only. Adding a
 //     monthly price for them is an owner decision, not an arithmetic one.
 //
-// Private one on one (priced on consultation, not published), small group and drop-in sessions are
-// deliberately absent. Blake schedules those by hand and bills them from the Stripe
-// dashboard (Invoicing), no site code needed.
+// OCTOBER 2026: Individual (private 1-on-1) training is sold here too, on Blake's sheet of
+// 7 October: a single session at $100, or a weekly plan at $300, $550 or $750 a month for one,
+// two or three sessions a week. A weekly plan is the one kind of plan with no term: it bills
+// every month until Blake cancels it (kind 'recurring', see checkoutSpec), which is why it
+// prices `monthly` only. Small group and drop-in sessions are still absent; Blake bills those
+// from the Stripe dashboard (Invoicing).
+//
+// `program` is what /enroll groups the cards by (the evaluation, then Individual, then Group)
+// and what a coupon's "works on" scope means. It is NOT `kind`, which says how a plan is
+// billed: a single individual session bills exactly like an evaluation, and must not be
+// swept into an "evaluations only" coupon for it.
 
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -28,31 +36,51 @@ import { fileURLToPath } from 'node:url';
 
 export const PLANS = {
   'eval': {
-    label: 'Evaluation Session',
+    label: 'Evaluation Session', program: 'evaluation',
     description: '60 minutes on court with Coach Blake. The step before any commitment.',
     cents: 5000, kind: 'once'
   },
   // The rate Blake quotes on the intro call. Not enforced by the site: without a call there
   // is no evaluation slot, so a found link buys nothing (STRIPE-PLAN.md, decision 4).
   'eval-call': {
-    label: 'Evaluation Session',
+    label: 'Evaluation Session', program: 'evaluation',
     description: '60 minutes on court with Coach Blake. Booked within 48 hours of your intro call.',
     cents: 3500, kind: 'once'
   },
+  'individual-single': {
+    label: 'Individual Training, single session', program: 'individual',
+    description: 'One private session with Coach Blake, built around your athlete.',
+    cents: 10000, kind: 'once'
+  },
+  'individual-1x': {
+    label: 'Individual Training, once a week', program: 'individual',
+    frequency: 'once a week', kind: 'recurring',
+    totals: { monthly: 30000 }
+  },
+  'individual-2x': {
+    label: 'Individual Training, twice a week', program: 'individual',
+    frequency: 'twice a week', kind: 'recurring',
+    totals: { monthly: 55000 }
+  },
+  'individual-3x': {
+    label: 'Individual Training, three times a week', program: 'individual',
+    frequency: 'three times a week', kind: 'recurring',
+    totals: { monthly: 75000 }
+  },
   'group-3m-1x': {
-    label: 'Group Training Membership, 3 months, once a week',
+    label: 'Group Training Membership, 3 months, once a week', program: 'group',
     frequency: 'once a week',
     months: 3, noticeDays: 7, kind: 'membership',
     totals: { full: 45000, monthly: 55000 }
   },
   'group-3m-unlimited': {
-    label: 'Group Training Membership, 3 months, unlimited',
+    label: 'Group Training Membership, 3 months, unlimited', program: 'group',
     frequency: 'up to twice a week',
     months: 3, noticeDays: 7, kind: 'membership',
     totals: { full: 65000 }
   },
   'group-6m-1x': {
-    label: 'Group Training Membership, 6 months, once a week',
+    label: 'Group Training Membership, 6 months, once a week', program: 'group',
     frequency: 'once a week',
     months: 6, noticeDays: 60, kind: 'membership',
     // 14 September 2026: Blake set this back to $800 and reframed the pitch from "one month
@@ -60,7 +88,7 @@ export const PLANS = {
     totals: { full: 80000, monthly: 90000 }
   },
   'group-6m-unlimited': {
-    label: 'Group Training Membership, 6 months, unlimited',
+    label: 'Group Training Membership, 6 months, unlimited', program: 'group',
     frequency: 'up to twice a week',
     months: 6, noticeDays: 60, kind: 'membership',
     totals: { full: 100000 }
@@ -231,7 +259,8 @@ export function payOptionsFor(planKey) {
 }
 
 // The published total for one plan and pay option, in cents. This is the number the page
-// prints and the number Stripe collects across the term.
+// prints and the number Stripe collects across the term. A 'recurring' plan has no term, so
+// its "total" is one month.
 export function totalCents(planKey, pay) {
   const plan = getPlan(planKey);
   if (plan.kind === 'once') return plan.cents;
@@ -281,6 +310,16 @@ export function checkoutSpec(planKey, pay) {
 
   if (plan.kind === 'once') {
     return { ...base, description: plan.description, mode: 'payment', amountCents: plan.cents, interval: null, iterations: null, endBehavior: null };
+  }
+
+  // A weekly individual plan: one price a month and no term, so no schedule is wrapped around
+  // the subscription (iterations null) and it bills until Blake cancels it in the dashboard.
+  if (plan.kind === 'recurring') {
+    return {
+      ...base,
+      description: plan.label + '. Billed monthly until cancelled.',
+      mode: 'subscription', amountCents: plan.totals.monthly, interval: 'month', iterations: null, endBehavior: null
+    };
   }
 
   const total = plan.totals[pay];

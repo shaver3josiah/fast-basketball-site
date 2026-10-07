@@ -47,10 +47,11 @@ export const CONTACT = {
 
 // Published rates, used for the LocalBusiness makesOffer structured data. Amounts must
 // match src/templates/sections/programs.html, TRAINING_PAGES in build.mjs and /terms.
-// Only the group membership is publicly priced. The evaluation and the 1-on-1 are quoted on
-// the call (Blake, September 2026), so they are not offers with a price.
+// The evaluation is quoted on the call (Blake, September 2026), so it is not an offer with a
+// price. Individual training has been publicly priced since 7 October 2026.
 export const OFFERS = [
-  { name: 'Group Training Membership', price: '450', maxPrice: '1000', unit: 'per 3 or 6 month term', path: '/training/group-training' }
+  { name: 'Group Training Membership', price: '450', maxPrice: '1000', unit: 'per 3 or 6 month term', path: '/training/group-training' },
+  { name: 'Private 1-on-1 Training', price: '100', maxPrice: '750', unit: 'per session, or per month on a weekly plan', path: '/training/private' }
 ];
 
 export function absoluteUrl(path) {

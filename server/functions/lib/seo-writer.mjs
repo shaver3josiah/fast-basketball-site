@@ -29,7 +29,7 @@ const PROFILES = [
     says: ['for players 11 to 18 with ' + COACH + '.', 'Group memberships and private training.'], ask: 'Book a call or enroll online.' },
   { match: (p) => p === '/training/private', head: 'Private Basketball Lessons', area: 'Fort Lauderdale',
     fits: (q) => /private|1 on 1|one on one|personal|individual/.test(q),
-    says: ['with ' + COACH + ', built around one player.', 'Limited spots; pricing after a consultation.'], ask: 'Book a consultation.' },
+    says: ['with ' + COACH + ', built around one player.', 'Single sessions or a weekly plan.'], ask: 'Book a consultation.' },
   { match: (p) => p === '/training/group-training', head: 'Group Basketball Training', area: 'Fort Lauderdale',
     fits: (q) => /group|team|program|camp|class|clinic/.test(q),
     says: ['for players 11 to 18 with ' + COACH + '.', 'Pay in full or monthly.'], ask: 'Enroll online.' },
