@@ -398,8 +398,10 @@ html[data-ticker="off"] .ticker-track{animation-play-state:paused;}
 }
 .prog-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px;}
 .prog-c h3{margin-bottom:0;max-width:16ch;}
-.prog-price{font-family:var(--font-num);font-size:2.15rem;line-height:.9;color:var(--fast-red);white-space:nowrap;}
+/* Prices are ink, never brand red (Josiah, 7 October 2026): black on a light surface, white on a dark one. */
+.prog-price{font-family:var(--font-num);font-size:2.15rem;line-height:.9;color:var(--court-black);white-space:nowrap;}
 .prog-price small{display:block;font-family:var(--font-eyebrow);font-size:.66rem;letter-spacing:.14em;color:var(--slate);text-transform:uppercase;}
+.prog-c.flag .prog-price{color:var(--bone);}
 .prog-c.flag .prog-price small{color:#8A8A96;}
 .prog-c > p{color:#54545F;font-size:.97rem;margin-bottom:20px;}
 .prog-c.flag > p{color:#AFAFBB;}

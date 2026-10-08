@@ -439,6 +439,8 @@ html.fb-light .prog-c.flag .prog-price small{color:#8A8A96;}
 /* The training-page hero caption used to carry this grey inline, so it stayed a dark-band
    grey after the light theme turned the band white (3.4:1). Dark keeps it; light gets the
    caption colour the homepage cards use. */
+.suburb-hero .prog-price{color:var(--bone);}
+html.fb-light .suburb-hero .prog-price{color:var(--court-black);}
 .suburb-hero .prog-price small{color:#8A8A96;}
 html.fb-light .suburb-hero .prog-price small{color:var(--slate);}
 html.fb-light .ft-bot{color:var(--slate);border-top-color:var(--line-light);}
@@ -693,7 +695,7 @@ html[data-night="off"] .net.sway,html[data-night="off"] .net.sway .net-cord,html
 .price-grid th:last-child,.price-grid td:last-child{padding-right:0;}
 .price-grid thead th{font-family:var(--font-eyebrow);font-weight:700;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:#8A8A96;}
 .price-grid tbody th{font-family:var(--font-eyebrow);font-weight:700;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--bone);}
-.price-grid td b{display:block;font-family:var(--font-num);font-size:1.55rem;line-height:1.1;color:var(--red-hot);letter-spacing:.02em;}
+.price-grid td b{display:block;font-family:var(--font-num);font-size:1.55rem;line-height:1.1;color:var(--bone);letter-spacing:.02em;}
 .price-grid td span{display:block;font-size:.76rem;line-height:1.45;color:#AFAFBB;margin-top:6px;max-width:30ch;}
 /* At 375px the Unlimited column is 57px wide and "$1,000" at 1.55rem is 57px: no air at all
    (measured). A smaller figure and tighter row labels give it room without a second layout. */
@@ -704,11 +706,11 @@ html[data-night="off"] .net.sway,html[data-night="off"] .net.sway .net-cord,html
 }
 /* The grid above is drawn for the dark membership card. The 1-on-1 card is white in BOTH
    themes (.band-light), so its copy of the grid takes dark ink unconditionally, and the figure
-   takes --fast-red: --red-hot is 3.5:1 on white, under AA at the phone size. */
+   takes court black, like every price on the site. */
 .prog-private .price-grid th,.prog-private .price-grid td{border-bottom-color:var(--chalk-2);}
 .prog-private .price-grid thead th{color:var(--slate);}
 .prog-private .price-grid tbody th{color:var(--court-black);}
-.prog-private .price-grid td b{color:var(--fast-red);}
+.prog-private .price-grid td b{color:var(--court-black);}
 .prog-private .price-grid td span{color:var(--text-soft-light);}
 /* The figure sat flush under the corner tag, and the 16ch title cap broke "1-on-1" at a
    hyphen once a price shared the row. The title takes its own width; on a phone the price

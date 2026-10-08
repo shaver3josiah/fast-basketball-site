@@ -142,7 +142,10 @@ body.egg-open{overflow:hidden;}
    One form, three fieldsets. Plan and pay options are real radios so the no-JS path
    works; the input in a plan card is visually hidden and the card is its label, with
    the checked state drawn on the card (border plus a check mark, not colour alone). */
-.en-form{display:grid;gap:44px;}
+/* --sel is the ink for prices and for a chosen card's outline: white on the dark theme, black on
+   the light one, never brand red (Josiah, 7 October 2026). The focus ring stays red. */
+.en-form{display:grid;gap:44px;--sel:var(--bone);--sel-soft:rgba(255,255,255,.45);}
+html.fb-light .en-form{--sel:var(--court-black);--sel-soft:rgba(10,10,12,.45);}
 .en-fs{border:0;padding:0;margin:0;min-width:0;}
 /* Author display on these would outrank the UA [hidden]{display:none}; same trap
    .modal-ovl documents above. */
@@ -154,10 +157,10 @@ body.egg-open{overflow:hidden;}
 .en-card input{position:absolute;opacity:0;width:1px;height:1px;margin:0;}
 .en-card-b{display:flex;flex-direction:column;gap:10px;height:100%;padding:24px 22px;border-radius:16px;background:var(--ink-lift);border:1px solid var(--line-dark);transition:border-color .25s,box-shadow .25s;}
 .en-card-t{font-family:var(--font-eyebrow);font-size:.82rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--bone);}
-.en-card .prog-price{font-size:1.9rem;}
+.en-card .prog-price{font-size:1.9rem;color:var(--sel);}
 .en-card-d{font-size:.9rem;line-height:1.5;color:var(--text-body-dark);}
-.en-card:hover .en-card-b{border-color:rgba(230,12,32,.55);}
-.en-card input:checked+.en-card-b{border-color:var(--fast-red);box-shadow:inset 0 0 0 1px var(--fast-red);}
+.en-card:hover .en-card-b{border-color:var(--sel-soft);}
+.en-card input:checked+.en-card-b{border-color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel);}
 .en-card input:checked+.en-card-b .en-card-t::after{content:" \2713";color:var(--fast-red);}
 .en-card input:focus-visible+.en-card-b{outline:3px solid var(--fast-red);outline-offset:3px;}
 /* The evaluation alone on its row reads as a strip, not a tall card: name and line on the
@@ -195,8 +198,8 @@ body.egg-open{overflow:hidden;}
 .en-track-t{display:flex;justify-content:space-between;align-items:center;gap:14px;font-family:var(--font-display);font-size:clamp(1.25rem,2vw,1.5rem);line-height:1;letter-spacing:.01em;text-transform:uppercase;color:var(--bone);}
 .en-track-i{flex:0 0 auto;fill:none;stroke:var(--fast-red);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .45s var(--ease-rush);}
 .en-track-d{font-size:.9rem;line-height:1.5;color:var(--text-body-dark);}
-.en-track:hover .en-track-b{border-color:rgba(230,12,32,.55);}
-.en-track input:checked+.en-track-b{border-color:var(--fast-red);box-shadow:inset 0 0 0 1px var(--fast-red);}
+.en-track:hover .en-track-b{border-color:var(--sel-soft);}
+.en-track input:checked+.en-track-b{border-color:var(--sel);box-shadow:inset 0 0 0 1px var(--sel);}
 .en-track input:checked+.en-track-b .en-track-i{transform:rotate(180deg);}
 .en-track input:focus-visible+.en-track-b{outline:3px solid var(--fast-red);outline-offset:3px;}
 @media(prefers-reduced-motion:no-preference){
@@ -205,9 +208,10 @@ body.egg-open{overflow:hidden;}
 @keyframes enPanelIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
 .en-pays{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
 .en-pay{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:16px 18px;border-radius:12px;background:var(--ink-lift);border:1px solid var(--line-dark);cursor:pointer;transition:border-color .25s;}
-.en-pay input{width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;accent-color:var(--fast-red);cursor:pointer;}
+.en-pay input{width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;accent-color:var(--sel);cursor:pointer;}
 .en-pay input:focus-visible{outline:3px solid var(--fast-red);outline-offset:3px;}
-.en-pay:has(input:checked){border-color:var(--fast-red);}
+.en-pay:has(input:checked){border-color:var(--sel);}
+.en-card input:checked+.en-card-b .en-card-t::after{color:var(--sel);}
 .en-pay-l{display:block;font-family:var(--font-eyebrow);font-size:.82rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--bone);}
 .en-pay-a{display:block;margin-top:3px;font-size:.9rem;color:var(--text-body-dark);}
 .en-pay-a:empty{display:none;}
@@ -244,10 +248,10 @@ html.fb-light .en-intro b{color:var(--court-black);}
 html.fb-light .en-opt{color:var(--text-soft-light);}
 html.fb-light .en-lg,html.fb-light .en-card-t,html.fb-light .en-pay-l{color:var(--court-black);}
 html.fb-light .en-card-b,html.fb-light .en-pay{background:var(--bone);border-color:var(--chalk-2);}
-html.fb-light .en-card input:checked+.en-card-b,html.fb-light .en-pay:has(input:checked){border-color:var(--fast-red);}
+html.fb-light .en-card input:checked+.en-card-b,html.fb-light .en-pay:has(input:checked){border-color:var(--sel);}
 html.fb-light .en-card-d,html.fb-light .en-pay-a{color:var(--text-body-light);}
 html.fb-light .en-track-b{background:var(--bone);border-color:var(--chalk-2);}
-html.fb-light .en-track input:checked+.en-track-b{border-color:var(--fast-red);}
+html.fb-light .en-track input:checked+.en-track-b{border-color:var(--sel);}
 html.fb-light .en-track-t,html.fb-light .en-panel-h{color:var(--court-black);}
 html.fb-light .en-track-d{color:var(--text-body-light);}
 html.fb-light .en-or{color:var(--text-soft-light);}
