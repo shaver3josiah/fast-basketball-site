@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-10-12T15:46:19.777Z",
+  "recorded": "2026-10-12T18:24:44.462Z",
   "files": {
     "0ec211c90d82b90b7b470eb6889ce903.txt": {
       "sha": "c6d3306e64b68843",
@@ -10,12 +10,12 @@
       "bytes": 5729
     },
     "admin/admin.css": {
-      "sha": "4fb90b5ab546cc88",
-      "bytes": 21926
+      "sha": "73d3501980d368d7",
+      "bytes": 22223
     },
     "admin/admin.js": {
-      "sha": "4a2e36e63e9a10db",
-      "bytes": 84481
+      "sha": "f79874f04ad83d95",
+      "bytes": 81255
     },
     "admin/canvas-frame.html": {
       "sha": "a1d90c8b7f51de81",
@@ -38,16 +38,20 @@
       "bytes": 13145
     },
     "admin/editor.js": {
-      "sha": "9f22f63baaa6928a",
-      "bytes": 99920
+      "sha": "45fac752ea5c8370",
+      "bytes": 99213
     },
     "admin/index.html": {
-      "sha": "d9ec14e294a676c1",
-      "bytes": 5578
+      "sha": "2ba138fb1a209f94",
+      "bytes": 5680
+    },
+    "admin/packages.js": {
+      "sha": "861284c090b6bc49",
+      "bytes": 14625
     },
     "admin/plans.js": {
-      "sha": "3c57424bc7077695",
-      "bytes": 5131
+      "sha": "100f81cdf3d6bf9b",
+      "bytes": 6826
     },
     "admin/schema.js": {
       "sha": "9a39048d3146bce2",
@@ -150,16 +154,16 @@
       "bytes": 136466
     },
     "enroll/index.html": {
-      "sha": "eadfb8680e5cfcfe",
-      "bytes": 27619
+      "sha": "9c943f2e9c79e3bf",
+      "bytes": 27676
     },
     "enroll/thanks/index.html": {
       "sha": "bb13cc61c4d17c0e",
       "bytes": 7888
     },
     "index.html": {
-      "sha": "180d760380091a50",
-      "bytes": 116288
+      "sha": "02de2c6db85ed203",
+      "bytes": 116600
     },
     "js/appbuy.js": {
       "sha": "f62cdc3d07dc4e16",
@@ -184,6 +188,10 @@
     "js/night-court.js": {
       "sha": "95d255d17fdc9c70",
       "bytes": 10166
+    },
+    "js/packages.js": {
+      "sha": "393354ce202564c7",
+      "bytes": 7139
     },
     "js/playbook-form.js": {
       "sha": "66af237fc702203a",

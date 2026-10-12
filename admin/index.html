@@ -75,6 +75,7 @@
   <main id="tabPay" class="tab-panel hidden"></main>
   <main id="tabDeals" class="tab-panel hidden"></main>
   <main id="tabTraffic" class="tab-panel hidden"></main>
+  <main id="tabPackages" class="tab-panel hidden"></main>
 
   <!-- Outside the three panels because admin.js empties those on every render, and
        these buttons are wired up once at load. -->
@@ -98,6 +99,7 @@
       <button data-tab="content" class="tab active" type="button">Content</button>
       <button data-tab="photos" class="tab" type="button">Photos</button>
       <button data-tab="deals" class="tab" type="button" data-title="Cut a Deal">Deals</button>
+      <button data-tab="packages" class="tab" type="button" data-title="Packages &amp; Prices">Prices</button>
       <button data-tab="leads" class="tab" type="button">Leads</button>
       <button data-tab="pay" class="tab" type="button">Pay</button>
       <button data-tab="traffic" class="tab" type="button" data-title="Traffic &amp; Links">Traffic</button>
@@ -112,5 +114,6 @@
 <script src="/admin/admin.js" defer></script>
 <script src="/admin/vendor/qrcode.js" defer></script>
 <script src="/admin/traffic.js" defer></script>
+<script src="/admin/packages.js" defer></script>
 </body>
 </html>

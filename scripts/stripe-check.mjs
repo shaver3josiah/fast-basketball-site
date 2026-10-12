@@ -24,6 +24,7 @@ import { pathToFileURL } from 'node:url';
 import Stripe from 'stripe';
 import { catalog, dollars } from '../src/lib/plans.mjs';
 import { pricesByLookupKey } from './stripe-catalog.mjs';
+import { loadLiveStore } from '../server/functions/lib/catalog-sync.mjs';
 import { SITE_URL } from '../src/lib/site-config.mjs';
 
 // Every event server/functions/stripe-webhook.mjs acts on. checkout.session.expired is the
@@ -153,6 +154,8 @@ async function main() {
   const mode = keyMode(key);
   console.log('Checking Stripe in ' + mode.toUpperCase() + ' mode, against ' + SITE_URL);
   if (mode === 'unknown') console.log('  (that key is neither sk_test_ nor sk_live_; continuing anyway)');
+  // The catalog the site actually sells, admin changes included. --static checks plans.mjs alone.
+  if (!process.argv.includes('--static')) console.log(await loadLiveStore());
 
   const { ok, checks } = await auditStripe(new Stripe(key));
   console.log('');

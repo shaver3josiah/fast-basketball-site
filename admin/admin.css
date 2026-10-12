@@ -506,3 +506,9 @@ select{
   .flow{padding:24px 24px 0;}
   .flow-note{padding:0 24px;}
 }
+
+/* --- prices tab (admin/packages.js) ------------------------ */
+.pk-card .btn.wide{margin:10px 0 0;}
+.pk-card .price-note{margin-top:6px;}
+/* Seven tabs on a 390px phone: tighter tracking keeps every label whole. */
+@media(max-width:420px){.tabbar .tab{letter-spacing:.08em;font-size:.78rem;}}

@@ -3,7 +3,7 @@ Fast Basketball Website: Owner's Guide
 There are two editing screens, and one rule that matters more than anything else in
 this guide. The rule first.
 
-The one rule: website changes are Save, then Publish. Deals and coupons are instant.
+The one rule: website changes are Save, then Publish. Deals, coupons and prices are instant.
 
 Words and photos (the Content and Photos tabs, and the Editor) go live in three steps:
 
@@ -19,8 +19,9 @@ the top right corner says the same thing in one word: "Unsaved", "Not live yet" 
 not published) or "Live". If you press Publish with unsaved changes, it asks first. Only
 saved work goes live. Publishing is free; there is no monthly limit to worry about.
 
-Deals and coupon codes (the Deals tab) are different: there is no Save and no Publish.
-They work the moment you create them and stop the moment you close them.
+Deals, coupon codes and prices (the Deals and Prices tabs) are different: there is no Save
+and no Publish. They work the moment you confirm them. A deal or coupon stops the moment you
+close it; a price stays until you change it again.
 
 Screen one: the Content Admin, at yoursite.com/admin
 
@@ -42,7 +43,7 @@ in on can publish. On a brand-new phone or computer, it is the same steps: press
 get the code, type it in. If a code does not arrive, press "Send a new code," and check your
 spam folder once (if it is there, mark it "not spam" and it will not happen again).
 
-The panel is built for a phone. The six tabs (Content, Photos, Deals, Leads, Pay, Traffic) and
+The panel is built for a phone. The seven tabs (Content, Photos, Deals, Prices, Leads, Pay, Traffic) and
 the Save and Publish buttons sit in a bar across the bottom, where your thumb already is.
 The line at the top right says where your work stands: amber "Unsaved" or "Not live yet"
 while there is work the website does not have, green "Live" once it does.
@@ -56,11 +57,30 @@ sits in. Each section is a row you tap to open, with the number of boxes in it, 
 whole site fits on one screen and you open the one you came for. Click into a box and
 type. Long passages get a bigger box automatically.
 
-Two things on this tab are on purpose. The dollar amounts on the pricing card cannot
-be typed over. They are locked to the prices Stripe actually charges, so the page and
-the card reader can never disagree. To change a price, tell your developer, who changes
-both in one go. The wording next to each amount, for example "or $550 paid monthly",
-is yours to edit, but it has to keep saying the same number.
+Prices are not on this tab any more: they have their own Prices tab (below), because a price
+has to change on the website and on the card reader at the same moment. The wording next to a
+price, for example "or $550 paid monthly", is still yours to edit here, but it has to keep
+saying the same number.
+
+Prices tab. Every package you sell, grouped as Evaluation, Individual training and Group
+training. There is no Save and no Publish here: whatever you confirm is on the website and
+takes payments straight away.
+
+  - Change a price: type the new dollar amount in the package's box and tap "Save price". It
+    changes the pricing card, the enroll page and what a card is charged, all together. Families
+    who already signed up keep the price they agreed to. "Back to published" puts it back.
+  - Hide a package: tap "Hide from the website". It disappears from the enroll page and the
+    pricing card and nobody can buy it, but families who already bought it are not affected.
+    "Show on the website again" brings it back.
+  - Add a package: tap "Add a package" at the top. Pick Individual or Group, then how it is paid:
+    a fixed term paid in full (like 9 months), monthly until they cancel, or a one-off session.
+    The grey "Families will see" box shows the wording before you confirm. It appears on the
+    enroll page and the pricing card as soon as you add it.
+
+Two limits. The sentences on the Terms page and the training pages that say a price in words
+are written by hand, so ask your developer if one of those needs to change. And the two phone
+tools you sell (Shot Form Watcher, Dribble Listener) are not on this tab: their price is
+shared with your developer, so it is not changed from here.
 
 Photos tab. Each of the site's photos has a card. Choose a new file, fill in the alt
 text box (one plain sentence saying what is in the photo, for search engines and

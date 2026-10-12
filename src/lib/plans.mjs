@@ -228,6 +228,136 @@ function readOwnerPrices() {
 
 applyOwnerPrices(PLANS, readOwnerPrices());
 
+// The figure a data-price hook prints: one plan and pay option ("group-3m-1x:full"), or the
+// cheapest-to-dearest membership range. HTML-ready (an en dash is an entity). Null when the spec
+// names nothing, so a caller leaves the template's own figure alone.
+function membershipFulls() {
+  return Object.keys(PLANS)
+    .filter((k) => PLANS[k].kind === 'membership' && PLANS[k].totals && typeof PLANS[k].totals.full === 'number')
+    .map((k) => PLANS[k].totals.full)
+    .sort((a, b) => a - b);
+}
+
+export function priceFigure(spec) {
+  if (spec === 'range' || spec === 'range-to') {
+    const fulls = membershipFulls();
+    if (!fulls.length) return null;
+    const join = spec === 'range' ? '&ndash;' : ' to ';
+    return dollars(fulls[0]) + join + dollars(fulls[fulls.length - 1]);
+  }
+  const [key, pay] = String(spec).split(':');
+  const plan = Object.hasOwn(PLANS, key) ? PLANS[key] : null;
+  if (!plan) return null;
+  if (plan.kind === 'once') return typeof plan.cents === 'number' ? dollars(plan.cents) : null;
+  const cents = plan.totals && plan.totals[pay];
+  return typeof cents === 'number' ? dollars(cents) : null;
+}
+
+// ---------------------------------------------------------------- admin packages (live layer)
+//
+// October 2026: the admin's Prices tab edits the catalog WITHOUT a deploy. What it stores (one
+// Firestore document, server/functions/lib/packages.mjs) is a layer over the plans above:
+//   overrides  { key: { full?, monthly? } }  a changed price for a plan that already exists
+//   added      { 'pk-xxxxxx': def }          a package Blake made (term, monthly or single session)
+//   retired    [key]                         hidden from the site and refused at checkout
+// setStoredPackages() rewrites PLANS in place from that document, so every module that already
+// reads PLANS through getPlan() sees the change with no edit of its own. The router calls it
+// (through refreshPackages) before any handler that touches a plan. Nothing here ever reaches
+// APP_PLANS: the two tools are split 50/50 with the Developer and are not Blake's to reprice.
+//
+// A retired plan still RESOLVES (the webhook needs its label for a family who bought it last
+// month); only checkout refuses it, through isRetired().
+const BASE = structuredClone(PLANS);
+
+export const PACKAGE_PROGRAMS = { individual: 'Individual Training', group: 'Group Training' };
+export const PACKAGE_FREQUENCIES = ['once a week', 'twice a week', 'three times a week'];
+export const PACKAGE_MAX_TERM_MONTHS = 24;
+const ADDED_KEY_RE = /^pk-[a-z0-9]{6,12}$/;
+
+// A stored definition to the plan it describes, or null. Strict: this arrives from Firestore and
+// feeds checkout, so anything off-shape is dropped rather than repaired.
+export function planFromDef(def) {
+  if (!def || typeof def !== 'object') return null;
+  const label = typeof def.label === 'string' ? def.label.trim() : '';
+  if (label.length < 2 || label.length > 80) return null;
+  if (!Object.hasOwn(PACKAGE_PROGRAMS, def.program)) return null;
+  if (!validPriceCents(def.cents)) return null;
+  const base = { label, program: def.program, custom: true };
+  if (def.kind === 'once') {
+    const description = typeof def.description === 'string' ? def.description.trim().slice(0, 160) : '';
+    return { ...base, kind: 'once', cents: def.cents, ...(description ? { description } : {}) };
+  }
+  if (!PACKAGE_FREQUENCIES.includes(def.frequency)) return null;
+  if (def.kind === 'recurring') return { ...base, kind: 'recurring', frequency: def.frequency, totals: { monthly: def.cents } };
+  if (def.kind === 'term') {
+    if (!Number.isInteger(def.termMonths) || def.termMonths < 1 || def.termMonths > PACKAGE_MAX_TERM_MONTHS) return null;
+    return { ...base, kind: 'term', frequency: def.frequency, termMonths: def.termMonths, totals: { full: def.cents } };
+  }
+  return null;
+}
+
+// The document as it will be stored: only what is valid, only for plans that exist.
+export function normalizeDoc(doc) {
+  const d = doc && typeof doc === 'object' ? doc : {};
+  const added = {};
+  for (const [key, def] of Object.entries(d.added && typeof d.added === 'object' ? d.added : {})) {
+    if (!ADDED_KEY_RE.test(key) || Object.hasOwn(BASE, key) || Object.hasOwn(APP_PLANS, key) || !planFromDef(def)) continue;
+    added[key] = {
+      label: def.label.trim(), program: def.program, kind: def.kind, cents: def.cents,
+      ...(def.frequency ? { frequency: def.frequency } : {}),
+      ...(def.termMonths ? { termMonths: def.termMonths } : {}),
+      ...(def.kind === 'once' && def.description ? { description: String(def.description).trim().slice(0, 160) } : {})
+    };
+  }
+  const known = new Set([...Object.keys(BASE), ...Object.keys(added)]);
+  const overrides = {};
+  for (const [key, entry] of Object.entries(d.overrides && typeof d.overrides === 'object' ? d.overrides : {})) {
+    if (!known.has(key) || !entry || typeof entry !== 'object') continue;
+    const o = {};
+    for (const pay of ['full', 'monthly']) if (validPriceCents(entry[pay])) o[pay] = entry[pay];
+    if (Object.keys(o).length) overrides[key] = o;
+  }
+  const retired = [...new Set((Array.isArray(d.retired) ? d.retired : []).filter((k) => typeof k === 'string' && known.has(k)))];
+  return { overrides, added, retired };
+}
+
+// The catalog a document produces, as a NEW object: the admin builds the plans a change WOULD
+// make, syncs Stripe against them, and only then stores the document.
+export function effectivePlans(doc) {
+  const { overrides, added } = normalizeDoc(doc);
+  const plans = structuredClone(BASE);
+  for (const [key, def] of Object.entries(added)) plans[key] = planFromDef(def);
+  applyOwnerPrices(plans, overrides);
+  return plans;
+}
+
+let stored = { doc: normalizeDoc(null), retired: [] };
+
+export function setStoredPackages(doc) {
+  const clean = normalizeDoc(doc);
+  const next = effectivePlans(clean);
+  for (const k of Object.keys(PLANS)) delete PLANS[k];
+  Object.assign(PLANS, next);
+  stored = { doc: clean, retired: clean.retired };
+}
+
+export const isRetired = (key) => stored.retired.includes(key);
+export const storedDoc = () => structuredClone(stored.doc);
+export const basePlans = () => structuredClone(BASE);
+
+// The training plans as the admin and the pages see them, in the shape /admin/plans.js always had.
+export function catalogView(plans = PLANS, retired = stored.retired) {
+  return Object.keys(plans).map((key) => ({
+    key, label: plans[key].label, kind: plans[key].kind, program: plans[key].program,
+    custom: !!plans[key].custom, retired: retired.includes(key),
+    frequency: plans[key].frequency || null, termMonths: plans[key].termMonths || plans[key].months || null,
+    payOptions: payOptionsFor(key, plans).map((pay) => {
+      const spec = checkoutSpec(key, pay, plans);
+      return { pay, label: PAY_LABELS[pay], amountCents: spec.amountCents, amount: dollars(spec.amountCents), totalCents: totalCents(key, pay, plans), mode: spec.mode, iterations: spec.iterations };
+    })
+  }));
+}
+
 export const PAY_LABELS = {
   full: 'Pay in full',
   monthly: 'Monthly',
@@ -257,17 +387,17 @@ export function monthlyCents(total, months) {
 // Own keys only: PLANS['__proto__'] is Object.prototype, which is truthy. Training first, then
 // the app products: one lookup for both, so every consumer downstream (checkout, the webhook,
 // the ledger, the catalog script) needed no branch of its own.
-export function getPlan(planKey) {
+export function getPlan(planKey, plans = PLANS) {
   if (typeof planKey !== 'string') throw new Error('unknown plan: ' + planKey);
-  if (Object.hasOwn(PLANS, planKey)) return PLANS[planKey];
+  if (Object.hasOwn(plans, planKey)) return plans[planKey];
   if (Object.hasOwn(APP_PLANS, planKey)) return APP_PLANS[planKey];
   throw new Error('unknown plan: ' + planKey);
 }
 
 // A plan offers exactly what it prices. PAY_OPTIONS fixes the order so the page and the
 // catalog agree; a membership with no monthly total simply does not offer monthly.
-export function payOptionsFor(planKey) {
-  const plan = getPlan(planKey);
+export function payOptionsFor(planKey, plans = PLANS) {
+  const plan = getPlan(planKey, plans);
   if (plan.kind === 'once') return ['full'];
   if (plan.kind === 'app') return ['full', ...plan.instalments.map((n) => 'm' + n)];
   return PAY_ORDER.filter((pay) => Object.hasOwn(plan.totals, pay));
@@ -276,12 +406,12 @@ export function payOptionsFor(planKey) {
 // The published total for one plan and pay option, in cents. This is the number the page
 // prints and the number Stripe collects across the term. A 'recurring' plan has no term, so
 // its "total" is one month.
-export function totalCents(planKey, pay) {
-  const plan = getPlan(planKey);
+export function totalCents(planKey, pay, plans = PLANS) {
+  const plan = getPlan(planKey, plans);
   if (plan.kind === 'once') return plan.cents;
   // An app product costs the same however it is paid, so every option resolves to one figure.
   if (plan.kind === 'app') {
-    if (!payOptionsFor(planKey).includes(pay)) throw new Error('plan ' + planKey + ' does not offer ' + pay);
+    if (!payOptionsFor(planKey, plans).includes(pay)) throw new Error('plan ' + planKey + ' does not offer ' + pay);
     return plan.cents;
   }
   if (!Object.hasOwn(plan.totals, pay)) throw new Error('plan ' + planKey + ' does not offer ' + pay);
@@ -291,9 +421,9 @@ export function totalCents(planKey, pay) {
 // The one function the checkout function, the webhook, the page and the catalog script
 // all agree through. Throws on anything not in the catalog, so a tampered request dies
 // here rather than becoming a Stripe call.
-export function checkoutSpec(planKey, pay) {
-  const plan = getPlan(planKey);
-  if (!payOptionsFor(planKey).includes(pay)) throw new Error('plan ' + planKey + ' does not offer ' + pay);
+export function checkoutSpec(planKey, pay, plans = PLANS) {
+  const plan = getPlan(planKey, plans);
+  if (!payOptionsFor(planKey, plans).includes(pay)) throw new Error('plan ' + planKey + ' does not offer ' + pay);
 
   const base = {
     plan: planKey, pay, label: plan.label,
@@ -324,7 +454,7 @@ export function checkoutSpec(planKey, pay) {
   }
 
   if (plan.kind === 'once') {
-    return { ...base, description: plan.description, mode: 'payment', amountCents: plan.cents, interval: null, iterations: null, endBehavior: null };
+    return { ...base, description: plan.description || plan.label, mode: 'payment', amountCents: plan.cents, interval: null, iterations: null, endBehavior: null };
   }
 
   // A weekly individual plan: one price a month and no term, so no schedule is wrapped around
@@ -368,10 +498,10 @@ export function checkoutSpec(planKey, pay) {
 }
 
 // Every sellable combination, in page order.
-export function catalog() {
+export function catalog(plans = PLANS) {
   const out = [];
-  for (const key of [...Object.keys(PLANS), ...Object.keys(APP_PLANS)]) {
-    for (const pay of payOptionsFor(key)) out.push(checkoutSpec(key, pay));
+  for (const key of [...Object.keys(plans), ...Object.keys(APP_PLANS)]) {
+    for (const pay of payOptionsFor(key, plans)) out.push(checkoutSpec(key, pay, plans));
   }
   return out;
 }

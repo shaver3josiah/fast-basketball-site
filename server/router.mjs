@@ -9,6 +9,8 @@
 // Handlers load on demand so a checkout does not pay to parse the admin panel's seven
 // modules. Node caches the module after the first hit, so a warm instance pays once.
 
+import { refreshPackages } from './functions/lib/packages.mjs';
+
 const HANDLERS = {
   'admin-canvas-render': () => import('./functions/admin-canvas-render.mjs'),
   'admin-content': () => import('./functions/admin-content.mjs'),
@@ -18,6 +20,7 @@ const HANDLERS = {
   'admin-otp-request': () => import('./functions/admin-otp-request.mjs'),
   'admin-logout': () => import('./functions/admin-logout.mjs'),
   'admin-media': () => import('./functions/admin-media.mjs'),
+  'admin-packages': () => import('./functions/admin-packages.mjs'),
   'admin-publish': () => import('./functions/admin-publish.mjs'),
   'admin-seo': () => import('./functions/admin-seo.mjs'),
   'admin-site': () => import('./functions/admin-site.mjs'),
@@ -29,6 +32,7 @@ const HANDLERS = {
   'dev-payments': () => import('./functions/dev-payments.mjs'),
   'enroll-visit': () => import('./functions/enroll-visit.mjs'),
   'leads-list': () => import('./functions/leads-list.mjs'),
+  packages: () => import('./functions/packages.mjs'),
   playbook: () => import('./functions/playbook.mjs'),
   preview: () => import('./functions/preview.mjs'),
   'seo-ping': () => import('./functions/seo-ping.mjs'),
@@ -37,6 +41,10 @@ const HANDLERS = {
 };
 
 export const ENDPOINTS = Object.keys(HANDLERS);
+
+// The handlers that read a plan: checkout and the webhook price and label with it, the coupon
+// list scopes by it. packages and admin-packages refresh themselves.
+const NEEDS_PLANS = new Set(['checkout', 'stripe-webhook', 'admin-coupons']);
 
 const json = (status, body) => new Response(JSON.stringify(body), {
   status, headers: { 'Content-Type': 'application/json' }
@@ -53,6 +61,10 @@ export async function route(request, context) {
   const name = endpointFrom(new URL(request.url).pathname);
   const load = Object.hasOwn(HANDLERS, name) ? HANDLERS[name] : null;
   if (!load) return json(404, { error: 'no endpoint named "' + name + '"' });
+
+  // The catalog is whatever the admin last stored, so every endpoint that reads a plan starts from a
+  // fresh copy (cached ten seconds per instance, and never throws). The rest do not pay for it.
+  if (NEEDS_PLANS.has(name)) await refreshPackages();
 
   const mod = await load();
   if (typeof mod.default !== 'function') return json(500, { error: name + ' has no default export' });

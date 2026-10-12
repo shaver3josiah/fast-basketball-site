@@ -170,6 +170,12 @@ async function callFunction(name, req, res) {
   // so it always reads the latest render.mjs regardless; only these dynamically imported
   // handlers can hold a stale copy. After editing render.mjs, restart `npm run dev` to
   // refresh the editor's preview — the built site was never affected.
+  // Production's router refreshes the admin-managed catalog before these handlers run
+  // (server/router.mjs NEEDS_PLANS); this server calls handlers directly, so it does the same.
+  if (['checkout', 'stripe-webhook', 'admin-coupons'].includes(name)) {
+    await (await import(pathToFileURL(resolve(ROOT, 'server/functions/lib/packages.mjs')).href)).refreshPackages();
+  }
+
   const mod = await import(pathToFileURL(file).href + '?v=' + sourceGeneration);
   if (typeof mod.default !== 'function') {
     res.writeHead(500, { 'Content-Type': 'application/json' });

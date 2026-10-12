@@ -8,7 +8,7 @@ import { CONTENT_GROUPS } from './lib/content-groups.mjs';
 // it and the nudge CSS below writes its media queries from it, so a phone nudged in the
 // editor lands in the same band of widths on the built page.
 import { BREAKPOINTS } from './lib/canvas-schema.mjs';
-import { PLANS, dollars } from './lib/plans.mjs';
+import { PLANS, dollars, priceFigure } from './lib/plans.mjs';
 
 // Exported so the editor can list the hand-built sections without keeping its own copy
 // of this order — the drift that has already bitten twice in this codebase.
@@ -723,27 +723,9 @@ function nudgeMedia(bp) {
 // Still owner copy, on purpose: the sentence beside a figure (prog.2.persession and the
 // prog.2.*s cells). Those carry reasoning about the number, not the number, and rewriting
 // English from a cents value is not something this should try to do.
-function membershipFulls() {
-  return Object.keys(PLANS)
-    .filter((k) => PLANS[k].kind === 'membership' && PLANS[k].totals && typeof PLANS[k].totals.full === 'number')
-    .map((k) => PLANS[k].totals.full)
-    .sort((a, b) => a - b);
-}
-
-export function priceFigure(spec) {
-  if (spec === 'range' || spec === 'range-to') {
-    const fulls = membershipFulls();
-    if (!fulls.length) return null;
-    const join = spec === 'range' ? '&ndash;' : ' to ';
-    return dollars(fulls[0]) + join + dollars(fulls[fulls.length - 1]);
-  }
-  const [key, pay] = String(spec).split(':');
-  const plan = Object.hasOwn(PLANS, key) ? PLANS[key] : null;
-  if (!plan) return null;
-  if (plan.kind === 'once') return typeof plan.cents === 'number' ? dollars(plan.cents) : null;
-  const cents = plan.totals && plan.totals[pay];
-  return typeof cents === 'number' ? dollars(cents) : null;
-}
+// priceFigure lives in plans.mjs so the public /api/packages endpoint can compute the same figures
+// without loading this file. Re-exported here because the build and its tests import it from here.
+export { priceFigure };
 
 // An unknown spec leaves the template's own figure alone rather than blanking it: a page
 // that prints a stale price is recoverable, a page that prints nothing where a price goes
@@ -942,6 +924,8 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   body += nightCourtScript();
   body += scriptsBlock();
   body += '<script src="' + asset('/js/contact-form.js') + '" defer></script>\n';
+  // Brings the pricing figures up to date with what the admin last saved (js/packages.js).
+  body += '<script src="' + asset('/js/packages.js') + '" defer></script>\n';
   body += '</body>\n</html>\n';
 
   return page + body;

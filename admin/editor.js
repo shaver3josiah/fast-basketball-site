@@ -1511,32 +1511,19 @@
     var box = $('inspFields');
     box.innerHTML = '';
 
-    // A price figure. The catalog owns the number, so there is no caret on the page: the
-    // field lives here and writes content.prices in cents, exactly as the content panel's
-    // Prices section does. Same file, same validation in plans.mjs, either door.
+    // A price figure. There is no caret on the page and no field here any more: a price has to
+    // change on Stripe at the same moment it changes on the site, which the editor's Save and
+    // Publish cannot do. The admin's Prices tab does both in one step.
     if (kind === 'price') {
-      var plan = priceSpec(key);
-      if (!plan) {
-        var gone = document.createElement('p');
-        gone.className = 'ed-help';
-        gone.textContent = 'This figure is worked out from the other prices, so there is nothing to type here. Change the plan prices and it follows.';
-        box.appendChild(gone);
-        return;
-      }
-      box.appendChild(fieldRow('Price, in dollars', centsToInput(currentPriceCents(plan)), function (v) {
-        var cents = inputToCents(v);
-        if (cents === null) return;
-        if (!state.content.prices || typeof state.content.prices !== 'object') state.content.prices = {};
-        if (!state.content.prices[plan.key]) state.content.prices[plan.key] = {};
-        state.content.prices[plan.key][plan.pay] = cents;
-        markDirty();
-      }, true));
-      var note = document.createElement('p');
-      note.className = 'ed-help';
-      note.textContent = 'Publishing changes the pricing table, the pricing card and the checkout page. '
-        + 'It does not change what a card is charged until your developer runs the Stripe sync, and the '
-        + 'sentences that mention a price in words are still written by hand.';
-      box.appendChild(note);
+      var moved = document.createElement('p');
+      moved.className = 'ed-help';
+      moved.textContent = 'Prices are changed in the Prices tab of the admin, not here. It updates the page and the card reader together, and it is live as soon as you confirm.';
+      box.appendChild(moved);
+      var openPrices = document.createElement('a');
+      openPrices.className = 'ed-btn';
+      openPrices.href = '/admin';
+      openPrices.textContent = 'Open the admin';
+      box.appendChild(openPrices);
       return;
     }
 

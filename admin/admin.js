@@ -279,98 +279,35 @@
     if(pricing) root.appendChild(pricing);
   }
 
-  // The price fields. Built from /admin/plans.js (window.FB_PLANS), which build.mjs
-  // generates from src/lib/plans.mjs, so the panel never carries its own copy of the
-  // catalog and cannot offer a pay option a plan does not price.
-  //
-  // These write content.json's top-level `prices` in CENTS. plans.mjs reads that back and
-  // validates every entry before it overrides anything, so what is typed here can only
-  // ever change a figure that already exists.
-  // The programs plans.mjs groups the training plans into, as /enroll names them.
+  // The programs plans.mjs groups the training plans into, as /enroll names them. The per-family
+  // link maker groups its plan list by these.
   var PROGRAM_NAMES = { evaluation: 'Evaluation', individual: 'Individual training', group: 'Group training' };
 
+  // Prices used to be a section here, saved with the page text and published. They are their own
+  // tab now (admin/packages.js): a price has to change on Stripe at the same moment it changes
+  // on the site, which Save and Publish cannot do. This leaves a pointer where the section was,
+  // so nobody hunts for it.
   function renderPricing(){
-    var PLANS = window.FB_PLANS;
-    if(!PLANS || !PLANS.plans) return null;
-    if(!state.content.prices || typeof state.content.prices !== 'object') state.content.prices = {};
-
     var section = document.createElement('details');
     section.className = 'field-group';
     var summary = document.createElement('summary');
     summary.appendChild(document.createTextNode('Prices'));
-    var count = cell('span', PLANS.plans.length + ' plans');
+    var count = cell('span', 'moved');
     count.className = 'count';
     summary.appendChild(count);
     section.appendChild(summary);
     var body = document.createElement('div');
     body.className = 'group-body';
-    section.appendChild(body);
-
-    // Said where the fields are, not in a guide nobody has open: the website changes when
-    // you publish, the card reader does not change until the catalog is pushed.
-    var warn = document.createElement('p');
-    warn.className = 'price-warn';
-    warn.textContent = 'Changing a price here updates the pricing table, the pricing card and the '
-      + 'checkout page when you Publish. Two things it does NOT do, so tell your developer whenever '
-      + 'you change one: a card is still charged whatever Stripe has on file until they run the '
-      + 'catalog sync, and the sentences that talk about a price in words (the per-session line, the '
-      + 'published rates on the terms page, the group and private training pages) are written by hand.';
-    body.appendChild(warn);
-
-    var lastProgram = null;
-    PLANS.plans.forEach(function(plan){
-      // One heading per program, in the order /enroll shows them. Under it the label drops the
-      // program's own name ("Individual Training, once a week" reads "once a week").
-      if(plan.program && plan.program !== lastProgram){
-        lastProgram = plan.program;
-        body.appendChild(Object.assign(cell('h3', PROGRAM_NAMES[plan.program] || plan.program), { className: 'price-h' }));
-      }
-      plan.payOptions.forEach(function(opt){
-        var wrap = document.createElement('div');
-        wrap.className = 'field';
-        var input = document.createElement('input');
-        input.type = 'text';
-        input.inputMode = 'decimal';
-        input.id = 'price' + (++uid);
-        var label = document.createElement('label');
-        // Both evaluations carry the same label, because it is the product name Stripe
-        // shows the parent. The link builder tells them apart the same way.
-        var comma = plan.label.indexOf(', ');
-        var name = plan.key === 'eval-call' ? plan.label + ' (48-hour rate)' : (comma > -1 ? plan.label.slice(comma + 2) : plan.label);
-        label.textContent = name + (plan.payOptions.length > 1 ? ' · ' + opt.label : '');
-        label.htmlFor = input.id;
-
-        var saved = state.content.prices[plan.key] && state.content.prices[plan.key][opt.pay];
-        input.value = centsToInput(typeof saved === 'number' ? saved : opt.amountCents);
-
-        var note = document.createElement('p');
-        note.className = 'price-note';
-        // A weekly individual plan has no count: it bills until Blake cancels it in Stripe.
-        note.textContent = opt.mode === 'subscription'
-          ? (opt.iterations ? 'Charged ' + opt.amount + ' a month, ' + opt.iterations + ' times.' : 'Charged ' + opt.amount + ' every month until you cancel it in Stripe.')
-          : 'Charged once.';
-
-        input.addEventListener('input', function(){
-          var cents = inputToCents(input.value);
-          if(cents === null){
-            note.textContent = 'Type a dollar amount, like 450 or 183.33.';
-            wrap.classList.add('bad');
-            return;
-          }
-          wrap.classList.remove('bad');
-          note.textContent = 'Saves as ' + dollarsFromCents(cents) + '.';
-          if(!state.content.prices[plan.key]) state.content.prices[plan.key] = {};
-          state.content.prices[plan.key][opt.pay] = cents;
-          state.dirty = true;
-          setFlow('editing');
-        });
-
-        wrap.appendChild(label);
-        wrap.appendChild(input);
-        wrap.appendChild(note);
-        body.appendChild(wrap);
-      });
+    body.appendChild(cell('p', 'Prices have their own tab now, because a price has to change on Stripe at the same moment it changes on the website. Change, hide or add packages there; it is live as soon as you confirm.'));
+    var go = cell('button', 'Open the Prices tab');
+    go.type = 'button';
+    go.className = 'btn primary wide';
+    go.addEventListener('click', function(){
+      var tab = document.querySelector('.tab[data-tab="packages"]');
+      if(tab) tab.click();
     });
+    body.appendChild(go);
+    section.appendChild(body);
     return section;
   }
 
