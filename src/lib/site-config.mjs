@@ -51,7 +51,7 @@ export const CONTACT = {
 // price. Individual training has been publicly priced since 7 October 2026.
 export const OFFERS = [
   { name: 'Group Training Membership', price: '450', maxPrice: '1000', unit: 'per 3 or 6 month term', path: '/training/group-training' },
-  { name: 'Private 1-on-1 Training', price: '100', maxPrice: '750', unit: 'per session, or per month on a weekly plan', path: '/training/private' }
+  { name: 'Private 1-on-1 Training', price: '100', maxPrice: '1800', unit: 'per session, per month on a weekly plan, or per 3 or 6 month term', path: '/training/private' }
 ];
 
 export function absoluteUrl(path) {

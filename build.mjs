@@ -50,7 +50,7 @@ const TRAINING_PAGES = [
     description: 'Private basketball training in Fort Lauderdale with Coach Blake Kingsley, built around one athlete. $100 a session, or a weekly plan from $300 a month.',
     // Public since 7 October 2026 (Blake's sheet, Josiah's call). Must match the individual-*
     // plans in src/lib/plans.mjs, the private card in programs.html and OFFERS in site-config.
-    price: { amount: '$100', unit: 'Per Session', line: 'Or a weekly plan, billed monthly until you cancel: $300 a month once a week, $550 twice a week, $750 three times a week. Spots are limited, so book a call first to talk through your player\'s goals.' },
+    price: { amount: '$100', unit: 'Per Session', line: 'Or a weekly plan, billed monthly until you cancel: $300 a month once a week, $550 twice a week, $750 three times a week. Or pay a once-a-week term in full: $900 for 3 months, $1,800 for 6 months. Spots are limited, so book a call first to talk through your player\'s goals.' },
     cta: 'Book a Consultation',
     features: ['Individualized training built around the athlete\'s specific goals, strengths, and areas for improvement', 'Footwork, handle, finishing, and shooting blocks', 'Same journal and homework standard as the membership', 'Film review and college coaching advice on request'],
     faq: [5, 1, 0],
@@ -606,6 +606,7 @@ function step11c_termsPage(content, prelude) {
     'Group training membership, 6 months: $800 once a week paid in full, or $900 paid monthly. $1,000 unlimited, paid in full.',
     'Unlimited means up to two group sessions a week.',
     'Individual (private 1-on-1) training: $100 for a single session, or a weekly plan billed monthly until you cancel: $300 a month once a week, $550 twice a week, $750 three times a week.',
+    'Individual training once a week, paid in full: $900 for 3 months, $1,800 for 6 months.',
     'The evaluation session is quoted on your call.'
   ]);
   body += '<p>If you choose to cancel after 6 or 12 months, you agree to provide Coach Blake Kingsley 60 days written notice at <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> to cancel any future recurring payment after the contract is complete. If you do not follow our terms, you will be automatically enrolled into the same agreement for the next 12 months, no exceptions.</p>\n';
@@ -734,12 +735,15 @@ function step11d_enrollPages(sections, content, prelude) {
     if (plan.program === 'individual') {
       // The panel heading already says Individual training, so the card names only the package.
       const weekly = plan.kind === 'recurring';
+      const term = plan.kind === 'term';
       const many = { 'once a week': 'One private session', 'twice a week': 'Two private sessions', 'three times a week': 'Three private sessions' };
-      out += '<span class="en-card-t">' + escapeHtml(weekly ? plan.frequency : 'Single session') + '</span>\n';
-      out += '<span class="prog-price">' + dollars(weekly ? plan.totals.monthly : plan.cents) + '<small>' + (weekly ? 'a month' : 'one session') + '</small></span>\n';
-      out += '<span class="en-card-d">' + escapeHtml(weekly
-        ? (many[plan.frequency] || 'Private sessions') + ' a week with Coach Blake. Billed monthly until you cancel.'
-        : plan.description) + '</span>\n';
+      out += '<span class="en-card-t">' + escapeHtml(term ? plan.termMonths + ' months, ' + plan.frequency : weekly ? plan.frequency : 'Single session') + '</span>\n';
+      out += '<span class="prog-price">' + dollars(term ? plan.totals.full : weekly ? plan.totals.monthly : plan.cents) + '<small>' + (term ? 'paid in full' : weekly ? 'a month' : 'one session') + '</small></span>\n';
+      out += '<span class="en-card-d">' + escapeHtml(term
+        ? 'One private session a week with Coach Blake for ' + plan.termMonths + ' months, paid in full.'
+        : weekly
+          ? (many[plan.frequency] || 'Private sessions') + ' a week with Coach Blake. Billed monthly until you cancel.'
+          : plan.description) + '</span>\n';
     } else if (plan.kind === 'once') {
       out += '<span class="en-card-t">' + escapeHtml(plan.label) + '</span>\n';
       out += '<span class="prog-price">' + dollars(plan.cents) + '<small>60 minutes</small></span>\n';

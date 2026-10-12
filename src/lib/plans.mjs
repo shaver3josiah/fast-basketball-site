@@ -67,6 +67,21 @@ export const PLANS = {
     frequency: 'three times a week', kind: 'recurring',
     totals: { monthly: 75000 }
   },
+  // 12 October 2026: prepaid once-a-week terms, $900 / $1,800 (Blake: 3 month $900, 6 month $1800,
+  // which is $300 a month with no prepay discount). kind 'term' is a one-off payment for a
+  // fixed stretch of weekly sessions. It has `termMonths`, NOT `months`/`noticeDays`: those mean
+  // "auto-renews unless cancelled in writing" to the webhook's welcome email, and a prepaid
+  // term ends by itself. Not kind 'membership' either, or it would stretch the group price range.
+  'individual-3m': {
+    label: 'Individual Training, 3 months, once a week', program: 'individual',
+    frequency: 'once a week', termMonths: 3, kind: 'term',
+    totals: { full: 90000 }
+  },
+  'individual-6m': {
+    label: 'Individual Training, 6 months, once a week', program: 'individual',
+    frequency: 'once a week', termMonths: 6, kind: 'term',
+    totals: { full: 180000 }
+  },
   'group-3m-1x': {
     label: 'Group Training Membership, 3 months, once a week', program: 'group',
     frequency: 'once a week',
@@ -319,6 +334,15 @@ export function checkoutSpec(planKey, pay) {
       ...base,
       description: plan.label + '. Billed monthly until cancelled.',
       mode: 'subscription', amountCents: plan.totals.monthly, interval: 'month', iterations: null, endBehavior: null
+    };
+  }
+
+  if (plan.kind === 'term') {
+    const total = plan.totals.full;
+    return {
+      ...base, metadata: { ...base.metadata, totalCents: String(total) },
+      description: plan.label + '. Paid in full.',
+      mode: 'payment', amountCents: total, interval: null, iterations: null, endBehavior: null
     };
   }
 

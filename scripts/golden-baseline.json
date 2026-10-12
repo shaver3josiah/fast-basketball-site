@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-10-08T00:45:31.510Z",
+  "recorded": "2026-10-12T15:46:19.777Z",
   "files": {
     "0ec211c90d82b90b7b470eb6889ce903.txt": {
       "sha": "c6d3306e64b68843",
@@ -46,8 +46,8 @@
       "bytes": 5578
     },
     "admin/plans.js": {
-      "sha": "bcefe137b6788ff3",
-      "bytes": 4360
+      "sha": "3c57424bc7077695",
+      "bytes": 5131
     },
     "admin/schema.js": {
       "sha": "9a39048d3146bce2",
@@ -150,16 +150,16 @@
       "bytes": 136466
     },
     "enroll/index.html": {
-      "sha": "ac624bbbc526db6f",
-      "bytes": 26869
+      "sha": "eadfb8680e5cfcfe",
+      "bytes": 27619
     },
     "enroll/thanks/index.html": {
       "sha": "bb13cc61c4d17c0e",
       "bytes": 7888
     },
     "index.html": {
-      "sha": "e0ebbac0bce45b58",
-      "bytes": 115871
+      "sha": "180d760380091a50",
+      "bytes": 116288
     },
     "js/appbuy.js": {
       "sha": "f62cdc3d07dc4e16",
@@ -226,7 +226,7 @@
       "bytes": 181169
     },
     "sitemap.xml": {
-      "sha": "92ae391f79138a8c",
+      "sha": "457cac7e7a074a29",
       "bytes": 1791
     },
     "styles/base.css": {
@@ -262,8 +262,8 @@
       "bytes": 3866
     },
     "terms/index.html": {
-      "sha": "8e4b7ed879c92992",
-      "bytes": 21953
+      "sha": "7fa892e2a1b35410",
+      "bytes": 22049
     },
     "training/evaluation/index.html": {
       "sha": "bbd10dbde6c38319",
@@ -274,8 +274,8 @@
       "bytes": 11888
     },
     "training/private/index.html": {
-      "sha": "5e75a966d324d4f4",
-      "bytes": 11488
+      "sha": "00aa83fecba2510e",
+      "bytes": 11564
     }
   }
 }

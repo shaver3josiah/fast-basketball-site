@@ -5,7 +5,7 @@ import { PLANS, APP_PLANS, isAppPlan, leadKey, instalmentsIn, catalog, checkoutS
 
 // Counted rather than derived, on purpose: the point of the pin is that the catalog did not
 // change size by accident, and a count taken from the catalog itself can never notice that.
-const TRAINING_SPECS = 12; // 2 evaluations, 4 individual, 4 memberships, and monthly on the two once-a-week terms
+const TRAINING_SPECS = 14; // 2 evaluations, 6 individual, 4 memberships, and monthly on the two once-a-week terms
 const APP_SPECS = 10;      // 2 tools x (pay in full + four payment plans)
 
 test('catalog is 22 specs with unique lookup keys and whole-cent amounts', () => {
@@ -182,6 +182,24 @@ test('individual training: $100 a session, or $300 / $550 / $750 a month until c
     assert.equal(spec.iterations, null, key + ' has no term');
     assert.equal(spec.page, '/enroll');
   }
+});
+
+test('individual terms: $900 for 3 months, $1,800 for 6, one payment, no renewal metadata', () => {
+  for (const [key, cents, months] of [['individual-3m', 90000, 3], ['individual-6m', 180000, 6]]) {
+    assert.deepEqual(payOptionsFor(key), ['full'], key);
+    assert.throws(() => checkoutSpec(key, 'monthly'), key + ' has no monthly');
+    const spec = checkoutSpec(key, 'full');
+    assert.equal(spec.amountCents, cents);
+    assert.equal(spec.mode, 'payment');
+    assert.equal(spec.iterations, null);
+    assert.equal(PLANS[key].termMonths, months);
+    // months/noticeDays would make the welcome email promise an auto-renewal that does not exist.
+    assert.equal(Object.hasOwn(spec.metadata, 'months'), false);
+    assert.equal(Object.hasOwn(spec.metadata, 'noticeDays'), false);
+  }
+  // Same $300 a month as the weekly plan, no prepay discount.
+  assert.equal(PLANS['individual-3m'].totals.full, 3 * PLANS['individual-1x'].totals.monthly);
+  assert.equal(PLANS['individual-6m'].totals.full, 6 * PLANS['individual-1x'].totals.monthly);
 });
 
 test('every training plan names its program, and only three exist', () => {
