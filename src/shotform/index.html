@@ -111,6 +111,8 @@ button{cursor:pointer;-webkit-tap-highlight-color:transparent}
 #lockPill.on{color:var(--bone);border-color:var(--red)}
 .empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:52px 24px 24px;color:var(--dim)}
 .empty p{max-width:34ch;font-size:1rem}
+.emptylist{list-style:none;display:grid;gap:6px;justify-items:center;font-size:1rem}
+.emptylist li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:9px;vertical-align:.2em}
 .empty b{display:block;font:400 clamp(1.4rem,4.5vw,2.2rem)/1 var(--display);color:var(--bone);letter-spacing:.01em;margin-bottom:10px;text-wrap:balance}
 .stage[data-mode="camera"] .empty,.stage[data-mode="clip"] .empty{display:none}
 /* live numbers: a quiet rail, never competing with the state overlay */
@@ -270,6 +272,85 @@ input[type=text]{width:150px}
   .stage{grid-row:1/3}
 }
 @media(prefers-reduced-motion:reduce){.cue.flash,.card{animation:none}.btn{transition:none}}
+
+/* how it works: one button in the bar, icon only where the bar is tight */
+.tourbtn{display:inline-flex;align-items:center;gap:7px;flex:none}
+.tourbtn svg{width:18px;height:18px;flex:none}
+.top .tourbtn+.ghosty{margin-left:0}
+@media(max-width:460px){.top h1 small{display:none}}  /* the rule near the top loses to .top h1 small{display:block} below it */
+@media(max-width:410px){.top .mark{display:none}}   /* a phone bar holds the title, two buttons and the status; the decorative mark goes first */
+@media(max-width:520px){.tourbtn span{display:none}.tourbtn{width:44px;padding:0!important;justify-content:center}}
+.linkbtn{background:none;border:0;color:var(--bone);font:600 1rem var(--sans);text-decoration:underline;text-underline-offset:3px;min-height:44px;padding:0 6px;cursor:pointer;pointer-events:auto}
+.empty .linkbtn{margin-top:10px}
+/* "Line up" sits beside Full screen and only exists while the camera is on */
+.alignbtn{right:auto;left:10px}
+.stage[data-mode="off"] .alignbtn,.stage[data-mode="clip"] .alignbtn{display:none}
+
+/* the ball gate: one icon, one line, read from across the room */
+.ballgate{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;padding:24px;text-align:center;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(10,10,12,.62),rgba(10,10,12,.2) 72%)}
+.ballgate[data-state="none"]{display:none}
+.ballgate.found{display:grid;animation:bgOut .7s var(--rush) both}
+.ballgate.found .bg-body circle{stroke:#3BE08E}
+@keyframes bgOut{0%{opacity:1}100%{opacity:0;transform:scale(1.08)}}
+.bg-ball{width:clamp(84px,18vw,132px);height:auto;color:rgba(255,255,255,.55);overflow:visible}
+.bg-ring{transform-origin:60px 60px;animation:bgSpin 6s linear infinite}
+.bg-body{transform-origin:60px 60px;animation:bgBob 1.6s var(--rush) infinite alternate}
+.bg-q{display:none;transform-origin:94px 26px}
+.ballgate[data-state="lost"] .bg-q{display:block;animation:bgPop .5s var(--rush) both}
+.ballgate[data-state="lost"] .bg-body{animation:bgTilt 1.4s ease-in-out infinite}
+.ballgate b{font:400 clamp(1.4rem,5vw,2.4rem)/1.02 var(--display);color:var(--bone);letter-spacing:.01em;max-width:18ch;text-wrap:balance;text-shadow:0 4px 24px rgba(0,0,0,.85)}
+.ballgate span{font:600 .88rem/1.2 var(--cond);letter-spacing:.2em;text-transform:uppercase;color:var(--lede);text-shadow:0 2px 12px rgba(0,0,0,.9)}
+.ballgate[data-state="lost"] span{color:var(--red-hot)}
+@keyframes bgSpin{to{transform:rotate(360deg)}}
+@keyframes bgBob{from{transform:translateY(4px)}to{transform:translateY(-4px)}}
+@keyframes bgTilt{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+@keyframes bgPop{from{transform:scale(0)}70%{transform:scale(1.15)}to{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){.bg-ring,.bg-body,.ballgate[data-state="lost"] .bg-body,.ballgate[data-state="lost"] .bg-q,.ballgate.found{animation:none}}
+
+/* the walkthrough */
+.tour{margin:auto;width:min(520px,calc(100vw - 24px));max-height:calc(100dvh - 24px);background:var(--ink);color:var(--body);
+  border:1px solid var(--line-2);border-radius:18px;padding:0;overflow:auto;overscroll-behavior:contain}
+.tour::backdrop{background:rgba(10,10,12,.78)}
+.tour[open]{animation:tourIn .42s var(--rush) both}
+@keyframes tourIn{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.tour-head{display:flex;align-items:center;gap:12px;padding:14px 14px 0 18px}
+.tour-dots{display:flex;gap:6px;flex:1}
+.tour-dots i{height:4px;flex:1;border-radius:4px;background:var(--line-2);transition:background .4s var(--rush)}
+.tour-dots i.on{background:var(--red)}
+.tour-x{min-height:44px;padding:0 14px;font-size:.72rem}
+.tour-art{position:relative;margin:14px 18px 0;border-radius:12px;background:var(--black);border:1px solid var(--line);overflow:hidden;aspect-ratio:16/10}
+.tour-art svg,.tour-art canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.tour-art canvas{touch-action:none;cursor:grab}
+.tour-art canvas:active{cursor:grabbing}
+.tour-body{padding:16px 18px 6px;text-align:center}
+.tour-body ul{list-style:none;display:grid;gap:7px;justify-items:center;color:var(--lede)}
+.tour-body li{max-width:36ch;text-wrap:balance}
+.tour-body li::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);margin-right:9px;vertical-align:.2em}
+.tour-ctl[hidden]{display:none}
+.tour-body h2{font:400 clamp(1.5rem,6vw,2rem)/1.02 var(--display);color:var(--bone);letter-spacing:.01em;text-wrap:balance;margin:0 auto 10px;max-width:20ch}
+.tour-step{font:700 .72rem/1 var(--cond);letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.tour-ctl{display:grid;gap:4px;margin-top:12px}
+.tour-ctl label{display:grid;grid-template-columns:76px minmax(0,1fr);text-align:left;align-items:center;gap:10px;font:700 .72rem/1 var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);min-height:44px}
+.tour-ctl input[type=range]{width:100%;accent-color:var(--red);min-height:44px}
+.tour-got{font:600 .88rem/1.3 var(--cond);letter-spacing:.14em;text-transform:uppercase;color:var(--dim);min-height:1.3em;margin-top:6px}
+.tour-got.yes{color:#3BE08E}
+.tour-foot{display:flex;gap:10px;padding:14px 18px calc(18px + env(safe-area-inset-bottom))}
+.tour-foot .btn{flex:1}
+.tour-foot .btn[hidden]{display:none}
+/* step art: the phone pulses on the sideline, the ball bounces, the count lands */
+.t-pulse{animation:tPulse 1.6s var(--rush) infinite;transform-origin:center;transform-box:fill-box}
+@keyframes tPulse{0%{opacity:.25;transform:scale(.6)}60%{opacity:0;transform:scale(2.2)}100%{opacity:0}}
+.t-ball{animation:tDribble .9s cubic-bezier(.5,0,.5,1) infinite alternate;transform-box:fill-box}
+@keyframes tDribble{from{transform:translateY(-70px)}to{transform:translateY(0)}}
+.t-squash{animation:tSquash .9s cubic-bezier(.5,0,.5,1) infinite alternate;transform-origin:center bottom;transform-box:fill-box}
+@keyframes tSquash{0%,80%{transform:scale(1)}100%{transform:scale(1.18,.86)}}
+.t-count text{opacity:0;animation:tCount 4s steps(1,end) infinite}
+.t-count text:nth-child(2){animation-delay:1s}.t-count text:nth-child(3){animation-delay:2s}.t-count text:nth-child(4){animation-delay:3s}
+@keyframes tCount{0%{opacity:1}25%{opacity:0}100%{opacity:0}}
+.t-go{animation:tGo 4s linear 3s infinite}
+@keyframes tGo{0%,2%{opacity:.55}14%,100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.tour[open],.t-pulse,.t-ball,.t-squash,.t-go{animation:none}.t-count text{animation:none;opacity:0}.t-count text:first-child{opacity:1}}
 </style>
 <body>
 <div class="app">
@@ -277,6 +358,9 @@ input[type=text]{width:150px}
 <header class="top">
   <svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#fbIcon"/></svg>
   <h1>Shot Form<small>Fast Basketball</small></h1>
+  <button class="btn ghosty tourbtn" id="tourBtn" type="button" aria-label="How it works" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M9.4 9.3a2.7 2.7 0 0 1 5.2 1c0 1.8-2.6 2.3-2.6 3.9"/><path d="M12 17.3v.01"/></svg>
+    <span>How it works</span></button>
   <button class="btn ghosty" id="formBtn" type="button" aria-expanded="false" aria-controls="formPanel">Ideal form</button>
   <div class="status" id="status">Camera off</div>
 </header>
@@ -286,18 +370,20 @@ input[type=text]{width:150px}
     <h2>Ideal form</h2>
     <button class="btn" id="formClose" type="button">Done</button>
   </div>
-  <p class="muted">Every range below is what a rep is graded against. <b>It starts in youth mode</b>, because the
-  published ranges come from studies of proficient adults and a growing athlete graded against those fails on nearly
-  every rep. Each row names where its range came from; the ones marked <b>coaching cue</b> have no published range at
+  <p class="muted">Every range below is what a rep is graded against. <b>It starts on Coach Kingsley's bands</b>: knees
+  slightly bent at the dip, 145 to 160 degrees, and the elbow loaded at ninety, 80 to 100, with the softer youth bands
+  everywhere else, because the published ranges come from studies of proficient adults and a growing athlete graded
+  against those fails on nearly every rep. Each row names where its range came from; the ones marked <b>coaching cue</b> have no published range at
   all. Change any of them and the row says <b>coach set</b>, because it is then your number and not the paper's.</p>
   <div class="tools" style="margin:14px 0">
     <label>Preset <select id="formPreset" aria-label="Form preset">
+      <option value="coach">Coach Kingsley</option>
       <option value="youth">Youth, softer bands</option>
       <option value="">Published, adult proficient</option>
       <option value="strict">Strict, tighter bands</option>
       <option value="custom" hidden>Custom</option>
     </select></label>
-    <button class="btn" id="formReset" type="button">Back to youth</button>
+    <button class="btn" id="formReset" type="button">Back to Coach Kingsley</button>
   </div>
   <div class="refbox">
     <h3>Set it from a photo</h3>
@@ -325,7 +411,13 @@ input[type=text]{width:150px}
     <canvas id="overlay"></canvas>
     <div class="empty" id="emptyStage">
       <div><b>Side view, 15 feet, floor along the bottom edge.</b>
-      <p>Phone on the sideline square to the shooter, chest height, then press Start. The screen flashes green and sounds a note when the shooter is in position. Turn Voice on if you want the corrections read out too.</p></div>
+      <ul class="emptylist">
+        <li>Phone on the sideline, chest height, then Start</li>
+        <li>Show the ball to the camera</li>
+        <li>Walk back into the stick figure</li>
+        <li>Green flash and a note: shoot</li>
+      </ul>
+      <button class="linkbtn" id="tourLink" type="button">New here? The 30 second walkthrough</button></div>
     </div>
     <div class="pill" id="phasePill">Setting up</div>
     <div class="pill" id="lockPill">Ball: not set</div>
@@ -347,9 +439,84 @@ input[type=text]{width:150px}
     <button class="fsbtn" id="fsBtn" type="button" aria-pressed="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg>
       <span id="fsLabel">Full screen</span></button>
+    <button class="fsbtn alignbtn" id="alignBtn" type="button" aria-pressed="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><path d="M12 6.5v7M12 13.5l-2.5 7M12 13.5l2.5 7M12 9l4 1.5"/><path d="M4 21h16" stroke-dasharray="2 3"/></svg>
+      <span id="alignLabel">Skip line up</span></button>
+    <!-- The ball gate: shown before the session starts, and again whenever the ball is lost. -->
+    <div class="ballgate" id="ballGate" data-state="none" aria-live="polite">
+      <svg class="bg-ball" viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="bg-ring" cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 7"/>
+        <g class="bg-body"><circle cx="60" cy="60" r="40" fill="rgba(255,255,255,.07)" stroke="#fff" stroke-width="4"/>
+          <path d="M20 60h80M60 20v80M32 32c12 12 12 44 0 56M88 32c-12 12-12 44 0 56" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g>
+        <g class="bg-q"><circle cx="94" cy="26" r="19" fill="#E60C20"/><text x="94" y="35" text-anchor="middle" font-family="Anton,Impact,sans-serif" font-size="26" fill="#fff">?</text></g>
+      </svg>
+      <b id="bgMain">Show the ball to the camera</b>
+      <span id="bgSub">Hold it up in both hands, facing the phone</span>
+    </div>
     <div class="tapnote" id="tapNote">Bounce the ball a few times where the camera can see it.</div>
   </div>
   <div class="goflash" id="goFlash" aria-hidden="true"></div>
+
+  <!-- The walkthrough: four steps, the second one hands-on. Opens itself once per device, and from the ? button. -->
+  <dialog class="tour" id="tour" aria-labelledby="tourTitle">
+    <div class="tour-head">
+      <div class="tour-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <button class="btn tour-x" id="tourSkip" type="button">Skip</button>
+    </div>
+    <div class="tour-art" id="tourArt">
+      <svg data-step="0" viewBox="0 0 320 200" aria-hidden="true">
+        <rect width="320" height="200" fill="#0A0A0C"/>
+        <rect x="24" y="22" width="272" height="128" fill="none" stroke="#2A2A34" stroke-width="2"/>
+        <rect x="196" y="50" width="100" height="72" fill="none" stroke="#2A2A34" stroke-width="2"/>
+        <line x1="296" y1="70" x2="296" y2="102" stroke="#F5F3EF" stroke-width="3"/>
+        <circle cx="287" cy="86" r="5" fill="none" stroke="#E60C20" stroke-width="2.5"/>
+        <circle cx="196" cy="86" r="7" fill="#F5F3EF"/>
+        <line x1="204" y1="86" x2="276" y2="86" stroke="#E60C20" stroke-width="2" stroke-dasharray="4 4"/>
+        <line x1="196" y1="95" x2="196" y2="168" stroke="#9C9CA9" stroke-width="1.5" stroke-dasharray="3 4"/>
+        <path d="M196 176 L168 150 M196 176 L224 150" stroke="#E60C20" stroke-width="1.5" fill="none"/>
+        <circle class="t-pulse" cx="196" cy="178" r="9" fill="none" stroke="#E60C20" stroke-width="2"/>
+        <rect x="186" y="171" width="20" height="13" rx="2.5" fill="#E60C20"/>
+        <text x="215" y="140" fill="#C9C9D2" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-size="12" font-weight="700" letter-spacing="1">15 FT</text>
+        <text x="196" y="72" fill="#C9C9D2" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-size="11" font-weight="700" text-anchor="middle" letter-spacing="1">SHOOTER</text>
+        <text x="100" y="186" fill="#F5F3EF" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-size="12" font-weight="700" text-anchor="middle" letter-spacing="1">PHONE ON THE SIDELINE</text>
+      </svg>
+      <canvas data-step="2" id="tourCv" role="img" aria-label="A dashed stick figure in side profile and your figure in red. Drag your figure, or use the sliders below, until it fills the outline."></canvas>
+      <svg data-step="1" viewBox="0 0 320 200" aria-hidden="true">
+        <rect width="320" height="200" fill="#0A0A0C"/>
+        <line x1="40" y1="178" x2="280" y2="178" stroke="#2A2A34" stroke-width="2"/>
+        <g stroke="#E60C20" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          <circle cx="160" cy="44" r="12"/><path d="M160 56v58M160 114l-12 62M160 114l12 62M160 70l-22 18 6 -4M160 70l22 18 -6 -4"/>
+        </g>
+        <circle class="t-pulse" cx="160" cy="94" r="22" fill="none" stroke="#3BE08E" stroke-width="2"/>
+        <circle cx="160" cy="94" r="15" fill="#3BAAF5"/>
+        <path d="M145 94h30M160 79v30" stroke="#0A0A0C" stroke-width="1.6"/>
+        <text x="252" y="80" fill="#F5F3EF" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-size="13" font-weight="700" text-anchor="middle" letter-spacing="1.5">HOLD IT UP</text>
+        <text x="252" y="98" fill="#9C9CA9" font-family="Barlow Condensed,Arial Narrow,sans-serif" font-size="12" font-weight="700" text-anchor="middle" letter-spacing="1.5">ANY COLOUR</text>
+      </svg>
+      <svg data-step="3" viewBox="0 0 320 200" aria-hidden="true">
+        <rect width="320" height="200" fill="#0A0A0C"/>
+        <rect class="t-go" width="320" height="200" fill="#12C46B" opacity="0"/>
+        <g class="t-count" font-family="Bebas Neue,Impact,sans-serif" font-size="110" text-anchor="middle">
+          <text x="160" y="140" fill="#FF3A41">3</text><text x="160" y="140" fill="#FF3A41">2</text><text x="160" y="140" fill="#FF3A41">1</text>
+          <text x="160" y="132" fill="#FF3A41" font-family="Anton,Impact,sans-serif" font-size="70">SHOOT</text>
+        </g>
+      </svg>
+    </div>
+    <div class="tour-body" aria-live="polite">
+      <p class="tour-step" id="tourStep">Step 1 of 4</p>
+      <h2 id="tourTitle"></h2>
+      <ul id="tourText"></ul>
+      <div class="tour-ctl" id="tourCtl" hidden>
+        <label>Distance <input type="range" id="tourDist" min="40" max="150" value="62" aria-label="Your distance from the phone: left is farther away, right is closer"></label>
+        <label>Slide <input type="range" id="tourSlide" min="10" max="90" value="22" aria-label="Your position across the picture"></label>
+        <p class="tour-got" id="tourGot">Drag yourself into the outline</p>
+      </div>
+    </div>
+    <div class="tour-foot">
+      <button class="btn" id="tourBack" type="button">Back</button>
+      <button class="btn primary" id="tourNext" type="button">Next</button>
+    </div>
+  </dialog>
 
   <div class="cue" id="cueBand" aria-live="polite">
     <b id="cueMain">Set the camera up first.</b>
@@ -621,23 +788,37 @@ class BallFinder {
   }
   // teach colour and size from a learned bounce
   learn({ r, rn, gn }) { this.model = { rn, gn, tol: 0.06, minSum: 90 }; this.rExp = r; this.taught = true; return { ok: true, r }; }
-  // teach colour and size from a tap at (x,y) in detector pixels
-  calibrate(img, x, y) {
-    const { w, h } = this, d = img.data, i0 = (Math.round(y) * w + Math.round(x));
-    const r = d[i0 * 4], g = d[i0 * 4 + 1], b = d[i0 * 4 + 2], s = r + g + b || 1;
-    const seed = { rn: r / s, gn: g / s };
-    const comp = this.floodFrom(img, i0, seed, 0.06, 100);
-    if (!comp || comp.area < 12) return { ok: false, why: 'Nothing ball-sized under that tap' };
+  // Is there a ball-shaped patch of one colour at (x,y), detector pixels? ANY colour: a ball shown to the camera
+  // or tapped on the picture teaches its own colour, so a green ball or a tennis ball works as well as an orange
+  // one. Only a near-grey patch is refused, because colour is all this finder has and grey is the gym itself.
+  // Changes nothing; calibrate() and the page's show-the-ball step decide what to keep.
+  probe(img, x, y) {
+    const { w, h } = this, d = img.data, xi = Math.round(x), yi = Math.round(y);
+    if (xi < 1 || yi < 1 || xi >= w - 1 || yi >= h - 1) return { ok: false, why: 'Off the edge of the picture' };
+    let r = 0, g = 0, b = 0;   // a 3x3 seed, so one noisy pixel cannot pick the colour
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const i = ((yi + dy) * w + xi + dx) * 4; r += d[i]; g += d[i + 1]; b += d[i + 2]; }
+    const s = r + g + b || 1, seed = { rn: r / s, gn: g / s, any: true };
+    if (Math.abs(seed.rn - 1 / 3) + Math.abs(seed.gn - 1 / 3) < 0.05) return { ok: false, why: 'That is too close to grey to follow by colour' };
+    const comp = this.floodFrom(img, (yi * w + xi), seed, 0.06, 60);
+    if (!comp || comp.area < 12) return { ok: false, why: 'Nothing ball-sized there' };
+    const fill = comp.area / (comp.bw * comp.bh), aspect = comp.bw / comp.bh;
+    if (fill < 0.45 || aspect < 0.55 || aspect > 1.8 || comp.bw > w * 0.45) return { ok: false, why: 'That is not round like a ball' };
     const rad = Math.max(comp.bw, comp.bh) / 2;   // the box survives a hand over part of the ball; the area does not
     if (rad < 2.5) return { ok: false, why: 'Too small to track. Move the camera closer' };
-    this.model = { rn: comp.rn, gn: comp.gn, tol: 0.055, minSum: Math.max(60, comp.sum * 0.45) };
-    this.rExp = rad; this.taught = true;
-    return { ok: true, r: rad, x: comp.cx, y: comp.cy };
+    return { ok: true, r: rad, x: comp.cx, y: comp.cy, rn: comp.rn, gn: comp.gn, sum: comp.sum, fill };
+  }
+  teach(p, rExp = p.r, tol = 0.055) { this.model = { rn: p.rn, gn: p.gn, tol, minSum: Math.max(60, p.sum * 0.45), any: true }; this.rExp = rExp; this.taught = true; }
+  // teach colour and size from a tap at (x,y) in detector pixels
+  calibrate(img, x, y) {
+    const p = this.probe(img, x, y);
+    if (!p.ok) return { ok: false, why: p.why === 'Nothing ball-sized there' ? 'Nothing ball-sized under that tap' : p.why };
+    this.teach(p);
+    return { ok: true, r: p.r, x: p.x, y: p.y };
   }
   floodFrom(img, i0, m, tol, minSum) {
     const { w, h, lab, stack } = this, d = img.data; lab.fill(0);
     const pass = i => { const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2], s = r + g + b;
-      return s >= minSum && r > g && g > b * 0.9 && Math.abs(r / s - m.rn) < tol && Math.abs(g / s - m.gn) < tol; };
+      return s >= minSum && (m.any || (r > g && g > b * 0.9)) && Math.abs(r / s - m.rn) < tol && Math.abs(g / s - m.gn) < tol; };
     if (!pass(i0)) return null;
     let sp = 0, area = 0, sx = 0, sy = 0, srn = 0, sgn = 0, ssum = 0, bx0 = w, bx1 = 0, by0 = h, by1 = 0; stack[sp++] = i0; lab[i0] = 1;
     while (sp) { const i = stack[--sp]; const x = i % w, y = (i - x) / w; area++; sx += x; sy += y; if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y;
@@ -659,7 +840,7 @@ class BallFinder {
     if (x1 <= x0 || y1 <= y0) return null;
     // 1. mask
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) { const i = y * w + x, r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2], s = r + g + b;
-      mask[i] = (s >= model.minSum && r > g && g > b * 0.9 && Math.abs(r / s - model.rn) < model.tol && Math.abs(g / s - model.gn) < model.tol) ? 1 : 0; }
+      mask[i] = (s >= model.minSum && (model.any || (r > g && g > b * 0.9)) && Math.abs(r / s - model.rn) < model.tol && Math.abs(g / s - model.gn) < model.tol) ? 1 : 0; }
     // 2. components
     let best = null, label = 0;
     const rExp = this.rExp, areaExp = rExp ? Math.PI * rExp * rExp : null;
@@ -1314,6 +1495,10 @@ const MODEL_URLS = {
   lite: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
   full: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',
 };
+// The ball detector: Google's EfficientDet-Lite0, trained on COCO, whose classes include "sports ball" (basketballs,
+// tennis balls, footballs alike). It is the same tasks-vision library as the pose model, so it costs one more file,
+// 4.6 MB int8, and it only runs while the page is asking to be shown the ball.
+const BALL_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/int8/1/efficientdet_lite0.tflite';
 const SOURCES = [
   ['Cabarkapa et al. 2021, Key kinematic components for optimal free throw shooting, CEJSSM', 'https://doi.org/10.18276/cej.2021.4-01'],
   ['Cabarkapa et al. 2023, Biomechanical characteristics of proficient free-throw shooters, Front Sports Act Living', 'https://doi.org/10.3389/fspor.2023.1208915'],
@@ -1325,6 +1510,7 @@ const SOURCES = [
   ['Penner 2021, The dip increases the accuracy of elite shooters, Front Psychol', 'https://pmc.ncbi.nlm.nih.gov/articles/PMC8273237/'],
   ['Okazaki, Rodacki & Satern 2015, A review on the basketball jump shot, Sports Biomechanics', 'https://doi.org/10.1080/14763141.2015.1052541'],
   ['MediaPipe Pose Landmarker, Apache-2.0', 'https://github.com/google-ai-edge/mediapipe'],
+  ['MediaPipe Object Detector, EfficientDet-Lite0 on COCO ("sports ball"), Apache-2.0', 'https://developers.google.com/edge/mediapipe/solutions/vision/object_detector/web_js'],
 ];
 $('sources').innerHTML = 'Sources: ' + SOURCES.map(([t, u]) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`).join(' · ');
 
@@ -1358,8 +1544,9 @@ async function loadModel() {
   status('Loading model', 'busy'); check('ckModel', 'watch', 'loading, about 6 MB');
   const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('The model did not load in 40 s. Check the internet connection and try again.')), 40000));
   try {
-    const { FilesetResolver, PoseLandmarker } = await Promise.race([import(MP_CDN), timeout]);
-    const vision = await Promise.race([FilesetResolver.forVisionTasks(MP_CDN + '/wasm'), timeout]);
+    const mod = await Promise.race([import(MP_CDN), timeout]), { FilesetResolver, PoseLandmarker } = mod;
+    const vision = st.vision || await Promise.race([FilesetResolver.forVisionTasks(MP_CDN + '/wasm'), timeout]);
+    st.mp = mod; st.vision = vision;
     const name = $('modelSel').value, model = MODEL_URLS[name] || MODEL_URLS.lite;
     const make = delegate => Promise.race([PoseLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: model, delegate }, runningMode: 'VIDEO', numPoses: 1, minPoseDetectionConfidence: 0.5, minTrackingConfidence: 0.5 }), timeout]);
     // headless test rigs have no real GPU; a delegate that keeps throwing mid-run is also sent to the CPU
@@ -1395,7 +1582,7 @@ function stopSource() {
 }
 function stopAll() {
   stopSource(); loopToken++; clearInterval(watchdog); st.lastImg = null; st.lastBall = null; st.cueHoldUntil = 0; if (wake) { wake.release().catch(() => {}); wake = null; }
-  octx.clearRect(0, 0, overlay.width, overlay.height); lastSetupCue = '';
+  resetView(); octx.clearRect(0, 0, overlay.width, overlay.height); lastSetupCue = ''; pendingCue = ''; guide.on = false; guide.lockedAt = 0; syncAlignBtn(); setBallGate('none'); st.trail = null;
   stopCount(); stageState('none'); $('liveStats').hidden = true; readySince = 0; st.learn = null;
   st.tap = false; stage.classList.remove('tap'); $('tapBtn').classList.remove('on');
   $('lockPill').textContent = st.finder && st.finder.taught ? 'Ball: found' : 'Ball: not set'; $('lockPill').classList.remove('on');
@@ -1422,10 +1609,13 @@ $('clipInput').onchange = async e => {
   catch (err) { console.error(err); stopAll(); status('Failed'); cue('Could not play that clip.', err.message || String(err)); }
   e.target.value = '';
 };
-$('camSel').onchange = async () => { forgetBall(''); if (st.mode === 'camera') { try { await startCamera(); cue('Find the ball again.', 'This lens sees it at a different size'); } catch (e) { cue('Could not switch camera.', e.message); } } };
+$('camSel').onchange = async () => { forgetBall(''); if (st.mode === 'camera') { try { await startCamera(); cue('Show the ball to the camera again.', 'This lens sees it at a different size'); } catch (e) { cue('Could not switch camera.', e.message); } } };
 function afterStart() {
   status(st.mode === 'clip' ? 'Clip' : 'Live', 'on'); $('startBtn').lastChild.textContent = ' Stop'; $('tapBtn').disabled = false;
   cue('Step into frame.', 'Whole body visible, side on, ball in hand');
+  // camera: show the ball first, then walk back into the figure. A clip is already framed and keeps Find the ball.
+  if (st.mode === 'camera' && !st.finder?.taught) { setGuide(false); setBallGate('show'); cue('Show the ball to the camera.', 'Hold it up in both hands, facing the phone'); }
+  else setGuide(st.mode === 'camera');
   $('liveStats').hidden = false; armed = true; readySince = 0;
   keepAwake();
 }
@@ -1437,9 +1627,10 @@ async function keepAwake() { try { if (!wake && navigator.wakeLock) { wake = awa
 // A ball taught on one lens is the wrong size on another, so a new source starts untaught. Only a resize or a
 // rotation of the SAME source carries the teaching across, which is what build() is called for on video.onresize.
 function forgetBall(why) {
-  if (st.finder) { st.finder.taught = false; st.finder.rExp = null; }
+  if (st.finder) { st.finder.taught = false; st.finder.rExp = null; st.finder.auto = false; }
   if (st.machine) st.machine.ppmBall = null;
-  if (why) { cue('Find the ball again.', why); }
+  if (st.mode === 'camera') { setGuide(false); setBallGate('show'); }
+  if (why) { cue('Show the ball to the camera again.', why); }
 }
 function build() {
   const W = video.videoWidth || 1280, H = video.videoHeight || 720;
@@ -1492,11 +1683,19 @@ function onFrame(t) {
   // costs an allocation every frame. So read and search only when it can matter.
   const k = det.width / W, ppmV = st.machine.ppm;
   const hintV = st.machine.ballHint(ppmV);
-  const hint = hintV ? { x: hintV.x * k, y: hintV.y * k, radius: hintV.radius * k } : null;
+  let hint = hintV ? { x: hintV.x * k, y: hintV.y * k, radius: hintV.radius * k } : null;
+  // A ball that was shown to the camera is in the athlete's hands until the shot. While nothing is happening, look
+  // there and only there: measured on an arena photo, a whole-frame search for an orange ball found the orange
+  // scoreboard lights first. Once the rep starts the machine's own hint follows the ball in flight.
+  if (!hint && st.finder.auto && st.machine.state === 'idle' && lm) {
+    const hs = handsOf(lm), torso = torsoOf(lm);
+    if (hs.length && torso) hint = { x: hs.reduce((a, h) => a + h.x, 0) / hs.length * k, y: hs.reduce((a, h) => a + h.y, 0) / hs.length * k, radius: torso * 0.9 * k };
+  }
   const behind = st.frameCost > 1.4 * (st.budgetMs || 33);
   const scan = (st.finder.taught || lm) && !behind && (hint || st.machine.state !== 'idle' || st.frames % 3 === 0);
   let ball = null;
-  if (scan || st.tap) {
+  const showing = ballGate.state !== 'none';
+  if (scan || st.tap || showing) {
     dctx.drawImage(video, 0, 0, det.width, det.height);
     st.lastImg = dctx.getImageData(0, 0, det.width, det.height);
     if (scan || st.learn) { const b = st.finder.find(st.lastImg, st.learn ? null : hint); if (b) ball = { x: b.x / k, y: b.y / k, r: b.r / k }; }
@@ -1507,8 +1706,10 @@ function onFrame(t) {
       if (v) { st.finder.learn(v); ballLearned(v.r / k, 'bounce'); }
       else if (st.learn.elapsed > 12) { stopLearning(); cue('Could not pick the ball out.', 'Tap it on the picture instead, or move somewhere less orange'); say('Tap the ball on the picture instead'); }
     }
+    if (showing && lm) showProbe(lm, k, t);
   }
   st.lastBall = ball;
+  trackBall(ball, lm, scan);
   let shot = null;
   if (lm) shot = st.machine.push({ t, lm, ball, w: W, h: H });
   draw(lm, ball);
@@ -1522,28 +1723,477 @@ function onFrame(t) {
 }
 
 // ---- overlay
+// Detection lands at whatever rate the model manages, 12 to 30 a second on a phone, and each result used to be
+// painted the moment it arrived: the skeleton stepped from pose to pose, a joint whose confidence hovered at the 0.4
+// bar blinked on and off, and one empty frame wiped the whole figure. Now a detection only sets a TARGET. A loop at
+// the display's own rate eases every joint toward it, fades a joint in and out with its confidence (with hysteresis
+// around the old bar), and holds a lost pose for a moment, fading, instead of wiping it. Display only: every
+// measurement still reads the detector's own smoothed landmarks, never these.
+const view = { lm: null, alpha: [], target: null, ball: null, seenAt: 0, lastAt: 0, raf: 0, pill: '' };
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)');
+function resetView() { view.lm = null; view.target = null; view.ball = null; view.alpha = []; cancelAnimationFrame(view.raf); view.raf = 0; }
 function draw(lm, ball) {
-  const c = octx, W = overlay.width, H = overlay.height; c.clearRect(0, 0, W, H);
+  view.ball = ball;
+  if (lm) { view.target = lm; view.seenAt = performance.now(); }
   const m = st.machine;
-  if (lm) {
-    c.lineWidth = Math.max(2, W / 400); c.strokeStyle = '#E60C20'; c.lineCap = 'round';
-    c.beginPath(); for (const [a, b] of BONES) if (lm[a].v > 0.4 && lm[b].v > 0.4) { c.moveTo(lm[a].x, lm[a].y); c.lineTo(lm[b].x, lm[b].y); } c.stroke();
-    const ear = lm[7].v >= lm[8].v ? lm[7] : lm[8]; const r = Math.max(8, dist(ear, lm[0]) * 0.9);
-    c.beginPath(); c.arc(ear.x, ear.y, r, 0, Math.PI * 2); c.stroke();
-    c.beginPath(); c.moveTo(ear.x, ear.y); c.lineTo(lm[0].x, lm[0].y); c.stroke();
-    c.fillStyle = '#fff'; for (const i of [11,12,13,14,15,16,19,20,23,24,25,26,27,28]) if (lm[i].v > 0.4) { c.beginPath(); c.arc(lm[i].x, lm[i].y, Math.max(3, W / 300), 0, Math.PI * 2); c.fill(); }
-    if (m && m.ground != null) { c.strokeStyle = 'rgba(255,255,255,.25)'; c.setLineDash([6, 8]); c.beginPath(); c.moveTo(0, m.ground); c.lineTo(W, m.ground); c.stroke(); c.setLineDash([]); }
-  }
-  if (ball) { c.strokeStyle = '#FF7A18'; c.lineWidth = Math.max(2, W / 400); c.beginPath(); c.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); c.stroke(); }
-  if (m && m.state === 'flight' && m.arc.length > 1) { c.strokeStyle = '#FF7A18'; c.beginPath(); m.arc.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke(); }
   const label = { idle: m && m.ppm ? 'Ready' : 'Setting up', dip: 'Dip', rise: 'Rise', flight: 'Release' }[m ? m.state : 'idle'] || 'Ready';
-  $('phasePill').textContent = st.fps ? `${label} · ${st.fps.toFixed(0)} fps` : label;
+  const pill = st.fps ? `${label} · ${st.fps.toFixed(0)} fps` : label;
+  if (pill !== view.pill) { view.pill = pill; $('phasePill').textContent = pill; }
+  if (performance.now() - view.lastAt > 120) paint();   // no display loop running (a hidden tab or a test pane): paint here
+  if (!view.raf) view.raf = requestAnimationFrame(loopPaint);
 }
+function loopPaint() { view.raf = 0; if (st.mode === 'off') return; paint(); view.raf = requestAnimationFrame(loopPaint); }
+function paint() {
+  const now = performance.now(), dt = Math.min(100, now - (view.lastAt || now)); view.lastAt = now;
+  const c = octx, W = overlay.width, H = overlay.height; c.clearRect(0, 0, W, H);
+  const m = st.machine, lost = now - view.seenAt;
+  if (view.target && lost > 450) { view.target = null; view.lm = null; }   // gone for good, not a dropped frame
+  const tg = view.target;
+  if (tg) {
+    if (!view.lm || view.lm.length !== tg.length) { view.lm = tg.map(p => ({ x: p.x, y: p.y })); view.alpha = tg.map(p => (p.v > 0.4 ? 1 : 0)); }
+    const k = REDUCED.matches ? 1 : 1 - Math.exp(-dt / 45), kv = 1 - Math.exp(-dt / 90), jump = 0.2 * Math.max(W, H);
+    for (let i = 0; i < tg.length; i++) {
+      const p = view.lm[i], q = tg[i];
+      // a jump of a fifth of the frame is a different person or a left/right swap, not motion: snap, never glide across
+      if (Math.abs(q.x - p.x) > jump || Math.abs(q.y - p.y) > jump) { p.x = q.x; p.y = q.y; } else { p.x += (q.x - p.x) * k; p.y += (q.y - p.y) * k; }
+      const want = q.v > 0.5 ? 1 : q.v < 0.3 ? 0 : (view.alpha[i] > 0.5 ? 1 : 0);
+      view.alpha[i] += (want - view.alpha[i]) * kv;
+    }
+  }
+  const fade = tg ? (lost > 150 ? Math.max(0, 1 - (lost - 150) / 300) : 1) : 0;
+  const lm = view.lm, A = view.alpha;
+  if (lm && fade > 0.01) {
+    const lw = Math.max(2, W / 400); c.lineWidth = lw; c.strokeStyle = '#E60C20'; c.lineCap = 'round';
+    for (const [a, b] of BONES) { const al = Math.min(A[a], A[b]) * fade; if (al < 0.03) continue; c.globalAlpha = al; c.beginPath(); c.moveTo(lm[a].x, lm[a].y); c.lineTo(lm[b].x, lm[b].y); c.stroke(); }
+    const ear = A[7] >= A[8] ? 7 : 8, ah = Math.min(A[ear], A[0]) * fade;
+    if (ah > 0.03) { c.globalAlpha = ah; const r = Math.max(8, dist(lm[ear], lm[0]) * 0.9);
+      c.beginPath(); c.arc(lm[ear].x, lm[ear].y, r, 0, Math.PI * 2); c.stroke();
+      c.beginPath(); c.moveTo(lm[ear].x, lm[ear].y); c.lineTo(lm[0].x, lm[0].y); c.stroke(); }
+    c.fillStyle = '#fff'; const jr = Math.max(3, W / 300);
+    for (const i of [11,12,13,14,15,16,19,20,23,24,25,26,27,28]) { const al = A[i] * fade; if (al < 0.03) continue; c.globalAlpha = al; c.beginPath(); c.arc(lm[i].x, lm[i].y, jr, 0, Math.PI * 2); c.fill(); }
+    c.globalAlpha = 1;
+    if (m && m.ground != null && !guide.on) { c.strokeStyle = 'rgba(255,255,255,.25)'; c.setLineDash([6, 8]); c.beginPath(); c.moveTo(0, m.ground); c.lineTo(W, m.ground); c.stroke(); c.setLineDash([]); }
+  }
+  const ball = view.ball;
+  if (ball) { c.strokeStyle = '#FF7A18'; c.lineWidth = Math.max(2, W / 400); c.beginPath(); c.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2); c.stroke(); }
+  if (m && m.state === 'flight' && m.arc.length >= 4 && m.ppm && m.tRel != null) {
+    const fit = fitArc(m.arc, m.tRel, ball ? ball.r : 10, m.ppm);
+    if (fit) st.trail = { arc: m.arc.map(p => p.slice()), fit, tRel: m.tRel, at: now };
+  }
+  if (st.trail) drawTrail(c, st.trail, now, W, H, m && m.state === 'flight');
+  else if (m && m.state === 'flight' && m.arc.length > 1) { c.strokeStyle = '#FF7A18'; c.beginPath(); m.arc.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke(); }
+  paintGuide(c, W, H, now, lm && fade > 0.5 && tg ? lm : null);
+}
+
+// ---- the ball: shown, found, lost ---------------------------------------------------------------
+// The session starts by SHOWING the ball. The athlete holds it up toward the phone, and the finder reads it out of
+// the hands the pose model already sees: the patch between the wrists, or just past the fingers, that is one colour
+// and round. Any colour. A green ball, a white-and-blue one, a tennis ball for a drill at home: whatever is in the
+// hands teaches its own colour, so nobody needs to bounce anything or walk to the phone. Then they walk back into
+// the figure with it. A ball whose size is not known (a tennis ball) gives no scale, so the scale comes from the
+// athlete's height, which is what the figure sets up anyway.
+const SHOW_HITS = 4, SHOW_WINDOW = 1.6, DET_EVERY_MS = 160;
+const ballGate = { state: 'none', hits: [], seenAt: 0, misses: 0, lastShotAt: 0, det: null, detLoading: false, detFailed: false, detAt: 0 };
+// The first version read the colour under the hands and nothing else, and a hand near a red bag, a tan wall or an
+// orange shirt taught the tracker the wrong thing. Now a trained detector has to say "sports ball" first, the box
+// has to be in the athlete's hands, and only then is the colour read, from inside that box. If the detector cannot
+// load (no signal, an old phone), the colour path still runs, with the box test replaced by a steadiness test.
+function loadBallDetector() {
+  if (ballGate.det || ballGate.detLoading || ballGate.detFailed || !st.mp || !st.vision) return;
+  ballGate.detLoading = true;
+  st.mp.ObjectDetector.createFromOptions(st.vision, { baseOptions: { modelAssetPath: BALL_MODEL_URL, delegate: 'CPU' }, runningMode: 'VIDEO',
+    scoreThreshold: 0.25, maxResults: 4, categoryAllowlist: ['sports ball', 'baseball glove'] })
+    .then(d => { ballGate.det = d; }).catch(e => { console.warn('ball detector unavailable, using colour only', e); ballGate.detFailed = true; })
+    .finally(() => { ballGate.detLoading = false; });
+}
+function setBallGate(s) {
+  ballGate.state = s; ballGate.hits = [];
+  const el = $('ballGate'); el.dataset.state = s; if (s !== 'none') { el.classList.remove('found'); clearTimeout(ballGate.outT); loadBallDetector(); }
+  if (s === 'show') { $('bgMain').textContent = 'Show the ball to the camera'; $('bgSub').textContent = 'Hold it up in both hands, facing the phone'; }
+  if (s === 'lost') { $('bgMain').textContent = 'Show the ball to the camera in order to find it again.'; $('bgSub').textContent = 'Ball lost'; }
+}
+function foundSound() { tone(1047, 70, 'sine', 0.2); setTimeout(() => tone(1568, 150, 'sine', 0.2), 65); try { navigator.vibrate?.(14); } catch {} }
+function lostSound() { tone(659, 110, 'triangle', 0.17); setTimeout(() => tone(440, 210, 'triangle', 0.17), 120); }
+// Skin across complexions sits in one band of chroma, red-leaning with green near a third. Measured on a held
+// ball: the hand read 0.52/0.36, the ball 0.73/0.25. A tan or brown ball in that band is the price of never
+// teaching the tracker a hand.
+const skinLike = p => p.rn > 0.36 && p.rn < 0.6 && p.gn > 0.285 && p.gn < 0.39;
+// the hands, in video pixels: wrists and index knuckles that the pose model can see
+function handsOf(lm) { return lm ? [15, 16, 19, 20].filter(i => lm[i].v > 0.4).map(i => lm[i]) : []; }
+function torsoOf(lm) { return lm && (lm[11].v > 0.4 || lm[12].v > 0.4) ? dist(mid(lm[11], lm[12]), mid(lm[23], lm[24])) : 0; }
+function nearHands(b, lm, slack = 1) {
+  const hands = handsOf(lm), torso = torsoOf(lm); if (!hands.length) return false;
+  const reach = Math.max(b.r * 1.7, torso * 0.4) * slack;
+  return hands.some(h => Math.hypot(h.x - b.x, h.y - b.y) < reach);
+}
+// Trained path. Measured on real photos (October 2026): run on the whole frame, Lite0 misses a ball held at the
+// chest, because at its 320 px input the ball is a few dozen pixels. Run on a square crop around the hands, it
+// finds it, and it very often calls a ball held in a hand a "baseball glove" (hand plus ball), so both labels are
+// asked for. Either way the colour test after it has to find a round patch filling the box, which a real glove,
+// a hand or a shirt does not. Returns candidate balls in video pixels, or null when it did not run this frame.
+const DET_IN = 320, detCrop = Object.assign(document.createElement('canvas'), { width: DET_IN, height: DET_IN });
+function detectBalls(lm, src = video) {
+  const now = performance.now(), hands = handsOf(lm);
+  if (!ballGate.det || !hands.length || now - ballGate.detAt < DET_EVERY_MS) return null;
+  ballGate.detAt = now;
+  const W = overlay.width, H = overlay.height, torso = torsoOf(lm);
+  const cx = hands.reduce((s, h) => s + h.x, 0) / hands.length, cy = hands.reduce((s, h) => s + h.y, 0) / hands.length;
+  const side = clamp(Math.max(torso * 1.6, 0.18 * Math.min(W, H)), 64, Math.min(W, H)), x0 = cx - side / 2, y0 = cy - side / 2;
+  const cc = detCrop.getContext('2d'); cc.fillStyle = '#000'; cc.fillRect(0, 0, DET_IN, DET_IN);
+  cc.drawImage(src, x0, y0, side, side, 0, 0, DET_IN, DET_IN);
+  let res; try { res = ballGate.det.detectForVideo(detCrop, now); } catch (e) { console.warn('ball detector failed', e); ballGate.det = null; ballGate.detFailed = true; return null; }
+  const out = [], f = side / DET_IN;
+  for (const d of res.detections || []) {
+    const bb = d.boundingBox, cat = d.categories[0]; if (!bb || !cat) continue;
+    const w = bb.width * f, h = bb.height * f, aspect = w / h; if (aspect < 0.5 || aspect > 2) continue;
+    const b = { x: x0 + (bb.originX + bb.width / 2) * f, y: y0 + (bb.originY + bb.height / 2) * f, r: (w + h) / 4, score: cat.score, glove: cat.categoryName !== 'sports ball' };
+    if (nearHands(b, lm)) out.push(b);
+  }
+  return out;
+}
+// The dominant colour inside the middle of a detector box (detector pixels): 2D chroma bins, the fullest 3x3 block
+// wins, and it has to hold a fair share of the disc, or this was not one coloured ball.
+function colourInBox(img, cx, cy, r) {
+  const { width: w, height: h, data: d } = img, R = r * 0.7, bins = new Map(), px = []; let total = 0;
+  for (let y = Math.max(0, Math.floor(cy - R)); y < Math.min(h, Math.ceil(cy + R)); y++) for (let x = Math.max(0, Math.floor(cx - R)); x < Math.min(w, Math.ceil(cx + R)); x++) {
+    if ((x - cx) ** 2 + (y - cy) ** 2 > R * R) continue; total++;
+    const i = (y * w + x) * 4, s = d[i] + d[i + 1] + d[i + 2]; if (s < 60) continue;
+    const rn = d[i] / s, gn = d[i + 1] / s;
+    if (Math.abs(rn - 1 / 3) + Math.abs(gn - 1 / 3) < 0.05 || skinLike({ rn, gn })) continue;
+    const key = Math.round(rn / 0.04) * 100 + Math.round(gn / 0.04), e = bins.get(key) || { n: 0, rn: 0, gn: 0, s: 0 };
+    e.n++; e.rn += rn; e.gn += gn; e.s += s; bins.set(key, e); px.push([rn, gn]);
+  }
+  if (total < 20) return null;
+  let best = null;
+  for (const key of bins.keys()) { let n = 0, rn = 0, gn = 0, sm = 0;
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { const e = bins.get(key + dx * 100 + dy); if (e) { n += e.n; rn += e.rn; gn += e.gn; sm += e.s; } }
+    if (!best || n > best.n) best = { n, rn: rn / n, gn: gn / n, sum: sm / n }; }
+  if (!best || best.n < total * 0.25) return null;   // bins of 0.04: real shading spreads one ball across about 0.25 of chroma
+  // centre and width from the ball's own pixels: light falls across a ball, and a tolerance that only covers the lit
+  // side tracks a crescent. Measured on an arena ball: chroma red ran 0.53 to 0.78 across one ball.
+  const near = px.filter(([rn, gn]) => Math.abs(rn - best.rn) < 0.12 && Math.abs(gn - best.gn) < 0.12);
+  const q = (a, f) => a.slice().sort((x, y) => x - y)[Math.floor((a.length - 1) * f)];
+  const rns = near.map(p => p[0]), gns = near.map(p => p[1]);
+  const tol = clamp(Math.max(q(rns, 0.85) - q(rns, 0.15), q(gns, 0.85) - q(gns, 0.15)) * 0.6, 0.055, 0.11);
+  return { rn: q(rns, 0.5), gn: q(gns, 0.5), sum: best.sum, frac: best.n / total, tol };
+}
+function showProbe(lm, k, t, src) {
+  const torso = torsoOf(lm), dets = detectBalls(lm, src);
+  let hit = null;
+  if (dets) {   // the detector ran this frame
+    // A real ball is shaded, seamed and half covered by fingers, so a flood fill from one pixel only ever gets a
+    // fragment of it. The detector has already said WHERE the ball is; the colour is read as the dominant hue inside
+    // the middle of that box, with grey, near-black and skin left out. Measured on a held ball: the fill got 36 px
+    // of a 140 px ball; this reads the whole of it.
+    for (const b of dets.sort((x, y) => y.score - x.score)) {
+      const rDet = b.r * (b.glove ? 0.85 : 1) * k, col = colourInBox(st.lastImg, b.x * k, b.y * k, rDet);
+      if (!col) continue;
+      hit = { t, ...col, r: rDet, cx: b.x, cy: b.y, rv: rDet / k, via: 'det' }; break;
+    }
+  } else if (ballGate.detFailed) {   // colour only: between the wrists, or past the fingers
+    const v = i => lm[i].v > 0.4, pts = [];
+    if (v(15) && v(16)) pts.push(mid(lm[15], lm[16]));
+    if (v(19) && v(20)) pts.push(mid(lm[19], lm[20]));
+    for (const [w, e, ix] of [[15, 13, 19], [16, 14, 20]]) if (v(w) && v(e)) {
+      const h = v(ix) ? lm[ix] : lm[w], dx = h.x - lm[e].x, dy = h.y - lm[e].y;
+      for (const f of [0.2, 0.45]) pts.push({ x: h.x + dx * f, y: h.y + dy * f });
+    }
+    for (const q of pts) {
+      const p = st.finder.probe(st.lastImg, q.x * k, q.y * k); if (!p.ok || skinLike(p) || p.fill < 0.6) continue;
+      const rv = p.r / k; if (torso && (rv < torso * 0.05 || rv > torso * 0.7)) continue;
+      hit = { t, ...p, cx: p.x / k, cy: p.y / k, rv, via: 'colour' }; break;
+    }
+  } else return;   // still loading the detector: wait for it rather than guess
+  if (hit) ballGate.hits.push(hit);
+  while (ballGate.hits.length && t - ballGate.hits[0].t > SHOW_WINDOW) ballGate.hits.shift();
+  if (ballGate.hits.length < SHOW_HITS) return;
+  // the same colour, the same size and roughly the same place over the last second and a half: one ball, held
+  const med = a => a.slice().sort((x, y) => x - y)[a.length >> 1], hs = ballGate.hits;
+  const rn = med(hs.map(h => h.rn)), gn = med(hs.map(h => h.gn)), rv = med(hs.map(h => h.rv)), cx = med(hs.map(h => h.cx)), cy = med(hs.map(h => h.cy));
+  const agree = hs.filter(h => Math.abs(h.rn - rn) < 0.03 && Math.abs(h.gn - gn) < 0.03 && Math.abs(h.rv / rv - 1) < 0.35 && Math.hypot(h.cx - cx, h.cy - cy) < Math.max(rv * 3, torso * 0.6));
+  if (agree.length < SHOW_HITS) return;
+  // read off a whole shaded ball, the colour needs a wider tolerance than one read off a flat patch
+  st.finder.teach({ rn, gn, sum: med(agree.map(h => h.sum)) }, null, agree[0].via === 'det' ? med(agree.map(h => h.tol)) : 0.055); st.finder.auto = true;   // size unknown until the tracker sees it: rExp follows it from there
+  ballFound('show');
+}
+function ballFound(how) {
+  const was = ballGate.state; setBallGate('none'); ballGate.seenAt = performance.now(); ballGate.misses = 0;
+  const el = $('ballGate'); el.classList.remove('found'); void el.offsetWidth; el.classList.add('found');
+  clearTimeout(ballGate.outT); ballGate.outT = setTimeout(() => el.classList.remove('found'), 750);
+  foundSound(); readySince = 0; $('lockPill').textContent = 'Ball: found';
+  if (was === 'lost') { cue('Found it.', 'Back to your spot', 'good'); say('Found it'); }
+  else if (how === 'show' && st.mode === 'camera') { cue('Got the ball.', 'Now walk back and stand in the figure', 'good'); say('Got the ball. Walk back into the figure'); setGuide(true); }
+  lastSetupCue = $('cueMain').textContent; st.cueHoldUntil = Math.max(st.cueHoldUntil || 0, performance.now() + 1800);
+}
+// Called every frame after the search. Lost means: set up, standing in frame, nothing mid-rep, and the ball not
+// seen on a dozen searches running and three and a half seconds. A ball on the far side of the body while
+// walking back is not lost, so the figure has to be done with first; nor is the one rolling away after a shot.
+function trackBall(ball, lm, scanned) {
+  const now = performance.now(), m = st.machine;
+  if (ball) {
+    ballGate.seenAt = now; ballGate.misses = 0;
+    // a ball taught up close is smaller once the athlete walks back: follow its size while nothing is happening
+    const rDet = ball.r * (det.width / overlay.width);
+    if (st.finder.auto && m.state === 'idle') st.finder.rExp = st.finder.rExp ? st.finder.rExp * 0.85 + rDet * 0.15 : rDet;
+    if (ballGate.state === 'lost' && nearHands(ball, lm, 1.4)) ballFound('track');
+    return;
+  }
+  if (scanned) ballGate.misses++;
+  if (st.mode !== 'camera' || !st.finder.taught || ballGate.state !== 'none' || guide.on || !lm || m.state !== 'idle' || countTimer) return;
+  if (ballGate.misses >= 12 && now - ballGate.seenAt > 3500 && now - ballGate.lastShotAt > 5000) {
+    setBallGate('lost'); lostSound(); readySince = 0;
+    cue('Ball lost.', 'Show the ball to the camera in order to find it again.', 'fix'); say('Show the ball to the camera to find it again');
+    lastSetupCue = 'Ball lost.'; st.cueHoldUntil = now + 1500;
+  }
+}
+
+// ---- the projected path ---------------------------------------------------------------------------
+// The moment the ball has four points of flight, the same gravity-pinned parabola the card is graded on is drawn
+// ahead of it: where this shot is going, beads of light running out ahead of the ball. When the flight ends, the
+// travelled arc and the projection stay up and fade, with the launch angle written at the release.
+function drawTrail(c, tr, now, W, H, live) {
+  const age = live ? 0 : now - tr.at, fade = live ? 1 : Math.max(0, 1 - Math.max(0, age - 1200) / 1300);
+  if (fade <= 0) { st.trail = null; return; }
+  const { fit } = tr, at = tau => [fit.x0 + fit.vx * tau, fit.y0 + fit.vy * tau + 0.5 * fit.a * tau * tau];
+  const t0 = tr.arc[0][2] - tr.tRel, tLast = tr.arc[tr.arc.length - 1][2] - tr.tRel, pts = [];
+  for (let tau = tLast; tau < tLast + 2.2; tau += 0.012) { const p = at(tau); pts.push(p); if (p[0] < -40 || p[0] > W + 40 || p[1] > H + 40) break; }
+  const lw = Math.max(2, W / 400), calm = REDUCED.matches;
+  c.save(); c.globalAlpha = fade; c.lineCap = 'round'; c.lineJoin = 'round';
+  // the flown arc, solid and lit
+  c.globalCompositeOperation = 'lighter';
+  for (const [w, col] of [[lw * 5, 'rgba(255,122,24,.16)'], [lw * 2.2, 'rgba(255,122,24,.55)'], [lw, '#FFB07A']]) {
+    c.lineWidth = w; c.strokeStyle = col; c.beginPath();
+    for (let tau = t0, first = true; tau <= tLast; tau += 0.012, first = false) { const p = at(tau); if (first) c.moveTo(p[0], p[1]); else c.lineTo(p[0], p[1]); }
+    c.stroke(); }
+  // the projection: beads of light flowing out ahead, thinning with distance
+  const flow = calm ? 0 : (now % 600) / 600;
+  for (let i = 0; i < pts.length; i += 4) {
+    const j = Math.min(pts.length - 1, Math.round(i + flow * 4)), u = j / pts.length, p = pts[j], a = (1 - u) * 0.95;
+    c.globalAlpha = fade * a; c.fillStyle = '#FFE2C8'; c.shadowColor = '#FF7A18'; c.shadowBlur = calm ? 0 : lw * 4;
+    c.beginPath(); c.arc(p[0], p[1], lw * (1.25 - u * 0.6), 0, Math.PI * 2); c.fill();
+  }
+  c.restore();
+  // the launch angle at the release
+  const rel = at(t0), big = Math.max(14, H * 0.035);
+  c.save(); c.globalAlpha = fade; c.font = `400 ${big}px "Bebas Neue",Impact,sans-serif`; c.textAlign = 'center'; c.textBaseline = 'bottom';
+  const txt = `${Math.round(fit.angle)}°`, x = rel[0] - fit.dir * big * 1.2, y = rel[1] - big * 0.4;
+  c.lineWidth = 4; c.strokeStyle = 'rgba(0,0,0,.6)'; c.strokeText(txt, x, y); c.fillStyle = '#FFE2C8'; c.fillText(txt, x, y);
+  c.restore();
+}
+
+// ---- line up with the figure ----------------------------------------------------------------
+// A dashed side-profile figure stands where the athlete should: feet on a line near the bottom, a set size. Matching
+// its SIZE is matching the distance, which is what gives the height box its scale; matching its feet is the camera's
+// tilt. Every part lights as it lands, a ring fills while it holds, and then it locks with a chord, a burst and a
+// buzz, because the moment a setup step is done should feel done. Camera only; a clip is already framed.
+const ALIGN_HOLD_MS = 650;
+const guide = { on: false, okSince: 0, lockedAt: 0, sparks: [], last: null, cm: 178 };
+function ghostOf(W, H) {
+  const S = H * (H > W ? 0.46 : 0.52);   // nose then sits well clear of "too close", and a raised hand stays in frame
+  return { cx: W * 0.5, footY: H * 0.9, S };
+}
+// side-profile pose in units of stature, x forward, y up from the floor; the ball held at the chest
+const GHOST = { head: [0.02, 0.935, 0.062], neck: [0.01, 0.86], sho: [0, 0.815], elb: [0.03, 0.655], wri: [0.15, 0.72], ball: [0.205, 0.735, 0.067],
+  hip: [-0.01, 0.53], kneeF: [0.07, 0.285], kneeB: [-0.03, 0.285], ankF: [0.06, 0.04], ankB: [-0.06, 0.04], toeF: [0.18, 0.005], toeB: [0.06, 0.005] };
+const GREEN = '#3BE08E';
+// The one renderer, shared by the live stage and the walkthrough, so the practice is exactly the real thing.
+// s: { ok:{feet,size,centre,side}, hold 0..1, lockT ms since lock or -1, face ±1, label, cmText }
+function drawGhost(c, g, s, now) {
+  const { cx, footY, S } = g, f = s.face || 1, P = ([x, y]) => [cx + x * S * f, footY - y * S];
+  const locked = s.lockT >= 0, lt = locked ? s.lockT : 0, calm = REDUCED.matches;
+  const lockFade = locked ? Math.max(0, 1 - Math.max(0, lt - 1000) / 500) : 1;
+  if (lockFade <= 0) return;
+  const pulse = locked && !calm ? 1 + 0.05 * Math.sin(Math.min(1, lt / 280) * Math.PI) : 1;
+  const lw = Math.max(2.5, S / 70), all = locked || (s.ok.feet && s.ok.size && s.ok.centre && s.ok.side);
+  // Every line of the figure as a path, so one renderer can draw it dashed and waiting, or lit.
+  const head = P(GHOST.head), ball = P(GHOST.ball), bxL = cx - f * S * 0.26, top = footY - S, tick = S * 0.035;
+  const poly = pts => pts.map(P);
+  const paths = [
+    { ok: s.ok.centre && s.ok.side, pts: poly([GHOST.toeB, GHOST.ankB, GHOST.kneeB, GHOST.hip, GHOST.kneeF, GHOST.ankF, GHOST.toeF]) },
+    { ok: s.ok.centre && s.ok.side, pts: poly([GHOST.hip, GHOST.sho, GHOST.neck]) },
+    { ok: s.ok.centre && s.ok.side, pts: poly([GHOST.sho, GHOST.elb, GHOST.wri]) },
+    { ok: s.ok.size, circle: [head[0], head[1], GHOST.head[2] * S] },
+    { ok: s.ok.centre && s.ok.side, circle: [ball[0], ball[1], GHOST.ball[2] * S], ball: true },
+    { ok: s.ok.feet, pts: [[cx - S * 0.32, footY], [cx + S * 0.32, footY]] },
+    { ok: s.ok.size, pts: [[bxL, top], [bxL, footY]], thin: true },
+    { ok: s.ok.size, pts: [[bxL - tick, top], [bxL + tick, top]], thin: true },
+    { ok: s.ok.size, pts: [[bxL - tick, footY], [bxL + tick, footY]], thin: true },
+  ];
+  const trace = p => { c.beginPath(); if (p.circle) c.arc(p.circle[0], p.circle[1], p.circle[2], 0, Math.PI * 2); else p.pts.forEach((q, i) => (i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]))); };
+  const lenOf = p => p.circle ? 2 * Math.PI * p.circle[2] : p.pts.reduce((L, q, i) => (i ? L + Math.hypot(q[0] - p.pts[i - 1][0], q[1] - p.pts[i - 1][1]) : 0), 0);
+  c.save(); c.globalAlpha = lockFade; c.lineCap = 'round'; c.lineJoin = 'round';
+  c.translate(cx, footY - S * 0.5); c.scale(pulse, pulse); c.translate(-cx, -(footY - S * 0.5));
+  if (!locked) {
+    for (const p of paths) {
+      const w = p.thin ? Math.max(1.5, lw * 0.55) : p.ball ? lw * 0.8 : lw, col = p.ok ? GREEN : p.ball ? 'rgba(255,122,24,.9)' : 'rgba(255,255,255,.92)';
+      c.setLineDash(p.thin ? [] : p.ball ? [lw, lw * 1.5] : [lw * 2.2, lw * 1.8]);
+      c.lineWidth = w + 3; c.strokeStyle = 'rgba(0,0,0,.45)'; trace(p); c.stroke();
+      c.lineWidth = w; c.strokeStyle = col; trace(p); c.stroke();
+    }
+    if (s.hold > 0) { c.setLineDash([]); c.strokeStyle = GREEN; c.lineWidth = lw * 1.6; c.beginPath(); c.arc(head[0], head[1], GHOST.head[2] * S + lw * 2.2, -Math.PI / 2, -Math.PI / 2 + s.hold * Math.PI * 2); c.stroke(); }
+  } else {
+    // LIT. Light, not paint: a wide soft halo, a tighter glow, the green tube and a near-white core, all added
+    // with 'lighter' so where lines meet they burn brighter, the way light does. Then a bright head of light
+    // runs the full length of every line once, tracing the figure as it locks.
+    c.setLineDash([]); c.globalCompositeOperation = 'lighter';
+    const passes = calm ? [[lw * 2.2, 'rgba(59,224,142,.35)', 0], [lw, GREEN, 0], [lw * 0.4, '#EFFFF6', 0]]
+      : [[lw * 9, 'rgba(59,224,142,.07)', S / 14], [lw * 4.5, 'rgba(59,224,142,.18)', S / 30], [lw * 2, 'rgba(59,224,142,.55)', 0], [lw, GREEN, 0], [lw * 0.45, '#EFFFF6', 0]];
+    for (const [w, col, blur] of passes) { c.lineWidth = w; c.strokeStyle = col; c.shadowColor = GREEN; c.shadowBlur = blur; for (const p of paths) { trace(p); c.stroke(); } }
+    c.shadowBlur = 0;
+    const tp = Math.min(1, lt / 650);
+    if (!calm && tp < 1) for (const p of paths) {
+      const L = lenOf(p), head = L * 0.22;
+      c.setLineDash([head, L * 2]); c.lineDashOffset = -(tp * (L + head)) + head;
+      c.lineWidth = lw * 3; c.strokeStyle = 'rgba(255,255,255,.5)'; c.shadowColor = '#fff'; c.shadowBlur = S / 25; trace(p); c.stroke();
+      c.lineWidth = lw * 1.2; c.strokeStyle = '#fff'; c.shadowBlur = 0; trace(p); c.stroke();
+    }
+    c.setLineDash([]); c.lineDashOffset = 0; c.globalCompositeOperation = 'source-over';
+  }
+  const fs = Math.max(11, S * 0.055);
+  c.font = `700 ${fs}px "Barlow Condensed","Arial Narrow",sans-serif`; c.textAlign = 'center'; c.textBaseline = 'bottom';
+  c.lineWidth = 4; c.strokeStyle = 'rgba(0,0,0,.6)'; c.strokeText(s.cmText, bxL, top - fs * 0.35); c.fillStyle = locked || s.ok.size ? GREEN : '#fff'; c.fillText(s.cmText, bxL, top - fs * 0.35);
+  c.restore();
+  // the label: what to do, or LOCKED IN
+  const big = Math.max(18, S * 0.12);
+  c.save(); c.globalAlpha = lockFade; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+  const text = locked ? 'LOCKED IN' : s.label, ty = footY - S - big * 0.9;
+  if (text) {
+    const sc = locked && !calm ? 0.7 + 0.3 * Math.min(1, lt / 220) + 0.05 * Math.sin(Math.min(1, lt / 220) * Math.PI) : 1;
+    c.translate(cx, ty); c.scale(sc, sc); c.font = `400 ${big}px Anton,Impact,"Arial Narrow",sans-serif`;
+    c.lineWidth = Math.max(4, big / 7); c.strokeStyle = 'rgba(0,0,0,.55)'; c.strokeText(text, 0, 0);
+    if (locked && !calm) { c.shadowColor = GREEN; c.shadowBlur = big / 2; }
+    c.fillStyle = locked || all ? GREEN : '#fff'; c.fillText(text, 0, 0);
+  }
+  c.restore();
+  if (locked && !calm) {   // two rings of light out from the figure, then the sparks off the floor line
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (const d of [0, 140]) { const p = (lt - d) / 750; if (p <= 0 || p >= 1) continue;
+      for (const [w, a] of [[lw * 5, 0.12], [lw * 1.4, 0.8]]) { c.globalAlpha = (1 - p) * a; c.strokeStyle = GREEN; c.lineWidth = w * (1.4 - p);
+        c.beginPath(); c.ellipse(cx, footY - S * 0.5, S * (0.35 + p * 0.55), S * (0.58 + p * 0.5), 0, 0, Math.PI * 2); c.stroke(); } }
+    for (const sp of s.sparks || []) { const t = lt / 1000; if (t > sp.life) continue;
+      const x = cx + sp.x * S + sp.vx * S * t, y = footY + sp.vy * S * t + 1.6 * S * t * t, a = 1 - t / sp.life;
+      c.globalAlpha = a; c.fillStyle = sp.c; c.beginPath(); c.arc(x, y, Math.max(1.5, S * 0.012 * a + 1), 0, Math.PI * 2); c.fill(); }
+    c.restore();
+  }
+}
+function makeSparks() {
+  return Array.from({ length: 28 }, (_, i) => { const a = -Math.PI * (0.08 + 0.84 * Math.random()), v = 0.5 + Math.random() * 0.9;
+    return { x: (Math.random() - 0.5) * 0.6, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 1.4, life: 0.6 + Math.random() * 0.5, c: i % 3 ? GREEN : '#fff' }; });
+}
+function lockChord() { tone(784, 90, 'triangle'); setTimeout(() => tone(988, 90, 'triangle'), 80); setTimeout(() => tone(1175, 220, 'triangle'), 160); try { navigator.vibrate?.([18, 40, 30]); } catch {} }
+function heightText() { const cm = +$('heightIn').value || 178, h = cm / 2.54; return `${Math.floor(h / 12)}′${Math.round(h % 12)}″ · ${cm} cm`; }
+// How the live athlete sits against the figure. Every tolerance is generous on purpose: this is a framing aid, and a
+// guide that never quite locks is worse than none.
+function alignOf(lm, W, H) {
+  const g = ghostOf(W, H), vis = i => lm[i].v == null || lm[i].v > 0.35;
+  const ank = [27, 28].filter(vis).map(i => lm[i].y); if (!ank.length || !vis(0)) return null;
+  const ankY = Math.max(...ank), hPx = (ankY - lm[0].y) / STATURE_ANKLE_TO_NOSE, hipX = mid(lm[23], lm[24]).x;
+  const ratio = hPx / g.S, dx = (hipX - g.cx) / g.S, dy = (ankY - (g.footY - GHOST.ankF[1] * g.S)) / H;
+  const side = Math.abs(lm[11].x - lm[12].x) / Math.max(1, dist(mid(lm[11], lm[12]), mid(lm[23], lm[24]))) < 0.55;
+  const ok = { side, size: ratio > 0.87 && ratio < 1.13, centre: Math.abs(dx) < 0.3, feet: Math.abs(dy) < 0.06 };
+  const label = !ok.side ? 'TURN SIDE ON' : !ok.size ? (ratio > 1 ? 'BACK UP' : 'COME CLOSER') : !ok.centre ? 'SLIDE INTO THE FIGURE'
+    : !ok.feet ? (dy < 0 ? 'TILT THE PHONE UP' : 'TILT THE PHONE DOWN') : 'HOLD IT';
+  const face = lm[0].x >= mid(lm[7], lm[8]).x ? 1 : -1;
+  return { ok, label, face, hipX, hipY: mid(lm[23], lm[24]).y, ankY, ratio, all: ok.side && ok.size && ok.centre && ok.feet };
+}
+// AR floor arrows. Chevrons lie on the floor and flow the way to move: along the floor toward the figure, or into
+// the picture (back up) and out of it (come closer), shrinking with distance the way a floor marking does.
+function floorArrows(c, g, now, dir, a) {
+  const S = g.S, floor = a.ankY + GHOST.ankF[1] * a.ratio * S, ph = REDUCED.matches ? 0.5 : (now % 900) / 900;
+  const chevron = (x, y, w, h, angle, alpha) => {
+    c.save(); c.translate(x, y); c.rotate(angle); c.globalAlpha = alpha;
+    c.beginPath(); c.moveTo(-w * 0.5, -h); c.lineTo(w * 0.5, 0); c.lineTo(-w * 0.5, h); c.lineTo(-w * 0.15, 0); c.closePath();
+    c.lineWidth = Math.max(2, S / 120); c.strokeStyle = 'rgba(0,0,0,.5)'; c.stroke(); c.fillStyle = '#fff'; c.fill(); c.restore();
+  };
+  if (dir === 'side') {
+    const d = Math.sign(g.cx - a.hipX), span = Math.abs(g.cx - a.hipX) - S * 0.12, step = S * 0.13, y = (floor + g.footY) / 2;
+    for (let k = 0; k * step < span; k++) { const t = (k + ph) * step; if (t > span) continue;
+      const edge = Math.min(1, t / step, (span - t) / step); chevron(a.hipX + d * t, y, S * 0.06, S * 0.022, d > 0 ? 0 : Math.PI, 0.9 * edge); }
+    return;
+  }
+  // into or out of the picture: stacked chevrons in front of the feet, perspective-squashed
+  const up = dir === 'back', x = a.hipX;
+  for (let k = 0; k < 4; k++) { const u = (k + (up ? ph : 1 - ph)) / 4, sc = 1 - u * 0.55, y = floor + S * 0.05 - u * S * 0.16;
+    const edge = Math.min(1, u * 4, (1 - u) * 4); chevron(x, y, S * 0.05 * sc, S * 0.09 * sc, up ? -Math.PI / 2 : Math.PI / 2, 0.9 * edge); }
+}
+// A pale figure that walks from where the athlete stands to where the figure stands, on a loop, so "where do I
+// go" is shown, not told. It grows or shrinks as it walks when the distance is wrong, exactly as the athlete will.
+function drawWalker(c, g, a, now) {
+  if (REDUCED.matches) return;
+  const T = 1800, p = (now % T) / T, mv = Math.min(1, p / 0.75), e = mv < 0.5 ? 2 * mv * mv : 1 - 2 * (1 - mv) * (1 - mv);
+  const fade = p < 0.1 ? p / 0.1 : p > 0.82 ? Math.max(0, 1 - (p - 0.82) / 0.18) : 1;
+  const S0 = a.ratio * g.S, S = S0 + (g.S - S0) * e, footY0 = a.ankY + GHOST.ankF[1] * S0, footY = footY0 + (g.footY - footY0) * e;
+  const x = a.hipX + (g.cx - a.hipX) * e, walking = mv < 1, sw = walking ? Math.sin(p * Math.PI * 2 * 3.2) : 0;
+  const f = Math.abs(g.cx - a.hipX) > g.S * 0.1 ? Math.sign(g.cx - a.hipX) : (guide.face || 1);
+  const P = ([px, py]) => [x + px * S * f, footY - py * S];
+  const lift = v => Math.max(0, v) * 0.05;
+  const ankF = [0.02 + 0.1 * sw, 0.04 + lift(sw)], ankB = [-0.02 - 0.1 * sw, 0.04 + lift(-sw)];
+  const kneeF = [0.04 + 0.07 * sw, 0.285], kneeB = [-0.01 - 0.07 * sw, 0.285];
+  c.save(); c.globalAlpha = 0.55 * fade; c.strokeStyle = '#fff'; c.lineWidth = Math.max(2, S / 75); c.lineCap = 'round'; c.lineJoin = 'round';
+  c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 6;
+  for (const seg of [[ankB, kneeB, GHOST.hip, kneeF, ankF], [GHOST.hip, GHOST.sho, GHOST.neck], [GHOST.sho, GHOST.elb, GHOST.wri]]) {
+    c.beginPath(); seg.forEach((q, i) => (i ? c.lineTo(...P(q)) : c.moveTo(...P(q)))); c.stroke(); }
+  const [hx, hy] = P(GHOST.head); c.beginPath(); c.arc(hx, hy, GHOST.head[2] * S, 0, Math.PI * 2); c.stroke();
+  c.restore();
+}
+function paintGuide(c, W, H, now, lm) {
+  if (!guide.on && !(guide.lockedAt && now - guide.lockedAt < 1400)) return;
+  const g = ghostOf(W, H), cmText = heightText();
+  if (!guide.on) { drawGhost(c, g, { ok: { feet: 1, size: 1, centre: 1, side: 1 }, hold: 1, lockT: now - guide.lockedAt, face: guide.face || 1, label: '', cmText, sparks: guide.sparks }, now); return; }
+  const a = lm ? alignOf(lm, W, H) : null; guide.last = a;
+  if (a && a.all) { if (!guide.okSince) guide.okSince = now; } else guide.okSince = 0;
+  const hold = guide.okSince ? Math.min(1, (now - guide.okSince) / ALIGN_HOLD_MS) : 0;
+  if (a) guide.face = a.face;
+  if (a && (!a.ok.centre || !a.ok.size)) {   // show the way: arrows laid on the floor, and a figure that walks it
+    const dir = !a.ok.size ? (a.ratio > 1 ? 'back' : 'closer') : 'side';
+    floorArrows(c, g, now, dir, a);
+    drawWalker(c, g, a, now);
+  }
+  drawGhost(c, g, { ok: a ? a.ok : { feet: 0, size: 0, centre: 0, side: 0 }, hold, lockT: -1, face: guide.face || 1, label: a ? a.label : 'STAND IN THE FIGURE', cmText }, now);
+  if (hold >= 1) lockIn(now);
+}
+function lockIn(now) {
+  guide.auto = true; guide.driftSince = 0;
+  guide.on = false; guide.lockedAt = now; guide.okSince = 0; guide.sparks = makeSparks(); syncAlignBtn();
+  lockChord(); cue('Locked in.', `Distance set for ${heightText().replace(' · ', ', ')}. Hold still, then shoot`, 'good'); say('Locked in');
+  lastSetupCue = 'Locked in.'; st.cueHoldUntil = Math.max(st.cueHoldUntil || 0, performance.now() + 2200);
+}
+function setGuide(on) { guide.on = on && st.mode === 'camera'; guide.okSince = 0; if (on) guide.lockedAt = 0; syncAlignBtn(); }
+function syncAlignBtn() { $('alignBtn').setAttribute('aria-pressed', guide.on); $('alignLabel').textContent = guide.on ? 'Skip line up' : 'Line up'; }
+function guideCue(a) {
+  if (!a) return ['Stand in the figure.', 'Side on, the same size as the outline, feet on its line'];
+  return { 'TURN SIDE ON': ['Turn side on.', 'Shooting hand nearest the phone'], 'BACK UP': ['Back up a little.', 'Bigger than the figure means too close to the phone'],
+    'COME CLOSER': ['Come closer.', 'Smaller than the figure means too far for the ball'], 'SLIDE INTO THE FIGURE': ['Slide into the figure.', 'Follow the arrow on the screen'],
+    'TILT THE PHONE UP': ['Tilt the phone up a little.', 'The feet should sit on the figure line'], 'TILT THE PHONE DOWN': ['Tilt the phone down a little.', 'The feet should sit on the figure line'],
+    'HOLD IT': ['Hold it there.', 'Locking in'] }[a.label] || ['Stand in the figure.', ''];
+}
+$('alignBtn').onclick = () => { setGuide(!guide.on); guide.auto = guide.on; if (guide.on) cue('Stand in the figure.', 'Side on, the same size as the outline, feet on its line'); };
 
 // ---- framing checks, throttled
 let lastCheck = 0, lastSetupCue = '', lastSetupSaid = 0;
 // setup cues are spoken too, once per change and no more than every three seconds, so the athlete hears the framing settle
+// A cue has to be the answer on two checks running (half a second) before it replaces the one on the band. At an
+// edge of a tolerance the raw answer alternates every check, and the band flickering between two instructions is
+// the glitchiest thing on the screen.
+let pendingCue = '';
+// Once the athlete has locked in, sliding out of the spot (sideways, or toward or away from the phone) brings the
+// figure straight back, so the next rep is taken from the same place. Not mid-rep, not during the count, not in the
+// seconds after a shot while they land and fetch the ball, and not if the coach switched the figure off by hand.
+function watchDrift(lm, W, H, now) {
+  const m = st.machine;
+  if (guide.on || !guide.auto || st.mode !== 'camera' || ballGate.state !== 'none' || !m || m.state !== 'idle' || countTimer
+    || now - guide.lockedAt < 1500 || now - ballGate.lastShotAt < 2500) { guide.driftSince = 0; return; }
+  const a = lm ? alignOf(lm, W, H) : null;
+  if (!a || (a.ok.centre && a.ok.size)) { guide.driftSince = 0; return; }
+  if (!guide.driftSince) { guide.driftSince = now; return; }
+  if (now - guide.driftSince < 700) return;
+  guide.driftSince = 0; setGuide(true);
+  cue('Back into the figure.', !a.ok.size ? (a.ratio > 1 ? 'You moved toward the phone' : 'You moved away from the phone') : 'You slid off your spot');
+  say('Back into the figure'); lastSetupCue = 'Back into the figure.'; st.cueHoldUntil = now + 1500;
+}
 function setupCue(main, sub) {
+  if (main !== $('cueMain').textContent && main !== pendingCue) { pendingCue = main; return; }
+  pendingCue = '';
   cue(main, sub);
   // Speak each NEW cue once. Tracking only the last shown cue meant a cue that first appeared inside the three
   // second throttle was marked as said and then never spoken at all, so the band changed in silence.
@@ -1552,6 +2202,7 @@ function setupCue(main, sub) {
 function updateChecks(lm) {
   const now = performance.now(); if (now - lastCheck < 250) return; lastCheck = now;
   const W = overlay.width, H = overlay.height, m = st.machine, holding = now < (st.cueHoldUntil || 0);   // a rep's verdict stays on the band
+  watchDrift(lm, W, H, now);
   if (!lm) { check('ckBody', 'fix', 'nobody in frame'); check('ckDist', '', 'waiting'); check('ckSide', '', 'waiting'); if (m && m.state === 'idle' && !holding) setupCue('Step into frame.', 'Whole body visible, side on'); return; }
   // EITHER side of the body is enough, and the bar is 0.35 rather than 0.5. A shooter half-turned to the camera
   // hides one shoulder, one hip and one ankle behind the other, and demanding both of each pair turned an ordinary
@@ -1575,7 +2226,10 @@ function updateChecks(lm) {
   check('ckBall', st.finder.taught ? 'good' : 'watch', st.finder.taught ? `found, ${(st.finder.rExp / (det.width / W)).toFixed(0)} px radius${m && m.ppm ? ', ' + m.ppm.toFixed(0) + ' px per metre' : ''}` : (st.learn ? 'bounce it a few times' : 'press Find the ball'));
   $('lockPill').textContent = st.lastBall ? 'Ball: tracking' : (st.finder.taught ? 'Ball: found' : (st.learn ? 'Ball: listening' : 'Ball: not set')); $('lockPill').classList.toggle('on', !!st.lastBall);
   if (m && m.state === 'idle' && st.frames > 30 && !holding) {
-    if (!(vis && inside)) setupCue('Whole body in frame, please.', vis ? 'Feet or head are cut off at the edge' : 'Feet and head must be visible');
+    if (ballGate.state === 'show') setupCue('Show the ball to the camera.', 'Hold it up in both hands, facing the phone');
+    else if (ballGate.state === 'lost') setupCue('Ball lost.', 'Show the ball to the camera in order to find it again.');
+    else if (!(vis && inside)) setupCue('Whole body in frame, please.', vis ? 'Feet or head are cut off at the edge' : 'Feet and head must be visible');
+    else if (guide.on) setupCue(...guideCue(guide.last));
     else if (!sideOk) setupCue('Move the camera to the side.', 'Square to the shooter, shooting hand nearest the phone');
     else if (!distOk) setupCue(tooClose ? 'Move the phone back, or tilt it up.' : 'Move the phone closer.', tooClose ? 'The raised hand will leave the top of the picture' : 'The ball is too small to follow from here');
     else if (!st.finder.taught) setupCue(st.learn ? 'Bounce the ball.' : 'Find the ball first.', st.learn ? 'A few bounces where the camera can see it' : 'Press Find the ball, then bounce it a few times');
@@ -1584,7 +2238,7 @@ function updateChecks(lm) {
   }
   // In position: everything framed, the scale learned, the ball taught and the machine idle. Held for three quarters
   // of a second so a wave through the frame does not start a countdown, then the count runs itself.
-  const inPosition = vis && inside && distOk && sideOk && st.finder.taught && m && m.state === 'idle' && m.ppm && m.ground != null && !holding;
+  const inPosition = !guide.on && ballGate.state === 'none' && vis && inside && distOk && sideOk && st.finder.taught && m && m.state === 'idle' && m.ppm && m.ground != null && !holding;
   if (!inPosition) { readySince = 0; if (!countTimer) stageState('none'); if (m && m.state === 'idle') armed = true; }
   else if (armed && !countTimer) {
     if (!readySince) { readySince = now; stageState('ready', 'Hold it there'); goSignal(); say('Ready'); }
@@ -1606,6 +2260,7 @@ function ballLearned(r, how) {
   st.machine.ppmBall = r * 2 / BALL_DIAM_M; stopLearning();
   cue('Got the ball.', how === 'bounce' ? 'Learned from the bounce, on this floor under this light' : 'Colour and size set for this floor under this light');
   say('Got the ball'); readySince = 0;
+  if (st.mode === 'camera') { const was = ballGate.state; setBallGate('none'); foundSound(); ballGate.seenAt = performance.now(); if (was === 'show') setGuide(true); }
 }
 $('tapBtn').onclick = () => { if (st.tap) { stopLearning(); cue('Stopped looking.', 'Press Find the ball to try again'); } else startLearning(); };
 overlay.addEventListener('pointerdown', e => {
@@ -1625,7 +2280,7 @@ const whenText = iso => { const d = new Date(iso), t = d.toLocaleTimeString([], 
 function onShot(shot) {
   shot.id = 'r' + Date.now().toString(36); shot.at = new Date().toISOString(); shot.when = whenText(shot.at);
   shot.athlete = $('athleteIn').value.trim(); shot.drill = $('drillIn').value.trim(); shot.heightCm = +$('heightIn').value || null;
-  st.cards.unshift(shot); if (st.cards.length > 40) st.cards.length = 40; persist();
+  st.cards.unshift(shot); if (st.cards.length > 40) st.cards.length = 40; persist(); ballGate.lastShotAt = performance.now();
   const fixes = shot.cues.filter(c => c.status === 'fix'), top = fixes.slice(0, 2).map(c => c.text);
   const m = shot.metrics, arc = m.launchAngleDeg != null ? `${m.launchAngleDeg.toFixed(0)}° arc` : 'no arc read';
   if (top.length) { cue(top[0], top[1] || arc, 'fix'); say(top.join('. ')); }
@@ -1686,6 +2341,11 @@ renderCards();
 // Presets move whole bands at once. Youth widens what a growing athlete cannot hold yet; strict narrows to the
 // tighter half of each published band. Both are the coach's call, so every row they touch reads "coach set".
 const PRESETS = {
+  // Coach Kingsley's own numbers (October 2026): knees slightly bent at the dip, 145 to 160, and the elbow loaded
+  // at ninety, 80 to 100. Everything else is the youth band. His call, so these rows read "coach set" like any other.
+  coach: { elbowReleaseDeg: { lo: 140 }, elbowSetDeg: { lo: 80, hi: 100 }, kneeMinDeg: { lo: 145, hi: 160 },
+    launchAngleDeg: { lo: 42, hi: 58 }, releaseHeightRatio: { lo: 1.0, hi: 1.4 }, dipToRelease: { lo: 0.45, hi: 1.3 },
+    trunkLeanDeg: { lo: -10, hi: 8 }, quietHeadSec: { lo: 0.25 }, holdSec: { lo: 0.35 } },
   youth: { elbowReleaseDeg: { lo: 140 }, elbowSetDeg: { lo: 55, hi: 105 }, kneeMinDeg: { lo: 80, hi: 135 },
     launchAngleDeg: { lo: 42, hi: 58 }, releaseHeightRatio: { lo: 1.0, hi: 1.4 }, dipToRelease: { lo: 0.45, hi: 1.3 },
     trunkLeanDeg: { lo: -10, hi: 8 }, quietHeadSec: { lo: 0.25 }, holdSec: { lo: 0.35 } },
@@ -1696,10 +2356,11 @@ const PRESETS = {
 // The tracker opens in YOUTH mode. The published bands come from studies of proficient adult shooters, and a
 // fourteen-year-old graded against them fails on nearly every rep, which teaches nothing. Youth is the shipped
 // default; "Published defaults" is one choice away in the panel.
-const START_PRESET = 'youth';
+const START_PRESET = 'coach';
 function loadTargetEdits() {
   try { const raw = localStorage.getItem('fb_shotform_targets');
-    if (raw != null) return JSON.parse(raw);
+    // a phone still on the old youth default moves to the coach's bands; anything a coach chose by hand stays
+    if (raw != null) return JSON.stringify(JSON.parse(raw)) === JSON.stringify(PRESETS.youth) ? JSON.parse(JSON.stringify(PRESETS[START_PRESET])) : JSON.parse(raw);
   } catch {}
   return JSON.parse(JSON.stringify(PRESETS[START_PRESET]));
 }
@@ -1760,7 +2421,7 @@ $('formPreset').onchange = () => {
 $('formReset').onclick = () => { $('formPreset').value = START_PRESET; setTargetEdits(JSON.parse(JSON.stringify(PRESETS[START_PRESET]))); saveTargetEdits(); renderForm(); if (st.cards[0]) renderLast(st.cards[0]); };
 // the dropdown must never claim the bands came from somewhere they did not
 function markPreset() { const sel = $('formPreset');
-  sel.value = sameEdits('youth') ? 'youth' : sameEdits('strict') ? 'strict' : Object.keys(TARGET_EDITS).length ? 'custom' : '';
+  sel.value = sameEdits('coach') ? 'coach' : sameEdits('youth') ? 'youth' : sameEdits('strict') ? 'strict' : Object.keys(TARGET_EDITS).length ? 'custom' : '';
   sel.querySelector('option[value=custom]').hidden = sel.value !== 'custom'; }
 markPreset();
 
@@ -1924,7 +2585,97 @@ video.addEventListener('ended', () => { if (st.mode === 'clip') { status('Clip d
 if (navigator.mediaDevices?.enumerateDevices) listCameras();
 if (!navigator.mediaDevices?.getUserMedia) cue('This browser has no camera access.', 'Use Safari on the iPhone or Chrome on a laptop');
 document.addEventListener('visibilitychange', () => { if (document.hidden && st.mode === 'camera') stopAll(); else if (!document.hidden && st.mode !== 'off') keepAwake(); });
-if (new URLSearchParams(location.search).has('debug')) window.__fb = { st, onShot, cardSvg, cardHtml, animSvg, csvOf, stageState, startCount, openForm, setTargetEdits, saveTargetEdits, goSignal, tone, setImmersive, setVoice, get TARGETS(){return TARGETS} };   // test rigs only
+// ---- the walkthrough ----------------------------------------------------------------------------
+// Four steps, and the second is the real thing in miniature: the same figure, the same checks, the same lock, so the
+// first time it happens on the camera it is already familiar. Opens itself once per device; the ? button and the
+// link on the empty stage bring it back.
+const TOUR = [
+  ['Prop the phone on the sideline.', ['About 15 feet away, side on to the shooter', 'Landscape, around chest height', 'Shooting hand nearest the phone']],
+  ['Show the ball to the camera.', ['Hold it up in both hands, facing the phone', 'Any colour of ball works, even a tennis ball', 'A chime when it has it']],
+  ['Line up with this stick figure.', ['Side on, feet on its line', 'Same size as the outline: that sets your height', 'Try it: drag yourself in']],
+  ['Hold still, then shoot.', ['Green flash and a note when you are set', '3, 2, 1, then shoot', 'Every rep becomes a card']],
+];
+const TOUR_ALIGN = 2;   // the hands-on step
+const tour = { i: 0, raf: 0, x: 0.22, s: 0.62, okSince: 0, lockedAt: 0, sparks: [], drag: null, lastAt: 0 };
+const tourCv = $('tourCv'), tctx = tourCv.getContext('2d');
+function openTour(at = 0) { const d = $('tour'); if (!d.open) { try { d.showModal(); } catch { d.setAttribute('open', ''); } } tourGo(at); }
+function closeTour() { const d = $('tour'); cancelAnimationFrame(tour.raf); tour.raf = 0; try { d.close(); } catch { d.removeAttribute('open'); } try { localStorage.setItem('fb_shotform_tour', '1'); } catch {} }
+function tourGo(i) {
+  tour.i = Math.max(0, Math.min(TOUR.length - 1, i));
+  $('tourStep').textContent = `Step ${tour.i + 1} of ${TOUR.length}`;
+  $('tourTitle').textContent = TOUR[tour.i][0];
+  $('tourText').replaceChildren(...TOUR[tour.i][1].map(t => { const li = document.createElement('li'); li.textContent = t; return li; }));
+  document.querySelectorAll('.tour-dots i').forEach((el, k) => el.classList.toggle('on', k <= tour.i));
+  document.querySelectorAll('#tourArt [data-step]').forEach(el => { el.style.display = +el.dataset.step === tour.i ? '' : 'none'; });
+  $('tourCtl').hidden = tour.i !== TOUR_ALIGN; $('tourBack').hidden = tour.i === 0;
+  const last = tour.i === TOUR.length - 1;
+  $('tourNext').textContent = last ? (st.mode === 'off' ? 'Start camera' : 'Done') : 'Next';
+  $('tourSkip').textContent = last ? 'Close' : 'Skip';
+  cancelAnimationFrame(tour.raf); tour.raf = 0;
+  if (tour.i === TOUR_ALIGN) { tour.x = 0.22; tour.s = 0.62; tour.okSince = 0; tour.lockedAt = 0; $('tourDist').value = 62; $('tourSlide').value = 22; tourGot(); sizeTourCv(); tourPaint(); }
+}
+function sizeTourCv() { const r = tourCv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1); tourCv.width = Math.round((r.width || 320) * dpr); tourCv.height = Math.round((r.height || 200) * dpr); }
+function tourGot(text, yes) { const el = $('tourGot'); el.textContent = text || 'Drag yourself into the outline, or use the sliders'; el.classList.toggle('yes', !!yes); }
+// the athlete in the demo: the figure's own pose, drawn the way the live skeleton is, red and solid
+function drawYou(c, g, x, s) {
+  const S = g.S * s, footY = g.footY, P = ([px, py]) => [x + px * S, footY - py * S], lw = Math.max(2.5, S / 60);
+  c.save(); c.strokeStyle = '#E60C20'; c.lineWidth = lw; c.lineCap = 'round'; c.lineJoin = 'round';
+  for (const seg of [[GHOST.ankB, GHOST.kneeB, GHOST.hip, GHOST.kneeF, GHOST.ankF], [GHOST.hip, GHOST.sho, GHOST.neck], [GHOST.sho, GHOST.elb, GHOST.wri]]) {
+    c.beginPath(); seg.forEach((p, i) => (i ? c.lineTo(...P(p)) : c.moveTo(...P(p)))); c.stroke(); }
+  const [hx, hy] = P(GHOST.head); c.beginPath(); c.arc(hx, hy, GHOST.head[2] * S, 0, Math.PI * 2); c.stroke();
+  c.fillStyle = '#fff'; for (const j of [GHOST.sho, GHOST.elb, GHOST.wri, GHOST.hip, GHOST.kneeF, GHOST.kneeB, GHOST.ankF, GHOST.ankB]) { const [jx, jy] = P(j); c.beginPath(); c.arc(jx, jy, lw * 0.9, 0, Math.PI * 2); c.fill(); }
+  const [bx, by] = P(GHOST.ball); c.fillStyle = '#FF7A18'; c.beginPath(); c.arc(bx, by, GHOST.ball[2] * S, 0, Math.PI * 2); c.fill();
+  c.restore();
+}
+function tourPaint() {
+  tour.raf = 0; if (tour.i !== TOUR_ALIGN || !$('tour').open) return;
+  const now = performance.now(), W = tourCv.width, H = tourCv.height, c = tctx;
+  c.clearRect(0, 0, W, H);
+  // a floor and a wall line so the frame reads as a gym, not a void
+  c.fillStyle = '#101016'; c.fillRect(0, H * 0.9, W, H * 0.1); c.strokeStyle = '#24242E'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, H * 0.9); c.lineTo(W, H * 0.9); c.stroke();
+  const g = { cx: W * 0.5, footY: H * 0.9, S: H * 0.66 }, x = tour.x * W;
+  const ok = { side: true, feet: true, size: Math.abs(tour.s - 1) < 0.1, centre: Math.abs(x - g.cx) / g.S < 0.12 };
+  const all = ok.size && ok.centre, locked = tour.lockedAt > 0;
+  if (all && !locked) { if (!tour.okSince) tour.okSince = now; } else if (!locked) tour.okSince = 0;
+  const hold = tour.okSince ? Math.min(1, (now - tour.okSince) / ALIGN_HOLD_MS) : 0;
+  if (hold >= 1 && !locked) { tour.lockedAt = now; tour.sparks = makeSparks(); lockChord(); tourGot('Locked in. That is all it takes', true); }
+  else if (!locked) tourGot(all ? 'Hold it…' : !ok.size ? (tour.s > 1 ? 'Too big: you are too close. Drag the distance left' : 'Too small: you are too far. Drag the distance right') : 'Slide into the outline', all);
+  drawYou(c, g, x, tour.s);
+  const label = locked ? '' : all ? 'HOLD IT' : !ok.size ? (tour.s > 1 ? 'BACK UP' : 'COME CLOSER') : 'SLIDE IN';
+  drawGhost(c, g, { ok, hold, lockT: locked ? now - tour.lockedAt : -1, face: 1, label, cmText: heightText(), sparks: tour.sparks }, now);
+  if (locked && now - tour.lockedAt > 1350) {   // the figure has dissolved: you are standing where it stood
+    c.save(); c.globalAlpha = Math.min(1, (now - tour.lockedAt - 1350) / 300); c.fillStyle = GREEN; c.textAlign = 'center';
+    c.font = `400 ${Math.round(H * 0.09)}px Anton,Impact,sans-serif`; c.fillText('YOU ARE SET', W / 2, H * 0.14); c.restore();
+    if (now - tour.lockedAt > 1700) return;   // settled; nothing left to animate
+  }
+  tour.raf = requestAnimationFrame(tourPaint);
+}
+function tourKick() { if (tour.lockedAt && tour.i === TOUR_ALIGN) { tour.lockedAt = 0; tour.okSince = 0; } cancelAnimationFrame(tour.raf); tour.raf = requestAnimationFrame(tourPaint); }
+$('tourDist').oninput = e => { tour.s = e.target.value / 100; tourKick(); };
+$('tourSlide').oninput = e => { tour.x = e.target.value / 100; tourKick(); };
+// drag: sideways slides, up and down is distance (up is closer, the figure grows), like walking toward the phone
+tourCv.addEventListener('pointerdown', e => { tourCv.setPointerCapture(e.pointerId); tour.drag = { x: e.clientX, y: e.clientY, ox: tour.x, os: tour.s }; });
+tourCv.addEventListener('pointermove', e => {
+  const d = tour.drag; if (!d) return; const r = tourCv.getBoundingClientRect();
+  tour.x = Math.max(0.1, Math.min(0.9, d.ox + (e.clientX - d.x) / r.width));
+  tour.s = Math.max(0.4, Math.min(1.5, d.os - (e.clientY - d.y) / r.height * 1.4));
+  $('tourSlide').value = Math.round(tour.x * 100); $('tourDist').value = Math.round(tour.s * 100); tourKick();
+});
+for (const ev of ['pointerup', 'pointercancel']) tourCv.addEventListener(ev, () => { tour.drag = null; });
+$('tourNext').onclick = () => {
+  if (tour.i < TOUR.length - 1) return tourGo(tour.i + 1);
+  closeTour(); if (st.mode === 'off') $('startBtn').click();
+};
+$('tourBack').onclick = () => tourGo(tour.i - 1);
+$('tourSkip').onclick = closeTour;
+$('tour').addEventListener('cancel', e => { e.preventDefault(); closeTour(); });   // Escape
+$('tour').addEventListener('click', e => { if (e.target === $('tour')) closeTour(); });   // a tap on the backdrop
+$('tourBtn').onclick = () => openTour(0);
+$('tourLink').onclick = () => openTour(0);
+addEventListener('resize', () => { if (tour.i === TOUR_ALIGN && $('tour').open) { sizeTourCv(); tourKick(); } });
+try { if (!localStorage.getItem('fb_shotform_tour') && !navigator.webdriver && !new URLSearchParams(location.search).has('debug')) setTimeout(() => openTour(0), 400); } catch {}
+
+if (new URLSearchParams(location.search).has('debug')) window.__fb = { st, onShot, cardSvg, cardHtml, animSvg, csvOf, stageState, startCount, openForm, setTargetEdits, saveTargetEdits, goSignal, tone, setImmersive, setVoice, openTour, closeTour, guide, alignOf, setGuide, paint, draw, view, ballGate, setBallGate, showProbe, trackBall, drawTrail, det, BallFinder, loadBallDetector, detectBalls, watchDrift, loadModel, colourInBox, get TARGETS(){return TARGETS} };   // test rigs only
 </script>
 </body>
 </html>

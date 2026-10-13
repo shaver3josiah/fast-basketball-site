@@ -841,6 +841,7 @@ console.log('grading');
     const d = pub(k); if (!d || d.info) { problems.push(`${name}.${k} is not a graded target`); continue; }
     const lo = e.lo ?? d.lo, hi = e.hi ?? d.hi;
     if (!(hi > lo)) problems.push(`${name}.${k} runs backwards`);
+    if (name === 'coach') continue;   // the coach's own numbers: neither kinder nor harder by design, only checked for running backwards above
     const kinder = name === 'youth';
     if (d.low && e.lo != null && (kinder ? e.lo > d.lo : e.lo < d.lo)) problems.push(`${name}.${k}.lo ${e.lo} vs ${d.lo}`);
     if (d.high && e.hi != null && (kinder ? e.hi < d.hi : e.hi > d.hi)) problems.push(`${name}.${k}.hi ${e.hi} vs ${d.hi}`);
