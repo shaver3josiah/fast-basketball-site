@@ -245,6 +245,7 @@ test('apply puts a checked title in the draft, a later text save keeps it, and t
   const { validateContentShape } = await import('../../../src/lib/content-schema.mjs');
   const loaded = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, '../../../src/data/content.json'), 'utf8'));
   assert.deepEqual(validateContentShape(loaded), []);
+  delete loaded.seo; // the real file may carry approved titles; this case is a save that omits them
   await adminContent(new Request('http://localhost/api/admin-content', { method: 'POST', headers: { 'content-type': 'application/json', cookie: cookie() }, body: JSON.stringify(loaded) }));
   content = JSON.parse(fs.readFileSync('src/data/content.json', 'utf8'));
   assert.equal(content.seo['/basketball-training/coral-springs'].title, title, 'a text save does not drop it');

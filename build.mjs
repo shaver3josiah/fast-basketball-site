@@ -70,10 +70,17 @@ function fixFooterHeadingLevels(html) {
   return html.replace(/<div class="ft-col"><h5>/g, '<div class="ft-col"><h5 role="heading" aria-level="2">');
 }
 
+// Template comments are notes for whoever edits the source (some address the owner by name),
+// and search and AI crawlers read them. They stay in src/ and never ship. Script, style,
+// textarea and pre bodies are matched first and kept whole, so a "<!--" inside one survives.
+function stripComments(html) {
+  return html.replace(/(<(script|style|textarea|pre)\b[\s\S]*?<\/\2\s*>)|<!--[\s\S]*?-->/gi, (m, keep) => keep || '');
+}
+
 // Single funnel: every page in this build is written through here.
 function writeHtml(path, html) {
   mkdirSync(resolve(path, '..'), { recursive: true });
-  writeFileSync(path, fixFooterHeadingLevels(html));
+  writeFileSync(path, stripComments(fixFooterHeadingLevels(html)));
 }
 
 // Standalone pages built from homepage section fragments start at <h2>;

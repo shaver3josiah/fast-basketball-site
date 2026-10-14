@@ -334,5 +334,19 @@
     "countUp": true,
     "nightAmbient": true
   },
-  "showReviews": true
+  "showReviews": true,
+  "seo": {
+    "/training/private": {
+      "title": "Private Basketball Lessons | Fast Basketball",
+      "description": "Private basketball lessons with Coach Blake Kingsley, built around one player. Every session is at one Fort Lauderdale gym. Book a consultation.",
+      "at": "2026-10-14T20:37:29.501Z",
+      "from": "search research"
+    },
+    "/training/group-training": {
+      "title": "Group Basketball Lessons | Fast Basketball",
+      "description": "Group basketball lessons for players 11 to 18 with Coach Blake Kingsley. Every session is at one Fort Lauderdale gym. Enroll online.",
+      "at": "2026-10-14T20:37:29.501Z",
+      "from": "search research"
+    }
+  }
 }
