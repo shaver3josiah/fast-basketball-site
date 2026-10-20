@@ -29,11 +29,12 @@ const rows = () => {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
 };
 
-test('every lead source maps to a real Schedule 1 answer, and Google Search is the one that attributes', () => {
+test('every lead source maps to a real Schedule 1 answer; Google Search and the website are the two that attribute', () => {
+  assert.deepEqual(LEAD_SOURCES.filter((s) => s.hearAbout === 'Google or online search').map((s) => s.label), ['Google Search', 'FAST Basketball Website']);
   for (const s of LEAD_SOURCES) assert.ok(HEAR_ABOUT_CHOICES.includes(s.hearAbout), s.label);
   assert.equal(leadAnswer('Google Search').hearAbout, 'Google or online search');
   assert.deepEqual(leadAnswer('Referral', 'the Smiths'), { hearAbout: 'Friend, family, or referral', hearAboutOther: 'Referred by the Smiths' });
-  assert.deepEqual(leadAnswer('FAST Basketball Website'), { hearAbout: 'Other (please describe)', hearAboutOther: 'FAST Basketball Website' });
+  assert.deepEqual(leadAnswer('FAST Basketball Website'), { hearAbout: 'Google or online search', hearAboutOther: '' }, 'the website counts as finding FAST online');
   assert.deepEqual(leadAnswer('Other', 'a flyer'), { hearAbout: 'Other (please describe)', hearAboutOther: 'a flyer' });
 });
 
@@ -102,4 +103,14 @@ test('a signed agreement is stored with its text and version, and points at that
   assert.ok(row.agreementText.includes('14 days'));
   assert.ok(row.version);
   assert.equal(row.consultationId, c.id);
+});
+
+test('insurance is optional on the consultation and stored as N/A when left blank', async () => {
+  const blank = validateConsultation({ ...sampleConsultation(), insuranceProvider: '', insurancePolicy: '' });
+  assert.equal(blank.ok, true);
+  assert.equal(blank.values.insuranceProvider, 'N/A');
+  assert.equal(blank.values.insurancePolicy, 'N/A');
+  const given = validateConsultation({ ...sampleConsultation(), insuranceProvider: 'Florida Blue', insurancePolicy: 'XYZ123' });
+  assert.equal(given.values.insuranceProvider, 'Florida Blue');
+  assert.equal(given.values.insurancePolicy, 'XYZ123');
 });

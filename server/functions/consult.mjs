@@ -51,7 +51,8 @@ export default async (request, context) => {
     to: ownerEmail(),
     subject: 'Consultation: ' + record.playerName + ' (' + record.name + ')',
     html: '<h2>Consultation saved</h2><p>' + escapeHtml(record.playerName) + ', parent ' + escapeHtml(record.name) +
-      '. The payment and agreement links for this family are on its card in the admin Leads tab.</p>' + recordTable(record)
+      '. The payment and agreement links for this family are on its card in the admin Leads tab.</p>' +
+      '<p>Heard about FAST: <b>' + escapeHtml(record.leadSource) + '</b>, which counts as <b>' + escapeHtml(record.hearAbout) + '</b>.</p>' + recordTable(record)
   });
   if (!sent) console.error('consultation email not sent for ' + id + '; the record is saved');
   return json(200, { ok: true, id });

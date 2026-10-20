@@ -248,6 +248,8 @@ html.fb-light .fld select:has(option[value=""]:checked){color:var(--slate);}
 .en-done{display:grid;gap:14px;max-width:72ch;}
 .en-done[hidden]{display:none;}
 .cs-link{display:grid;gap:6px;margin-bottom:14px;}
+.fld-hint{display:block;margin-top:8px;font-size:.85rem;line-height:1.5;color:var(--text-dim-dark);}
+html.fb-light .fld-hint{color:var(--text-soft-light);}
 .cs-link b{font-family:var(--font-eyebrow);font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;}
 .cs-link span{display:flex;gap:8px;}
 .cs-link input{flex:1;min-width:0;font-size:16px;}

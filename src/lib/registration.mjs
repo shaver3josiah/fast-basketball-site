@@ -18,16 +18,21 @@
 // `hearAbout` as the Schedule 1 answer it maps to (HEAR_ABOUT_CHOICES, which a test holds every
 // mapping to). Commission reads only `hearAbout`.
 
-// Each of Blake's answers and the Schedule 1 answer it is recorded under. "FAST Basketball
-// Website" maps to Other, not to Google: Schedule 1 has no website answer, and a family can reach
-// the site by typing the address off a flyer, so the honest reading is the one that does not
-// assume a search. Change that only with Blake's written agreement.
+// Each of Blake's answers and the Schedule 1 answer it is recorded under.
+//
+// "FAST Basketball Website" counts as ONLINE SEARCH (Josiah's call, 20 October 2026). Schedule 1
+// has no website answer of its own, and a family who names the website found FAST online. It is
+// said out loud everywhere the answer appears, so nobody reads 8% off it by surprise: the form
+// prints ONLINE_NOTE under the question, the consultation email and the admin card print what the
+// answer counts as, and the monthly statement shows Blake's own answer beside the Schedule 1 one.
+// Blake's written OK for this reading is tracked in docs/owner-open-items.md.
+export const ONLINE_NOTE = 'Google Search and FAST Basketball Website both count as finding FAST online.';
 export const LEAD_SOURCES = [
   { label: 'Instagram', hearAbout: 'Instagram or other social media' },
   { label: 'Facebook', hearAbout: 'Instagram or other social media' },
   { label: 'TikTok', hearAbout: 'Instagram or other social media' },
   { label: 'Google Search', hearAbout: 'Google or online search' },
-  { label: 'FAST Basketball Website', hearAbout: 'Other (please describe)' },
+  { label: 'FAST Basketball Website', hearAbout: 'Google or online search' },
   { label: 'In Person', hearAbout: 'Coach Blake directly' },
   { label: 'Referral', hearAbout: 'Friend, family, or referral', detail: 'referrer' },
   { label: 'School or Coach', hearAbout: 'School, camp, or clinic' },
@@ -40,7 +45,7 @@ export function leadAnswer(leadSource, leadDetail = '') {
   if (!src) return { hearAbout: '', hearAboutOther: '' };
   let other = '';
   if (src.detail === 'referrer') other = leadDetail ? 'Referred by ' + leadDetail : '';
-  else if (src.hearAbout === 'Other (please describe)') other = leadDetail || src.label;
+  else if (src.detail === 'other') other = leadDetail || src.label;
   return { hearAbout: src.hearAbout, hearAboutOther: other };
 }
 
@@ -48,6 +53,7 @@ export const CONSULT_SECTIONS = [
   { id: 'family', title: 'The family' },
   { id: 'player', title: 'Player information' },
   { id: 'development', title: 'Basketball development' },
+  { id: 'health', title: 'Health insurance' },
   { id: 'source', title: 'Lead source' }
 ];
 
@@ -84,7 +90,12 @@ export const CONSULT_FIELDS = [
   { key: 'independent', section: 'development', label: '8. Are they able to spend time working on their game independently outside of team practices and workouts?', type: 'textarea' },
   { key: 'success', section: 'development', label: '9. If we\'re sitting down one month or six months from now, what would need to change in their game for you to consider the training a success?', type: 'textarea' },
 
-  { key: 'leadSource', section: 'source', label: 'How did you hear about FAST Basketball?', type: 'select', required: true, options: LEAD_SOURCES.map((s) => s.label) },
+  // Optional, and N/A unless Blake types something else: a coach needs these if a player is hurt
+  // on the court, but a family may not have the card to hand during a phone call.
+  { key: 'insuranceProvider', section: 'health', label: 'Insurance provider', type: 'text', row: 'ins', default: 'N/A' },
+  { key: 'insurancePolicy', section: 'health', label: 'Policy number', type: 'text', row: 'ins', autocomplete: 'off', default: 'N/A' },
+
+  { key: 'leadSource', section: 'source', label: 'How did you hear about FAST Basketball?', type: 'select', required: true, options: LEAD_SOURCES.map((s) => s.label), hint: ONLINE_NOTE },
   { key: 'leadDetail', section: 'source', label: 'Who referred them, or where?', type: 'text', placeholder: 'Only for Referral or Other' },
   { key: 'notes', section: 'source', label: 'Anything else from the call', type: 'textarea' }
 ];
@@ -139,6 +150,7 @@ function withLead(errors, values) {
 export function validateConsultation(body) {
   const { errors, values } = validateFields(CONSULT_FIELDS, body);
   if (values.age && !/^\d{1,2}$/.test(values.age)) errors.age = 'Age as a number, like 13';
+  for (const f of CONSULT_FIELDS) if (f.default && !values[f.key]) values[f.key] = f.default;
   withLead(errors, values);
   return { ok: Object.keys(errors).length === 0, errors, values };
 }

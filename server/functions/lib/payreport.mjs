@@ -131,7 +131,9 @@ function rowsFor(period) {
     planLabel: e.planLabel || '',
     billingReason: e.billingReason || '',
     // A family on a developer link was not asked; the link is their answer.
-    hearAbout: e.hearAbout || (e.claim ? "Josiah's link: " + e.claim : ''),
+    // Blake's own answer beside the Schedule 1 one when it says something different, e.g.
+    // "Google or online search (FAST Basketball Website)", so the row shows why it counts as it does.
+    hearAbout: e.hearAbout ? e.hearAbout + (e.leadSource && e.leadSource !== 'Google Search' && e.leadSource !== e.hearAbout ? ' (' + e.leadSource + ')' : '') : (e.claim ? "Josiah's link: " + e.claim : ''),
     // Says WHY the rate is what it is: an attributed customer past 12 months reads 'Yes, expired'
     // rather than looking like a mistake on the statement.
     attributed: e.attributed ? (e.withinWindow ? 'Yes' : 'Yes, 12 months expired') : 'No',

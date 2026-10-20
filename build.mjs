@@ -480,7 +480,7 @@ function step11b_privacyPage(content, prelude) {
 
   body += '<h2>What we collect</h2>\n';
   body += '<p>Only what you type into a form. The contact form asks for a name, an email, a phone number, your area, which program you are asking about, and whatever you want to tell us about the player. The playbook form asks for a name, an email, and the player\'s grade, position and skill focus. The Locker asks for an email so we can send you the resource you unlocked.</p>\n';
-  body += '<p>The consultation form is filled in by Coach Blake during your call, from your answers: the player\'s and parent\'s names, the parent\'s email and phone, home city and preferred contact method, the player\'s age, grade, school and basketball background (AAU, years playing, any past trainer), your answers to his basketball development questions, and how you heard about FAST. The payment page asks only for names, email and phone when the link did not come from a consultation, and a record that you ticked the terms box. When you sign the training agreement we keep the package you chose, the player\'s name, your typed name and the date, your email, and the browser and network address it was signed from, which is the evidence that you signed it; you and Coach Blake each get a copy by email.</p>\n';
+  body += '<p>The consultation form is filled in by Coach Blake during your call, from your answers: the player\'s and parent\'s names, the parent\'s email and phone, home city and preferred contact method, the player\'s age, grade, school and basketball background (AAU, years playing, any past trainer), your answers to his basketball development questions, the player\'s health insurance provider and policy number if you choose to give them (a coach needs these if a player is hurt on the court), and how you heard about FAST. The payment page asks only for names, email and phone when the link did not come from a consultation, and a record that you ticked the terms box. When you sign the training agreement we keep the package you chose, the player\'s name, your typed name and the date, your email, and the browser and network address it was signed from, which is the evidence that you signed it; you and Coach Blake each get a copy by email.</p>\n';
   body += '<p>When you open a payment link Coach Blake sent you, the page records that it was opened and how long it stayed open, tied to the tag in that link, so he knows to follow up. No cookie, no third party, and nothing you typed leaves your browser until you submit the form.</p>\n';
   // js/track.js and server/functions/track.mjs. If either starts recording more, this changes too.
   body += '<p>The site counts its own visits. For each visit it records which pages were opened, roughly how long they stayed on screen, whether you were on a phone or a computer, and how you arrived: the website that sent you (google.com, instagram.com), the tag on a link Coach Blake shared, or neither. It does not record your internet address, anything you type, or where you are. When you send a form, how you first found the site goes with it, so Coach Blake can see which of his efforts are reaching families. Search engines and bots are not counted. Visit records are deleted after 25 months.</p>\n';
@@ -737,6 +737,7 @@ function step11d_enrollPages(sections, content, prelude) {
     const attrs = ' id="' + p + f.key + '" name="' + f.key + '"' + (f.required ? ' required' : '') +
       (f.autocomplete ? ' autocomplete="' + f.autocomplete + '"' : '') +
       (f.inputmode ? ' inputmode="' + f.inputmode + '"' : '') +
+      (f.default ? ' value="' + escapeAttr(f.default) + '"' : '') +
       (f.placeholder ? ' placeholder="' + escapeAttr(f.placeholder) + '"' : '');
     if (f.type === 'select') {
       return '<select' + attrs + '><option value="">Please select</option>' +
@@ -746,7 +747,8 @@ function step11d_enrollPages(sections, content, prelude) {
     return '<input type="' + f.type + '"' + attrs + '>';
   };
   const field = (f, p = 'en_') => '<div class="fld"><label for="' + p + f.key + '">' + escapeHtml(f.label) +
-    (f.required ? '' : ' <span class="en-opt">optional</span>') + '</label>' + control(f, p) + '</div>\n';
+    (f.required ? '' : ' <span class="en-opt">optional</span>') + '</label>' + control(f, p) +
+    (f.hint ? '<span class="fld-hint">' + escapeHtml(f.hint) + '</span>' : '') + '</div>\n';
   // Two fields that share a `row` sit side by side, the way the contact form pairs name and phone.
   const fieldsIn = (list, p) => {
     let out = '';

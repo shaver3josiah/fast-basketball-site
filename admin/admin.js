@@ -484,7 +484,8 @@
     ['age', 'Age'], ['grade', 'Grade'], ['school', 'School'], ['aau', 'Playing AAU'], ['yearsPlaying', 'Playing for'],
     ['hadTrainer', 'Had a trainer'], ['interest', 'Why training'], ['strengths', 'Strengths'], ['improve', 'To improve'],
     ['feedback', 'Coach feedback'], ['confidence', 'Confidence (1 to 10)'], ['obstacles', 'Holding them back'],
-    ['goals', 'Goals'], ['independent', 'Works on their own'], ['success', 'Success looks like'], ['notes', 'Notes']
+    ['goals', 'Goals'], ['independent', 'Works on their own'], ['success', 'Success looks like'],
+    ['insuranceProvider', 'Insurance'], ['insurancePolicy', 'Policy number'], ['notes', 'Notes']
   ];
   // The links a consultation card hands Blake, each tied to that consultation (?c=). Mirrors
   // LINKS in src/js/consult.js.
@@ -775,6 +776,8 @@
       meta('Player', l.playerName);
       CONSULT_LABELS.forEach(function(pair){ meta(pair[1], l[pair[0]]); });
       meta('Heard about FAST', [l.leadSource, l.leadDetail].filter(Boolean).join(SEP));
+      // What the answer counts as under the website agreement, said plainly on every card.
+      meta('Counts as', l.hearAbout);
       // The family's next links, ready to copy. Each carries this consultation's id, which is how
       // a payment finds these answers (and the lead source that sets the commission rate).
       CONSULT_LINKS.forEach(function(pair){
