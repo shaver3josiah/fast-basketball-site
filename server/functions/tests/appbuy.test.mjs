@@ -117,12 +117,12 @@ test('a tool purchase returns to /appbuy, never to the athlete registration form
   assert.ok(msg.includes('non-refundable'), msg);
 });
 
-test('an enrollment still returns to /enroll and still cites the training agreement', () => {
+test('an enrollment returns to /pay and still cites the training agreement', () => {
   const p = sessionParams(checkoutSpec('group-3m-1x', 'monthly'), {
     email: 'parent@example.test', priceId: 'price_y', siteUrl: SITE, nowSeconds: NOW, registrationId: 'reg-1'
   });
-  assert.equal(p.success_url, 'https://example.test/enroll/thanks');
-  assert.equal(p.cancel_url, 'https://example.test/enroll?plan=group-3m-1x&pay=monthly');
+  assert.equal(p.success_url, 'https://example.test/pay/thanks');
+  assert.equal(p.cancel_url, 'https://example.test/pay?plan=group-3m-1x&pay=monthly');
   assert.ok(p.custom_text.terms_of_service_acceptance.message.includes('https://example.test/terms'));
 });
 

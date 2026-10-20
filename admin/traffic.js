@@ -142,7 +142,7 @@
   };
   var channel = function(c){ return CHANNEL[c] || c; };
   var PAGE = {
-    '/': 'Homepage', '/enroll': 'Enroll page', '/enroll/thanks': 'Enroll thank-you page', '/contact': 'Contact page',
+    '/': 'Homepage', '/enroll': 'Consultation form', '/enroll/thanks': 'Payment thank-you page', '/pay': 'Payment page', '/pay/thanks': 'Payment thank-you page', '/agreement': 'Training agreement', '/contact': 'Contact page',
     '/locker': 'The Locker', '/playbook': 'Free playbook', '/privacy': 'Privacy page', '/terms': 'Terms page',
     '/appbuy': 'Tools shop', '/appbuy/thanks': 'Tools thank-you page', '/shotform': 'Shot Form Watcher', '/dribble': 'Dribble Listener',
     '/coach-blake-kingsley': 'Coach page', '/blog/': 'Blog',

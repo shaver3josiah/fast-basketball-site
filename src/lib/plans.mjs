@@ -52,9 +52,11 @@ export const PLANS = {
     description: 'One private session with Coach Blake, built around your athlete.',
     cents: 10000, kind: 'once'
   },
+  // `agreement`: the two packages the /agreement page offers and families sign for (Blake,
+  // 19 October 2026). Stripe's consent box points at /agreement for these, /terms for the rest.
   'individual-1x': {
     label: 'Individual Training, once a week', program: 'individual',
-    frequency: 'once a week', kind: 'recurring',
+    frequency: 'once a week', kind: 'recurring', agreement: true,
     totals: { monthly: 30000 }
   },
   'individual-2x': {
@@ -77,9 +79,10 @@ export const PLANS = {
     frequency: 'once a week', termMonths: 3, kind: 'term',
     totals: { full: 90000 }
   },
+  // 19 October 2026: six months plus one free, so seven months of sessions for $1,800.
   'individual-6m': {
-    label: 'Individual Training, 6 months, once a week', program: 'individual',
-    frequency: 'once a week', termMonths: 6, kind: 'term',
+    label: 'Individual Training, 6 months plus 1 free, once a week', program: 'individual',
+    frequency: 'once a week', termMonths: 7, kind: 'term', agreement: true,
     totals: { full: 180000 }
   },
   'group-3m-1x': {
@@ -431,7 +434,9 @@ export function checkoutSpec(planKey, pay, plans = PLANS) {
     // Where the buyer came from and goes back to. sessionParams() builds Stripe's success and
     // cancel URLs from it, so a tool purchase that is abandoned lands back on /appbuy with its
     // choice still made rather than on the athlete registration form.
-    page: plan.kind === 'app' ? '/appbuy' : '/enroll',
+    page: plan.kind === 'app' ? '/appbuy' : '/pay',
+    // The document Stripe's consent box links. Only the packages /agreement covers point at it.
+    termsPath: plan.agreement ? '/agreement' : '/terms',
     metadata: { plan: planKey, pay }
   };
 

@@ -124,11 +124,14 @@
   /* Capture phase, so the fields are current before any form's own submit handler reads them. */
   document.addEventListener('submit', function(e){ if(e.target && e.target.tagName === 'FORM') stamp(e.target); }, true);
 
+  /* The intake question: hearAbout on the contact form, leadSource on /pay. Never the consultation
+     on /enroll, which Coach Blake fills in for a family, so a claim on his own device means nothing there. */
+  var INTAKE = 'select[name="hearAbout"], #enForm select[name="leadSource"]';
   function intake(on){
-    var sel = document.querySelectorAll('select[name="hearAbout"]');
+    var sel = document.querySelectorAll(INTAKE);
     for(var i = 0; i < sel.length; i++){
       var box = sel[i].closest('.fld') || sel[i].parentNode;
-      var other = sel[i].form && sel[i].form.querySelector('[name="hearAboutOther"]');
+      var other = sel[i].form && sel[i].form.querySelector('[name="hearAboutOther"], [name="leadDetail"]');
       var otherBox = other && (other.closest('.fld') || other.parentNode);
       /* style.display, not the hidden attribute: .fld sets its own display and would win. */
       box.style.display = on ? 'none' : '';
@@ -156,7 +159,7 @@
 
   function ready(fn){ if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
   ready(function(){
-    hasIntake = !!document.querySelector('select[name="hearAbout"]');
+    hasIntake = !!document.querySelector(INTAKE);
     stampAll();
     var body = { t: 'pv', p: path, nv: nv, w: window.innerWidth || 0 };
     if(fresh) body.s = arrival;

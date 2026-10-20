@@ -46,8 +46,9 @@ const redirect = (location) => new Response(null, { status: 303, headers: { Loca
 function backToForm(body) {
   const plan = encodeURIComponent(String(body?.plan ?? ''));
   const pay = encodeURIComponent(String(body?.pay ?? ''));
-  const page = isAppPlan(body?.plan) ? '/appbuy' : '/enroll';
-  return redirect(page + '?plan=' + plan + '&pay=' + pay + '&err=1#enErr');
+  const page = isAppPlan(body?.plan) ? '/appbuy' : '/pay';
+  const c = UUID_RE.test(String(body?.consult ?? '')) ? '&c=' + body.consult : '';
+  return redirect(page + '?plan=' + plan + '&pay=' + pay + c + '&err=1#enErr');
 }
 
 // Pure so the parameter shape is testable without a Stripe account. siteUrl is a
@@ -75,7 +76,7 @@ export function sessionParams(spec, { email, priceId, siteUrl, nowSeconds, regis
         // is the sentence they ticked on /appbuy, so that is what Stripe repeats back.
         message: spec.page === '/appbuy'
           ? 'I agree to the [Fast Basketball tool purchase terms](' + abs('/appbuy') + '). This purchase is final and non-refundable, including every payment in a payment plan.'
-          : 'I have read and agree to the Fast Basketball [training agreement](' + abs('/terms') + ').'
+          : 'I have read and agree to the Fast Basketball [training agreement](' + abs(spec.termsPath || '/terms') + ').'
       }
     },
     custom_fields: [
@@ -199,7 +200,7 @@ export default async (request, context) => {
   // what a key means: an /appbuy post and an /enroll post arrive on the same endpoint, and
   // nothing the client says about itself is trusted to pick a validator or a store prefix.
   const isApp = isAppPlan(body.plan);
-  const thanksPath = (isApp ? '/appbuy' : '/enroll') + '/thanks';
+  const thanksPath = (isApp ? '/appbuy' : '/pay') + '/thanks';
 
   // Honeypot, same as the contact and playbook forms: a bot gets the thanks page and
   // neither the store nor Stripe ever hears about it.
@@ -218,7 +219,16 @@ export default async (request, context) => {
   if (!isApp && typeof body.claim === 'string' && body.claim) {
     try { claim = await activeClaim(body.claim.trim().toLowerCase()); } catch (err) { console.error('claim ' + body.claim + ' not read: ' + err.message); }
   }
-  const { errors, values } = isApp ? validateAppOrder(body) : validateRegistration(body, { claimed: !!claim });
+  // The consultation Blake filled in on /enroll, when the /pay link carries one (?c=). The
+  // family's name, contact details and lead source come from THAT row, read here, never from
+  // anything the page sends; the page only ever holds the id.
+  let consult = null;
+  if (!isApp && typeof body.consult === 'string' && body.consult) {
+    const row = UUID_RE.test(body.consult) ? await getLead('consult:' + body.consult) : null;
+    if (row && row.type === 'consultation') consult = row;
+  }
+  const { errors, values } = isApp ? validateAppOrder(body) : validateRegistration(body, { claimed: !!claim, consult });
+  if (!isApp && body.consult && !consult) errors.consult = 'That payment link is not complete. Ask Coach Blake to send it again.';
   // The typed coupon code. Deliberately NOT a FIELDS answer, the same call as the campaign tag
   // below: it is an instruction about the payment, not something the registration asks about
   // the athlete, so it never enters `values`, never reaches validateRegistration and never
@@ -257,6 +267,8 @@ export default async (request, context) => {
   }
   const keys = Object.keys(errors);
   if (keys.length) return fail(422, { error: errors[keys[0]], errors });
+  // Stripe's cancel link has to bring the family back to the same consultation's page.
+  if (consult) spec = { ...spec, cancelPath: (spec.cancelPath || spec.page + '?plan=' + spec.plan + '&pay=' + spec.pay) + '&c=' + consult.consultationId };
 
   // A parent back from Stripe's cancel link resubmits with the id enroll.js kept, and the
   // pending record is rewritten rather than doubled. Anything else gets a fresh id: a value
@@ -366,9 +378,9 @@ export default async (request, context) => {
 async function notifyRegistration(record, reused) {
   const sent = await sendEmail({
     to: ownerEmail(),
-    subject: (reused ? 'Updated registration' : 'New registration') + ', payment pending: ' + record.playerName + ' (' + record.planLabel + ')',
-    html: '<h2>' + (reused ? 'Registration updated' : 'New registration') + '</h2>' +
-      '<p>' + escapeHtml(record.name) + ' registered ' + escapeHtml(record.playerName) + ' and is on the way to Stripe to pay ' +
+    subject: 'Payment started: ' + record.playerName + ' (' + record.planLabel + ')',
+    html: '<h2>Payment started</h2>' +
+      '<p>' + escapeHtml(record.name) + ' (' + escapeHtml(record.playerName) + ') is on the way to Stripe to pay ' +
       escapeHtml(record.amount) + (record.pay === 'monthly' ? ' a month' : '') +
       (record.deal ? ' on your deal "' + escapeHtml(record.planLabel) + '"' : '') +
       // The published price, which is not what the card is charged when a coupon holds. Say so

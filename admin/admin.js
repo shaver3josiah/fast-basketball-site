@@ -477,11 +477,32 @@
   // 'unpaid' are Stripe's own words for a completed session; the rest are ours, set by
   // checkout.mjs and the webhook.
   var STATUS = { pending: 'PENDING PAYMENT', abandoned: 'NO PAYMENT', superseded: 'REPLACED', unpaid: 'UNPAID' };
-  // The registration's typed answers, in form order, for the CSV. Mirrors FIELDS in
-  // src/lib/registration.mjs.
+  // The consultation's questions, in form order, with the label the card prints. Mirrors
+  // CONSULT_FIELDS in src/lib/registration.mjs (October 2026).
+  var CONSULT_LABELS = [
+    ['relationship', 'Relationship'], ['homeCity', 'Home'], ['contactMethod', 'Prefers'],
+    ['age', 'Age'], ['grade', 'Grade'], ['school', 'School'], ['aau', 'Playing AAU'], ['yearsPlaying', 'Playing for'],
+    ['hadTrainer', 'Had a trainer'], ['interest', 'Why training'], ['strengths', 'Strengths'], ['improve', 'To improve'],
+    ['feedback', 'Coach feedback'], ['confidence', 'Confidence (1 to 10)'], ['obstacles', 'Holding them back'],
+    ['goals', 'Goals'], ['independent', 'Works on their own'], ['success', 'Success looks like'], ['notes', 'Notes']
+  ];
+  // The links a consultation card hands Blake, each tied to that consultation (?c=). Mirrors
+  // LINKS in src/js/consult.js.
+  var CONSULT_LINKS = [
+    ['Evaluation payment', '/pay?plan=eval'],
+    ['Agreement: Monthly Training', '/agreement?plan=individual-1x'],
+    ['Agreement: Six-Month Commitment', '/agreement?plan=individual-6m'],
+    ['Payment: Monthly Training', '/pay?plan=individual-1x'],
+    ['Payment: Six-Month Commitment', '/pay?plan=individual-6m']
+  ];
+  // Every typed answer any lead type carries, for the CSV. Older enrollment rows still hold the
+  // Jotform-era keys (dob, insurance...), so those stay in the list.
   var REG_KEYS = ['athleteFirst', 'athleteLast', 'dob', 'gender', 'grade', 'school', 'studentEmail', 'studentPhone',
     'experience', 'team', 'position', 'goals', 'parentFirst', 'parentLast', 'relationship', 'homeCity', 'contactMethod',
     'program', 'frequency', 'day', 'tshirt', 'insuranceProvider', 'insurancePolicy', 'notes', 'hearAbout', 'hearAboutOther', 'paymentStatus', 'agreeName',
+    'age', 'aau', 'yearsPlaying', 'hadTrainer', 'interest', 'strengths', 'improve', 'feedback', 'confidence', 'obstacles',
+    'independent', 'success', 'leadSource', 'leadDetail', 'consultationId',
+    'signature', 'signedDate', 'signedAt', 'version', 'agreementId',
     // /appbuy tool orders. Mirrors FIELDS in src/lib/apporder.mjs plus what the webhook adds.
     'firstName', 'lastName', 'role', 'athleteName', 'product', 'productLabel', 'accessUrl'];
 
@@ -530,6 +551,8 @@
       return a;
     }
     if(l.type === 'contact') return [l.area, l.hearAbout].filter(Boolean).join(SEP);
+    if(l.type === 'consultation') return ['player ' + (l.playerName || ''), l.age ? 'age ' + l.age : '', l.leadSource].filter(Boolean).join(SEP);
+    if(l.type === 'agreement') return [l.planLabel || l.plan, 'signed ' + (l.signedDate || ''), 'player ' + (l.playerName || '')].join(SEP);
     return l.area || '';
   }
 
@@ -632,13 +655,13 @@
     row.appendChild(copyBtn);
     var help = document.createElement('p');
     help.className = 'help';
-    help.textContent = "Paste this in the enrollment email. It never expires; Stripe's checkout opens when the parent clicks it. For the 48-hour evaluation rate pick Evaluation Session (48-hour rate). Add a family tag and the Leads tab shows when they open it and how long they stay, and emails you if they look but do not finish.";
+    help.textContent = "A payment link for any package. For a family you have had a consultation with, use the links on their consultation card instead: those tie the payment to the consultation. It never expires; Stripe's checkout opens when the parent clicks it. For the 48-hour evaluation rate pick Evaluation Session (48-hour rate). Add a family tag and the Leads tab shows when they open it and how long they stay, and emails you if they look but do not finish.";
     body.appendChild(help);
 
     function update(){
       var email = emailIn.value.trim();
       var refv = refIn.value.trim();
-      out.value = PLANS.siteUrl.replace(/\/$/, '') + '/enroll?plan=' + planSel.value + '&pay=' + paySel.value +
+      out.value = PLANS.siteUrl.replace(/\/$/, '') + '/pay?plan=' + planSel.value + '&pay=' + paySel.value +
         (email ? '&email=' + encodeURIComponent(email) : '') +
         (refv ? '&ref=' + encodeURIComponent(refv) : '');
     }
@@ -748,6 +771,40 @@
         anote.className = 'lead-msg';
         card.appendChild(anote);
       }
+    } else if(l.type === 'consultation'){
+      meta('Player', l.playerName);
+      CONSULT_LABELS.forEach(function(pair){ meta(pair[1], l[pair[0]]); });
+      meta('Heard about FAST', [l.leadSource, l.leadDetail].filter(Boolean).join(SEP));
+      // The family's next links, ready to copy. Each carries this consultation's id, which is how
+      // a payment finds these answers (and the lead source that sets the commission rate).
+      CONSULT_LINKS.forEach(function(pair){
+        var url = window.FB_PLANS && window.FB_PLANS.siteUrl ? window.FB_PLANS.siteUrl.replace(/\/$/, '') : location.origin;
+        var row = document.createElement('div');
+        row.className = 'link-row';
+        var out = document.createElement('input');
+        out.className = 'link-out';
+        out.readOnly = true;
+        out.value = url + pair[1] + '&c=' + l.consultationId;
+        out.setAttribute('aria-label', pair[0]);
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = 'Copy';
+        btn.addEventListener('click', function(){ copyText(out.value, out); });
+        card.appendChild(cell('p', pair[0])).className = 'lead-meta';
+        row.appendChild(out);
+        row.appendChild(btn);
+        card.appendChild(row);
+      });
+    } else if(l.type === 'agreement'){
+      meta('Package', l.planLabel || l.plan);
+      meta('Player', l.playerName);
+      meta('Signed', [l.signature, l.signedDate].filter(Boolean).join(SEP));
+      meta('Agreement version', l.version);
+      if(l.agreementText){
+        var terms = cell('div', l.agreementText);
+        terms.className = 'lead-msg';
+        card.appendChild(terms);
+      }
     } else if(l.type === 'contact'){
       meta('Area', l.area);
       meta('Program', l.program);
@@ -797,7 +854,7 @@
     filter.placeholder = 'Filter by suburb, name, or email';
     bar.appendChild(filter);
     var typeSel = document.createElement('select');
-    [['', 'All types'], ['contact', 'contact'], ['playbook', 'playbook'], ['enrollment', 'enrollment'], ['apporder', 'tool orders'], ['visit', 'link opens']].forEach(function(pair){
+    [['', 'All types'], ['contact', 'contact'], ['playbook', 'playbook'], ['consultation', 'consultations'], ['agreement', 'agreements'], ['enrollment', 'payments'], ['apporder', 'tool orders'], ['visit', 'link opens']].forEach(function(pair){
       var o = document.createElement('option');
       o.value = pair[0];
       o.textContent = pair[1];

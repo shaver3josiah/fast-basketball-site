@@ -10,7 +10,7 @@ import { stripeClient, json } from './lib/stripe.mjs';
 import { validateDeal, dealState, createDealStripe, closeDealStripe, getDeal, putDeal, listDeals } from './lib/deals.mjs';
 import { SITE_URL } from '../../src/lib/site-config.mjs';
 
-const linkFor = (id) => SITE_URL.replace(/\/$/, '') + '/enroll?deal=' + encodeURIComponent(id);
+const linkFor = (id) => SITE_URL.replace(/\/$/, '') + '/pay?deal=' + encodeURIComponent(id);
 const view = (d) => ({ ...d, state: dealState(d), link: linkFor(d.id) });
 
 export default (request) => handle(request, stripeClient());

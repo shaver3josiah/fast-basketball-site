@@ -121,10 +121,10 @@ test('isAttributed takes a claim only as a literal true the server computed', ()
 });
 
 test('a claimed family need not answer the intake question, but an answer given is still checked', () => {
-  const body = { ...sampleRegistration(), hearAbout: '' };
-  assert.ok(validateRegistration(body).errors.hearAbout, 'unclaimed: still required');
-  assert.equal(validateRegistration(body, { claimed: true }).errors.hearAbout, undefined);
-  assert.ok(validateRegistration({ ...body, hearAbout: 'Google' }, { claimed: true }).errors.hearAbout, 'not a Schedule 1 choice');
+  const body = { ...sampleRegistration(), leadSource: '', leadDetail: '' };
+  assert.ok(validateRegistration(body).errors.leadSource, 'unclaimed: still required');
+  assert.equal(validateRegistration(body, { claimed: true }).errors.leadSource, undefined);
+  assert.ok(validateRegistration({ ...body, leadSource: 'Google' }, { claimed: true }).errors.leadSource, 'not one of the choices');
 });
 
 // ---------------------------------------------------------------- the report
@@ -350,7 +350,7 @@ test('checkout: a family on a live developer link is registered without the inta
   reset();
   await putLink(link());
   const trk = JSON.stringify({ vid: VID, ft: { via: 'josiah01', landing: '/enroll' }, ss: { via: 'josiah01' } });
-  const res = await enroll({ ...REG, hearAbout: '', claim: 'JOSIAH01 ', trk });
+  const res = await enroll({ ...REG, leadSource: '', leadDetail: '', claim: 'JOSIAH01 ', trk });
   assert.equal(res.status, 503, 'saved, then stopped at Stripe (no key in tests)');
   const [row] = await listLeads();
   assert.deepEqual(row.claim, { id: 'josiah01', name: 'The Rivera family' });
@@ -362,9 +362,9 @@ test('checkout: an invented or revoked claim is no claim, so the question is req
   reset();
   await putLink(link({ revokedAt: '2026-01-01T00:00:00.000Z' }));
   for (const claim of ['made0up1', 'josiah01']) {
-    const res = await enroll({ ...REG, hearAbout: '', claim });
+    const res = await enroll({ ...REG, leadSource: '', leadDetail: '', claim });
     assert.equal(res.status, 422, claim);
-    assert.ok((await res.json()).errors.hearAbout);
+    assert.ok((await res.json()).errors.leadSource);
   }
   assert.equal((await listLeads()).length, 0, 'nothing stored');
   // A tool buyer never carries a claim: the 50/50 split does not depend on who sent them.

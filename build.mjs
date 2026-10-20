@@ -14,7 +14,8 @@ import { SITE_URL, CONTACT, OFFERS, BUSINESS_NAME } from './src/lib/site-config.
 import { HOME_GYM } from './src/lib/suburb-copy.mjs';
 import { cardHtml, programTiles, keysIn } from './src/lib/enroll-cards.mjs';
 import { PLANS, APP_PLANS, PAY_OPTIONS, PAY_LABELS, getPlan, payOptionsFor, checkoutSpec, totalCents, dollars, catalogView } from './src/lib/plans.mjs';
-import { FIELDS as REGISTRATION_FIELDS, SECTIONS as REGISTRATION_SECTIONS } from './src/lib/registration.mjs';
+import { CONSULT_FIELDS, CONSULT_SECTIONS, PAYER_FIELDS } from './src/lib/registration.mjs';
+import { agreementPlans, packageTerms, GENERAL_LINES } from './src/lib/agreement.mjs';
 import { FIELDS as APPORDER_FIELDS, SECTIONS as APPORDER_SECTIONS } from './src/lib/apporder.mjs';
 import { TEXT_GROUPS, TEXT_LABELS, IMAGE_LABELS } from './src/lib/content-schema.mjs';
 import { CONTENT_GROUPS } from './src/lib/content-groups.mjs';
@@ -51,7 +52,7 @@ const TRAINING_PAGES = [
     description: 'Private basketball training in Fort Lauderdale with Coach Blake Kingsley, built around one athlete. $100 a session, or a weekly plan from $300 a month.',
     // Public since 7 October 2026 (Blake's sheet, Josiah's call). Must match the individual-*
     // plans in src/lib/plans.mjs, the private card in programs.html and OFFERS in site-config.
-    price: { amount: '$100', unit: 'Per Session', line: 'Or a weekly plan, billed monthly until you cancel: $300 a month once a week, $550 twice a week, $750 three times a week. Or pay a once-a-week term in full: $900 for 3 months, $1,800 for 6 months. Spots are limited, so book a call first to talk through your player\'s goals.' },
+    price: { amount: '$100', unit: 'Per Session', line: 'Or a weekly plan, billed monthly until you cancel: $300 a month once a week, $550 twice a week, $750 three times a week. Or pay a once-a-week term in full: $900 for 3 months, $1,800 for 6 months plus 1 free. Spots are limited, so book a call first to talk through your player\'s goals.' },
     cta: 'Book a Consultation',
     features: ['Individualized training built around the athlete\'s specific goals, strengths, and areas for improvement', 'Footwork, handle, finishing, and shooting blocks', 'Same journal and homework standard as the membership', 'Film review and college coaching advice on request'],
     faq: [5, 1, 0],
@@ -479,13 +480,13 @@ function step11b_privacyPage(content, prelude) {
 
   body += '<h2>What we collect</h2>\n';
   body += '<p>Only what you type into a form. The contact form asks for a name, an email, a phone number, your area, which program you are asking about, and whatever you want to tell us about the player. The playbook form asks for a name, an email, and the player\'s grade, position and skill focus. The Locker asks for an email so we can send you the resource you unlocked.</p>\n';
-  body += '<p>The enrollment form asks for more, because it is the registration for a training program: the athlete\'s name, date of birth, gender, grade, school, experience, and optionally their own email, phone, team, position and goals; the parent or guardian\'s name, relationship, email, phone, home city and preferred way to be contacted; the program, frequency, day and T-shirt size; the athlete\'s health insurance provider and policy number, which is what a coach needs if a player is hurt on the court; the plan chosen; any questions; and a record that you ticked the two agreement boxes. Your signature itself is not collected here: you sign by typing your full name on Stripe\'s checkout page, and Stripe keeps that.</p>\n';
-  body += '<p>When you open an enrollment link Coach Blake sent you, the page records that it was opened and how long it stayed open, tied to the tag in that link, so he knows to follow up. No cookie, no third party, and nothing you typed leaves your browser until you submit the form.</p>\n';
+  body += '<p>The consultation form is filled in by Coach Blake during your call, from your answers: the player\'s and parent\'s names, the parent\'s email and phone, home city and preferred contact method, the player\'s age, grade, school and basketball background (AAU, years playing, any past trainer), your answers to his basketball development questions, and how you heard about FAST. The payment page asks only for names, email and phone when the link did not come from a consultation, and a record that you ticked the terms box. When you sign the training agreement we keep the package you chose, the player\'s name, your typed name and the date, your email, and the browser and network address it was signed from, which is the evidence that you signed it; you and Coach Blake each get a copy by email.</p>\n';
+  body += '<p>When you open a payment link Coach Blake sent you, the page records that it was opened and how long it stayed open, tied to the tag in that link, so he knows to follow up. No cookie, no third party, and nothing you typed leaves your browser until you submit the form.</p>\n';
   // js/track.js and server/functions/track.mjs. If either starts recording more, this changes too.
   body += '<p>The site counts its own visits. For each visit it records which pages were opened, roughly how long they stayed on screen, whether you were on a phone or a computer, and how you arrived: the website that sent you (google.com, instagram.com), the tag on a link Coach Blake shared, or neither. It does not record your internet address, anything you type, or where you are. When you send a form, how you first found the site goes with it, so Coach Blake can see which of his efforts are reaching families. Search engines and bots are not counted. Visit records are deleted after 25 months.</p>\n';
   body += '<p>Buying one of the training tools asks for much less, because it is software rather than a place on a court: your name, your email, optionally a phone number, a home city and the athlete\'s name, which of the four "you are" answers fits you, anything you typed in the comments box, which tool you bought, how you chose to pay, and a record that you ticked the two boxes. Your email is where the link is sent, so it is the one thing the purchase cannot work without. No date of birth, no school, and no insurance details: nothing about selling a phone tool needs them.</p>\n';
   body += '<p>The tools themselves send us nothing at all. The Shot Form Watcher uses your camera and the Dribble Listener uses your microphone, and both do their work inside the browser on your own device. No video, no audio and no recording is uploaded anywhere, to us or to anyone else, and neither tool has a login.</p>\n';
-  body += '<p>The enrollment form and the contact form both ask how you heard about us. We keep your answer on your record. It changes nothing about what you pay or what your athlete receives: it tells Coach Blake which of his efforts are reaching families, and it sets the fee the person who built this site is paid out of Coach Blake\'s own share rather than out of anything you pay. If you would rather not say, pick "Other" and leave the box blank. If you arrived through a personal link, the form does not ask: the link already says how you found us.</p>\n';
+  body += '<p>The consultation, the payment page and the contact form ask how you heard about us. We keep your answer on your record. It changes nothing about what you pay or what your athlete receives: it tells Coach Blake which of his efforts are reaching families, and it sets the fee the person who built this site is paid out of Coach Blake\'s own share rather than out of anything you pay. If you would rather not say, pick "Other". If you arrived through a personal link, the form does not ask: the link already says how you found us.</p>\n';
   body += '<p>One thing gets recorded that you did not type: a playbook request is saved along with the internet address it came from, which is how we stop the form being hammered by a bot. Google, which hosts the site, also keeps its own standard server logs, the way every web host does.</p>\n';
 
   body += '<h2>What we do with it</h2>\n';
@@ -536,7 +537,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<li>The email you used to open the Locker, so your unlocked resources stay unlocked next time. Hit "Log out" in the Locker and it is gone.</li>\n';
   body += '<li>A count of the shots you have made in the little night court on the homepage. It is a number. That is genuinely all it is.</li>\n';
   body += '<li>Which program you clicked, so the contact form arrives already knowing what you wanted to ask about. It clears when you close the tab.</li>\n';
-  body += '<li>The answers you typed into the enrollment form, so coming back from Stripe\'s checkout does not empty it. The insurance policy number is not kept. All of it clears when you close the tab.</li>\n';
+  body += '<li>The answers you typed into the payment page, so coming back from Stripe\'s checkout does not empty it. All of it clears when you close the tab.</li>\n';
   body += '<li>The same for the tool purchase form, and for the same reason. It clears when you close the tab.</li>\n';
   body += '<li>A note that you have already seen the opening animation, so it does not replay on every page. That clears when you close the tab too.</li>\n';
   body += '<li>A random number that stands for this browser, and how it first found the site, so a returning visitor is counted once and a form can say how you found us. It is not a cookie and names nobody. If you arrived through a personal link, the link\'s short code is kept too.</li>\n';
@@ -608,7 +609,7 @@ function step11c_termsPage(content, prelude) {
     'Group training membership, 6 months: $800 once a week paid in full, or $900 paid monthly. $1,000 unlimited, paid in full.',
     'Unlimited means up to two group sessions a week.',
     'Individual (private 1-on-1) training: $100 for a single session, or a weekly plan billed monthly until you cancel: $300 a month once a week, $550 twice a week, $750 three times a week.',
-    'Individual training once a week, paid in full: $900 for 3 months, $1,800 for 6 months.',
+    'Individual training once a week, paid in full: $900 for 3 months, $1,800 for 6 months plus 1 free (7 months).',
     'The evaluation session is quoted on your call.'
   ]);
   body += '<p>If you choose to cancel after 6 or 12 months, you agree to provide Coach Blake Kingsley 60 days written notice at <a href="mailto:' + CONTACT.email + '">' + CONTACT.email + '</a> to cancel any future recurring payment after the contract is complete. If you do not follow our terms, you will be automatically enrolled into the same agreement for the next 12 months, no exceptions.</p>\n';
@@ -711,25 +712,31 @@ function finePrint(programsHtml) {
   return programsHtml.slice(start, el.end) + '\n';
 }
 
-// /enroll is the plan matrix as one form. Every amount is rendered from plans.mjs, the
-// catalog the checkout function resolves prices from, so a card cannot promise a figure
-// Stripe does not charge. The form posts to the function on its own (no JS: the function
-// answers 303 to Stripe); enroll.js upgrades it to fetch + location.assign and wires the
-// chosen plan to the two pay-option amounts. /enroll/thanks is copy only: the webhook,
-// not the redirect, is the record of a payment, so the page never says one succeeded.
+// Three pages since 19 October 2026 (Blake). /enroll is the CONSULTATION Coach Blake fills in on
+// the phone: no plans, no payment. /pay takes the money he sends a family to: the evaluation
+// first and, after it, the package he recommends. /agreement is the training agreement a family
+// signs before paying for a package. All three are reached only from a link Blake sends, so all
+// three are noindex and out of the sitemap.
+//
+// /pay is the plan matrix as one form. Every amount is rendered from plans.mjs, the catalog the
+// checkout function resolves prices from, so a card cannot promise a figure Stripe does not
+// charge. The form posts to the function on its own (no JS: the function answers 303 to
+// Stripe); enroll.js upgrades it to fetch + location.assign, shows only the package the link
+// names, and drops the "who is this for" questions when the link carries a consultation (?c=).
+// The thanks page is copy only: the webhook, not the redirect, is the record of a payment.
 function step11d_enrollPages(sections, content, prelude) {
-  // Was an sms: link with the number. /enroll is noindex but a harvester does not care, so
+  // Was an sms: link with the number. These pages are noindex but a harvester does not care, so
   // since September 2026 the only way to the number is a sent contact form.
   const note = '<a href="/contact">send a note</a>';
   const card = (key) => cardHtml(key);
-  const legend = (n, text) => '<legend class="en-lg"><span class="en-n">0' + n + '</span>' + text + '</legend>\n';
+  const legend = (n, text) => '<legend class="en-lg"><span class="en-n">' + String(n).padStart(2, '0') + '</span>' + text + '</legend>\n';
 
-  // The registration questions come from src/lib/registration.mjs, so the page asks exactly
-  // what checkout.mjs validates. Labels take the .fld eyebrow style; a field the Jotform did
-  // not require says "optional", since the form marks nothing else.
-  const control = (f) => {
-    const attrs = ' id="en_' + f.key + '" name="' + f.key + '"' + (f.required ? ' required' : '') +
+  // Every question comes from src/lib/registration.mjs, so each page asks exactly what its
+  // endpoint validates. A field that is not required says "optional", since nothing else marks it.
+  const control = (f, p) => {
+    const attrs = ' id="' + p + f.key + '" name="' + f.key + '"' + (f.required ? ' required' : '') +
       (f.autocomplete ? ' autocomplete="' + f.autocomplete + '"' : '') +
+      (f.inputmode ? ' inputmode="' + f.inputmode + '"' : '') +
       (f.placeholder ? ' placeholder="' + escapeAttr(f.placeholder) + '"' : '');
     if (f.type === 'select') {
       return '<select' + attrs + '><option value="">Please select</option>' +
@@ -738,18 +745,17 @@ function step11d_enrollPages(sections, content, prelude) {
     if (f.type === 'textarea') return '<textarea' + attrs + '></textarea>';
     return '<input type="' + f.type + '"' + attrs + '>';
   };
-  const field = (f) => '<div class="fld"><label for="en_' + f.key + '">' + escapeHtml(f.label) +
-    (f.required ? '' : ' <span class="en-opt">optional</span>') + '</label>' + control(f) + '</div>\n';
+  const field = (f, p = 'en_') => '<div class="fld"><label for="' + p + f.key + '">' + escapeHtml(f.label) +
+    (f.required ? '' : ' <span class="en-opt">optional</span>') + '</label>' + control(f, p) + '</div>\n';
   // Two fields that share a `row` sit side by side, the way the contact form pairs name and phone.
-  const fieldsIn = (section) => {
-    const list = REGISTRATION_FIELDS.filter((f) => f.section === section);
+  const fieldsIn = (list, p) => {
     let out = '';
     for (let i = 0; i < list.length; i++) {
       const next = list[i + 1];
       if (list[i].row && next && next.row === list[i].row) {
-        out += '<div class="fld-row">' + field(list[i]) + field(next) + '</div>\n';
+        out += '<div class="fld-row">' + field(list[i], p) + field(next, p) + '</div>\n';
         i++;
-      } else out += field(list[i]);
+      } else out += field(list[i], p);
     }
     return out;
   };
@@ -757,47 +763,62 @@ function step11d_enrollPages(sections, content, prelude) {
   // contact.html ships too. A child must not be able to sign for a parent or hand over a card.
   const LABEL_CSS = 'display:flex;gap:11px;align-items:flex-start;margin-bottom:0;font-family:var(--font-body);font-size:.88rem;line-height:1.5;letter-spacing:normal;text-transform:none;color:#B3B3BF;cursor:pointer;';
   const BOX_CSS = 'width:19px;height:19px;flex:0 0 19px;margin:2px 0 0;padding:0;border:0;border-radius:0;background:none;accent-color:var(--fast-red);cursor:pointer;';
-  // required defaults true: the two agreement boxes are contract and must stay required. The
-  // attribution box is the one optional checkbox on the form, so it opts out.
-  const check = (id, name, html, required = true) => '<div class="fld">\n<label for="' + id + '" style="' + LABEL_CSS + '">\n' +
-    '<input type="checkbox" id="' + id + '" name="' + name + '" value="yes"' + (required ? ' required' : '') + ' style="' + BOX_CSS + '">\n<span>' + html + '</span>\n</label>\n</div>\n';
+  const check = (id, name, html) => '<div class="fld">\n<label for="' + id + '" style="' + LABEL_CSS + '">\n' +
+    '<input type="checkbox" id="' + id + '" name="' + name + '" value="yes" required style="' + BOX_CSS + '">\n<span>' + html + '</span>\n</label>\n</div>\n';
+  const hero = (eyebrow, h1, lede) => '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n' +
+    '<div class="eyebrow">' + eyebrow + '</div>\n<h1>' + h1 + '</h1>\n<p class="lede">' + lede + '</p>\n</div>\n</header>\n' +
+    '<section class="band band-ink">\n<div class="shell">\n';
+  const honeypot = (name, id) => '<p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="' + name + '" id="' + id + '" tabindex="-1" autocomplete="off"></label></p>\n';
+  const page = (path, title, description, bodyHtml, scripts) => writeHtml(resolve(DIST, ...path.split('/').filter(Boolean), 'index.html'), buildSimplePage({
+    title, description, canonicalPath: path, bodyHtml, content, prelude,
+    ...(scripts ? { extraScripts: scripts } : {}),
+    robots: 'noindex, follow'
+  }));
 
-  let body = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
-  body += '<div class="eyebrow">Athlete registration</div>\n<h1>Enroll</h1>\n';
-  body += '<p class="lede">Thank you for your interest in FAST Basketball. This form tells Coach Blake who your athlete is and places them in the right training group. The spot is reserved once payment is in. Not had your call with Coach Blake yet? <a href="/#contact">Book it first</a>.</p>\n';
-  body += '</div>\n</header>\n';
-  body += '<section class="band band-ink">\n<div class="shell">\n';
-  // The intro from Blake's registration form: where, when, and the two rules every family
-  // has to read before the first field. Facts, not marketing, so they stay as he wrote them.
+  // ---- /enroll: the consultation. JavaScript only (it is Coach Blake's own tool, used on his
+  // phone), so there is no no-JS post path to keep alive.
+  let c = hero('Consultation', 'Enroll', 'Coach Blake fills this in during the consultation call. Nothing is paid here: the evaluation and training payment links come after it.');
+  c += '<form id="csForm" class="en-form" novalidate>\n';
+  let n = 0;
+  for (const s of CONSULT_SECTIONS) {
+    c += '<fieldset class="en-fs">\n' + legend(++n, s.title) + '<div class="pb-form">\n' + fieldsIn(CONSULT_FIELDS.filter((f) => f.section === s.id), 'cs_') + '</div>\n</fieldset>\n';
+  }
+  c += honeypot('en-hp', 'csHp');
+  c += '<noscript><p class="f-err">This form needs JavaScript turned on.</p></noscript>\n';
+  c += '<p class="f-err" id="csErr" role="alert" style="display:none;margin:0 0 12px;"></p>\n';
+  c += '<button type="submit" class="btn btn-primary" style="width:100%;">Save Consultation</button>\n';
+  c += '</form>\n';
+  // Shown once the consultation is saved: the links this family needs next, ready to copy.
+  c += '<div class="en-done" id="csDone" hidden>\n<h2>Saved</h2>\n<p>The answers are stored and emailed to Coach Blake. These links are for this family only; each one is also on the family\'s card in the admin Leads tab.</p>\n' +
+    '<div id="csLinks"></div>\n<p><button type="button" class="btn btn-ghost" id="csNew">Start a New Consultation</button></p>\n</div>\n';
+  c += '</div>\n</section>\n</main>\n';
+  page('/enroll', 'Consultation | Fast Basketball', 'The Fast Basketball consultation form, filled in by Coach Blake during the call.', c, ['/js/consult.js']);
+
+  // ---- /pay
+  let body = hero('Payment', 'Pay', 'The payment Coach Blake sent you here for: the evaluation first, and your training package after it. You finish on Stripe\'s secure checkout.');
   body += '<div class="en-intro">\n';
   body += '<p><b>Where.</b> The Salvation Army, Fort Lauderdale Corps, 100 SW 9th Ave, Fort Lauderdale, FL 33312.</p>\n';
-  body += '<p><b>When.</b> Every Thursday and Friday. 3rd to 5th grade 5:00 to 6:00 PM, 6th to 8th grade 6:00 to 7:00 PM, 9th to 12th grade 7:00 to 8:00 PM.</p>\n';
-  body += '<p><b>Registration and payment.</b> Every athlete completes this form and pays to take part. Your athlete\'s spot is not reserved until payment is received. Space is limited, and registration is confirmed first paid, first reserved. All payments are final. FAST Basketball does not offer refunds.</p>\n';
-  body += '<p>What to bring and program expectations follow once you are registered. Read the <a href="/terms">terms and agreement</a> before you enroll. Questions: ' + note + ' and Blake Kingsley Jr. replies himself. Train Fast. Think Fast. Play Fast.</p>\n';
+  body += '<p><b>Payments are final.</b> FAST Basketball does not offer refunds. A training package is paid only after your evaluation, once you have signed the <a href="/agreement">training agreement</a>.</p>\n';
+  body += '<p>Questions: ' + note + ' and Blake Kingsley Jr. replies himself. Train Fast. Think Fast. Play Fast.</p>\n';
   body += '</div>\n';
   // Works with JavaScript off: enroll.js upgrades this to fetch + location.assign, and without
   // it the browser posts the form and checkout.mjs answers 303, to Stripe on success and back
-  // to ?err=1#enErr on failure. That path was dead while a drawn signature was required, since
-  // a canvas cannot be filled in without scripting; removing the pad brought it back.
+  // to ?err=1#enErr on failure.
   body += '<form id="enForm" class="en-form" method="post" action="/api/checkout">\n';
+  n = 0;
+  // Asked only when the link carries no consultation; enroll.js removes this fieldset when it does.
+  body += '<fieldset class="en-fs" id="enWho">\n' + legend(++n, 'Who this is for') + '<div class="pb-form">\n' + fieldsIn(PAYER_FIELDS, 'en_') + '</div>\n</fieldset>\n';
 
-  let n = 0;
-  for (const s of REGISTRATION_SECTIONS) {
-    body += '<fieldset class="en-fs">\n' + legend(++n, s.title) + '<div class="pb-form">\n' + fieldsIn(s.id) + '</div>\n</fieldset>\n';
-  }
-
-  // The evaluation, then a choice of Individual or Group, each opening its own packages (Blake,
-  // 7 October 2026). Every card is still a radio named "plan" in one form, so the no-JS post and
-  // checkout.mjs see exactly what they always did. The two program tiles ship hidden and do
-  // nothing without JS: then both panels show under their own headings, which is the whole
-  // catalog, still choosable. enroll.js unhides the tiles and opens one panel at a time.
+  // The evaluation, then a choice of Individual or Group, each opening its own packages. Every
+  // card is a radio named "plan" in one form. Without JS both panels show under their own
+  // headings; enroll.js shows only the package the link names.
   const PROGRAMS = programTiles();
   const chevron = '<svg class="en-track-i" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 5l4.5 4.5L11.5 5"/></svg>';
   // One grid holds the tiles and the panels, so CSS order can put each panel straight under its
   // own tile on a phone and under both tiles on a wide screen (features.css, .en-choose).
-  body += '<fieldset class="en-fs" id="enPlan">\n' + legend(++n, 'Choose your plan');
+  body += '<fieldset class="en-fs" id="enPlan">\n' + legend(++n, 'Your payment');
   body += '<div class="en-plans en-plans-eval">\n' + keysIn('evaluation').map(card).join('') + '</div>\n';
-  body += '<div class="en-choose">\n<p class="en-or">Or choose your training</p>\n';
+  body += '<div class="en-choose">\n<p class="en-or">Or your training package</p>\n';
   for (const p of PROGRAMS) {
     body += '<label class="en-track" data-track="' + p.id + '" hidden><input type="radio" name="track" value="' + p.id + '" aria-controls="enTrack_' + p.id + '">' +
       '<span class="en-track-b"><span class="en-track-t">' + p.title + chevron + '</span><span class="en-track-d">' + escapeHtml(p.line) + '</span></span></label>\n';
@@ -821,70 +842,64 @@ function step11d_enrollPages(sections, content, prelude) {
   }
   body += '</div>\n</fieldset>\n';
 
-  body += '<fieldset class="en-fs">\n' + legend(++n, 'Review and agree') + '<div class="pb-form">\n';
-  // Coupon code. Hand-rendered through field() rather than added to REGISTRATION_FIELDS, the
-  // same call as the two agreement boxes: it is an instruction about the payment, not a
-  // question about the athlete, so it stays out of validateRegistration's values, out of the
-  // admin CSV's registration columns and off the privacy page's list of what the form asks.
-  // It cannot go in the "how to pay" fieldset: enroll.js hides that whole fieldset whenever a
-  // plan prices only one option, which is every evaluation, and an evaluation is exactly what
-  // a coupon is for. Whether a code is real is Stripe's answer, asked by checkout.mjs.
+  body += '<fieldset class="en-fs">\n' + legend(++n, 'Agree and pay') + '<div class="pb-form">\n';
+  // Coupon code. An instruction about the payment, not a question about the family, so it is
+  // hand-rendered rather than a registration field. Whether a code is real is Stripe's answer.
   body += field({ key: 'coupon', label: 'Coupon code', type: 'text', autocomplete: 'off', placeholder: 'Only if Coach Blake gave you one' });
-  body += fieldsIn('agreement');
-  body += check('enReviewed', 'reviewed', 'I am this athlete\'s parent or guardian. The details above are correct, and I have read the <a href="/terms">player and parent expectations</a>.');
-  // A drawn signature pad sat here until September 2026. It is gone on purpose: the training
-  // agreement's Step 2 says a family agrees by typing their full name on the checkout form and
-  // ticking the I-agree box, which is what Stripe collects on the next page and stores on the
-  // session. A canvas asked a parent to sign twice, and the second one was the one that counted.
-  body += check('enTerms', 'terms', 'I agree to the <a href="/terms">terms and conditions</a>. I understand I will type my full name to sign on the next page.');
-  // Honeypot, hidden exactly as the playbook form hides its own.
-  body += '<p style="position:absolute;left:-9999px;"><label>Leave this field blank<input type="text" name="en-hp" id="enHp" tabindex="-1" autocomplete="off"></label></p>\n';
+  body += check('enTerms', 'terms', 'I am the player\'s parent or guardian. I agree to the <a href="/agreement">training agreement</a> for a training package, or the <a href="/terms">terms and conditions</a> for an evaluation. I will type my full name on the next page.');
+  body += honeypot('en-hp', 'enHp');
   // Ships in the page rather than being written by JS: a form POST with JS off comes back to
   // ?err=1#enErr and #enErr:target is what unhides it. enroll.js replaces the text otherwise.
   body += '<p class="f-err" id="enErr" role="alert" style="display:none;margin:0 0 12px;">That did not go through. Check the highlighted fields and try again, or ' + note + ' and Coach Blake will take it from there.</p>\n';
   body += '<button type="submit" class="btn btn-primary" style="width:100%;">Continue to Secure Checkout</button>\n';
-  body += '<p class="trust-line">You finish on Stripe\'s secure checkout page. There you tick the terms box and type your full name to sign, exactly as the agreement asks. That typed name is your signature. Card details never touch this site.</p>\n';
+  body += '<p class="trust-line">You finish on Stripe\'s secure checkout page, where you tick the terms box and type your full name. Card details never touch this site.</p>\n';
   body += '</div>\n</fieldset>\n</form>\n';
-
   body += applyPriceFigures(applyTextEdits(finePrint(sections.programs), content.text));
   body += '</div>\n</section>\n</main>\n';
+  page('/pay', 'Pay | Fast Basketball', 'Pay for the Fast Basketball evaluation or the training package Coach Blake recommended, on Stripe\'s secure checkout.', body, ['/js/enroll.js', '/js/packages.js']);
 
-  writeHtml(resolve(DIST, 'enroll', 'index.html'), buildSimplePage({
-    title: 'Enroll | Fast Basketball',
-    description: 'Athlete registration at Fast Basketball: the athlete, the parent, the program, the plan from your enrollment call, the signed agreement, then Stripe\'s secure checkout.',
-    canonicalPath: '/enroll',
-    bodyHtml: body,
-    content,
-    prelude,
-    jsonLd: [breadcrumbList([{ name: 'Home', path: '/' }, { name: 'Enroll', path: '/enroll' }])],
-    extraScripts: ['/js/enroll.js', '/js/packages.js'],
-    // Checkout is reached from the enrollment call, not from search: it shows the evaluation
-    // price because a card is charged there, and Blake quotes that price on the call, not on
-    // the site. noindex plus no sitemap entry keeps it that way.
-    robots: 'noindex, follow'
-  }));
-
-  let thanks = '<main id="main">\n<header class="band band-dark suburb-hero">\n<div class="shell">\n';
-  thanks += '<div class="eyebrow">Enrollment</div>\n<h1>Thanks.</h1>\n';
-  thanks += '<p class="lede">If the payment went through, Stripe is emailing your receipt now. Give it a few minutes and check spam before you worry.</p>\n';
-  thanks += '</div>\n</header>\n';
-  thanks += '<section class="band band-ink">\n<div class="shell">\n';
+  let thanks = hero('Payment', 'Thanks.', 'If the payment went through, Stripe is emailing your receipt now. Give it a few minutes and check spam before you worry.');
   thanks += '<h2>What happens next</h2>\n';
-  thanks += '<p>Coach Blake sends the welcome email within 12 hours, Monday to Friday. Reply YES to it so he knows you have it. Your first session date and place are in it.</p>\n';
+  thanks += '<p>Coach Blake will be in touch within 12 hours, Monday to Friday, to confirm your session date and time.</p>\n';
   thanks += '<p>Questions, or no receipt: ' + note + '.</p>\n';
   thanks += '<p><a href="/" class="btn btn-ghost">Back to the site</a></p>\n';
   thanks += '</div>\n</section>\n</main>\n';
-  writeHtml(resolve(DIST, 'enroll', 'thanks', 'index.html'), buildSimplePage({
-    title: 'Thanks | Fast Basketball',
-    description: 'Watch for the receipt from Stripe and the welcome email from Coach Blake within 12 hours.',
-    canonicalPath: '/enroll/thanks',
-    bodyHtml: thanks,
-    content,
-    prelude,
-    robots: 'noindex, nofollow'
-  }));
-  // The thanks page stays out of the sitemap: it is a landing, not a destination.
-  return []; // noindex: not in the sitemap
+  // /enroll/thanks as well: Stripe sessions opened before the move still return there.
+  for (const path of ['/pay/thanks', '/enroll/thanks']) {
+    page(path, 'Thanks | Fast Basketball', 'Watch for the receipt from Stripe, and Coach Blake will be in touch within 12 hours.', thanks);
+  }
+
+  // ---- /agreement. The terms come from src/lib/agreement.mjs, the same lines the endpoint
+  // stores on the signed record and emails to both sides.
+  let a = hero('Training agreement', 'Training Agreement', 'Review the terms, choose the package Coach Blake recommended after your evaluation, and sign with your full name. You and Coach Blake each get a copy by email.');
+  a += '<form id="agForm" class="en-form" novalidate>\n';
+  a += '<fieldset class="en-fs">\n' + legend(1, 'Choose your package') + '<div class="en-plans">\n';
+  for (const key of agreementPlans()) {
+    const t = packageTerms(key);
+    a += '<label class="en-card"><input type="radio" name="plan" value="' + key + '" required><span class="en-card-b">\n' +
+      '<span class="en-card-t">' + escapeHtml(t.title) + '</span>\n<span class="prog-price">' + escapeHtml(t.price) + '</span>\n' +
+      t.lines.map((l) => '<span class="en-card-d">' + escapeHtml(l) + '</span>\n').join('') + '</span></label>\n';
+  }
+  a += '</div>\n</fieldset>\n';
+  a += '<fieldset class="en-fs">\n' + legend(2, 'For every package') + '<ul class="ag-terms">\n' +
+    GENERAL_LINES.map((l) => '<li>' + escapeHtml(l) + '</li>\n').join('') + '</ul>\n</fieldset>\n';
+  a += '<fieldset class="en-fs">\n' + legend(3, 'Sign') + '<div class="pb-form">\n';
+  a += field({ key: 'playerName', label: 'Player name', type: 'text', required: true, placeholder: 'Player first and last name' }, 'ag_');
+  a += '<div class="fld-row">' + field({ key: 'signature', label: 'Your full name (your signature)', type: 'text', required: true, autocomplete: 'name', placeholder: 'First and last name' }, 'ag_') +
+    field({ key: 'signedDate', label: 'Date', type: 'date', required: true }, 'ag_') + '</div>\n';
+  a += field({ key: 'email', label: 'Your email, for your copy', type: 'email', required: true, autocomplete: 'email', placeholder: 'you@email.com' }, 'ag_');
+  a += check('agAgree', 'agree', 'I am the player\'s parent or guardian. I have read this agreement, I agree to it, and the name I typed above is my signature.');
+  a += honeypot('ag-hp', 'agHp');
+  a += '<noscript><p class="f-err">Signing needs JavaScript turned on.</p></noscript>\n';
+  a += '<p class="f-err" id="agErr" role="alert" style="display:none;margin:0 0 12px;"></p>\n';
+  a += '<button type="submit" class="btn btn-primary" style="width:100%;">Sign the Agreement</button>\n';
+  a += '</div>\n</fieldset>\n</form>\n';
+  a += '<div class="en-done" id="agDone" hidden>\n<h2>Signed</h2>\n<p id="agDoneMsg">Thank you. A copy of the signed agreement is on its way to your email.</p>\n' +
+    '<p><a class="btn btn-primary" id="agPay" href="/pay">Continue to Payment</a></p>\n</div>\n';
+  a += '</div>\n</section>\n</main>\n';
+  page('/agreement', 'Training Agreement | Fast Basketball', 'The Fast Basketball training agreement: review the terms of your package and sign it online.', a, ['/js/agreement.js']);
+
+  return []; // noindex: none of these are in the sitemap
 }
 
 // /appbuy sells the two tools the developer built: pick one, say who you are, pick how to pay,

@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { checkoutSpec } from '../../../src/lib/plans.mjs';
-import { sampleRegistration, FIELDS as REGISTRATION_FIELDS } from '../../../src/lib/registration.mjs';
+import { sampleRegistration, PAYER_FIELDS as REGISTRATION_FIELDS } from '../../../src/lib/registration.mjs';
 import { couponCoversPlan } from '../lib/stripe.mjs';
 
 process.chdir(fs.mkdtempSync(path.join(os.tmpdir(), 'fb-checkout-')));
@@ -66,8 +66,8 @@ test('sessionParams for a one-off payment (eval, full)', () => {
     assert.equal(f.label.type, 'custom');
     assert.ok(f.label.custom.length <= 50, 'Stripe caps custom labels at 50 characters');
   }
-  assert.equal(p.success_url, 'https://example.test/enroll/thanks');
-  assert.equal(p.cancel_url, 'https://example.test/enroll?plan=eval&pay=full');
+  assert.equal(p.success_url, 'https://example.test/pay/thanks');
+  assert.equal(p.cancel_url, 'https://example.test/pay?plan=eval&pay=full');
   assert.equal(p.expires_at, NOW + 82800, 'an hour under Stripe\'s 24h ceiling, not on it');
   assert.equal(p.client_reference_id, undefined, 'no registration, no reference');
 
@@ -87,7 +87,7 @@ test('sessionParams for an installment plan (group-6m-1x, monthly) with a regist
   assert.deepEqual(p.subscription_data, { metadata: p.metadata });
   assert.equal(p.payment_intent_data, undefined);
   assert.equal(p.customer_creation, undefined, 'a payment-mode-only parameter, Stripe rejects it on subscriptions');
-  assert.equal(p.cancel_url, 'https://example.test/enroll?plan=group-6m-1x&pay=monthly');
+  assert.equal(p.cancel_url, 'https://example.test/pay?plan=group-6m-1x&pay=monthly');
   assert.equal(p.expires_at, NOW + 82800);
   assert.equal(p.client_reference_id, id);
 
@@ -110,7 +110,7 @@ test('registrationRecord is an enrollment row awaiting payment, with the shared 
   assert.equal(r.termTotalCents, 55000, 'the term, which is what the page promised');
   assert.equal(r.months, 3);
   assert.equal(r.noticeDays, 7);
-  assert.equal(r.insurancePolicy, 'XYZ123456');
+  assert.equal(r.leadSource, 'Referral');
   assert.equal(r.signature, undefined, 'the drawing pad was removed in September 2026');
 });
 
@@ -130,7 +130,7 @@ test('malformed JSON is 400', async () => {
 test('a form POST with JavaScript off is validated, and a bad one goes back with the plan kept', async () => {
   const res = await handler(post('plan=eval&pay=full', 'application/x-www-form-urlencoded'), CTX);
   assert.equal(res.status, 303, 'a 422 body of JSON would be a dead end in a browser');
-  assert.equal(res.headers.get('location'), '/enroll?plan=eval&pay=full&err=1#enErr');
+  assert.equal(res.headers.get('location'), '/pay?plan=eval&pay=full&err=1#enErr');
   assert.equal(records().length, 0, 'an invalid registration is never stored');
 });
 
@@ -145,7 +145,7 @@ test('a complete form POST with JavaScript off is stored, and its checkboxes bec
   assert.equal(res.status, 303);
   // No Stripe key in this suite, so the parent lands on the thanks page: the registration is
   // saved and Blake has been emailed, which is the whole of what could happen for them.
-  assert.equal(res.headers.get('location'), '/enroll/thanks');
+  assert.equal(res.headers.get('location'), '/pay/thanks');
   const saved = records().find((r) => r.playerName === 'Jordan Parent' && r.pay === 'monthly');
   assert.ok(saved, 'the registration was stored');
   assert.equal(saved.reviewed, true);
@@ -165,7 +165,7 @@ test('an unticked box in a form POST is refused, not coerced', async () => {
 test('honeypot filled gets the thanks page without writing or touching Stripe', async () => {
   const res = await handler(post({ ...VALID, 'en-hp': 'http://spam' }), CTX);
   assert.equal(res.status, 200);
-  assert.deepEqual(await res.json(), { url: '/enroll/thanks' });
+  assert.deepEqual(await res.json(), { url: '/pay/thanks' });
   assert.equal(records().length, 0);
 });
 
@@ -197,10 +197,10 @@ test('a plan with one way to pay takes it, whatever radio arrived', async () => 
 });
 
 test('a missing answer or an unticked box is 422 naming every field, nothing written', async () => {
-  const res = await handler(post({ ...VALID, email: 'nope', insuranceProvider: '', terms: 'yes' }), CTX);
+  const res = await handler(post({ ...VALID, email: 'nope', athleteFirst: '', terms: 'yes' }), CTX);
   assert.equal(res.status, 422);
   const body = await res.json();
-  assert.deepEqual(Object.keys(body.errors).sort(), ['email', 'insuranceProvider', 'terms']);
+  assert.deepEqual(Object.keys(body.errors).sort(), ['athleteFirst', 'email', 'terms']);
   assert.equal(body.error, body.errors.email, 'the first problem is the headline');
   assert.equal(records().length, 0);
 });
@@ -222,7 +222,7 @@ test('a valid registration with no STRIPE_SECRET_KEY is saved first, then answer
   assert.equal(r.playerName, 'Jordan Parent');
   assert.equal(r.plan, 'group-3m-1x');
   assert.equal(r.pay, 'monthly');
-  assert.equal(r.school, 'Westglades Middle');
+  assert.equal(r.hearAbout, 'Friend, family, or referral', 'the lead source is stored as its Schedule 1 answer');
   assert.equal(r.reviewed, true);
   assert.equal(r.termsAccepted, true);
   assert.equal(r.signature, undefined, 'no signature is collected any more');
@@ -230,10 +230,10 @@ test('a valid registration with no STRIPE_SECRET_KEY is saved first, then answer
   assert.equal(r.registrationId, body.registrationId);
 
   // Back from Stripe's cancel link, the same tab resubmits with the id: one record, updated.
-  const again = await handler(post({ ...VALID, registrationId: body.registrationId, grade: '9th' }), CTX);
+  const again = await handler(post({ ...VALID, registrationId: body.registrationId, leadDetail: 'the Joneses' }), CTX);
   assert.equal((await again.json()).registrationId, body.registrationId, 'the pending id is kept');
   assert.equal(records().length, 1, 'no second record for the same tab');
-  assert.equal(records()[0].grade, '9th', 'and the newer answers win');
+  assert.equal(records()[0].leadDetail, 'the Joneses', 'and the newer answers win');
 
   // An id that is not a pending registration of ours is never reused.
   const stranger = await handler(post({ ...VALID, registrationId: '11111111-2222-4333-8444-555555555555' }), CTX);
@@ -255,8 +255,8 @@ test('the registration email goes to the owner with every answer in it', async (
     assert.equal(sends.length, 1);
     const mail = sends[0];
     assert.deepEqual(mail.to, ['blake@example.test']);
-    assert.equal(mail.subject, 'New registration, payment pending: Jordan Parent (Group Training Membership, 6 months, unlimited)');
-    assert.ok(mail.html.includes('Florida Blue'), 'every answer is in the table');
+    assert.equal(mail.subject, 'Payment started: Jordan Parent (Group Training Membership, 6 months, unlimited)');
+    assert.ok(mail.html.includes('the Smiths'), 'every answer is in the table');
     assert.equal(mail.attachments, undefined, 'nothing is attached now the drawing pad is gone');
   } finally {
     globalThis.fetch = realFetch;

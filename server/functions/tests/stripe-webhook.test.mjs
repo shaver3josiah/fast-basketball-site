@@ -246,7 +246,7 @@ function records() {
   assert.equal(r.agreeName, 'Benjamin Parent', 'the typed-to-agree name kept beside it');
   assert.equal(r.playerName, 'Jordan Parent');
   assert.equal(r.email, 'ben@example.com', 'Stripe\'s email wins: the receipt went there');
-  assert.equal(r.insurancePolicy, 'XYZ123456', 'the registration\'s answers survive');
+  assert.equal(r.leadDetail, 'the Smiths', 'the registration\'s answers survive');
   assert.equal(r.signature, undefined, 'the drawing pad was removed; agreement is Stripe consent plus the typed name');
   assert.equal(r.agreeName, 'Benjamin Parent', 'which is the record of it');
   assert.equal(r.termsAccepted, true);
@@ -257,7 +257,7 @@ function records() {
   assert.equal(sends.length, 1);
   assert.ok(sends[0].subject.startsWith('New enrollment: '), sends[0].subject);
   assert.ok(sends[0].html.includes('Welcome email to paste'));
-  assert.ok(sends[0].html.includes('Westglades Middle'), 'the owner email prints the registration too');
+  assert.ok(sends[0].html.includes('the Smiths'), 'the owner email prints the registration too');
   assert.equal(sends[0].attachments, undefined, 'nothing is attached now the drawing pad is gone');
   assert.ok(sends[0].html.includes('Benjamin Parent'), 'the typed-to-agree name is in the owner email');
 

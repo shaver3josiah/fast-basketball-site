@@ -90,7 +90,7 @@ export async function pruneVisits(now) {
 
 // Where a link can land. A fixed list, because the id rides on these paths and a free-typed
 // path is how a link ends up pointing somewhere that 404s.
-export const DESTINATIONS = { '/': 'Homepage', '/enroll': 'Enroll page', '/contact': 'Contact page', '/locker': 'The Locker' };
+export const DESTINATIONS = { '/': 'Homepage', '/enroll': 'Payment page', '/contact': 'Contact page', '/locker': 'The Locker' };
 
 export function validateLink(input) {
   const b = input && typeof input === 'object' ? input : {};

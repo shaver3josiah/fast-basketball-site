@@ -1,4 +1,4 @@
-// Deals: a private price Blake agrees with one family, sold through the ordinary /enroll form.
+// Deals: a private price Blake agrees with one family, sold through the ordinary /pay form.
 //
 // A deal is NOT a catalog plan. The catalog (src/lib/plans.mjs) is the public price list and
 // resolves prices by lookup_key; a deal is one-off, so it gets its own Stripe product and price
@@ -6,7 +6,7 @@
 // reads the deal from THIS store, server-side, so the amount can never come from the browser:
 // the page only ever sends the deal's id.
 //
-// The link is /enroll?deal=<id>. enroll.js fetches the public view from /api/deal and shows that
+// The link is /pay?deal=<id>. enroll.js fetches the public view from /api/deal and shows that
 // one offer instead of the plan cards; the rest of the registration is unchanged, so a deal
 // family is a normal enrollment row with `deal` on it, and the webhook, the welcome email and
 // the commission ledger treat it as the training revenue it is.
@@ -128,7 +128,7 @@ export function dealSpec(deal, pay) {
   if (!dealPayOptions(deal).includes(pay)) throw new Error('this offer does not include ' + pay);
   const base = {
     plan: 'deal', deal: deal.id, pay, label: deal.title,
-    page: '/enroll', cancelPath: '/enroll?deal=' + encodeURIComponent(deal.id),
+    page: '/pay', cancelPath: '/pay?deal=' + encodeURIComponent(deal.id),
     description: deal.details || deal.title
   };
   if (pay === 'full') {

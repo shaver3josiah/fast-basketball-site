@@ -84,7 +84,7 @@ test('a tool and a membership never leak into each other', () => {
   assert.equal(isAppPlan(undefined), false);
   // Return paths, which is what sends an abandoned checkout back to the right form.
   assert.equal(checkoutSpec('shotform', 'full').page, '/appbuy');
-  assert.equal(checkoutSpec('group-3m-1x', 'full').page, '/enroll');
+  assert.equal(checkoutSpec('group-3m-1x', 'full').page, '/pay');
   // Store prefixes: an app order is not an enrollment and must not be read as one.
   assert.equal(leadKey('shotform', 'abc'), 'apporder:abc');
   assert.equal(leadKey('group-3m-1x', 'abc'), 'registration:abc');
@@ -180,12 +180,13 @@ test('individual training: $100 a session, or $300 / $550 / $750 a month until c
     // No schedule: the webhook only wraps one around a subscription that has a count, so a
     // null here is what makes it bill every month until Blake cancels it.
     assert.equal(spec.iterations, null, key + ' has no term');
-    assert.equal(spec.page, '/enroll');
+    assert.equal(spec.page, '/pay');
   }
 });
 
-test('individual terms: $900 for 3 months, $1,800 for 6, one payment, no renewal metadata', () => {
-  for (const [key, cents, months] of [['individual-3m', 90000, 3], ['individual-6m', 180000, 6]]) {
+test('individual terms: $900 for 3 months, $1,800 for 6 plus 1 free, one payment, no renewal metadata', () => {
+  // 19 October 2026: the six-month term carries a seventh month free, so it runs 7 months.
+  for (const [key, cents, months] of [['individual-3m', 90000, 3], ['individual-6m', 180000, 7]]) {
     assert.deepEqual(payOptionsFor(key), ['full'], key);
     assert.throws(() => checkoutSpec(key, 'monthly'), key + ' has no monthly');
     const spec = checkoutSpec(key, 'full');
@@ -197,7 +198,7 @@ test('individual terms: $900 for 3 months, $1,800 for 6, one payment, no renewal
     assert.equal(Object.hasOwn(spec.metadata, 'months'), false);
     assert.equal(Object.hasOwn(spec.metadata, 'noticeDays'), false);
   }
-  // Same $300 a month as the weekly plan, no prepay discount.
+  // Same $300 a month as the weekly plan; the six-month term's free month is on top.
   assert.equal(PLANS['individual-3m'].totals.full, 3 * PLANS['individual-1x'].totals.monthly);
   assert.equal(PLANS['individual-6m'].totals.full, 6 * PLANS['individual-1x'].totals.monthly);
 });

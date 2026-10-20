@@ -1,49 +1,47 @@
 // Run: node --test src/lib/registration.test.mjs
+// The /pay form's short questions (when a link carries no consultation). The consultation and
+// the lead-source mapping are tested in server/functions/tests/consult.test.mjs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FIELDS, validateRegistration, sampleRegistration } from './registration.mjs';
+import { PAYER_FIELDS, validateRegistration, sampleRegistration, payerFromConsult } from './registration.mjs';
 
-test('the sample registration is valid and every field comes back trimmed', () => {
-  const r = validateRegistration({ ...sampleRegistration(), school: '  Westglades Middle  ' });
+test('the sample payment is valid, trimmed, and carries its Schedule 1 answer', () => {
+  const r = validateRegistration({ ...sampleRegistration(), athleteFirst: '  Jordan  ' });
   assert.equal(r.ok, true, JSON.stringify(r.errors));
-  assert.equal(r.values.school, 'Westglades Middle');
-  assert.equal(r.values.goals, '', 'an optional field left out is an empty string, not undefined');
+  assert.equal(r.values.athleteFirst, 'Jordan');
+  assert.equal(r.values.hearAbout, 'Friend, family, or referral');
+  assert.equal(r.values.hearAboutOther, 'Referred by the Smiths');
 });
 
 test('every required field is reported, all at once', () => {
   const r = validateRegistration({});
   assert.equal(r.ok, false);
-  const required = FIELDS.filter((f) => f.required).map((f) => f.key).concat(['reviewed', 'terms']);
+  const required = PAYER_FIELDS.filter((f) => f.required).map((f) => f.key).concat(['terms']);
   assert.deepEqual(Object.keys(r.errors).sort(), required.sort());
 });
 
-test('shape checks: email, phone digits, past date, select membership, length', () => {
-  const cases = [
-    ['email', 'not-an-email'], ['phone', '555-0100'], ['dob', '2099-01-01'], ['dob', '2012-02-30'], ['dob', '04/09/2012'],
-    ['gender', 'Other'], ['program', '__proto__'], ['school', 'x'.repeat(201)], ['goals', 'x'.repeat(2001)]
-  ];
-  for (const [key, value] of cases) {
+test('shape checks: email, phone digits, lead source membership, length', () => {
+  for (const [key, value] of [['email', 'not-an-email'], ['phone', '555-0100'], ['leadSource', '__proto__'], ['athleteFirst', 'x'.repeat(201)]]) {
     const r = validateRegistration({ ...sampleRegistration(), [key]: value });
-    assert.deepEqual(Object.keys(r.errors), [key], key + '=' + String(value).slice(0, 20));
+    assert.deepEqual(Object.keys(r.errors), [key], key);
   }
 });
 
-test('the agreement boxes must be literally true, not merely truthy', () => {
-  for (const bad of [{ reviewed: 'yes' }, { terms: 1 }, { reviewed: undefined }, { terms: 'true' }]) {
-    const r = validateRegistration({ ...sampleRegistration(), ...bad });
-    assert.deepEqual(Object.keys(r.errors), Object.keys(bad), JSON.stringify(bad));
+test('the terms box must be literally true', () => {
+  for (const bad of ['yes', 1, undefined, 'true']) {
+    assert.deepEqual(Object.keys(validateRegistration({ ...sampleRegistration(), terms: bad }).errors), ['terms']);
   }
 });
 
-// The signature pad was removed in September 2026: agreement is Stripe's consent box and
-// typed name. Anything a stale page or a crafted request still sends under that name must be
-// dropped rather than stored, or it would land in the leads store and the admin panel.
-test('a signature field is no longer collected, required, or kept', () => {
-  const r = validateRegistration({ ...sampleRegistration(), signature: 'data:image/png;base64,AAAA' });
-  assert.equal(r.ok, true, 'a stale page sending one is still a valid registration');
-  assert.equal(r.values.signature, undefined, 'and the value is not carried into the record');
-  assert.equal(validateRegistration({}).errors.signature, undefined, 'nor is it required');
-  assert.ok(!FIELDS.some((f) => f.key === 'signature'));
+test('with a consultation, the family comes from it and the body cannot override it', () => {
+  const consult = { consultationId: 'c-1', parentFirst: 'Ben', parentLast: 'Parent', email: 'parent@example.com', phone: '9545550100',
+    athleteFirst: 'Jordan', athleteLast: 'Parent', leadSource: 'Google Search', hearAbout: 'Google or online search', hearAboutOther: '' };
+  const r = validateRegistration({ terms: true, email: 'evil@example.test', hearAbout: 'Other (please describe)' }, { consult });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.values, payerFromConsult(consult));
+  assert.equal(r.values.email, 'parent@example.com');
+  assert.equal(r.values.hearAbout, 'Google or online search');
+  assert.equal(r.values.consultationId, 'c-1');
 });
 
 test('a non-object body is every required error, not a throw', () => {

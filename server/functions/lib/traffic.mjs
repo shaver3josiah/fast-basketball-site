@@ -220,7 +220,8 @@ export function whenOf(ms) {
 export const LIVE_MS = 5 * 60 * 1000;
 // A link's drill-down lists at most this many families.
 const LINK_LEADS = 25;
-const isEnrollPage = (p) => p === '/enroll' || p.startsWith('/enroll?') || p === '/enroll/';
+// /pay since October 2026: /enroll is Coach Blake's consultation form, not a family's page.
+const isEnrollPage = (p) => /^\/(enroll|pay)(\/|\?|$)/.test(p);
 
 const top = (map, field, n) => [...map.values()].sort((a, b) => b[field] - a[field] || (a.name < b.name ? -1 : 1)).slice(0, n);
 

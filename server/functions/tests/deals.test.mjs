@@ -127,7 +127,7 @@ test('dealSpec: paid in full is one payment of exactly the deal price', () => {
   assert.throws(() => dealSpec(deal, 'monthly'), /does not include/);
 
   const p = sessionParams(spec, { email: 'p@x.test', priceId: 'price_9', siteUrl: 'https://fast-basketball.com', nowSeconds: 1, registrationId: 'r1' });
-  assert.equal(p.cancel_url, 'https://fast-basketball.com/enroll?deal=' + deal.id, 'cancel goes back to the deal, not the catalog');
+  assert.equal(p.cancel_url, 'https://fast-basketball.com/pay?deal=' + deal.id, 'cancel goes back to the deal, not the catalog');
   assert.equal(p.metadata.deal, deal.id);
   assert.deepEqual(p.payment_intent_data.metadata, p.metadata);
 });
@@ -172,7 +172,7 @@ test('creating a deal makes one Stripe product and a price per pay option, then 
   assert.equal(res.status, 200);
   const { deal } = await res.json();
   assert.equal(deal.state, 'open');
-  assert.equal(deal.link, 'https://fast-basketball.com/enroll?deal=' + deal.id);
+  assert.equal(deal.link, 'https://fast-basketball.com/pay?deal=' + deal.id);
 
   const names = stripe.calls.map((c) => c[0]);
   assert.deepEqual(names, ['products.create', 'prices.create', 'prices.create']);

@@ -31,7 +31,7 @@ function body(key, plan, plans) {
   if (plan.program === 'individual' && !plan.custom) {
     const weekly = plan.kind === 'recurring';
     const term = plan.kind === 'term';
-    out += '<span class="en-card-t">' + escapeHtml(term ? plan.termMonths + ' months, ' + plan.frequency : weekly ? plan.frequency : 'Single session') + '</span>\n';
+    out += '<span class="en-card-t">' + escapeHtml(term ? shortLabel(plan) : weekly ? plan.frequency : 'Single session') + '</span>\n';
     out += '<span class="prog-price">' + dollars(term ? plan.totals.full : weekly ? plan.totals.monthly : plan.cents) + '<small>' + (term ? 'paid in full' : weekly ? 'a month' : 'one session') + '</small></span>\n';
     out += '<span class="en-card-d">' + escapeHtml(term
       ? 'One private session a week with Coach Blake for ' + plan.termMonths + ' months, paid in full.'

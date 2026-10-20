@@ -17,7 +17,7 @@
   var RETRY = 'That did not go through. Try again, or send a note through the contact page and Coach Blake will take it from there.';
   var STORE = 'fb_enroll';
   /* Server error keys that are not registration fields, and the element each one marks. */
-  var FIXED = { reviewed: 'enReviewed', terms: 'enTerms' };
+  var FIXED = { terms: 'enTerms' };
 
   /* Flipped true the moment the form is on its way to Stripe (or saved when Stripe is not
      ready yet), so the leave beacon below does not ping Blake that a family "did not finish"
@@ -179,6 +179,45 @@
   } catch(e){ campaign = (q && q.get('camp')) || ''; }
   if(chooser) trackFromPlan();
   syncPay();
+
+  /* ---- /pay since October 2026: Coach Blake sends one link per payment, so the page shows that
+     payment and nothing else. ?plan= names it; with no plan the page offers the evaluation only,
+     because a training package is bought after the evaluation, from the link Blake sends then.
+     ?c= is the consultation Blake filled in on /enroll: who the family is comes from that record,
+     server-side, so the "who is this for" questions go. Without JS every card still lists. */
+  var consultId = q ? (q.get('c') || '') : '';
+  if(/^[0-9a-f-]{36}$/.test(consultId)){
+    var who = document.getElementById('enWho');
+    if(who) who.parentNode.removeChild(who);
+    var cIn = document.createElement('input');
+    cIn.type = 'hidden'; cIn.name = 'consult'; cIn.value = consultId;
+    form.appendChild(cIn);
+  }
+  var chosen = checked('plan');
+  if(!(q && q.get('deal'))){
+    var allCards = form.querySelectorAll('.en-card');
+    for(var ac = 0; ac < allCards.length; ac++){
+      var own = allCards[ac].querySelector('input[name="plan"]');
+      var keep = chosen ? own === chosen : !!(allCards[ac].closest && allCards[ac].closest('.en-plans-eval'));
+      if(!keep){ allCards[ac].hidden = true; if(own) own.disabled = true; }
+    }
+    if(chooser && (!chosen || !(chosen.closest && chosen.closest('.en-panel')))) chooser.hidden = true;
+    else if(chooser){
+      var hideIn = chooser.querySelectorAll('.en-track, .en-or, .en-panel-h');
+      for(var hi = 0; hi < hideIn.length; hi++) hideIn[hi].hidden = true;
+    }
+    /* No plan named: the evaluation is the one thing on offer, so it is the choice already made. */
+    if(!chosen){
+      var ev = form.querySelector('input[name="plan"][value="eval"]');
+      if(ev){ ev.checked = true; syncPay(); }
+    }
+  }
+  /* The step numbers were written for every step; count only the ones still showing. */
+  var steps = form.querySelectorAll('.en-fs'), stepN = 0;
+  for(var sn = 0; sn < steps.length; sn++){
+    var num = steps[sn].querySelector('.en-n');
+    if(num && !steps[sn].hidden) num.textContent = ('0' + (++stepN)).slice(-2);
+  }
 
   /* ---- A deal link (/enroll?deal=<id>): Blake's own price for one family. The catalog cards
      step aside and one card for the deal takes their place, built from /api/deal. It carries
@@ -361,7 +400,6 @@
     delete data.track;
     data.plan = plan.value;
     data.pay = pay ? pay.value : 'full';
-    data.reviewed = document.getElementById('enReviewed').checked === true;
     data.terms = document.getElementById('enTerms').checked === true;
     data['en-hp'] = hp ? hp.value : '';
     if(campaign) data.campaign = campaign;
@@ -392,7 +430,7 @@
           /* The server refused a personal-link claim (revoked since the page loaded, or unreadable)
              and wants the intake answer after all: js/track.js puts the question back first, so
              the error below lands on a field the parent can see. */
-          if(r.errors && r.errors.hearAbout) document.dispatchEvent(new CustomEvent('fb:unclaim'));
+          if(r.errors && (r.errors.hearAbout || r.errors.leadSource)) document.dispatchEvent(new CustomEvent('fb:unclaim'));
           var first = null;
           for(var k in (r.errors || {})){
             var el = document.getElementById('en_' + k) || document.getElementById(FIXED[k] || '');
