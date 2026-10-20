@@ -45,7 +45,7 @@ const TRAINING_PAGES = [
     price: { amount: '$450\u2013$1,000', unit: 'Per Term', line: '3 months: $450 once a week, or $650 unlimited. 6 months: $800 once a week, or $1,000 unlimited. Pay in full and save $100 on the once-a-week terms: monthly comes to $550 total for 3 months, $900 total for 6.' },
     features: ['60 minute sessions with level matched players', 'Unlimited means up to two sessions a week', 'Journal, homework, and daily check-ins in the members area', 'Weekly game evaluations and quarterly progress reports'],
     faq: [2, 4, 1, 0],
-    next: 'Three months is the minimum because that is how long it takes a new habit to survive speed, contact, and a Friday night. Six months is for players who already know they are all in. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.'
+    next: 'Three months is the minimum because accountability, habit forming, and lasting change take that long to survive speed, contact, and a Friday night. Six months is for players who already know they are all in. Memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term.'
   },
   {
     slug: 'private', textKey: 'prog.3', title: 'Private 1-on-1 Basketball Training | Fast Basketball', label: 'Private 1-on-1 Training',
