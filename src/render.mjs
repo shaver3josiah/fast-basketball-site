@@ -950,7 +950,13 @@ export function buildFooter({ content, anchors = false } = {}) {
     '<div><a href="/" class="brand ft-brand" aria-label="Fast Basketball home">' +
     '<img class="only-dark" src="/brand/logo-white.svg" alt="Fast Basketball" width="250" height="106" loading="lazy" decoding="async">' +
     '<img class="only-light" src="/brand/logo.svg" alt="Fast Basketball" width="250" height="106" loading="lazy" decoding="async"></a>' +
-    '<p style="color:#7E7E8A;font-size:.9rem;max-width:32ch;" data-edit="ft.tagline">' + tagline + '</p></div>\n' +
+    '<p style="color:#7E7E8A;font-size:.9rem;max-width:32ch;" data-edit="ft.tagline">' + tagline + '</p>' +
+    // Google's "Preferred sources" deeplink (developers.google.com/search/docs/appearance/preferred-sources).
+    // ponytail: the deeplink, not Google's publisher.js button, so no third-party script runs on every page
+    // and /privacy stays true. Google allows a self-designed badge; Google's logo is deliberately not used.
+    '<a class="ft-pref" href="https://www.google.com/preferences/source?q=fast-basketball.com" target="_blank" rel="noopener">' +
+    '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.5L12 17.3l-5.9 3.2 1.3-6.5-4.9-4.6 6.6-.8z"/></svg>' +
+    'Add us as a preferred source on Google</a></div>\n' +
     '<div class="ft-nav">\n' +
     // Training stays PROGRAM_PAGES, not an owner-editable derivation: these labels are
     // the real <title>/H1 of the four /training/<slug> pages this column links to, so

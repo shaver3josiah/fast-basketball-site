@@ -429,6 +429,8 @@ html.fb-light .ft{background:var(--chalk);border-top-color:var(--line-light);}
 html.fb-light .ft-col h3{color:var(--slate);}
 html.fb-light .ft-col a{color:var(--text-soft-light);}
 html.fb-light .ft-col a:hover{color:var(--red-deep);}
+html.fb-light .ft-pref{color:var(--text-soft-light);border-color:var(--line-light);}
+html.fb-light .ft-pref:hover{color:var(--court-black);border-color:var(--court-black);}
 /* Small red labels on light surfaces. Red-hot is a dark-theme colour: 3.5:1 on the white
    court card, the Locker meta and its button, 3.2:1 on the tinted review box (4.5 needed).
    The deep red this theme already gives links clears 8:1; the Locker's unlocked teal-dark

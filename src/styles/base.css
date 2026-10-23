@@ -575,6 +575,8 @@ html.fb-light .f-err{color:var(--fast-red);}
 .ft-col h3{font-family:var(--font-eyebrow);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint-dark);margin-bottom:14px;}
 .ft-col a{display:block;min-height:44px;padding:10px 0;color:#AFAFBB;font-size:.93rem;transition:color .22s,transform .25s;}
 .ft-col a:hover{color:var(--red-hot);transform:translateX(3px);}
+.ft-pref{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-top:14px;padding:0 16px;border:1px solid var(--line-dark);border-radius:999px;color:#AFAFBB;font-size:.88rem;transition:color .22s,border-color .22s;}
+.ft-pref:hover{color:var(--bone);border-color:#AFAFBB;}
 .ft-bot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--line-dark);font-size:.83rem;color:#8F8F9C;}
 .ft-bot a{display:inline-block;min-width:44px;padding:14px 0;text-align:center;}
 
