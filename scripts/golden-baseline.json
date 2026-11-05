@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-10-23T13:59:29.430Z",
+  "recorded": "2026-11-05T00:36:50.929Z",
   "files": {
     "0ec211c90d82b90b7b470eb6889ce903.txt": {
       "sha": "c6d3306e64b68843",
@@ -146,8 +146,8 @@
       "bytes": 48358
     },
     "coach-blake-kingsley/index.html": {
-      "sha": "de0a8710201532d1",
-      "bytes": 16374
+      "sha": "ea4c150bac46366e",
+      "bytes": 16647
     },
     "contact/index.html": {
       "sha": "baa20b34f65b5562",
@@ -222,8 +222,8 @@
       "bytes": 8720
     },
     "llms.txt": {
-      "sha": "0e6ecf03e95f1cec",
-      "bytes": 4217
+      "sha": "209edf5b5514ddf6",
+      "bytes": 4228
     },
     "locker/index.html": {
       "sha": "eff3e8aa72f00884",
@@ -254,7 +254,7 @@
       "bytes": 244080
     },
     "sitemap.xml": {
-      "sha": "52befa7b7a2c7bb5",
+      "sha": "f2b754a13e980632",
       "bytes": 1791
     },
     "styles/base.css": {

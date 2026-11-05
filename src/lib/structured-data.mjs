@@ -11,6 +11,10 @@ export function founderPerson() {
     '@type': 'Person',
     '@id': PERSON_ID,
     name: 'Blake Kingsley',
+    // The names families actually search (Search Console, October 2026).
+    alternateName: ['Coach Blake Kingsley', 'Coach Kingsley', 'Coach Blake'],
+    knowsAbout: ['Basketball skills training', 'Youth basketball', 'Shooting form', 'Ball handling'],
+    workLocation: { '@type': 'Place', name: 'Fort Lauderdale, Florida' },
     jobTitle: 'Basketball Skills Coach',
     description: 'College basketball coach who was on staff for the 2025 Horizon League champion Robert Morris Colonials and the 2024 NJCAA Region 16 champion Moberly Area Community College Greyhounds.',
     sameAs: founderSameAs(),

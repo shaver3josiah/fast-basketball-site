@@ -60,7 +60,7 @@ export function renderResumeCards(content, responsiveManifest) {
 }
 
 export function renderCoachPage({ content, responsiveManifest, prelude }) {
-  const title = 'Coach Blake Kingsley | Founder, Fast Basketball';
+  const title = 'Coach Blake Kingsley | Basketball Trainer, Fort Lauderdale';
   const description = 'Coach Blake Kingsley: 2025 Horizon League champion staff at Robert Morris, 2024 NJCAA Region 16 champion staff at Moberly Area. Now in Fort Lauderdale.';
   const canonicalPath = '/coach-blake-kingsley';
 
@@ -76,7 +76,9 @@ export function renderCoachPage({ content, responsiveManifest, prelude }) {
   body += '<header class="band band-dark">\n<div class="shell coach">\n';
   body += '<div class="coach-img">' + renderImage('coach.portrait', content, responsiveManifest, { loading: 'eager', fetchpriority: 'high', sizes: '(max-width: 580px) 90vw, (max-width: 1040px) 520px, 40vw' }) + '</div>\n';
   body += '<div class="coach-body">\n<div class="eyebrow">Meet Your Coach</div>\n';
-  body += '<h1>' + escapeHtml(content.text['coach.name']) + '</h1>\n<p class="lede">' + escapeHtml(content.text['coach.title']) + '</p>\n';
+  // People search "coach kingsley", so the h1 carries the word they type.
+  const coachName = content.text['coach.name'];
+  body += '<h1>' + escapeHtml(/^coach/i.test(coachName) ? coachName : 'Coach ' + coachName) + '</h1>\n<p class="lede">' + escapeHtml(content.text['coach.title']) + '</p>\n';
   body += '<p>' + escapeHtml(content.text['coach.p1']) + '</p>\n';
   body += '<p>' + escapeHtml(content.text['coach.p2']) + '</p>\n';
   body += '<p>' + escapeHtml(content.text['coach.p3']) + '</p>\n';
