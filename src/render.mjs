@@ -53,7 +53,7 @@ const IMAGE_RENDER_RULES = {
 };
 
 const FAQ_PAIRS = [
-  { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
+  { question: 'What ages do you train?', answer: 'Players in grades 3 through 12, from elementary school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
   { question: 'Where do sessions actually happen?', answer: 'The gym at The Salvation Army Fort Lauderdale Corps, 100 SW 9th Ave, Fort Lauderdale, FL 33312. You get the schedule and what to bring when you book.' },
   { question: 'How long is the commitment, and why?', answer: 'Group training runs three months minimum, or six. Coach Blake asks for three because accountability, habit forming, and lasting change take that long to survive speed, contact, and a Friday night. Group memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term. Individual monthly training renews each month, and you cancel with 14 days written notice before your next billing date.' },
   { question: 'Is there a cost for the evaluation session?', answer: 'Yes. Coach Blake goes over it on your call, along with the membership options, so you have the full picture before anything is booked.' },
@@ -65,7 +65,7 @@ const FAQ_PAIRS = [
 // column and the contact form's Area <select> both read the SAME keys — one place a
 // service area is renamed, not two — falling back to AREA_SERVED (in its existing order)
 // when a slot is absent so an un-seeded content.json renders exactly what it always has.
-// `count` caps how many slots the caller wants; the footer has only ever shown 4.
+// `count` caps how many slots the caller wants; the footer and the form take them all.
 // Same order as the tiles in areas.html: Fort Lauderdale (the gym's city), then the cities
 // with no page yet, then the rest of the paged cities.
 const AREA_TILE_ORDER = [AREA_SERVED[0], ...HEADLINE_AREAS.map((a) => a.name), ...AREA_SERVED.slice(1)];
@@ -872,7 +872,7 @@ export function assembleHomepage({ sections, prelude, content, responsiveManifes
   // Fort Lauderdale, not South Florida, in the title (October 2026): the gym is there, local
   // search ranks by distance to it, and parents search a city, not a region. The visible
   // headline is Blake's and still says South Florida; the h1 already said Fort Lauderdale.
-  const HOMEPAGE_DESCRIPTION = 'Group and private basketball training in Fort Lauderdale with Coach Blake Kingsley, for players 11 to 18 across South Florida. Start with a call.';
+  const HOMEPAGE_DESCRIPTION = 'Group and private basketball training in Fort Lauderdale with Coach Blake Kingsley, for players in grades 3 to 12 across South Florida. Start with a call.';
   const HOMEPAGE_TITLE = 'Basketball Training in Fort Lauderdale | Fast Basketball';
 
   let page = '';
@@ -943,7 +943,7 @@ export function buildFooter({ content, anchors = false } = {}) {
   const city = escapeHtml(text['ft.city'] || 'South Florida');
   const mob1 = escapeHtml(text['ft.mob1'] || 'Book Your Call');
   const mob2 = escapeHtml(text['ft.mob2'] || 'See Pricing');
-  const areaNames = deriveAreaNames(content, 4);
+  const areaNames = deriveAreaNames(content, AREA_TILE_ORDER.length); // every paged city: the footer is the only sitewide link to Parkland, Margate, Tamarac and Coconut Creek
   return '<footer class="ft">\n' +
     '<div class="shell">\n' +
     '<div class="ft-top">\n' +

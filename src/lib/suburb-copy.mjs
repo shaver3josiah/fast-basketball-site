@@ -199,7 +199,7 @@ function faqSchoolsAnswer(suburb) {
 // From OFFERS, the same figures the homepage's business markup carries, not a third typed copy.
 const GROUP = OFFERS.find((o) => o.path === '/training/group-training');
 function faqCostAnswer() {
-  return 'The program trains players roughly ages 11 through 18. ' +
+  return 'The program trains players in grades 3 through 12. ' +
     'The Group Training Membership runs $' + GROUP.price + ' to $' + Number(GROUP.maxPrice).toLocaleString('en-US') +
     ' for a 3 or 6 month term. The evaluation session ' +
     'and private 1-on-1 training are priced on the intro call, not published here.';

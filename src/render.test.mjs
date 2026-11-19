@@ -122,13 +122,16 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
   assert.ok(/<h3[^>]*>More<\/h3>/.test(footer), 'More header fallback: ' + footer);
   assert.ok(footer.includes('Group and private basketball training in South Florida, founded by Coach Blake Kingsley. One coach and one standard today, built to add coaches without changing the standard.'), 'tagline fallback: ' + footer);
   assert.ok(footer.includes('Fast Basketball. Elevate to Execute.'), 'bottom line fallback: ' + footer);
-  // The Areas column shows the first 4 tiles: the three headline cities, which have no page and
-  // so link to the areas section, then the first paged city, which links to its page.
+  // The Areas column shows every tile: headline cities with no page link to the areas section,
+  // every paged city links to its page (the footer is their only sitewide inbound link).
   for (const a of HEADLINE_AREAS) {
     assert.ok(footer.includes('<a href="/#areas">' + a.name + '</a>'), 'headline area must link to /#areas: ' + a.name);
   }
   assert.ok(footer.includes('<a href="/basketball-training/coral-springs">Coral Springs</a>'), 'first paged city must link to its page: ' + footer);
-  assert.ok(!footer.includes('Tamarac'), 'the footer must still cap at 4 areas: ' + footer);
+  for (const city of AREA_SERVED) {
+    const slug = city.toLowerCase().replace(/\s+/g, '-');
+    assert.ok(footer.includes('<a href="/basketball-training/' + slug + '">' + city + '</a>'), 'every paged city must be in the footer: ' + city);
+  }
 
   // Override still reads through: a seeded area.2.name replaces just that slot.
   const overridden = buildFooter({ content: { text: { 'area.2.name': 'Renamed City' } } });
@@ -150,7 +153,7 @@ import { AREA_SERVED, HEADLINE_AREAS } from './lib/site-config.mjs';
 
 {
   const FAQ_FALLBACK = [
-    { question: 'What ages do you train?', answer: 'Players from roughly 11 through 18, from first year middle school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
+    { question: 'What ages do you train?', answer: 'Players in grades 3 through 12, from elementary school through senior year, any gender. Younger players get more habit building, older players get more decision work and recruiting support.' },
     { question: 'Where do sessions actually happen?', answer: 'The gym at The Salvation Army Fort Lauderdale Corps, 100 SW 9th Ave, Fort Lauderdale, FL 33312. You get the schedule and what to bring when you book.' },
     { question: 'How long is the commitment, and why?', answer: 'Group training runs three months minimum, or six. Coach Blake asks for three because accountability, habit forming, and lasting change take that long to survive speed, contact, and a Friday night. Group memberships auto-renew unless you cancel in writing 7 days before the end of a 3 month term or 60 days before the end of a 6 month term. Individual monthly training renews each month, and you cancel with 14 days written notice before your next billing date.' },
     { question: 'Is there a cost for the evaluation session?', answer: 'Yes. Coach Blake goes over it on your call, along with the membership options, so you have the full picture before anything is booked.' },

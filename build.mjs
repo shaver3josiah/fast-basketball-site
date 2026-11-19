@@ -451,7 +451,7 @@ function step10_contactPage(sections, content, prelude) {
 // them before launch; do not delete that note, and do not let either page make a claim the
 // code does not back.
 // The children's section on /privacy is the point of the whole exercise: the site invites
-// players "roughly 11 through 18" and the forms take a name and an email, so a 12-year-old
+// players in "grades 3 through 12" and the forms take a name and an email, so a 12-year-old
 // can submit for themselves today. If the forms ever gain a real parent gate, this page is
 // the first thing that has to be rewritten to match.
 const LEGAL_EFFECTIVE = 'September 2026';
@@ -493,7 +493,7 @@ function step11b_privacyPage(content, prelude) {
   body += '<p>We use it to reply with open slots, send the playbook or resource you requested, and follow up once. That is the whole list. We do not sell it, rent it, or hand it to anyone else, and we do not add you to anything you did not ask for.</p>\n';
 
   body += '<h2>Parents, and players under 18</h2>\n';
-  body += '<p>These forms are meant for a parent or guardian. We train players from roughly 11 through 18, and the questions that come next are yours to answer: cost, scheduling, health, whether this is even the right fit. If your player is under 18, please send the form yourself so the conversation starts with you.</p>\n';
+  body += '<p>These forms are meant for a parent or guardian. We train players in grades 3 through 12, and the questions that come next are yours to answer: cost, scheduling, health, whether this is even the right fit. If your player is under 18, please send the form yourself so the conversation starts with you.</p>\n';
   body += '<p>We do not knowingly collect personal information from a child under 13. If a child under 13 fills in one of these forms without you, we are not going to use it and we will delete it as soon as we know.</p>\n';
   // The address left every public page in September 2026 (harvesters); the contact form is
   // the route now, and contact.mjs hands the address back to whoever sends it.
@@ -1014,8 +1014,8 @@ function step11e_appbuyPages(content, prelude) {
   body += '</div>\n</section>\n</main>\n';
 
   writeHtml(resolve(DIST, 'appbuy', 'index.html'), buildSimplePage({
-    title: 'Buy a training tool | Fast Basketball',
-    description: 'The Shot Form Watcher and the Dribble Listener: two phone tools from Fast Basketball. Buy once, or split the price over up to five months.',
+    title: 'Basketball Shooting and Dribble Apps | Fast Basketball',
+    description: 'The Shot Form Watcher and the Dribble Listener: basketball shooting and dribbling tools for your phone. Buy once, or split it over up to five months.',
     canonicalPath: '/appbuy',
     bodyHtml: body,
     content,
@@ -1231,7 +1231,7 @@ function writeLlms(allPaths, siteUrl) {
   const txt = [
     '# ' + BUSINESS_NAME,
     '',
-    '> Youth basketball skills training in Fort Lauderdale, Florida, with Coach Blake Kingsley, for players roughly 11 to 18. ' +
+    '> Youth basketball skills training in Fort Lauderdale, Florida, with Coach Blake Kingsley, for players in grades 3 to 12. ' +
       'Every session is at ' + HOME_GYM + ', FL 33312. Families start with a 15 to 20 minute call.',
     '',
     '## Pages',
